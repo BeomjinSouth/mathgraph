@@ -41,6 +41,7 @@ import { Vec2 } from './utils/Geometry.js';
 import { SchemaValidator } from './ai/SchemaValidator.js';
 import { PatchApplier } from './ai/PatchApplier.js';
 import { AIService } from './ai/AIService.js';
+import { parseAIJSONPayload } from './ai/JSONUtils.js';
 
 // Mk.2: UI 모듈
 import { AlgebraInput } from './ui/AlgebraInput.js';
@@ -1967,62 +1968,95 @@ class GraphAApp {
 
         const div = document.createElement('div');
         div.className = `message ${type}`;
-        div.innerHTML = `<div class="message-content">${content}</div>`;
+        const body = document.createElement('div');
+        body.className = 'message-content';
+        body.textContent = content;
+        div.appendChild(body);
         messages.appendChild(div);
         messages.scrollTop = messages.scrollHeight;
+        return div;
+    }
+
+    addChatImagePreview(imageDataUrl) {
+        const messages = document.getElementById('chatMessages');
+        if (!messages) return null;
+
+        const div = document.createElement('div');
+        div.className = 'message user';
+
+        const body = document.createElement('div');
+        body.className = 'message-content';
+
+        const image = document.createElement('img');
+        image.src = imageDataUrl;
+        image.style.maxWidth = '200px';
+        image.style.borderRadius = '8px';
+        image.alt = '업로드한 이미지 미리보기';
+
+        body.appendChild(image);
+        div.appendChild(body);
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
+    }
+
+    removeChatMessage(messageNode) {
+        if (messageNode?.parentNode) {
+            messageNode.parentNode.removeChild(messageNode);
+        }
     }
 
     /**
      * AI 명령 처리 (Mk.2: AIService 사용)
      */
     async processAICommand(message) {
+        const trimmedMessage = message.trim();
+
         // JSON 형식인지 확인 - 직접 처리
-        if (message.trim().startsWith('{') || message.trim().startsWith('[') ||
-            message.trim().startsWith('```json')) {
-            this.processAIJSON(message);
+        if (trimmedMessage.startsWith('{') || trimmedMessage.startsWith('[') ||
+            trimmedMessage.startsWith('```')) {
+            this.processAIJSON(trimmedMessage);
             return;
         }
 
         // 로딩 표시
-        this.addChatMessage('처리 중... ⏳', 'assistant');
+        const loadingMessage = this.addChatMessage('처리 중... ⏳', 'assistant');
 
-        // 현재 캔버스 상태를 컨텍스트로 전달
-        const context = {
-            objects: this.objectManager.getAllObjects().map(o => ({
-                id: o.id,
-                type: o.type,
-                label: o.label
-            }))
-        };
+        try {
+            // 현재 캔버스 상태를 컨텍스트로 전달
+            const context = {
+                objects: this.objectManager.getAllObjects().map(o => ({
+                    id: o.id,
+                    type: o.type,
+                    label: o.label,
+                    ...(o.position ? { x: o.position.x, y: o.position.y } : {})
+                }))
+            };
 
-        // AIService로 처리
-        const result = await this.aiService.processCommand(message, context);
+            // AIService로 처리
+            const result = await this.aiService.processCommand(message, context);
 
-        // 로딩 메시지 제거
-        const messages = document.getElementById('chatMessages');
-        if (messages && messages.lastChild) {
-            const lastMsg = messages.lastChild;
-            if (lastMsg.textContent.includes('처리 중...')) {
-                messages.removeChild(lastMsg);
+            if (result.success && result.json) {
+                // JSON 패치 적용
+                this.processAIJSON(result.json);
+            } else if (result.error) {
+                this.addChatMessage(result.error, 'assistant');
             }
+        } catch (error) {
+            console.error('AI 명령 처리 실패:', error);
+            this.addChatMessage(`❌ ${error.message || 'AI 요청 처리 중 오류가 발생했습니다.'}`, 'assistant');
+        } finally {
+            this.removeChatMessage(loadingMessage);
+            this.updateSidebar();
         }
-
-        if (result.success && result.json) {
-            // JSON 패치 적용
-            this.processAIJSON(JSON.stringify(result.json));
-        } else if (result.error) {
-            this.addChatMessage(result.error, 'assistant');
-        }
-
-        this.updateSidebar();
     }
 
     /**
      * Mk.2: AI JSON 패치 처리
      */
-    processAIJSON(jsonString) {
+    processAIJSON(jsonInput) {
         // 1. 스키마 검증
-        const validationResult = this.schemaValidator.parseAndValidate(jsonString);
+        const validationResult = this.schemaValidator.parseAndValidate(jsonInput);
 
         if (!validationResult.valid) {
             this.addChatMessage(
@@ -2036,11 +2070,7 @@ class GraphAApp {
         // 2. 파싱된 JSON 추출
         let data;
         try {
-            let cleanJson = jsonString.trim();
-            if (cleanJson.startsWith('```json')) cleanJson = cleanJson.slice(7);
-            if (cleanJson.startsWith('```')) cleanJson = cleanJson.slice(3);
-            if (cleanJson.endsWith('```')) cleanJson = cleanJson.slice(0, -3);
-            data = JSON.parse(cleanJson.trim());
+            data = parseAIJSONPayload(jsonInput);
         } catch (e) {
             this.addChatMessage(`⚠️ JSON 파싱 실패: ${e.message}`, 'assistant');
             return;
@@ -2085,30 +2115,28 @@ class GraphAApp {
             const imageDataUrl = e.target.result;
 
             // 이미지 미리보기 메시지
-            this.addChatMessage(`<img src="${imageDataUrl}" style="max-width: 200px; border-radius: 8px;">`, 'user');
+            this.addChatImagePreview(imageDataUrl);
 
             // 로딩 메시지
-            this.addChatMessage('이미지를 분석 중입니다... 🔍', 'assistant');
+            const loadingMessage = this.addChatMessage('이미지를 분석 중입니다... 🔍', 'assistant');
 
-            // AIService로 이미지 분석
-            const result = await this.aiService.analyzeImage(imageDataUrl);
+            try {
+                // AIService로 이미지 분석
+                const result = await this.aiService.analyzeImage(imageDataUrl);
 
-            // 로딩 메시지 제거
-            const messages = document.getElementById('chatMessages');
-            if (messages && messages.lastChild) {
-                const lastMsg = messages.lastChild;
-                if (lastMsg.textContent.includes('분석 중')) {
-                    messages.removeChild(lastMsg);
+                if (result.success && result.json) {
+                    this.addChatMessage('이미지에서 도형을 인식했습니다! 📐', 'assistant');
+                    this.processAIJSON(result.json);
+                } else if (result.error) {
+                    this.addChatMessage(`❌ ${result.error}`, 'assistant');
+                } else {
+                    this.addChatMessage('이미지에서 도형을 인식하지 못했습니다. 다시 시도해주세요.', 'assistant');
                 }
-            }
-
-            if (result.success && result.json) {
-                this.addChatMessage('이미지에서 도형을 인식했습니다! 📐', 'assistant');
-                this.processAIJSON(JSON.stringify(result.json));
-            } else if (result.error) {
-                this.addChatMessage(`❌ ${result.error}`, 'assistant');
-            } else {
-                this.addChatMessage('이미지에서 도형을 인식하지 못했습니다. 다시 시도해주세요.', 'assistant');
+            } catch (error) {
+                console.error('이미지 분석 처리 실패:', error);
+                this.addChatMessage(`❌ ${error.message || '이미지 분석 중 오류가 발생했습니다.'}`, 'assistant');
+            } finally {
+                this.removeChatMessage(loadingMessage);
             }
         };
 
