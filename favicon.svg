@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  favicon.svg 역할
+  이 파일은 그래프A의 파비콘으로 사용되는 벡터 아이콘입니다.
+  브라우저 탭과 즐겨찾기 등 인터넷에서 보이는 작은 아이콘을 목적에 맞게 제공합니다.
+  용량을 줄이고 선명도를 유지하기 위해 PNG 대신 SVG로 제작했고
+  앱 좌측 상단 로고와 톤을 맞추기 위해 동일한 색상 계열의 그라디언트를 사용합니다.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="0.55" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- 배경 라운드 사각형 -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#g)"/>
+
+  <!-- 미세한 격자 느낌의 하이라이트 -->
+  <path d="M10 22H54M10 32H54M10 42H54" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+  <path d="M22 10V54M32 10V54M42 10V54" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+
+  <!-- 그래프 곡선 -->
+  <path d="M14 44 C 22 34, 28 34, 36 28 S 50 18, 54 20" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="3" stroke-linecap="round" filter="url(#s)"/>
+
+  <!-- A 형태의 간단한 마크 -->
+  <path d="M22 48 L32 16 L42 48" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#s)"/>
+  <path d="M26 36 H38" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="4" stroke-linecap="round" filter="url(#s)"/>
+</svg>
+
+

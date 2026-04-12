@@ -1,0 +1,16 @@
+{
+  "name": "mathgraph",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Static math graph editor",
+  "scripts": {
+    "build": "echo Static site build step not required",
+    "vercel-build": "echo Static site build step not required",
+    "vercel:dev": "vercel dev",
+    "vercel:link": "vercel link",
+    "vercel:pull": "vercel pull"
+  },
+  "devDependencies": {
+    "vercel": "^50.44.0"
+  }
+}

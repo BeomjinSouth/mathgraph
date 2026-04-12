@@ -1,0 +1,2773 @@
+/* ===========================
+   css/styles.css 역할
+   이 파일은 그래프A 앱의 기본 레이아웃과 컴포넌트 스타일을 정의하는 핵심 스타일시트입니다.
+   glass_theme.css가 "테마"에 가까운 덮어쓰기 역할이라면
+   이 파일은 앱 전체의 구조, 간격, 버튼, 패널, 설명서 UI 등 기본 동작을 안정적으로 만드는 목적을 갖습니다.
+
+   이번 변경의 의도는 다음과 같습니다.
+   - 우측 설정 탭에서 격자와 축 글자가 작게 느껴지는 문제를 개선하기 위해 해당 라벨의 글자 크기를 키웁니다.
+   - 우측 사이드바 좌표 입력이 줄바꿈되어 보이는 문제를 줄이기 위해 좌표 영역을 한 줄로 고정합니다.
+   - 설명서 단축키 탭에서 아이콘을 함께 보여주기 위해 단축키 라인의 아이콘 스타일을 추가합니다.
+   =========================== */
+
+/* CSS Variables - Design Tokens */
+:root {
+    /* Colors - Dark Theme */
+    --bg-primary: #050510;
+    /* Deep solid dark blue/black */
+    --bg-secondary: #14141f;
+    /* Slightly lighter for sidebars */
+    --bg-tertiary: #1f1f2e;
+    /* For panels/inputs */
+    --bg-elevated: #2a2a3d;
+    --bg-hover: #32324a;
+
+    --text-primary: rgba(255, 255, 255, 0.95);
+    --text-secondary: rgba(255, 255, 255, 0.75);
+    --text-tertiary: rgba(255, 255, 255, 0.5);
+    --text-muted: rgba(255, 255, 255, 0.3);
+
+    --accent-primary: #6366f1;
+    --accent-primary-hover: #818cf8;
+    --accent-secondary: #06b6d4;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-light: rgba(255, 255, 255, 0.12);
+
+    /* Canvas Colors */
+    --canvas-bg: #ffffff;
+    --canvas-grid: #e5e5e5;
+    --canvas-grid-major: #cccccc;
+    --canvas-axis: #333333;
+
+    /* Object Colors */
+    --obj-point: #6366f1;
+    --obj-line: #3b82f6;
+    --obj-circle: #22c55e;
+    --obj-function: #f97316;
+    --obj-vector: #ec4899;
+    --obj-marker: #8b5cf6;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 6px 10px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+
+    /* Spacing */
+    --spacing-xs: 6px;
+    --spacing-sm: 10px;
+    --spacing-md: 16px;
+    --spacing-lg: 20px;
+    --spacing-xl: 32px;
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s ease;
+
+    /* Layout */
+    --toolbar-height: 64px;
+    --sidebar-width: 320px;
+    --panel-width: 320px;
+    --chat-width: 400px;
+}
+
+/* Reset & Base */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 좌측 하단 색상/굵기 UI 및 스냅 옵션 숨김 */
+.default-style-options,
+.snap-options {
+    display: none !important;
+}
+
+/* App Container */
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ===========================
+   Toolbar
+   =========================== */
+#toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--toolbar-height);
+    padding: 0 var(--spacing-lg);
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    z-index: 100;
+}
+
+/* ===========================
+   Main Layout
+   =========================== */
+#main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+#canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--canvas-bg);
+}
+
+#mainCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+/* Canvas Controls */
+.canvas-controls {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 10;
+}
+
+.canvas-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.canvas-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.canvas-btn .material-symbols-outlined {
+    font-size: 24px;
+}
+
+.zoom-level {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 56px;
+    text-align: center;
+}
+
+/* Coord Display */
+.coord-display {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-secondary);
+    z-index: 10;
+}
+
+/* View Options (삭제됨)
+   - 캔버스 우측상단 플로팅 "격자/축" 토글 UI(view-options)는 사용자 요청으로 제거되었습니다.
+   - 보기 옵션은 우측 속성 패널(설정 탭)의 체크박스에서만 제어합니다.
+*/
+
+/* Snap Options */
+.snap-options {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    color: var(--text-secondary);
+    z-index: 10;
+}
+
+.snap-options select {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+/* Default Style Options - Hidden (use property panel instead) */
+.default-style-options {
+    display: none;
+}
+
+/* Snap Options - Compact */
+.snap-options {
+    display: none;
+}
+
+.default-style-options input[type="range"] {
+    width: 80px;
+}
+
+/* ===========================
+   Left Tool Panel (Geogebra Style)
+   =========================== */
+#tool-panel {
+    display: flex;
+    /*
+      좌측 도구 패널은 "카테고리(아이콘 바) + 도구 목록(서브 메뉴)"로 구성됩니다.
+      기존에는 전체 폭을 280px로 고정해 둬서 글씨/버튼이 커지면 답답해지는 문제가 있었습니다.
+      디자인 토큰(--sidebar-width)을 기준으로 폭을 통일하면, 전체 레이아웃이 예측 가능해지고
+      좌우 패널/캔버스가 자연스럽게 균형을 맞춥니다.
+    */
+    width: var(--sidebar-width);
+    height: 100%;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+/* tool-submenu와 footer를 포함하는 컨테이너 */
+.tool-main-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.tool-categories {
+    display: flex;
+    flex-direction: column;
+    width: 60px;
+    padding: 8px 4px;
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border-color);
+    gap: 4px;
+}
+
+.category-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    gap: 2px;
+}
+
+.category-btn .material-symbols-outlined {
+    font-size: 24px;
+}
+
+.category-btn .category-label {
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.category-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.category-btn.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.tool-submenu {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.submenu-content {
+    display: none;
+}
+
+.submenu-content.active {
+    display: block;
+}
+
+.submenu-content h4 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    margin-top: 12px;
+}
+
+.submenu-content h4:first-child {
+    margin-top: 0;
+}
+
+.tool-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+.tool-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 6px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    gap: 4px;
+}
+
+.tool-item .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.tool-item span:last-child {
+    font-size: 10px;
+}
+
+.tool-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.tool-item.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+/* Panel Collapsed States */
+#tool-panel.collapsed {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    border-right: none;
+}
+
+#property-panel.collapsed {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    border-left: none;
+}
+
+/* ===========================
+   Right Property Panel
+   =========================== */
+#property-panel {
+    display: flex;
+    width: 280px;
+    height: 100%;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    flex-shrink: 0;
+    flex-direction: column;
+    transition: width 0.2s ease;
+}
+
+.prop-categories {
+    display: flex;
+    padding: 8px;
+    gap: 4px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.prop-category-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.prop-category-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.prop-category-btn.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.prop-panels {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.prop-content {
+    display: none;
+    padding: 12px;
+}
+
+.prop-content.active {
+    display: block;
+}
+
+.prop-content h4 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    margin-top: 12px;
+}
+
+.prop-content h4:first-child {
+    margin-top: 0;
+}
+
+.style-section {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.property-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.property-row:last-child {
+    margin-bottom: 0;
+}
+
+.property-row label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 60px;
+}
+
+.property-row input[type="color"] {
+    width: 32px;
+    height: 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.property-row select {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+.btn-small {
+    padding: 4px 8px;
+    font-size: 11px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--accent-primary);
+    color: white;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.btn-small:hover {
+    background: var(--accent-primary-hover);
+}
+
+/* Property Panel Button */
+.prop-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.prop-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+/* Help Text */
+.property-row.help-text {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+}
+
+.property-row.help-text small {
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* Selection Actions */
+.selection-actions {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-action:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.btn-action.delete:hover {
+    background: var(--accent-danger);
+    color: white;
+}
+
+.btn-action .material-symbols-outlined {
+    font-size: 16px;
+}
+
+/* Object List */
+.object-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.object-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.object-item:hover {
+    background: var(--bg-hover);
+}
+
+.object-item.selected {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.empty-state .material-symbols-outlined {
+    font-size: 48px;
+    margin-bottom: 8px;
+}
+
+
+.toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.toolbar-left {
+    min-width: 160px;
+}
+
+.toolbar-center {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: var(--spacing-xs) 0;
+}
+
+.toolbar-right {
+    min-width: 160px;
+    justify-content: flex-end;
+}
+
+/* Logo */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.logo-icon {
+    font-size: 24px;
+}
+
+.logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.version {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 6px;
+    background: var(--bg-hover);
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+}
+
+/* Tool Groups - Mk.2: 드롭다운 메뉴 지원 */
+.tool-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    position: relative;
+}
+
+.tool-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color);
+    margin: 0 var(--spacing-xs);
+}
+
+/* Tool Buttons */
+.tool-btn,
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tool-btn:hover,
+.action-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.tool-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    box-shadow: var(--shadow-glow);
+}
+
+.tool-btn .material-symbols-outlined,
+.action-btn .material-symbols-outlined {
+    font-size: 24px;
+    overflow: hidden;
+    max-width: 28px;
+    max-height: 28px;
+}
+
+.action-btn {
+    background: var(--bg-tertiary);
+}
+
+/* Mk.2: 드롭다운 트리거 버튼 (삼각형 표시) */
+.tool-group-trigger {
+    position: relative;
+    padding-right: 20px !important;
+}
+
+.tool-group-trigger::after {
+    content: '▼';
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px;
+    opacity: 0.6;
+}
+
+/* Mk.2: 드롭다운 메뉴 */
+.tool-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 180px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    padding: 4px;
+    margin-top: 4px;
+}
+
+.tool-group:hover .tool-dropdown,
+.tool-dropdown.show {
+    display: block;
+}
+
+.tool-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    transition: background var(--transition-fast);
+}
+
+.tool-dropdown-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.tool-dropdown-item.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.tool-dropdown-item .material-symbols-outlined {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+
+.tool-dropdown-item .tool-name {
+    flex: 1;
+}
+
+.tool-dropdown-item .tool-shortcut {
+    color: var(--text-muted);
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+/* ===========================
+   Main Content
+   =========================== */
+#main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* ===========================
+   Sidebar
+   =========================== */
+#sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width var(--transition-normal), margin var(--transition-normal);
+}
+
+#sidebar.collapsed {
+    width: 36px;
+    margin-left: 0;
+}
+
+#sidebar.collapsed .sidebar-content,
+#sidebar.collapsed .sidebar-header h3 {
+    display: none;
+}
+
+#sidebar.collapsed .sidebar-header {
+    padding: var(--spacing-sm);
+    justify-content: center;
+}
+
+/* ===========================
+   Tool Panel (Geogebra Style)
+   =========================== */
+#tool-panel {
+    display: flex;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+/* 카테고리 버튼들 (수직 배치) */
+.tool-categories {
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-xs);
+    gap: 2px;
+    border-right: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.category-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--spacing-sm);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.category-btn:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.category-btn.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.category-btn .material-symbols-outlined {
+    font-size: 22px;
+}
+
+.category-btn .category-label {
+    /* Mk2.1: 좌측 사이드바 가독성 개선 (약 1.5배) */
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* 세부 도구 패널 (오른쪽 펼침) */
+.tool-submenu {
+    /*
+      기존에는 200px 고정이라 좌측 패널 폭을 키우면 내부에 불필요한 빈 공간이 생길 수 있습니다.
+      카테고리 바(60px)를 제외한 나머지 영역을 서브메뉴가 모두 차지하도록 flex 기반으로 변경합니다.
+    */
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    background: var(--bg-secondary);
+    overflow-y: auto;
+    height: 100%;
+}
+
+.submenu-content {
+    display: none;
+    padding: var(--spacing-md);
+}
+
+.submenu-content.active {
+    display: block;
+}
+
+.submenu-content h4 {
+    /* Mk2.1: 좌측 사이드바 섹션 제목 가독성 개선 (약 1.5배) */
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-sm);
+    padding-left: var(--spacing-xs);
+}
+
+.submenu-content h4:not(:first-child) {
+    margin-top: var(--spacing-md);
+}
+
+/* 도구 그리드 */
+.tool-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-xs);
+}
+
+.tool-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--spacing-sm);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    /* Mk2.1: 좌측 도구 버튼 텍스트 가독성 개선 (약 1.5배) */
+    font-size: 15px;
+    text-align: center;
+    line-height: 1.15;
+}
+
+.tool-item:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.tool-item.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.tool-item .material-symbols-outlined {
+    /* 텍스트가 커졌을 때 아이콘도 약간 키워 밸런스를 맞춥니다 */
+    font-size: 28px;
+}
+
+/* ===========================
+   Mk2.1 - Left Tool Shortcut Badge
+   =========================== */
+/*
+  좌측 사이드바의 도구 버튼 이름 옆에 단축키를 (D)처럼 표시하기 위한 배지 스타일입니다.
+  목표는 다음과 같습니다.
+  - 텍스트를 “너무 작게” 만들지 않되, 본문보다 한 단계 덜 강조된 느낌을 유지합니다.
+  - 버튼이 활성(active)일 때는 흰색 텍스트 위에서도 잘 보이도록 색을 조정합니다.
+*/
+.tool-item .tool-shortcut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.3;
+    letter-spacing: 0.2px;
+}
+
+.tool-item.active .tool-shortcut {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+/* Current Tool Display */
+.current-tool-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.current-tool-display .material-symbols-outlined {
+    font-size: 20px;
+    color: var(--accent-primary);
+}
+
+.sidebar-header,
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.sidebar-header h3,
+.panel-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-content,
+.panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-sm);
+}
+
+/* Object List */
+.object-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.object-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 1px solid transparent;
+}
+
+.object-item:hover {
+    background: var(--bg-hover);
+}
+
+.object-item.selected {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.object-item.highlighted {
+    box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+.object-item.hidden-object {
+    opacity: 0.5;
+}
+
+.object-item.hidden-object .object-name {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+}
+
+.object-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+}
+
+.object-icon.point {
+    background: var(--obj-point);
+}
+
+.object-icon.line {
+    background: var(--obj-line);
+}
+
+.object-icon.circle {
+    background: var(--obj-circle);
+}
+
+.object-icon.function {
+    background: var(--obj-function);
+}
+
+.object-icon.vector {
+    background: var(--obj-vector);
+}
+
+.object-icon.marker {
+    background: var(--obj-marker);
+}
+
+.object-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.object-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.object-type {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.object-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.object-item:hover .object-actions {
+    opacity: 1;
+}
+
+.object-actions button {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.object-actions button:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.object-actions button .material-symbols-outlined {
+    font-size: 16px;
+}
+
+/* ===========================
+   Property Panel (Geogebra Style)
+   =========================== */
+#property-panel {
+    display: flex;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    flex-shrink: 0;
+    /*
+      중요: 우측 패널 옆에 "빈 공간"이 생기는 문제를 방지하기 위해
+      패널 전체 폭을 고정(=토큰 기반)하고, 내부는 flex로 채우도록 합니다.
+      기존에는 내부(.prop-submenu)가 250px 고정이라, 바깥 320px에서 10px이 남아
+      옆이 비어 보이는 띠가 생겼습니다.
+    */
+    width: var(--panel-width);
+    flex-direction: row;
+    overflow: hidden;
+}
+
+/* 속성 카테고리 버튼들 */
+.prop-categories {
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-xs);
+    gap: 2px;
+    border-left: 1px solid var(--border-color);
+    /* 상단(가로 탭) 스타일이 앞쪽에서 일부 적용될 수 있어, 명시적으로 제거합니다. */
+    border-bottom: none;
+    background: var(--bg-tertiary);
+    order: 2;
+    /* 오른쪽에 배치 */
+}
+
+.prop-category-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--spacing-sm);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.prop-category-btn:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.prop-category-btn.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.prop-category-btn .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.prop-category-btn .prop-category-label {
+    font-size: 9px;
+    font-weight: 500;
+}
+
+/* 속성 서브메뉴 패널 */
+.prop-submenu {
+    /*
+      내부 패널은 남는 폭을 "자동으로" 채우는 것이 핵심입니다.
+      이렇게 하면 우측 패널의 빈 띠가 사라지고, 캔버스가 그만큼 더 넓어집니다.
+    */
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    background: var(--bg-secondary);
+    overflow-y: auto;
+    height: 100%;
+    order: 1;
+    /* 왼쪽에 배치 */
+    border-right: 1px solid var(--border-color);
+}
+
+.prop-content {
+    display: none;
+    padding: var(--spacing-md);
+    height: 100%;
+}
+
+.prop-content.active {
+    display: block;
+}
+
+.prop-content h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* 스타일 섹션 */
+.style-section {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.style-section .property-row {
+    margin-bottom: var(--spacing-xs);
+}
+
+.style-section .property-row:last-child {
+    margin-bottom: 0;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    color: var(--text-tertiary);
+    text-align: center;
+    min-height: 200px;
+    height: 100%;
+}
+
+.empty-state .material-symbols-outlined {
+    font-size: 48px;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* ===========================
+   Canvas Container
+   =========================== */
+#canvas-container {
+    flex: 1;
+    position: relative;
+    background: var(--bg-tertiary);
+    overflow: hidden;
+}
+
+#mainCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+/* Canvas Controls */
+.canvas-controls {
+    position: absolute;
+    bottom: var(--spacing-lg);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+.canvas-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.canvas-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.canvas-btn .material-symbols-outlined {
+    font-size: 24px;
+}
+
+.zoom-level {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 56px;
+    text-align: center;
+}
+
+/* Coordinate Display */
+.coord-display {
+    position: absolute;
+    bottom: var(--spacing-lg);
+    right: var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* View Options (삭제됨)
+   - 위와 동일한 이유로, 중복 정의돼 있던 view-options/toggle-option 스타일도 제거합니다.
+*/
+
+/* ===========================
+   Property Panel
+   =========================== */
+#property-panel {
+    /*
+      주의: 이 파일에는 #property-panel 스타일이 여러 번 등장합니다.
+      이 섹션은 "실제 사용 중인 우측 패널(= prop-categories + prop-submenu)" 기준으로
+      최종 동작이 결정되는 구간이므로, 여기서 레이아웃을 확정합니다.
+
+      목표
+      - 우측 패널 내부가 고정폭(예: 60px + 250px) 때문에 남는 폭이 생기지 않게 합니다.
+      - collapsed 시 완전히 숨겨(폭 0) 캔버스 가로 공간을 최대화합니다.
+    */
+    width: var(--panel-width);
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: width var(--transition-normal), margin var(--transition-normal);
+}
+
+#property-panel.collapsed {
+    /*
+      기존 코드에는 "접으면 36px만 남기는" 패턴이 섞여 있었는데,
+      현재 앱은 좌/우 패널을 완전히 숨기는 UX가 더 직관적입니다.
+      (숨긴 만큼 캔버스가 넓어져서 사용자가 즉시 이득을 체감합니다.)
+    */
+    width: 0;
+    margin-right: 0;
+    padding: 0;
+    overflow: hidden;
+    border-left: none;
+}
+
+/* Property Form */
+.property-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+}
+
+.property-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.property-group label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.property-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.property-input {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 13px;
+    transition: border-color var(--transition-fast);
+}
+
+.property-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.property-input[type="number"] {
+    width: 80px;
+    flex: none;
+}
+
+.property-slider {
+    flex: 1;
+    accent-color: var(--accent-primary);
+}
+
+.property-value {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 40px;
+    text-align: right;
+}
+
+/* Color Picker */
+.color-picker {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.color-swatch:hover {
+    transform: scale(1.1);
+}
+
+.color-swatch.selected {
+    border-color: white;
+    box-shadow: var(--shadow-glow);
+}
+
+/* ===========================
+   Chat Panel
+   =========================== */
+#chat-panel {
+    position: fixed;
+    bottom: 0;
+    right: var(--spacing-lg);
+    width: var(--chat-width);
+    max-height: 500px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    transition: all var(--transition-normal);
+}
+
+#chat-panel.collapsed {
+    max-height: 48px;
+}
+
+#chat-panel.collapsed .chat-body {
+    display: none;
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.chat-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.chat-title .material-symbols-outlined {
+    color: var(--accent-primary);
+}
+
+.chat-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+}
+
+.message.user {
+    align-self: flex-end;
+}
+
+.message.assistant {
+    align-self: flex-start;
+}
+
+.message-content {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.message.user .message-content {
+    background: var(--accent-primary);
+    color: white;
+    border-bottom-right-radius: var(--radius-sm);
+}
+
+.message.assistant .message-content {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-bottom-left-radius: var(--radius-sm);
+}
+
+.chat-input-area {
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.input-wrapper:focus-within {
+    border-color: var(--accent-primary);
+}
+
+.input-wrapper textarea {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    resize: none;
+    max-height: 100px;
+    line-height: 1.5;
+}
+
+.input-wrapper textarea:focus {
+    outline: none;
+}
+
+.input-wrapper textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.send-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--accent-primary);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.send-btn:hover {
+    background: var(--accent-primary-hover);
+}
+
+.send-btn .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* ===========================
+   Modals
+   =========================== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn var(--transition-fast);
+}
+
+.modal.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 480px;
+    animation: slideUp var(--transition-normal);
+}
+
+.modal-small {
+    max-width: 360px;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: var(--spacing-lg);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Input Groups */
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.input-group label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.input-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+    flex: 1;
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.property-row input[type="checkbox"] {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--accent-primary);
+}
+
+.input-hint {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    background: var(--bg-tertiary);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+}
+
+.input-hint ul {
+    margin-left: var(--spacing-lg);
+    margin-top: var(--spacing-xs);
+}
+
+/* Export Options */
+.export-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.option-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.option-group>label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.radio-group {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.radio-option,
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+
+.radio-option:hover,
+.checkbox-option:hover {
+    background: var(--bg-hover);
+}
+
+.radio-option input,
+.checkbox-option input {
+    accent-color: var(--accent-primary);
+}
+
+/* Delete Modal */
+.dependents-list {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--accent-danger);
+}
+
+.dependents-list .warning {
+    color: var(--accent-danger);
+    font-weight: 500;
+    margin-bottom: var(--spacing-sm);
+}
+
+.dependents-list ul {
+    margin-left: var(--spacing-lg);
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+/* Buttons */
+.btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-primary {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-primary-hover);
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+}
+
+.btn-danger {
+    background: var(--accent-danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+/* Icon Buttons */
+.icon-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.icon-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.icon-btn .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* Toast Notifications */
+#toast-container {
+    position: fixed;
+    bottom: var(--spacing-xl);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.toast {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    color: var(--text-primary);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    animation: toastIn var(--transition-normal);
+    pointer-events: auto;
+}
+
+.toast.success {
+    border-left: 3px solid var(--accent-success);
+}
+
+.toast.error {
+    border-left: 3px solid var(--accent-danger);
+}
+
+.toast.warning {
+    border-left: 3px solid var(--accent-warning);
+}
+
+.toast.info {
+    border-left: 3px solid var(--accent-primary);
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.toast.removing {
+    animation: toastOut var(--transition-normal) forwards;
+}
+
+@keyframes toastOut {
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Selection */
+::selection {
+    background: var(--accent-primary);
+    color: white;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ===========================
+   Mk.2 - Coordinate Input
+   =========================== */
+.object-coords {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+    font-family: 'Courier New', monospace;
+    /*
+      좌표가 "x 입력"과 "y 입력"으로 나뉘어 있을 때
+      패널 폭이 좁으면 자동 줄바꿈이 생겨 x와 y가 다른 줄로 보일 수 있습니다.
+      사용자가 요청한 "한 줄로 보기"를 우선하기 위해 줄바꿈을 막습니다.
+      너무 좁은 공간에서는 오른쪽으로 약간 넘칠 수 있으나
+      실제 사용성은 줄바꿈보다 훨씬 안정적입니다.
+    */
+    white-space: nowrap;
+}
+
+.object-coords.readonly {
+    opacity: 0.7;
+}
+
+.coord-input {
+    width: 45px;
+    padding: 2px 4px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    transition: border-color var(--transition-fast);
+    /* Mk2.1: glass_theme의 전역 스타일 방어 */
+    height: auto !important;
+    line-height: normal !important;
+}
+
+.coord-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: var(--bg-tertiary);
+}
+
+.coord-input:hover {
+    border-color: var(--accent-primary-hover);
+}
+
+/* ===========================
+   Mk2.1 - Settings Tab Readability
+   =========================== */
+/*
+  우측 사이드바 설정 탭의 보기 옵션은 "격자"와 "축" 체크박스 라벨을 자주 확인합니다.
+  기존 12px은 어두운 배경에서 작게 느껴질 수 있어 글자 크기를 키웁니다.
+  주의
+  - 전체 property-row label의 기본값은 유지하고
+  - 설정 탭(=data-prop="app")에만 국소 적용합니다.
+*/
+#property-panel .prop-content[data-prop="app"] .style-section .property-row label {
+    font-size: 15px;
+    min-width: 80px;
+}
+
+/* ===========================
+   Mk2.1 - Manual Shortcuts Icon
+   =========================== */
+/*
+  설명서 단축키 탭에서 "아이콘 + 키" 조합을 보여주기 위해
+  key-combo 내부의 Material Symbols 아이콘 스타일을 추가합니다.
+*/
+.key-combo .material-symbols-outlined {
+    font-size: 18px;
+    color: var(--accent-primary);
+    line-height: 1;
+    margin-right: 2px;
+}
+
+/* Mk.2 Canvas Cursors */
+#mainCanvas.panning {
+    cursor: grabbing !important;
+}
+
+#mainCanvas.pan-ready {
+    cursor: grab !important;
+}
+
+/* Mk.2 스냅 설정 */
+.snap-options {
+    position: absolute;
+    top: 140px;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-secondary);
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.snap-options select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 3px 6px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.snap-options select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+/* Mk.2 사이드바 토글 버튼 */
+.sidebar-toggles {
+    position: absolute;
+    top: 180px;
+    left: 10px;
+    display: flex;
+    gap: 4px;
+}
+
+.sidebar-toggles .canvas-btn {
+    padding: 6px;
+}
+
+/* Mk.2 사이드바 숨김 */
+#sidebar.hidden,
+#property-panel.hidden {
+    display: none !important;
+}
+
+/* Mk.2 LaTeX 스타일 라벨 */
+.math-label {
+    font-family: 'Times New Roman', 'STIX Two Math', serif;
+    font-style: italic;
+}
+
+/* Mk.2 기본 스타일 옵션 */
+.default-style-options {
+    position: absolute;
+    bottom: 10px;
+    left: 270px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-secondary);
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.default-style-options label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.default-style-options input[type="color"] {
+    width: 28px;
+    height: 24px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 0;
+}
+
+.default-style-options select {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* 일괄 스타일 섹션 */
+.bulk-style-section {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.bulk-style-section h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.bulk-style-section .property-row {
+    margin-bottom: var(--spacing-sm);
+}
+
+.bulk-style-section label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 40px;
+}
+
+.bulk-style-section input[type="color"] {
+    width: 32px;
+    height: 24px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 0;
+}
+
+.bulk-style-section select {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.btn-small {
+    padding: 4px 8px;
+    font-size: 11px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-small:hover {
+    background: var(--accent-secondary);
+}
+
+/* 선택 객체 작업 섹션 */
+.selection-actions {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.selection-actions h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-action:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.btn-action.delete:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+}
+
+.btn-action .material-symbols-outlined {
+    font-size: 16px;
+}
+
+/* 개별 속성 섹션 */
+.individual-property {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.individual-property h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* 도구 패널 하단 (설명서 버튼) */
+.tool-panel-footer {
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+.help-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 13px;
+}
+
+.help-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.help-btn .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* 모달 오버레이 */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+/* 설명서 모달 - 새로운 디자인 */
+.manual-modal {
+    /*
+      사용 설명서는 "학습용 화면"입니다.
+      따라서 일반 모달보다 더 넓고, 정보 구조(탭/콘텐츠/카드)가 명확해야 합니다.
+      - 좌측에는 탭 네비게이션을 세로로 고정해 탐색이 쉽도록 합니다.
+      - 우측에는 콘텐츠가 넓게 보이도록 하여 가독성을 확보합니다.
+    */
+    width: 920px;
+    max-width: min(92vw, 920px);
+    height: 680px;
+    max-height: 88vh;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.manual-modal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-primary);
+}
+
+.header-title .material-symbols-outlined {
+    font-size: 24px;
+    color: var(--accent-primary);
+}
+
+.header-title h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.manual-modal .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.manual-modal .modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.manual-container {
+    flex: 1;
+    /*
+      레이아웃을 "좌측 탭 + 우측 콘텐츠"로 바꿉니다.
+      기존 가로 탭(상단)은 내용이 많아질수록 답답하고, 모바일/작은 화면에서 깨지기 쉽습니다.
+    */
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+/* 탭 네비게이션 */
+.manual-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 200px;
+    padding: 14px;
+    border-right: 1px solid var(--border-color);
+    border-bottom: none;
+    background: var(--bg-tertiary);
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 12px;
+    text-align: left;
+    width: 100%;
+}
+
+.tab-btn .material-symbols-outlined {
+    font-size: 22px;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.tab-btn.active {
+    color: var(--accent-primary);
+    background: var(--bg-secondary);
+    box-shadow: 0 0 0 1px var(--border-color);
+}
+
+/* 탭 컨텐츠 영역 */
+.manual-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+    background: var(--bg-secondary);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 카드 그리드 레이아웃 */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+/* 설명서 카드 스타일 */
+.manual-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.manual-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    border-color: var(--accent-primary);
+}
+
+.card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-primary);
+}
+
+.card-icon .material-symbols-outlined {
+    font-size: 26px;
+}
+
+.card-icon kbd {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.card-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.card-info p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* 단축키 리스트 스타일 */
+.shortcut-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.key-combo {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.key-combo kbd {
+    padding: 4px 8px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    box-shadow: 0 2px 0 var(--border-color);
+}
+
+.shortcut-item .action {
+    font-size: 15px;
+    color: var(--text-secondary);
+}
+
+/* 도구 리스트 스타일 */
+.tool-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 12px;
+}
+
+.tool-list li {
+    display: flex;
+    gap: 16px;
+    padding: 16px 16px;
+    background: var(--bg-tertiary);
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+}
+
+.tool-list li .material-symbols-outlined {
+    font-size: 24px;
+    color: var(--accent-primary);
+    padding: 8px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 8px;
+    height: fit-content;
+}
+
+.tool-list li div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tool-list li strong {
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.tool-list li p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* 팁 카드 스타일 */
+.tip-card {
+    display: flex;
+    gap: 16px;
+    padding: 18px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+.tip-card .tip-icon {
+    font-size: 24px;
+    color: #f59e0b;
+}
+
+.tip-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 17px;
+    color: var(--text-primary);
+}
+
+.tip-card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}

@@ -1,0 +1,375 @@
+/* ===========================
+   css/glass_theme.css 역할
+   이 파일은 그래프A의 다크 글래스 테마를 담당하는 스타일시트입니다.
+   styles.css가 레이아웃과 기본 UI 구조를 제공하고
+   glass_theme.css는 색감, 대비, 광택, 그림자 같은 "보이는 느낌"을 강화하는 목적을 가집니다.
+
+   이번 변경의 의도는 다음과 같습니다.
+   - 좌측 사이드바 버튼이 검은 배경에서 흐릿하게 느껴지는 문제를 개선하기 위해
+     명도와 채도를 올리고 기본/호버/활성 상태의 대비를 더 또렷하게 만듭니다.
+   - 상단 좌측 로고 아이콘을 SVG 이미지로 교체했으므로
+     이미지 크기와 정렬이 자연스럽게 보이도록 스타일을 보완합니다.
+   =========================== */
+
+:root {
+    /* Updated Color Palette - More Vibrant & Premium */
+    --bg-primary: #050510;
+    --bg-secondary: rgba(20, 20, 35, 0.90); /* Increased opacity */
+    --bg-tertiary: rgba(30, 30, 50, 0.85); /* Increased opacity */
+    --bg-elevated: rgba(45, 45, 70, 0.90);
+    --bg-hover: rgba(255, 255, 255, 0.12);
+
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+
+    --accent-primary: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.4);
+    --accent-secondary: #06b6d4;
+
+    --text-primary: rgba(255, 255, 255, 0.95);
+    --text-secondary: rgba(255, 255, 255, 0.75);
+    --text-tertiary: rgba(255, 255, 255, 0.5);
+
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    /* Category Colors */
+    --color-select: #3b82f6;
+    --color-points: #f97316;
+    --color-lines: #06b6d4;
+    --color-circles: #10b981;
+    --color-shapes: #8b5cf6;
+    --color-constructions: #eab308;
+    --color-measure: #ec4899;
+    --color-functions: #ef4444;
+}
+
+/* Global Background */
+body {
+    background: radial-gradient(circle at top left, #101025, #050510);
+    color: var(--text-primary);
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+    background: var(--bg-secondary);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+/* Toolbar */
+#toolbar {
+    background: rgba(5, 5, 16, 0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.logo-text {
+    /* 
+      Mk2.1: 텍스트 가독성 개선
+      기존 그라디언트가 너무 화려해 배경과 섞이므로, 
+      더 밝고 단순한 그라디언트로 변경하여 명확하게 보이도록 합니다.
+    */
+    background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+/* 로고 아이콘이 이모지에서 SVG 이미지로 바뀌었기 때문에 이미지용 크기 지정이 필요합니다 */
+.logo-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+/* Sidebar & Panels */
+#tool-panel,
+#property-panel {
+    background: rgba(15, 15, 26, 0.95);
+    backdrop-filter: blur(16px);
+    border-color: var(--glass-border);
+}
+
+.tool-categories,
+.prop-categories {
+    background: rgba(10, 10, 15, 0.6);
+    border-color: var(--glass-border);
+}
+
+/* Sidebar Icons - Functional Meaning & Modern Look */
+.category-btn {
+    position: relative;
+    margin: 6px;
+    padding: 8px 4px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /*
+      기존 opacity 0.8은 "예쁘지만 흐릿한" 느낌을 주어
+      검은 배경에서 버튼 가시성이 떨어질 수 있습니다.
+      기본 상태에서도 충분히 또렷하게 보이도록 불투명도를 높입니다.
+    */
+    opacity: 1;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-btn:hover {
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    opacity: 1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: var(--glass-highlight);
+}
+
+.category-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35), 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.category-btn.active {
+    /*
+      활성 상태는 사용자가 "현재 위치"를 확실히 인지해야 하므로
+      배경 대비를 조금 더 강하게 줍니다.
+    */
+    background: rgba(255, 255, 255, 0.18);
+    opacity: 1;
+    box-shadow: inset 0 0 0 1px var(--glass-highlight), 0 0 20px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.category-btn .material-symbols-outlined {
+    font-size: 28px;
+    transition: all 0.2s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.category-btn .category-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    opacity: 0.95;
+}
+
+.category-btn.active .material-symbols-outlined {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* Category Specific Colors */
+.category-btn[data-category="select"] {
+    color: var(--color-select);
+}
+
+.category-btn[data-category="points"] {
+    color: var(--color-points);
+}
+
+.category-btn[data-category="lines"] {
+    color: var(--color-lines);
+}
+
+.category-btn[data-category="circles"] {
+    color: var(--color-circles);
+}
+
+.category-btn[data-category="shapes"] {
+    color: var(--color-shapes);
+}
+
+.category-btn[data-category="constructions"] {
+    color: var(--color-constructions);
+}
+
+.category-btn[data-category="measure"] {
+    color: var(--color-measure);
+}
+
+.category-btn[data-category="functions"] {
+    color: var(--color-functions);
+}
+
+/* Active Indicator Line */
+.category-btn.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: currentColor;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* Submenu Styling */
+.tool-submenu {
+    background: transparent;
+}
+
+.tool-item {
+    /*
+      좌측 패널 도구 버튼도 배경이 너무 옅으면 "버튼처럼" 보이지 않을 수 있습니다.
+      기본 배경을 약간 올리고, 테두리로 형태를 더 분명하게 만들어 가시성을 올립니다.
+    */
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    transition: all 0.2s;
+}
+
+.tool-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+}
+
+.tool-item.active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+}
+
+/* Mk2.1 단축키 라벨 스타일 (좌측 도구 버튼용) */
+/*
+  styles.css에서 기본 배지 형태를 정의하고
+  glass 테마에서는 대비를 조금 더 올려 “눈에 띄는 정도”를 강화합니다.
+*/
+.tool-item .tool-shortcut {
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.tool-item:hover .tool-shortcut {
+    border-color: rgba(255, 255, 255, 0.26);
+    background: rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.92);
+}
+
+/* Canvas Floating Controls */
+.canvas-controls,
+.coord-display,
+#chat-panel {
+    background: rgba(20, 20, 35, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+}
+
+.canvas-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid transparent;
+}
+
+.canvas-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--glass-highlight);
+}
+
+/* Input Fields */
+input:not(.coord-input),
+select,
+textarea {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: white !important;
+    font-size: 15px !important;
+    padding: 8px 12px !important;
+    transition: all 0.2s;
+}
+
+input:not(.coord-input):focus,
+select:focus,
+textarea:focus {
+    border-color: var(--accent-primary) !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Modals */
+.modal-content {
+    background: rgba(25, 25, 40, 0.98);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+}
+
+/*
+  사용 설명서 모달은 index.html에서 .modal-content를 사용하지 않고
+  .manual-modal(= .modal.manual-modal)을 사용합니다.
+  그래서 glass 테마를 적용하려면 별도로 스타일을 지정해줘야 합니다.
+*/
+.manual-modal {
+    background: rgba(25, 25, 40, 0.98);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Animations */
+@keyframes glowPulse {
+    0% {
+        box-shadow: 0 0 5px currentColor;
+    }
+
+    50% {
+        box-shadow: 0 0 20px currentColor;
+    }
+
+    100% {
+        box-shadow: 0 0 5px currentColor;
+    }
+}
+
+.tool-item.active .material-symbols-outlined {
+    animation: glowPulse 2s infinite;
+}
+
+/* Typography Enhancements */
+h1,
+h2,
+h3,
+h4 {
+    letter-spacing: -0.5px;
+}
+
+/* Tool Panel Footer */
+.tool-panel-footer {
+    border-top: 1px solid var(--glass-border);
+}
+
+.help-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--glass-border);
+}
+
+.help-btn:hover {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+}

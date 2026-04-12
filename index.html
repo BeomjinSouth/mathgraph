@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<!--
+  index.html 역할
+  이 파일은 그래프A 웹앱의 화면 구조를 정의하는 진입점 문서입니다.
+  상단 툴바, 좌측 도구 패널, 중앙 캔버스, 우측 속성 패널, 각종 모달과 설명서 UI가 여기서 구성됩니다.
+  이번 변경의 의도는 다음과 같습니다.
+  - Mk2.1 버전 표기를 UI와 문서에서 일관되게 보여주기 위함입니다.
+  - 파비콘을 추가해 브라우저 탭에서 앱을 구분하기 쉽게 만들기 위함입니다.
+  - 우측 설정 탭의 AI 설정을 버튼을 한 번 더 누르지 않아도 즉시 보이게 만들기 위함입니다.
+  - 다중 선택 삭제와 단축키 안내가 사용 설명서에서 바로 보이게 만들기 위함입니다.
+-->
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="그래프A - 수학 도형 및 함수 그래프 편집 도구">
+    <title>그래프A Mk2.1</title>
+    <!-- 파비콘은 브라우저 탭과 즐겨찾기 등에서 보이는 앱 아이콘입니다 -->
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/glass_theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        rel="stylesheet">
+    <!-- KaTeX for LaTeX math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- 상단 도구막대 -->
+        <header id="toolbar">
+            <div class="toolbar-section toolbar-left">
+                <div class="logo">
+                    <!-- 로고 아이콘은 파비콘과 동일한 톤의 SVG를 재사용합니다 -->
+                    <img class="logo-icon" src="favicon.svg" alt="">
+                    <span class="logo-text">그래프A</span>
+                    <span class="version">Mk2.1</span>
+                </div>
+            </div>
+
+            <div class="toolbar-section toolbar-center">
+                <!-- 현재 도구 표시 -->
+                <div class="current-tool-display">
+                    <span class="material-symbols-outlined" id="currentToolIcon">arrow_selector_tool</span>
+                    <span id="currentToolName">선택</span>
+                </div>
+            </div>
+
+            <div class="toolbar-section toolbar-right">
+                <button class="action-btn" id="undoBtn" aria-label="실행 취소" title="되돌리기 (Ctrl+Z)">
+                    <span class="material-symbols-outlined">undo</span>
+                </button>
+                <button class="action-btn" id="redoBtn" aria-label="다시 실행" title="다시하기 (Ctrl+Y)">
+                    <span class="material-symbols-outlined">redo</span>
+                </button>
+                <div class="tool-divider"></div>
+                <button class="action-btn" id="exportBtn" aria-label="내보내기" title="내보내기">
+                    <span class="material-symbols-outlined">download</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <main id="main-content">
+            <!-- 왼쪽 도구 패널 (Geogebra 스타일) -->
+            <aside id="tool-panel">
+                <!-- 카테고리 버튼들 -->
+                <div class="tool-categories">
+                    <button class="category-btn active" data-category="select" title="선택">
+                        <span class="material-symbols-outlined">arrow_selector_tool</span>
+                        <span class="category-label">선택</span>
+                    </button>
+                    <button class="category-btn" data-category="points" title="점">
+                        <span class="material-symbols-outlined">fiber_manual_record</span>
+                        <span class="category-label">점</span>
+                    </button>
+                    <button class="category-btn" data-category="lines" title="선">
+                        <span class="material-symbols-outlined">linear_scale</span>
+                        <span class="category-label">선</span>
+                    </button>
+                    <button class="category-btn" data-category="circles" title="원">
+                        <span class="material-symbols-outlined">radio_button_unchecked</span>
+                        <span class="category-label">원</span>
+                    </button>
+                    <button class="category-btn" data-category="shapes" title="도형">
+                        <span class="material-symbols-outlined">pentagon</span>
+                        <span class="category-label">도형</span>
+                    </button>
+                    <button class="category-btn" data-category="constructions" title="작도">
+                        <span class="material-symbols-outlined">construction</span>
+                        <span class="category-label">작도</span>
+                    </button>
+                    <button class="category-btn" data-category="measure" title="측정">
+                        <span class="material-symbols-outlined">square_foot</span>
+                        <span class="category-label">측정</span>
+                    </button>
+                    <button class="category-btn" data-category="functions" title="함수">
+                        <span class="material-symbols-outlined">functions</span>
+                        <span class="category-label">함수</span>
+                    </button>
+                </div>
+
+                <!-- 도구 목록 + 설명서 버튼 래퍼 -->
+                <div class="tool-main-content">
+                    <!-- 세부 도구 패널 -->
+                    <div class="tool-submenu" id="toolSubmenu">
+                        <!-- 선택 도구 -->
+                        <div class="submenu-content active" data-category="select">
+                            <h4>선택</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item active" data-tool="select">
+                                    <span class="material-symbols-outlined">near_me</span>
+                                    <span>선택/이동 <span class="tool-shortcut">(V)</span></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 점 도구 -->
+                        <div class="submenu-content" data-category="points">
+                            <h4>점</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="point">
+                                    <span class="material-symbols-outlined">fiber_manual_record</span>
+                                    <span>점 <span class="tool-shortcut">(D)</span></span>
+                                </button>
+                                <button class="tool-item" data-tool="intersection">
+                                    <span class="material-symbols-outlined">hub</span>
+                                    <span>교점 <span class="tool-shortcut">(I)</span></span>
+                                </button>
+                                <button class="tool-item" data-tool="pointOnObject">
+                                    <span class="material-symbols-outlined">commit</span>
+                                    <span>대상 위의 점</span>
+                                </button>
+                                <button class="tool-item" data-tool="midpoint">
+                                    <span class="material-symbols-outlined">radio_button_checked</span>
+                                    <span>중점 <span class="tool-shortcut">(M)</span></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 선 도구 -->
+                        <div class="submenu-content" data-category="lines">
+                            <h4>선분</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="segment">
+                                    <span class="material-symbols-outlined">horizontal_rule</span>
+                                    <span>선분 <span class="tool-shortcut">(S)</span></span>
+                                </button>
+                            </div>
+                            <h4>직선</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="line">
+                                    <span class="material-symbols-outlined">diagonal_line</span>
+                                    <span>직선 <span class="tool-shortcut">(L)</span></span>
+                                </button>
+                                <button class="tool-item" data-tool="ray">
+                                    <span class="material-symbols-outlined">arrow_right_alt</span>
+                                    <span>반직선 <span class="tool-shortcut">(R)</span></span>
+                                </button>
+                                <button class="tool-item" data-tool="vector">
+                                    <span class="material-symbols-outlined">arrow_outward</span>
+                                    <span>벡터 <span class="tool-shortcut">(W)</span></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 원 도구 -->
+                        <div class="submenu-content" data-category="circles">
+                            <h4>원</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="circle">
+                                    <span class="material-symbols-outlined">radio_button_unchecked</span>
+                                    <span>원 <span class="tool-shortcut">(C)</span></span>
+                                </button>
+                                <button class="tool-item" data-tool="circleThreePoints">
+                                    <span class="material-symbols-outlined">filter_tilt_shift</span>
+                                    <span>세 점 원</span>
+                                </button>
+                            </div>
+                            <h4>호/부채꼴</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="arc">
+                                    <span class="material-symbols-outlined">rss_feed</span>
+                                    <span>호</span>
+                                </button>
+                                <button class="tool-item" data-tool="sector">
+                                    <span class="material-symbols-outlined">donut_small</span>
+                                    <span>부채꼴</span>
+                                </button>
+                                <button class="tool-item" data-tool="circularSegment">
+                                    <span class="material-symbols-outlined">nightlight_round</span>
+                                    <span>활꼴</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 도형 도구 -->
+                        <div class="submenu-content" data-category="shapes">
+                            <h4>다각형</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="polygon">
+                                    <span class="material-symbols-outlined">pentagon</span>
+                                    <span>다각형</span>
+                                </button>
+                            </div>
+                            <h4>입체도형</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="prism">
+                                    <span class="material-symbols-outlined">view_in_ar</span>
+                                    <span>각기둥</span>
+                                </button>
+                                <button class="tool-item" data-tool="pyramid">
+                                    <span class="material-symbols-outlined">details</span>
+                                    <span>각뿔</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 작도 도구 -->
+                        <div class="submenu-content" data-category="constructions">
+                            <h4>평행/수직</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="parallel">
+                                    <span class="material-symbols-outlined">drag_handle</span>
+                                    <span>평행선</span>
+                                </button>
+                                <button class="tool-item" data-tool="perpendicular">
+                                    <span class="material-symbols-outlined">add</span>
+                                    <span>수선</span>
+                                </button>
+                                <button class="tool-item" data-tool="perpendicularBisector">
+                                    <span class="material-symbols-outlined">vertical_align_center</span>
+                                    <span>수직이등분선</span>
+                                </button>
+                            </div>
+                            <h4>이등분선/접선</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="angleBisector">
+                                    <span class="material-symbols-outlined">call_split</span>
+                                    <span>각의 이등분선</span>
+                                </button>
+                                <button class="tool-item" data-tool="tangentCircle">
+                                    <span class="material-symbols-outlined">motion_photos_pause</span>
+                                    <span>원의 접선</span>
+                                </button>
+                                <button class="tool-item" data-tool="tangentFunction">
+                                    <span class="material-symbols-outlined">query_stats</span>
+                                    <span>함수 접선</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 측정 도구 -->
+                        <div class="submenu-content" data-category="measure">
+                            <h4>치수</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="angleDimension">
+                                    <span class="material-symbols-outlined">architecture</span>
+                                    <span>각도 <span class="tool-shortcut">(A)</span></span>
+                                </button>
+                                <button class="tool-item" data-tool="lengthDimension">
+                                    <span class="material-symbols-outlined">architecture</span>
+                                    <span>길이 <span class="tool-shortcut">(E)</span></span>
+                                </button>
+                            </div>
+                            <h4>표시</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="rightAngle">
+                                    <span class="material-symbols-outlined">square_foot</span>
+                                    <span>직각 표시</span>
+                                </button>
+                                <button class="tool-item" data-tool="equalLength">
+                                    <span class="material-symbols-outlined">straighten</span>
+                                    <span>같은 길이</span>
+                                </button>
+                            </div>
+                            <h4>좌표축</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="numberLine">
+                                    <span class="material-symbols-outlined">timeline</span>
+                                    <span>수직선 (N)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 함수 도구 -->
+                        <div class="submenu-content" data-category="functions">
+                            <h4>함수</h4>
+                            <div class="tool-grid">
+                                <button class="tool-item" data-tool="function">
+                                    <span class="material-symbols-outlined">functions</span>
+                                    <span>함수 그래프 <span class="tool-shortcut">(F)</span></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 설명서 버튼 -->
+                    <div class="tool-panel-footer">
+                        <button class="help-btn" id="openManual" title="사용 설명서">
+                            <span class="material-symbols-outlined">help</span>
+                            <span>설명서</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 중앙 캔버스 -->
+            <div id="canvas-container">
+                <canvas id="mainCanvas" aria-label="Graph editing canvas"></canvas>
+
+                <!-- 캔버스 컨트롤 -->
+                <div class="canvas-controls">
+                    <button class="canvas-btn" id="zoomIn" aria-label="확대" title="확대">
+                        <span class="material-symbols-outlined">add</span>
+                    </button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="canvas-btn" id="zoomOut" aria-label="축소" title="축소">
+                        <span class="material-symbols-outlined">remove</span>
+                    </button>
+                    <button class="canvas-btn" id="resetView" aria-label="뷰 초기화" title="뷰 초기화">
+                        <span class="material-symbols-outlined">center_focus_strong</span>
+                    </button>
+                </div>
+
+                <!-- 좌표 표시 -->
+                <div class="coord-display" id="coordDisplay">
+                    <span id="mouseCoords">(0, 0)</span>
+                </div>
+
+                <!--
+                  격자/축 토글 UI(캔버스 우측상단에 떠 있는 플로팅 패널)는 사용자 요청으로 제거했습니다.
+                  현재는 우측 속성 패널의 "보기" 섹션(격자/축 체크박스)에서만 제어합니다.
+                -->
+
+                <!-- 스냅 설정 -->
+                <div class="snap-options">
+                    <label>스냅:</label>
+                    <select id="snapMode">
+                        <option value="integer">정수</option>
+                        <option value="decimal1">소수1자리</option>
+                        <option value="decimal2">소수2자리</option>
+                    </select>
+                </div>
+
+                <!-- 기본 스타일 설정 -->
+                <div class="default-style-options" aria-hidden="true">
+                    <label>색상:</label>
+                    <input type="color" id="defaultColorLegacy" value="#3b82f6" title="기본 색상">
+                    <label>굵기:</label>
+                    <select id="defaultLineWidthLegacy" title="기본 선 굵기">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                </div>
+
+                <!-- 사이드바 토글 버튼 -->
+                <div class="sidebar-toggles">
+                    <button class="canvas-btn" id="toggleMagnet" aria-label="자석 기능 토글" title="자석 기능 (0.5 단위 스냅)">
+                        <span class="material-symbols-outlined">stars</span>
+                    </button>
+                    <button class="canvas-btn" id="toggleLeftSidebar" aria-label="왼쪽 패널 토글" title="왼쪽 패널 토글">
+                        <span class="material-symbols-outlined">left_panel_close</span>
+                    </button>
+                    <button class="canvas-btn" id="toggleRightSidebar" aria-label="오른쪽 패널 토글" title="오른쪽 패널 토글">
+                        <span class="material-symbols-outlined">right_panel_close</span>
+                    </button>
+                    <button class="canvas-btn" id="hideAllPoints" aria-label="모든 점 숨기기/보이기" title="모든 점 숨기기/보이기">
+                        <span class="material-symbols-outlined">visibility_off</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 오른쪽 속성 패널 (Geogebra 스타일) -->
+            <aside id="property-panel">
+                <!-- 카테고리 버튼들 -->
+                <div class="prop-categories">
+                    <button class="prop-category-btn active" data-prop="selection" title="선택 객체">
+                        <span class="material-symbols-outlined">select_all</span>
+                        <span class="prop-category-label">선택</span>
+                    </button>
+                    <button class="prop-category-btn" data-prop="style" title="기본 스타일">
+                        <span class="material-symbols-outlined">palette</span>
+                        <span class="prop-category-label">스타일</span>
+                    </button>
+                    <button class="prop-category-btn" data-prop="objects" title="객체 목록">
+                        <span class="material-symbols-outlined">list</span>
+                        <span class="prop-category-label">목록</span>
+                    </button>
+                    <!--
+                      우측 사이드바에 앱/보기/AI 설정을 모아두기 위한 탭입니다.
+                      기존 상단바(툴바)의 설정 버튼은 제거하고, 사용자가 "여기서 다 한다"는 느낌을 받도록
+                      우측 사이드바 안으로 진입점을 옮깁니다.
+                    -->
+                    <button class="prop-category-btn" data-prop="app" title="앱 설정">
+                        <span class="material-symbols-outlined">settings</span>
+                        <span class="prop-category-label">설정</span>
+                    </button>
+                </div>
+
+                <!-- 세부 패널 -->
+                <div class="prop-submenu">
+                    <!-- 선택 객체 패널 -->
+                    <div class="prop-content active" data-prop="selection">
+                        <div class="empty-state" id="propertyEmptyState">
+                            <span class="material-symbols-outlined">touch_app</span>
+                            <p>객체를 선택하면<br>속성을 편집할 수 있습니다</p>
+                        </div>
+
+                        <!-- 선택된 객체 작업 -->
+                        <div class="selection-actions" id="selectionActions" style="display: none;">
+                            <h4>선택된 객체 (<span id="selectedCount">0</span>개)</h4>
+                            <div class="action-buttons">
+                                <button class="btn-action" id="hideSelection" title="숨기기 (H)">
+                                    <span class="material-symbols-outlined">visibility_off</span>
+                                    숨기기
+                                </button>
+                                <button class="btn-action" id="copySelection" title="복사 (Ctrl+C)">
+                                    <span class="material-symbols-outlined">content_copy</span>
+                                    복사
+                                </button>
+                                <button class="btn-action" id="pasteSelection" title="붙여넣기 (Ctrl+V)">
+                                    <span class="material-symbols-outlined">content_paste</span>
+                                    붙여넣기
+                                </button>
+                                <button class="btn-action delete" id="deleteSelection" title="삭제 (Delete)">
+                                    <span class="material-symbols-outlined">delete</span>
+                                    삭제(Delete)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 개별 객체 속성 -->
+                        <div class="individual-property" id="individualProperty" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- 기본 스타일 패널 -->
+                    <div class="prop-content" data-prop="style">
+                        <h4>기본 스타일 설정</h4>
+                        <div class="style-section">
+                            <div class="property-row">
+                                <label>색상:</label>
+                                <input type="color" id="bulkColor" value="#3b82f6">
+                                <button class="btn-small" id="applyBulkColor">모두 적용</button>
+                            </div>
+                            <div class="property-row">
+                                <label>굵기:</label>
+                                <select id="bulkLineWidth">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                                <button class="btn-small" id="applyBulkWidth">모두 적용</button>
+                            </div>
+                        </div>
+                        <h4>새 객체 기본값</h4>
+                        <div class="style-section">
+                            <div class="property-row">
+                                <label>색상:</label>
+                                <input type="color" id="defaultColor" value="#3b82f6">
+                            </div>
+                            <div class="property-row">
+                                <label>굵기:</label>
+                                <select id="defaultLineWidth">
+                                    <option value="1">1</option>
+                                    <option value="2" selected>2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                        </div>
+                        <h4>스냅 설정</h4>
+                        <div class="style-section">
+                            <div class="property-row">
+                                <label>좌표 스냅:</label>
+                                <select id="snapModePanel">
+                                    <option value="integer">정수</option>
+                                    <option value="decimal1">소수1자리</option>
+                                    <option value="decimal2">소수2자리</option>
+                                </select>
+                            </div>
+                        </div>
+                        <h4>라벨 크기</h4>
+                        <div class="style-section">
+                            <div class="property-row">
+                                <label>기본 글씨 크기:</label>
+                                <select id="defaultLabelSize">
+                                    <option value="10">10px</option>
+                                    <option value="14">14px</option>
+                                    <option value="18">18px</option>
+                                    <option value="24">24px</option>
+                                    <option value="30" selected>30px</option>
+                                    <option value="36">36px</option>
+                                    <option value="42">42px</option>
+                                    <option value="50">50px</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 객체 목록 패널 -->
+                    <div class="prop-content" data-prop="objects">
+                        <h4>객체 목록</h4>
+                        <div class="object-list" id="objectList">
+                            <div class="empty-state">
+                                <span class="material-symbols-outlined">add_circle_outline</span>
+                                <p>도구를 선택하고 캔버스에 그려보세요</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--
+                      앱 설정 패널
+                      - 보기 옵션(격자/축)은 기존 캔버스 우측상단 토글과 "항상 동기화"됩니다.
+                      - AI 설정은 기존처럼 모달을 열되, 진입점을 우측 사이드바로 옮깁니다.
+                    -->
+                    <div class="prop-content" data-prop="app">
+                        <h4>보기</h4>
+                        <div class="style-section">
+                            <div class="property-row">
+                                <label for="showGridPanel">격자</label>
+                                <input type="checkbox" id="showGridPanel" checked>
+                            </div>
+                            <div class="property-row">
+                                <label for="showXAxisPanel">X축</label>
+                                <input type="checkbox" id="showXAxisPanel" checked>
+                            </div>
+                            <div class="property-row">
+                                <label for="showYAxisPanel">Y축</label>
+                                <input type="checkbox" id="showYAxisPanel" checked>
+                            </div>
+                            <div class="property-row">
+                                <label for="showHiddenPanel">숨김 객체 보기</label>
+                                <input type="checkbox" id="showHiddenPanel">
+                            </div>
+                        </div>
+
+                        <h4>AI</h4>
+                        <div class="style-section">
+                            <!--
+                              기존에는 'AI 설정' 버튼을 눌러 모달을 열어야 했습니다.
+                              요청 사항에 맞게 설정 탭에서 바로 보이도록 인라인 폼을 제공합니다.
+                              주의
+                              - 여기의 id들은 모달과 충돌하지 않도록 Panel 접미사를 사용합니다.
+                              - 실제 저장 로직은 js/main.js에서 setupAISettingsPanel로 연결됩니다.
+                            -->
+                            <p class="input-hint" style="margin-bottom: 12px;">
+                                AI 기능을 사용하려면 OpenAI 또는 Google Gemini API 키가 필요합니다.
+                                <br><a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API 키 발급</a> |
+                                <a href="https://aistudio.google.com/apikey" target="_blank">Gemini API 키 발급</a>
+                            </p>
+                            <div class="input-group">
+                                <label>AI 프로바이더</label>
+                                <select id="aiProviderPanel">
+                                    <option value="openai">OpenAI</option>
+                                    <option value="gemini">Google Gemini</option>
+                                    <option value="local">로컬 (API 없음)</option>
+                                </select>
+                            </div>
+                            <div class="input-group" id="apiKeyGroupPanel">
+                                <label>API 키</label>
+                                <input type="password" id="aiApiKeyPanel" placeholder="sk-... 또는 AI...">
+                                <button class="btn-small" id="toggleApiKeyVisibilityPanel" style="margin-top:4px;" type="button" aria-label="Toggle API key visibility">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </button>
+                            </div>
+                            <div class="input-group">
+                                <label>모델</label>
+                                <select id="aiModelPanel">
+                                    <option value="gpt-5.2">GPT-5.2 (권장)</option>
+                                    <option value="gpt-5.2-pro">GPT-5.2 Pro (더 정확)</option>
+                                    <option value="gpt-5-mini">GPT-5 Mini (빠름/저렴)</option>
+                                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" id="saveAISettingsPanel" type="button">
+                                저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- AI 채팅 패널 (플로팅) -->
+        <div id="chat-panel" class="collapsed">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <span class="material-symbols-outlined">smart_toy</span>
+                    <span>AI 어시스턴트</span>
+                </div>
+                <button class="icon-btn" id="toggleChat" aria-label="Toggle AI chat">
+                    <span class="material-symbols-outlined">expand_less</span>
+                </button>
+            </div>
+            <div class="chat-body">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message assistant">
+                        <div class="message-content">
+                            안녕하세요! 그림을 만들어 드릴게요. 원하는 도형이나 함수를 설명해주세요. 📐
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="input-wrapper">
+                        <button class="icon-btn" id="uploadImage" aria-label="이미지 업로드" title="이미지 업로드">
+                            <span class="material-symbols-outlined">add_photo_alternate</span>
+                        </button>
+                        <input type="file" id="imageInput" accept="image/*" hidden>
+                        <textarea id="chatInput" placeholder="예: 삼각형 ABC와 외접원을 그려줘" rows="1"></textarea>
+                        <button class="send-btn" id="sendMessage" aria-label="메시지 전송" title="전송">
+                            <span class="material-symbols-outlined">send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- 함수 입력 모달 -->
+        <div id="functionModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>함수 그래프 입력</h3>
+                    <button class="icon-btn modal-close" aria-label="닫기">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label>f(x) =</label>
+                        <input type="text" id="functionExpression" placeholder="예: x^2 - 2*x + 1">
+                    </div>
+                    <div class="input-hint">
+                        <p>지원하는 표현:</p>
+                        <ul>
+                            <li>연산: +, -, *, /, ^</li>
+                            <li>함수: sin, cos, tan, sqrt, abs, log, ln, exp</li>
+                            <li>상수: pi, e</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary modal-cancel">취소</button>
+                    <button class="btn btn-primary" id="addFunction">추가</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 내보내기 모달 -->
+        <div id="exportModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>내보내기</h3>
+                    <button class="icon-btn modal-close" aria-label="닫기">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="export-options">
+                        <div class="option-group">
+                            <label>형식</label>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="exportFormat" value="png" checked>
+                                    <span>PNG</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="exportFormat" value="svg">
+                                    <span>SVG</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="option-group" id="pngOptions">
+                            <label>배율</label>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="exportScale" value="1" checked>
+                                    <span>1x</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="exportScale" value="2">
+                                    <span>2x</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="exportScale" value="3">
+                                    <span>3x</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="option-group">
+                            <label>옵션</label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="exportBackground" checked>
+                                <span>배경 포함</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="exportGrid">
+                                <span>격자 포함</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="exportAxes" checked>
+                                <span>축 포함</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary modal-cancel">취소</button>
+                    <button class="btn btn-primary" id="doExport">다운로드</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 삭제 확인 모달 -->
+        <div id="deleteModal" class="modal hidden">
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h3>객체 삭제</h3>
+                    <button class="icon-btn modal-close" aria-label="닫기">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="deleteMessage">이 객체를 삭제하시겠습니까?</p>
+                    <div id="dependentsList" class="dependents-list hidden">
+                        <p class="warning">⚠️ 다음 객체들도 함께 삭제됩니다:</p>
+                        <ul id="dependentsItems"></ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary modal-cancel">취소</button>
+                    <button class="btn btn-danger" id="confirmDelete">삭제</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI 설정 모달 -->
+        <div id="aiSettingsModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>🤖 AI 설정</h3>
+                    <button class="icon-btn modal-close" aria-label="닫기">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="input-hint" style="margin-bottom: 16px;">
+                        AI 기능을 사용하려면 OpenAI 또는 Google Gemini API 키가 필요합니다.
+                        <br><a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API 키 발급</a> |
+                        <a href="https://aistudio.google.com/apikey" target="_blank">Gemini API 키 발급</a>
+                    </p>
+                    <div class="input-group">
+                        <label>AI 프로바이더</label>
+                        <select id="aiProvider">
+                            <option value="openai">OpenAI</option>
+                            <option value="gemini">Google Gemini</option>
+                            <option value="local">로컬 (API 없음)</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="apiKeyGroup">
+                        <label>API 키</label>
+                        <input type="password" id="aiApiKey" placeholder="sk-... 또는 AI...">
+                        <button class="btn-small" id="toggleApiKeyVisibility" style="margin-top:4px;">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <label>모델</label>
+                        <select id="aiModel">
+                            <option value="gpt-5.2">GPT-5.2 (권장)</option>
+                            <option value="gpt-5.2-pro">GPT-5.2 Pro (더 정확)</option>
+                            <option value="gpt-5-mini">GPT-5 Mini (빠름/저렴)</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary modal-cancel">취소</button>
+                    <button class="btn btn-primary" id="saveAISettings">저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 설명서 모달 -->
+        <div class="modal-overlay" id="manualModal">
+            <div class="modal manual-modal">
+                <div class="modal-header">
+                    <div class="header-title">
+                        <span class="material-symbols-outlined">menu_book</span>
+                        <h3>사용 설명서</h3>
+                    </div>
+                    <button class="modal-close material-symbols-outlined" aria-label="닫기">close</button>
+                </div>
+
+                <div class="manual-container">
+                    <!-- 탭 버튼 영역 -->
+                    <div class="manual-tabs">
+                        <button class="tab-btn active" data-tab="basic">
+                            <span class="material-symbols-outlined">mouse</span>
+                            기본 조작
+                        </button>
+                        <button class="tab-btn" data-tab="shortcuts">
+                            <span class="material-symbols-outlined">keyboard</span>
+                            단축키
+                        </button>
+                        <button class="tab-btn" data-tab="tools">
+                            <span class="material-symbols-outlined">architecture</span>
+                            도구
+                        </button>
+                        <button class="tab-btn" data-tab="tips">
+                            <span class="material-symbols-outlined">lightbulb</span>
+                            팁
+                        </button>
+                    </div>
+
+                    <!-- 탭 컨텐츠 영역 -->
+                    <div class="manual-body">
+                        <!-- 기본 조작 탭 -->
+                        <div class="tab-content active" id="tab-basic">
+                            <div class="card-grid">
+                                <div class="manual-card">
+                                    <div class="card-icon"><span class="material-symbols-outlined">ads_click</span>
+                                    </div>
+                                    <div class="card-info">
+                                        <h4>클릭</h4>
+                                        <p>객체를 하나만 선택할 때 사용합니다.</p>
+                                    </div>
+                                </div>
+                                <div class="manual-card">
+                                    <div class="card-icon"><span class="material-symbols-outlined">drag_pan</span></div>
+                                    <div class="card-info">
+                                        <h4>드래그</h4>
+                                        <p>객체를 이동하거나 여러 개를 박스로 선택합니다.</p>
+                                    </div>
+                                </div>
+                                <div class="manual-card">
+                                    <div class="card-icon"><span class="material-symbols-outlined">mouse</span></div>
+                                    <div class="card-info">
+                                        <h4>휠 스크롤</h4>
+                                        <p>화면을 확대하거나 축소합니다.</p>
+                                    </div>
+                                </div>
+                                <div class="manual-card">
+                                    <div class="card-icon"><span class="material-symbols-outlined">pan_tool</span></div>
+                                    <div class="card-info">
+                                        <h4>Space + 드래그</h4>
+                                        <p>화면을 자유롭게 이동(패닝)합니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 단축키 탭 -->
+                        <div class="tab-content" id="tab-shortcuts">
+                            <div class="shortcut-list">
+                                <div class="shortcut-item">
+                                    <span class="key-combo"><kbd>Ctrl</kbd> + <kbd>Z</kbd></span>
+                                    <span class="action">실행 취소</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo"><kbd>Ctrl</kbd> + <kbd>Y</kbd></span>
+                                    <span class="action">다시 실행</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo"><kbd>Delete</kbd></span>
+                                    <span class="action">선택된 객체 삭제</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo"><kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>V</kbd></span>
+                                    <span class="action">복사 / 붙여넣기</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo"><kbd>Esc</kbd></span>
+                                    <span class="action">작업 취소 / 선택 해제</span>
+                                </div>
+
+                                <!-- 도구 단축키는 "자주 쓰는 것" 위주로 배치합니다 -->
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">near_me</span>
+                                        <kbd>V</kbd>
+                                    </span>
+                                    <span class="action">선택 / 이동 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">fiber_manual_record</span>
+                                        <kbd>D</kbd>
+                                    </span>
+                                    <span class="action">점 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">horizontal_rule</span>
+                                        <kbd>S</kbd>
+                                    </span>
+                                    <span class="action">선분 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">diagonal_line</span>
+                                        <kbd>L</kbd>
+                                    </span>
+                                    <span class="action">직선 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">arrow_right_alt</span>
+                                        <kbd>R</kbd>
+                                    </span>
+                                    <span class="action">반직선 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">arrow_outward</span>
+                                        <kbd>W</kbd>
+                                    </span>
+                                    <span class="action">벡터 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">architecture</span>
+                                        <kbd>E</kbd>
+                                    </span>
+                                    <span class="action">길이 치수</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">angle</span>
+                                        <kbd>A</kbd>
+                                    </span>
+                                    <span class="action">각도 치수</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">radio_button_unchecked</span>
+                                        <kbd>C</kbd>
+                                    </span>
+                                    <span class="action">원 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">functions</span>
+                                        <kbd>F</kbd>
+                                    </span>
+                                    <span class="action">함수 그래프 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">hub</span>
+                                        <kbd>I</kbd>
+                                    </span>
+                                    <span class="action">교점 도구</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="key-combo">
+                                        <span class="material-symbols-outlined">radio_button_checked</span>
+                                        <kbd>M</kbd>
+                                    </span>
+                                    <span class="action">중점 도구</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 도구 탭 -->
+                        <div class="tab-content" id="tab-tools">
+                            <ul class="tool-list">
+                                <li>
+                                    <span class="material-symbols-outlined">radio_button_unchecked</span>
+                                    <div>
+                                        <strong>점 도구</strong>
+                                        <p>원하는 위치 클릭 (교차점 자동 스냅)</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="material-symbols-outlined">horizontal_rule</span>
+                                    <div>
+                                        <strong>선 도구</strong>
+                                        <p>시작점과 끝점을 순서대로 클릭</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="material-symbols-outlined">circle</span>
+                                    <div>
+                                        <strong>원 도구</strong>
+                                        <p>중심점 클릭 후 원주 위의 한 점 클릭</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="material-symbols-outlined">pentagon</span>
+                                    <div>
+                                        <strong>다각형</strong>
+                                        <p>꼭짓점을 순서대로 찍고 시작점을 다시 클릭하여 닫기</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- 팁 탭 -->
+                        <div class="tab-content" id="tab-tips">
+                            <div class="tip-card">
+                                <span class="material-symbols-outlined tip-icon">stars</span>
+                                <div>
+                                    <h4>자석 모드</h4>
+                                    <p>하단의 ⭐ 아이콘을 켜면 0.5 단위로 좌표가 딱딱 맞게 찍힙니다.</p>
+                                </div>
+                            </div>
+                            <div class="tip-card">
+                                <span class="material-symbols-outlined tip-icon">library_add_check</span>
+                                <div>
+                                    <h4>다중 선택</h4>
+                                    <p>Shift 키를 누른 채 클릭하거나 드래그하면 여러 객체를 동시에 선택할 수 있습니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 토스트 알림 -->
+        <div id="toast-container"></div>
+
+        <!-- 수직선 모달 -->
+        <div id="numberLineModal" class="dialog-overlay hidden">
+            <div class="dialog-content" style="width: 400px;">
+                <h3>수직선 설정</h3>
+                <div class="form-group">
+                    <label for="nlStart">시작값</label>
+                    <input type="number" id="nlStart" value="-5" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="nlEnd">끝값</label>
+                    <input type="number" id="nlEnd" value="5" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="nlStep">간격</label>
+                    <input type="number" id="nlStep" value="1" step="any" min="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="nlY">Y 위치</label>
+                    <input type="number" id="nlY" value="0" step="any">
+                </div>
+                <div class="dialog-buttons">
+                    <button class="btn-secondary" id="nlCancelBtn">취소</button>
+                    <button class="btn-primary" id="nlCreateBtn">생성</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
