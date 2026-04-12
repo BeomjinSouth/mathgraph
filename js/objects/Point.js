@@ -23,6 +23,147 @@ export class FreePoint extends GeoObject {
         this.valid = true;
     }
 
+    functionLineIntersection(funcObj, lineObj) {
+        const fn = funcObj.getFunction();
+        const p1 = lineObj.getPoint1();
+        const p2 = lineObj.getPoint2();
+
+        if (!fn || !p1 || !p2) {
+            return [];
+        }
+
+        const domainMin = funcObj.xMin;
+        const domainMax = funcObj.xMax;
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const intersections = [];
+
+        const addCandidate = (point) => {
+            if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+                return;
+            }
+
+            const inDomain = (domainMin === null || point.x >= domainMin - MathUtils.EPSILON)
+                && (domainMax === null || point.x <= domainMax + MathUtils.EPSILON);
+            if (!inDomain || !this.isInRange(lineObj, point)) {
+                return;
+            }
+
+            const isDuplicate = intersections.some(existing =>
+                existing.distanceTo(point) <= 1e-6
+            );
+            if (!isDuplicate) {
+                intersections.push(point);
+            }
+        };
+
+        if (Math.abs(dx) <= MathUtils.EPSILON) {
+            const x = p1.x;
+            if ((domainMin !== null && x < domainMin - MathUtils.EPSILON)
+                || (domainMax !== null && x > domainMax + MathUtils.EPSILON)) {
+                return [];
+            }
+
+            const y = fn(x);
+            if (!Number.isFinite(y)) {
+                return [];
+            }
+
+            addCandidate(new Vec2(x, y));
+            return intersections;
+        }
+
+        const slope = dy / dx;
+        const intercept = p1.y - slope * p1.x;
+        const lineY = (x) => slope * x + intercept;
+        const difference = (x) => fn(x) - lineY(x);
+
+        let minX;
+        let maxX;
+
+        if (lineObj.type === ObjectType.SEGMENT) {
+            minX = Math.min(p1.x, p2.x);
+            maxX = Math.max(p1.x, p2.x);
+        } else if (domainMin !== null && domainMax !== null) {
+            minX = domainMin;
+            maxX = domainMax;
+        } else {
+            const centerX = (p1.x + p2.x) / 2;
+            const span = Math.max(Math.abs(dx), Math.abs(dy), 10) * 20;
+            minX = centerX - span;
+            maxX = centerX + span;
+        }
+
+        if (domainMin !== null) minX = Math.max(minX, domainMin);
+        if (domainMax !== null) maxX = Math.min(maxX, domainMax);
+
+        if (!Number.isFinite(minX) || !Number.isFinite(maxX) || minX > maxX) {
+            return [];
+        }
+
+        const steps = 256;
+        const epsilon = 1e-7;
+        const samples = [];
+
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const x = minX + (maxX - minX) * t;
+            const value = difference(x);
+
+            if (Number.isFinite(value)) {
+                samples.push({ x, value });
+            }
+        }
+
+        const bisectRoot = (leftX, rightX, leftValue) => {
+            let a = leftX;
+            let b = rightX;
+            let fa = leftValue;
+
+            for (let i = 0; i < 50; i++) {
+                const mid = (a + b) / 2;
+                const fm = difference(mid);
+                if (!Number.isFinite(fm)) {
+                    break;
+                }
+                if (Math.abs(fm) <= epsilon) {
+                    return mid;
+                }
+                if (fa * fm <= 0) {
+                    b = mid;
+                } else {
+                    a = mid;
+                    fa = fm;
+                }
+                if (Math.abs(b - a) <= epsilon) {
+                    return (a + b) / 2;
+                }
+            }
+
+            return (a + b) / 2;
+        };
+
+        for (let i = 0; i < samples.length; i++) {
+            const current = samples[i];
+            if (Math.abs(current.value) <= epsilon) {
+                addCandidate(new Vec2(current.x, lineY(current.x)));
+            }
+
+            const next = samples[i + 1];
+            if (!next) continue;
+
+            if (current.value * next.value < 0) {
+                const rootX = bisectRoot(current.x, next.x, current.value);
+                const rootY = fn(rootX);
+                if (Number.isFinite(rootY)) {
+                    addCandidate(new Vec2(rootX, rootY));
+                }
+            }
+        }
+
+        return intersections;
+    }
+
     render(canvas) {
         if (!this.visible || !this.valid) return;
 

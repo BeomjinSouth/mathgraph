@@ -1174,13 +1174,23 @@ class GraphAApp {
     /**
      * 렌더링
      */
+    getRenderOrderedObjects() {
+        const pointLikeTypes = new Set(['point', 'pointOnObject', 'intersection', 'midpoint']);
+        const objects = this.objectManager.getAllObjects();
+
+        return [
+            ...objects.filter(obj => !pointLikeTypes.has(obj.type)),
+            ...objects.filter(obj => pointLikeTypes.has(obj.type))
+        ];
+    }
+
     render() {
         this.canvas.clear();
         this.canvas.drawGrid();
         this.canvas.drawAxes();
 
         // 모든 객체 렌더링
-        for (const obj of this.objectManager.getAllObjects()) {
+        for (const obj of this.getRenderOrderedObjects()) {
             if (obj.visible) {
                 obj.render(this.canvas);
             } else if (this.showHiddenObjects) {
@@ -1544,7 +1554,7 @@ class GraphAApp {
         if (includeGrid) this.canvas.drawGrid();
         if (includeAxes) this.canvas.drawAxes();
 
-        for (const obj of this.objectManager.getAllObjects()) {
+        for (const obj of this.getRenderOrderedObjects()) {
             if (obj.visible) {
                 obj.render(this.canvas);
             }
@@ -1598,6 +1608,108 @@ class GraphAApp {
     /**
      * 채팅 설정
      */
+    renderSceneToCanvas(targetCanvas, {
+        scale = 1,
+        includeBackground = true,
+        includeGrid = false,
+        includeAxes = true
+    } = {}) {
+        const targetCtx = targetCanvas.getContext('2d');
+        targetCanvas.width = this.canvas.width * scale;
+        targetCanvas.height = this.canvas.height * scale;
+
+        targetCtx.save();
+        targetCtx.scale(scale, scale);
+
+        if (includeBackground) {
+            targetCtx.fillStyle = '#ffffff';
+            targetCtx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+
+        const originalCtx = this.canvas.ctx;
+        const oldShowGrid = this.canvas.showGrid;
+        const oldShowAxes = this.canvas.showAxes;
+
+        this.canvas.ctx = targetCtx;
+        this.canvas.showGrid = includeGrid;
+        this.canvas.showAxes = includeAxes;
+
+        if (includeGrid) this.canvas.drawGrid();
+        if (includeAxes) this.canvas.drawAxes();
+
+        for (const obj of this.getRenderOrderedObjects()) {
+            if (obj.visible) {
+                obj.render(this.canvas);
+            }
+        }
+
+        this.canvas.ctx = originalCtx;
+        this.canvas.showGrid = oldShowGrid;
+        this.canvas.showAxes = oldShowAxes;
+        targetCtx.restore();
+    }
+
+    doExport(options = {}) {
+        const format = options.format ?? document.querySelector('input[name="exportFormat"]:checked')?.value ?? 'png';
+        const scale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
+        const includeBackground = options.includeBackground ?? document.getElementById('exportBackground')?.checked ?? true;
+        const includeGrid = options.includeGrid ?? document.getElementById('exportGrid')?.checked ?? false;
+        const includeAxes = options.includeAxes ?? document.getElementById('exportAxes')?.checked ?? true;
+
+        const tempCanvas = document.createElement('canvas');
+        this.renderSceneToCanvas(tempCanvas, {
+            scale,
+            includeBackground,
+            includeGrid,
+            includeAxes
+        });
+
+        if (format === 'png') {
+            const link = document.createElement('a');
+            link.download = `graph_${Date.now()}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        } else {
+            this.exportSVG({
+                includeBackground,
+                includeGrid,
+                includeAxes,
+                sourceCanvas: tempCanvas
+            });
+        }
+
+        this.showToast(`${format.toUpperCase()} ?뚯씪濡??대낫?덉뒿?덈떎.`, 'success');
+    }
+
+    exportSVG(options = {}) {
+        const includeBackground = options.includeBackground ?? true;
+        const includeGrid = options.includeGrid ?? false;
+        const includeAxes = options.includeAxes ?? true;
+        const sourceCanvas = options.sourceCanvas ?? document.createElement('canvas');
+
+        if (!options.sourceCanvas) {
+            this.renderSceneToCanvas(sourceCanvas, {
+                includeBackground,
+                includeGrid,
+                includeAxes
+            });
+        }
+
+        const pngDataUrl = sourceCanvas.toDataURL('image/png');
+        const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${this.canvas.width}" height="${this.canvas.height}">
+<image href="${pngDataUrl}" width="${this.canvas.width}" height="${this.canvas.height}" />
+</svg>`;
+
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `graph_${Date.now()}.svg`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
     setupChat() {
         const input = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendMessage');
