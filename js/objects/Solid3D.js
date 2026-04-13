@@ -139,6 +139,25 @@ function calculate3DCenter(points) {
     return new Vec3(sumX / n, sumY / n, sumZ / n);
 }
 
+function getCycleEdgeIndex(u, v, offset, count) {
+    const start = u - offset;
+    const end = v - offset;
+
+    if (start < 0 || end < 0 || start >= count || end >= count) {
+        return null;
+    }
+
+    if (end === start + 1) {
+        return start;
+    }
+
+    if (start === 0 && end === count - 1) {
+        return count - 1;
+    }
+
+    return null;
+}
+
 
 
 /**
@@ -333,13 +352,15 @@ export class Prism extends GeoObject {
                 // 어느 타입인지 판별
                 let type = 'vertical';
                 let index = u;
+                const baseIndex = getCycleEdgeIndex(u, v, 0, n);
+                const topIndex = getCycleEdgeIndex(u, v, n, n);
 
-                if (u < n && v < n) {
+                if (baseIndex !== null) {
                     type = 'base';
-                    index = Math.min(u, v);
-                } else if (u >= n && v >= n) {
+                    index = baseIndex;
+                } else if (topIndex !== null) {
                     type = 'top';
-                    index = Math.min(u, v) - n;
+                    index = topIndex;
                 } else {
                     type = 'vertical';
                     index = u < n ? u : v;
@@ -818,10 +839,11 @@ export class Pyramid extends GeoObject {
                 // 어느 타입인지 판별
                 let type = 'lateral';
                 let index = u;
+                const baseIndex = getCycleEdgeIndex(u, v, 0, n);
 
-                if (u < n && v < n) {
+                if (baseIndex !== null) {
                     type = 'base';
-                    index = Math.min(u, v);
+                    index = baseIndex;
                 } else {
                     type = 'lateral';
                     index = u < n ? u : v - n;

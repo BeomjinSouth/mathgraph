@@ -22,6 +22,11 @@
 - [x] Step 4
 - [x] Step 5
 
+## Supplemental Updates
+
+- 2026-04-13: Fixed Solid3D hidden-edge mapping for prism/pyramid closing edges so dashed lines no longer jump to edge index `0`.
+- 2026-04-13: Added regression coverage in `tests/solid3d-hidden-edges.test.js`.
+
 ## Decisions
 
 - Decision: Focus this batch on visible reliability gaps instead of starting a brand-new feature area.
@@ -41,6 +46,8 @@
   - `node --test tests/number-line-ai-parity.test.js`
   - `node --test tests/function-line-intersection.test.js`
   - `node --test tests/ai-flow.test.js`
+  - `node --test tests/solid3d-hidden-edges.test.js`
+  - `node --test`
 - Result:
   - Passed
 

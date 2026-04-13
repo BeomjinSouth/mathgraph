@@ -41,6 +41,9 @@
 - 2026-04-13: 각기둥/각뿔 `Ctrl+드래그` 회전 구현
 - 2026-04-13: 회전 안내 문구 및 정적 빌드 확인 완료
 
+- 2026-04-13: Fixed prism/pyramid hidden-edge indexing so the closing edge (`last -> first`) can be dashed correctly
+- 2026-04-13: Added Solid3D hidden-edge regression tests for pyramid and prism wrap-around edges
+
 ## Follow-ups
 
 - 필요 시 3D 회전 전용 핸들/패널 UX는 후속 작업으로 분리
