@@ -486,6 +486,27 @@ export class Prism extends GeoObject {
         return false;
     }
 
+    getDragTargets(objectManager) {
+        const ids = [...this.baseVertexIds, ...this.topVertexIds];
+        return ids
+            .map(id => objectManager.getObject(id))
+            .filter(point =>
+                point &&
+                point.isDraggable?.() &&
+                typeof point.getPosition === 'function' &&
+                typeof point.setPosition === 'function'
+            );
+    }
+
+    getRotationCenter() {
+        const points = [...this._baseVertices, ...this._topVertices];
+        if (points.length === 0) {
+            return null;
+        }
+
+        return points.reduce((sum, point) => sum.add(point), new Vec2(0, 0)).div(points.length);
+    }
+
     setDepthVector(x, y) {
         this.depthVector = new Vec2(x, y);
     }
@@ -921,6 +942,27 @@ export class Pyramid extends GeoObject {
 
     isDraggable() {
         return false;
+    }
+
+    getDragTargets(objectManager) {
+        const ids = [...this.baseVertexIds, this.apexId];
+        return ids
+            .map(id => objectManager.getObject(id))
+            .filter(point =>
+                point &&
+                point.isDraggable?.() &&
+                typeof point.getPosition === 'function' &&
+                typeof point.setPosition === 'function'
+            );
+    }
+
+    getRotationCenter() {
+        const points = [...this._baseVertices, this._apex].filter(Boolean);
+        if (points.length === 0) {
+            return null;
+        }
+
+        return points.reduce((sum, point) => sum.add(point), new Vec2(0, 0)).div(points.length);
     }
 
     /**

@@ -12,6 +12,7 @@ export class SelectTool extends Tool {
     constructor() {
         super('select');
         this.isDragging = false;
+        this.isRotating = false;
         this.isBoxSelecting = false;
         this.isShiftDragging = false; // Mk.2: Shift+드래그 평행이동
         this.draggedObjects = [];
@@ -34,6 +35,126 @@ export class SelectTool extends Tool {
 
     getCursor() {
         return 'default';
+    }
+
+    getObjectRotationCenter(object, app) {
+        if (!object?.getRotationCenter) {
+            return null;
+        }
+
+        const center = object.getRotationCenter(app.objectManager);
+        if (!center || !Number.isFinite(center.x) || !Number.isFinite(center.y)) {
+            return null;
+        }
+
+        return center;
+    }
+
+    isRotationGesture(object, event, app) {
+        const modifierPressed = event.ctrlKey || event.metaKey;
+        return modifierPressed &&
+            this.getObjectDragTargets(object, app).length > 0 &&
+            !!this.getObjectRotationCenter(object, app);
+    }
+
+    getObjectDragTargets(object, app) {
+        if (!object?.getDragTargets) {
+            return [];
+        }
+
+        return object.getDragTargets(app.objectManager).filter(target =>
+            target &&
+            target.isDraggable?.() &&
+            typeof target.getPosition === 'function' &&
+            typeof target.setPosition === 'function'
+        );
+    }
+
+    collectSelectionDragTargets(objects, app) {
+        const pointsToMove = new Set();
+
+        for (const obj of objects) {
+            if (!obj) continue;
+
+            if (obj.type === 'point' && obj.isDraggable?.()) {
+                pointsToMove.add(obj);
+                continue;
+            }
+
+            const customTargets = this.getObjectDragTargets(obj, app);
+            if (customTargets.length > 0) {
+                for (const target of customTargets) {
+                    pointsToMove.add(target);
+                }
+                continue;
+            }
+
+            if (!obj.dependencies) continue;
+
+            for (const depId of obj.dependencies) {
+                const dep = app.objectManager.getObject(depId);
+                if (
+                    dep?.type === 'point' &&
+                    dep.isDraggable?.() &&
+                    typeof dep.getPosition === 'function' &&
+                    typeof dep.setPosition === 'function'
+                ) {
+                    pointsToMove.add(dep);
+                }
+            }
+        }
+
+        return Array.from(pointsToMove);
+    }
+
+    beginPointDrag(targets, mathPos, app) {
+        if (!targets || targets.length === 0) {
+            return false;
+        }
+
+        this.draggedObjects = targets;
+        this.isDragging = true;
+        this.isMultiDrag = true;
+        this.multiDragStart = mathPos.clone();
+
+        this.dragStartPositions = new Map();
+        for (const obj of this.draggedObjects) {
+            if (obj.getPosition) {
+                this.dragStartPositions.set(obj.id, obj.getPosition());
+            }
+        }
+
+        app.historyManager.startDrag(this.draggedObjects);
+        return true;
+    }
+
+    beginObjectRotation(object, mathPos, app) {
+        const rotationCenter = this.getObjectRotationCenter(object, app);
+        const rotationTargets = this.getObjectDragTargets(object, app);
+
+        if (!rotationCenter || rotationTargets.length === 0) {
+            return false;
+        }
+
+        const startVector = mathPos.sub(rotationCenter);
+        if (startVector.lengthSq() < 1e-6) {
+            return false;
+        }
+
+        this.isRotating = true;
+        this.rotationObject = object;
+        this.rotationCenter = rotationCenter.clone();
+        this.rotationStartAngle = startVector.angle();
+        this.draggedObjects = rotationTargets;
+        this.dragStartPositions = new Map();
+
+        for (const target of rotationTargets) {
+            this.dragStartPositions.set(target.id, target.getPosition());
+        }
+
+        app.historyManager.startDrag(rotationTargets);
+        app.canvasElement.style.cursor = 'grabbing';
+        return true;
     }
 
     onMouseDown(mathPos, screenPos, event, app) {
@@ -76,53 +197,30 @@ export class SelectTool extends Tool {
                 }
             }
 
-            // 다중 선택된 상태에서 선택된 객체 중 하나를 클릭하면 모두 이동
-            const selectedObjects = app.objectManager.getSelectedObjects();
+            if (this.isRotationGesture(clickedObj, event, app) &&
+                this.beginObjectRotation(clickedObj, mathPos, app)) {
+                // Ctrl+드래그 회전 시작
+            } else {
+                // 다중 선택된 상태에서 선택된 객체 중 하나를 클릭하면 모두 이동
+                const selectedObjects = app.objectManager.getSelectedObjects();
 
-            if (clickedObj.selected && selectedObjects.length > 1) {
-                // 선택된 객체 중 자유 점 + 선택된 선분/원의 의존 점도 포함
-                const pointsToMove = new Set();
-
-                for (const obj of selectedObjects) {
-                    if (obj.type === 'point' && obj.isDraggable?.()) {
-                        pointsToMove.add(obj);
-                    }
-                    // 선분/원 등이 선택되면 그 의존 점 중 자유 점도 이동 대상
-                    else if (obj.dependencies) {
-                        for (const depId of obj.dependencies) {
-                            const dep = app.objectManager.getObject(depId);
-                            if (dep?.type === 'point' && dep.isDraggable?.()) {
-                                pointsToMove.add(dep);
-                            }
-                        }
-                    }
-                }
-
-                if (pointsToMove.size > 0) {
-                    this.draggedObjects = Array.from(pointsToMove);
+                if (clickedObj.selected && selectedObjects.length > 1) {
+                    const pointsToMove = this.collectSelectionDragTargets(selectedObjects, app);
+                    this.beginPointDrag(pointsToMove, mathPos, app);
+                } else if (clickedObj.isDraggable && clickedObj.isDraggable()) {
+                    // 단일 객체 드래그
+                    this.draggedObjects = [clickedObj];
                     this.isDragging = true;
-                    this.isMultiDrag = true;
-                    this.multiDragStart = mathPos.clone();
+                    this.isMultiDrag = false;
 
-                    // 각 점의 시작 위치 저장
-                    this.dragStartPositions = new Map();
-                    for (const obj of this.draggedObjects) {
-                        if (obj.getPosition) {
-                            this.dragStartPositions.set(obj.id, obj.getPosition());
-                        }
+                    if (clickedObj.startDrag) {
+                        clickedObj.startDrag(mathPos, app.canvas, app.objectManager);
                     }
                     app.historyManager.startDrag(this.draggedObjects);
+                } else {
+                    const dragTargets = this.getObjectDragTargets(clickedObj, app);
+                    this.beginPointDrag(dragTargets, mathPos, app);
                 }
-            } else if (clickedObj.isDraggable && clickedObj.isDraggable()) {
-                // 단일 객체 드래그
-                this.draggedObjects = [clickedObj];
-                this.isDragging = true;
-                this.isMultiDrag = false;
-
-                if (clickedObj.startDrag) {
-                    clickedObj.startDrag(mathPos, app.canvas, app.objectManager);
-                }
-                app.historyManager.startDrag(this.draggedObjects);
             }
         } else {
             // 빈 공간 클릭
@@ -130,38 +228,8 @@ export class SelectTool extends Tool {
 
             // 이미 선택된 객체가 있고, Shift 키 안 눌렸으면 다중 드래그 시작
             if (selectedObjects.length > 0 && !event.shiftKey) {
-                // 선택된 객체 중 자유 점 + 선택된 선분/원의 의존 점도 포함
-                const pointsToMove = new Set();
-
-                for (const obj of selectedObjects) {
-                    if (obj.type === 'point' && obj.isDraggable?.()) {
-                        pointsToMove.add(obj);
-                    }
-                    // 선분/원 등이 선택되면 그 의존 점 중 자유 점도 이동 대상
-                    else if (obj.dependencies) {
-                        for (const depId of obj.dependencies) {
-                            const dep = app.objectManager.getObject(depId);
-                            if (dep?.type === 'point' && dep.isDraggable?.()) {
-                                pointsToMove.add(dep);
-                            }
-                        }
-                    }
-                }
-
-                if (pointsToMove.size > 0) {
-                    this.draggedObjects = Array.from(pointsToMove);
-                    this.isDragging = true;
-                    this.isMultiDrag = true;
-                    this.multiDragStart = mathPos.clone();
-
-                    // 각 점의 시작 위치 저장
-                    this.dragStartPositions = new Map();
-                    for (const obj of this.draggedObjects) {
-                        if (obj.getPosition) {
-                            this.dragStartPositions.set(obj.id, obj.getPosition());
-                        }
-                    }
-                    app.historyManager.startDrag(this.draggedObjects);
+                const pointsToMove = this.collectSelectionDragTargets(selectedObjects, app);
+                if (this.beginPointDrag(pointsToMove, mathPos, app)) {
                     app.render();
                     return;
                 }
@@ -182,6 +250,32 @@ export class SelectTool extends Tool {
         // Mk.2: 드래그 박스 선택 중
         if (this.isBoxSelecting) {
             this.boxEnd = mathPos.clone();
+            app.render();
+            return;
+        }
+
+        if (this.isRotating && this.draggedObjects.length > 0 && this.rotationCenter && this.dragStartPositions) {
+            const currentVector = mathPos.sub(this.rotationCenter);
+            if (currentVector.lengthSq() < 1e-6) {
+                return;
+            }
+
+            let angleDelta = currentVector.angle() - this.rotationStartAngle;
+            while (angleDelta > Math.PI) angleDelta -= Math.PI * 2;
+            while (angleDelta < -Math.PI) angleDelta += Math.PI * 2;
+
+            for (const obj of this.draggedObjects) {
+                const startPos = this.dragStartPositions.get(obj.id);
+                if (!startPos || !obj.setPosition) {
+                    continue;
+                }
+
+                const rotated = startPos.sub(this.rotationCenter).rotate(angleDelta).add(this.rotationCenter);
+                obj.setPosition(rotated.x, rotated.y);
+            }
+
+            app.objectManager.updateAll();
+            app.canvasElement.style.cursor = 'grabbing';
             app.render();
             return;
         }
@@ -218,7 +312,10 @@ export class SelectTool extends Tool {
 
             // Mk.2: 개선된 커서 처리
             if (hoveredObj) {
-                if (hoveredObj.isDraggable()) {
+                const dragTargets = this.getObjectDragTargets(hoveredObj, app);
+                if (this.isRotationGesture(hoveredObj, event, app)) {
+                    app.canvasElement.style.cursor = 'crosshair';
+                } else if (hoveredObj.isDraggable?.() || dragTargets.length > 0) {
                     app.canvasElement.style.cursor = 'grab';
                 } else {
                     app.canvasElement.style.cursor = 'pointer';
@@ -325,7 +422,7 @@ export class SelectTool extends Tool {
             app.render();
         }
 
-        if (this.isDragging) {
+        if (this.isDragging || this.isRotating) {
             // 드래그 종료
             for (const obj of this.draggedObjects) {
                 if (obj.endDrag) {
@@ -337,11 +434,16 @@ export class SelectTool extends Tool {
             app.historyManager.endDrag(this.draggedObjects);
 
             this.isDragging = false;
+            this.isRotating = false;
             this.isShiftDragging = false;
             this.isMultiDrag = false;
             this.multiDragStart = null;
+            this.rotationObject = null;
+            this.rotationCenter = null;
+            this.rotationStartAngle = null;
             this.dragStartPositions = null;
             this.draggedObjects = [];
+            app.canvasElement.style.cursor = 'default';
         }
 
         this.clickStartPos = null;
@@ -379,11 +481,15 @@ export class SelectTool extends Tool {
     cancel(app) {
         super.cancel(app);
         this.isDragging = false;
+        this.isRotating = false;
         this.isBoxSelecting = false;
         this.isShiftDragging = false;
         this.draggedObjects = [];
         this.boxStart = null;
         this.boxEnd = null;
+        this.rotationObject = null;
+        this.rotationCenter = null;
+        this.rotationStartAngle = null;
         app.objectManager.clearSelection();
         app.render();
     }

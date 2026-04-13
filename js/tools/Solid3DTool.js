@@ -46,7 +46,7 @@ export class PrismTool extends Tool {
     onMouseDown(mathPos, screenPos, event, app) {
         let point = app.objectManager.findPointAt(mathPos, 8, app.canvas);
 
-        if (!point) {
+        if (!point && this.phase === 'base') {
             point = app.objectManager.createPoint(mathPos.x, mathPos.y);
             app.historyManager.recordCreate(point);
         }
@@ -72,7 +72,9 @@ export class PrismTool extends Tool {
 
         } else {
             // 높이점 선택
-            this.heightPoint = point;
+            this.heightPoint = point || {
+                getPosition: () => mathPos.clone()
+            };
             this.completePrism(app);
         }
 
@@ -101,20 +103,10 @@ export class PrismTool extends Tool {
             const basePos = baseVertex.getPosition();
             const topPos = basePos.add(heightVector);
 
-            // 밑면 점의 라벨에 ' 추가 (예: A -> A')
-            let topLabel = (baseVertex.label || '') + "'";
-
-            // 새로운 윗면 점 생성
-            const topPoint = app.objectManager.createPoint(topPos.x, topPos.y, { label: topLabel });
+            // 윗면 점도 일반 점과 같은 자동 라벨 순서를 사용합니다.
+            const topPoint = app.objectManager.createPoint(topPos.x, topPos.y);
             app.historyManager.recordCreate(topPoint);
             topVertices.push(topPoint);
-        }
-
-        // 높이점을 사용했던 것은 삭제 (사용자가 클릭해서 만든 임시 점)
-        // 단, 높이점이 기존 점이 아닌 새로 만든 점일 경우에만
-        const heightPointIsNew = !this.baseVertices.some(v => v.id === this.heightPoint.id);
-        if (heightPointIsNew) {
-            app.objectManager.removeObject(this.heightPoint.id);
         }
 
         // Prism 생성 (밑면 + 윗면 꼭짓점 ID 모두 전달)
