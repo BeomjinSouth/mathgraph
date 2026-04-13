@@ -47,6 +47,9 @@ Rules:
 These object types are currently supported by the AI validator and runtime patching flow:
 
 - `point`
+- `pointOnLine`
+- `pointOnCircle`
+- `circleCenterPoint`
 - `segment`
 - `line`
 - `ray`
@@ -64,24 +67,28 @@ These object types are currently supported by the AI validator and runtime patch
 - `vector`
 - `rightAngleMarker`
 - `equalLengthMarker`
+- `angleDimension`
+- `lengthDimension`
 - `arc`
 - `sector`
 - `circularSegment`
 - `prism`
 - `pyramid`
+- `numberLine`
 
 Important:
 
 - Use `tangentCircle` and `tangentFunction`, not a generic `tangent` type.
+- `rightAngleMarker`, `equalLengthMarker`, `angleDimension`, and `lengthDimension` are supported in the current runtime.
 - `arc`, `sector`, and `circularSegment` are supported in the current runtime.
 - `prism` and `pyramid` are supported in the current runtime.
+- `numberLine` is supported in the validated AI patch flow with numeric `start`, `end`, `step`, and `y` fields.
 
 ## 4. Runtime Features Outside The AI Schema
 
 The application UI also exposes some tools and view controls that are part of the runtime but are not yet part of the validated AI JSON schema.
 
 - `polygon`
-- `numberLine`
 - settings and view toggles such as grid, x-axis, y-axis, hidden-object visibility, and style controls
 
 Treat those as UI/runtime features unless the schema validator is expanded to accept them.
@@ -102,6 +109,8 @@ Most object types accept the following optional properties:
 | `fillColor` | string | Fill color for area objects |
 | `fillOpacity` | number | Fill opacity between `0` and `1` |
 
+These common style fields are applied during both `create` and `update` operations when the target runtime object supports them.
+
 Reference fields should point to existing object IDs unless the referenced object is created earlier in the same `operations` list.
 
 ## 6. Object-Specific Fields
@@ -119,7 +128,38 @@ Reference fields should point to existing object IDs unless the referenced objec
 }
 ```
 
-### 6.2 Segment / Line / Ray
+### 6.2 Point Helpers
+
+```json
+{
+  "op": "create",
+  "type": "pointOnLine",
+  "lineId": "line_1",
+  "t": 0.5,
+  "label": "M"
+}
+```
+
+```json
+{
+  "op": "create",
+  "type": "pointOnCircle",
+  "circleId": "circle_1",
+  "angle": 1.5708,
+  "label": "P"
+}
+```
+
+```json
+{
+  "op": "create",
+  "type": "circleCenterPoint",
+  "circleId": "circle_1",
+  "label": "O"
+}
+```
+
+### 6.3 Segment / Line / Ray
 
 ```json
 {
@@ -148,7 +188,7 @@ Reference fields should point to existing object IDs unless the referenced objec
 }
 ```
 
-### 6.3 Circle Variants
+### 6.4 Circle Variants
 
 ```json
 {
@@ -169,7 +209,7 @@ Reference fields should point to existing object IDs unless the referenced objec
 }
 ```
 
-### 6.4 Arc / Sector / Circular Segment
+### 6.5 Arc / Sector / Circular Segment
 
 ```json
 {
@@ -206,7 +246,7 @@ Reference fields should point to existing object IDs unless the referenced objec
 }
 ```
 
-### 6.5 Tangent Objects
+### 6.6 Tangent Objects
 
 ```json
 {
@@ -226,7 +266,7 @@ Reference fields should point to existing object IDs unless the referenced objec
 }
 ```
 
-### 6.6 Function
+### 6.7 Function
 
 ```json
 {
@@ -239,7 +279,7 @@ Reference fields should point to existing object IDs unless the referenced objec
 
 Use `*` for multiplication in expressions. The runtime parser also accepts common function names such as `sin`, `cos`, `tan`, `sqrt`, `abs`, `log`, `ln`, and `exp`.
 
-### 6.7 Vector
+### 6.8 Vector
 
 ```json
 {
@@ -250,7 +290,7 @@ Use `*` for multiplication in expressions. The runtime parser also accepts commo
 }
 ```
 
-### 6.8 Markers And 3D
+### 6.9 Markers And Dimensions
 
 ```json
 {
@@ -270,6 +310,62 @@ Use `*` for multiplication in expressions. The runtime parser also accepts commo
   "segment2Id": "S2"
 }
 ```
+
+```json
+{
+  "op": "create",
+  "type": "angleDimension",
+  "vertexId": "B",
+  "point1Id": "A",
+  "point2Id": "C"
+}
+```
+
+```json
+{
+  "op": "create",
+  "type": "lengthDimension",
+  "segmentId": "AB"
+}
+```
+
+### 6.10 Number Line
+
+```json
+{
+  "op": "create",
+  "type": "numberLine",
+  "start": -5,
+  "end": 5,
+  "step": 1,
+  "y": 0,
+  "showArrows": true
+}
+```
+
+Required fields for `numberLine` are `start`, `end`, `step`, and `y`.
+Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared style fields from Section 5.
+
+`numberLine` also supports the shared style fields, plus optional `tickHeight` and `customMarks` when you need finer runtime control.
+
+```json
+{
+  "op": "update",
+  "id": "number_line_1",
+  "start": -10,
+  "end": 10,
+  "step": 2,
+  "y": 1,
+  "showArrows": false,
+  "tickHeight": 0.2,
+  "customMarks": [
+    { "value": 0, "label": "O" },
+    { "value": 4, "label": "4" }
+  ]
+}
+```
+
+### 6.11 3D Objects
 
 ```json
 {
@@ -336,3 +432,11 @@ Use `*` for multiplication in expressions. The runtime parser also accepts commo
 - Use only validated create `type` values.
 - Prefer concrete object IDs and keep references in creation order.
 - Avoid unsupported legacy shapes like `action`, `changes`, or a generic `tangent` type.
+
+## 9. Maintenance Notes
+
+### 2026-04-13 Recovery And Fallback Revalidation
+
+- `js/ai/AIService.js` was restored to a parse-valid baseline after a broken intermediate edit and reconnected to the shared `parseAIJSONPayload()` helper.
+- Deterministic local fallback is revalidated for delete-safety, circle center/radius prompts, graph-function prompts, midpoint requests, tangent-to-function prompts, standard-form circle equations, and linear equations.
+- The AI request context now includes richer serialized object data (`id`, coordinates, expressions, dependencies, and number-line fields) so provider-backed natural-language requests can reference existing objects more reliably.

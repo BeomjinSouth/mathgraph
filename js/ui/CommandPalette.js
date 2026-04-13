@@ -64,8 +64,8 @@ export class CommandPalette {
             { name: '확대', category: '뷰', action: () => { this.app.canvas.zoom(1.2); this.app.render(); this.app.updateZoomDisplay(); } },
             { name: '축소', category: '뷰', action: () => { this.app.canvas.zoom(0.8); this.app.render(); this.app.updateZoomDisplay(); } },
             { name: '뷰 초기화', category: '뷰', action: () => { this.app.canvas.resetView(); this.app.render(); this.app.updateZoomDisplay(); } },
-            { name: '격자 토글', category: '뷰', action: () => { this.app.canvas.showGrid = !this.app.canvas.showGrid; this.app.render(); } },
-            { name: '축 토글', category: '뷰', action: () => { this.app.canvas.showAxes = !this.app.canvas.showAxes; this.app.render(); } },
+            { name: '격자 토글', category: '뷰', action: () => { this.app.setGridVisibility(!this.app.canvas.showGrid); } },
+            { name: '축 토글', category: '뷰', action: () => { this.app.toggleAxesVisibility(); } },
 
             // 내보내기
             { name: 'PNG로 내보내기', category: '내보내기', action: () => this.app.exportPNG() },

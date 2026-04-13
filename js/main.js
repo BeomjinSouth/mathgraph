@@ -48,9 +48,6 @@ import { AlgebraInput } from './ui/AlgebraInput.js';
 import { CommandPalette } from './ui/CommandPalette.js';
 import { SettingsManager } from './core/SettingsManager.js';
 
-// Mk.2: 설정 관리
-import { SettingsManager } from './core/SettingsManager.js';
-
 /**
  * 그래프A 애플리케이션
  */
@@ -257,24 +254,15 @@ class GraphAApp {
         const showXAxisPanel = document.getElementById('showXAxisPanel');
         const showYAxisPanel = document.getElementById('showYAxisPanel');
 
-        const syncShowGridFromPanel = (checked) => {
-            this.canvas.showGrid = checked;
-            this.render();
-        };
-
-        const syncShowXAxisFromPanel = (checked) => {
-            this.canvas.showXAxis = checked;
-            this.render();
-        };
-
-        const syncShowYAxisFromPanel = (checked) => {
-            this.canvas.showYAxis = checked;
-            this.render();
-        };
-
-        showGridPanel?.addEventListener('change', (e) => syncShowGridFromPanel(e.target.checked));
-        showXAxisPanel?.addEventListener('change', (e) => syncShowXAxisFromPanel(e.target.checked));
-        showYAxisPanel?.addEventListener('change', (e) => syncShowYAxisFromPanel(e.target.checked));
+        showGridPanel?.addEventListener('change', (e) => {
+            this.setGridVisibility(e.target.checked, { syncInputs: false });
+        });
+        showXAxisPanel?.addEventListener('change', (e) => {
+            this.setAxesVisibility(e.target.checked, this.canvas.showYAxis, { syncInputs: false });
+        });
+        showYAxisPanel?.addEventListener('change', (e) => {
+            this.setAxesVisibility(this.canvas.showXAxis, e.target.checked, { syncInputs: false });
+        });
 
         // 숨김 객체 보기 토글
         const showHiddenPanel = document.getElementById('showHiddenPanel');
@@ -293,6 +281,7 @@ class GraphAApp {
         if (showGridPanel) this.canvas.showGrid = showGridPanel.checked;
         if (showXAxisPanel) this.canvas.showXAxis = showXAxisPanel.checked;
         if (showYAxisPanel) this.canvas.showYAxis = showYAxisPanel.checked;
+        this.syncViewToggleInputs();
         this.showHiddenObjects = showHiddenPanel?.checked || false;
 
         // 사이드바 토글
@@ -336,7 +325,8 @@ class GraphAApp {
         //   해당 플로팅 UI를 제거했기 때문에 관련 이벤트 리스너도 함께 제거합니다.
 
         // 채팅 패널 토글
-        document.getElementById('toggleChat')?.addEventListener('click', () => {
+        document.getElementById('toggleChat')?.addEventListener('click', (e) => {
+            e.stopPropagation();
             document.getElementById('chat-panel')?.classList.toggle('collapsed');
         });
 
@@ -1166,7 +1156,7 @@ class GraphAApp {
                 // 안내 문구
                 const helpRow = document.createElement('div');
                 helpRow.className = 'property-row help-text';
-                helpRow.innerHTML = `<small style="color: #888;">💡 모서리를 클릭하면 해당 모서리가 강조됩니다.</small>`;
+                helpRow.innerHTML = `<small style="color: #888;">💡 드래그하면 이동, Ctrl+드래그하면 회전합니다. 모서리를 클릭하면 해당 모서리가 강조됩니다.</small>`;
                 container.appendChild(helpRow);
             }
         }
@@ -1183,6 +1173,49 @@ class GraphAApp {
             ...objects.filter(obj => !pointLikeTypes.has(obj.type)),
             ...objects.filter(obj => pointLikeTypes.has(obj.type))
         ];
+    }
+
+    areAxesVisible() {
+        return this.canvas.showXAxis || this.canvas.showYAxis;
+    }
+
+    syncViewToggleInputs() {
+        const showGridPanel = document.getElementById('showGridPanel');
+        const showXAxisPanel = document.getElementById('showXAxisPanel');
+        const showYAxisPanel = document.getElementById('showYAxisPanel');
+
+        if (showGridPanel) showGridPanel.checked = !!this.canvas.showGrid;
+        if (showXAxisPanel) showXAxisPanel.checked = !!this.canvas.showXAxis;
+        if (showYAxisPanel) showYAxisPanel.checked = !!this.canvas.showYAxis;
+    }
+
+    setGridVisibility(visible, { render = true, syncInputs = true } = {}) {
+        this.canvas.showGrid = !!visible;
+
+        if (syncInputs) {
+            this.syncViewToggleInputs();
+        }
+        if (render) {
+            this.render();
+        }
+    }
+
+    setAxesVisibility(xVisible, yVisible, { render = true, syncInputs = true } = {}) {
+        this.canvas.showXAxis = !!xVisible;
+        this.canvas.showYAxis = !!yVisible;
+
+        if (syncInputs) {
+            this.syncViewToggleInputs();
+        }
+        if (render) {
+            this.render();
+        }
+    }
+
+    toggleAxesVisibility() {
+        const nextVisible = !this.areAxesVisible();
+        this.setAxesVisibility(nextVisible, nextVisible);
+        return nextVisible;
     }
 
     render() {
@@ -1516,7 +1549,8 @@ class GraphAApp {
      */
     doExport(options = {}) {
         const format = options.format ?? document.querySelector('input[name="exportFormat"]:checked')?.value ?? 'png';
-        const scale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
+        const requestedScale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
+        const scale = format === 'png' ? requestedScale : 1;
         const includeBackground = options.includeBackground ?? document.getElementById('exportBackground')?.checked ?? true;
         const includeGrid = options.includeGrid ?? document.getElementById('exportGrid')?.checked ?? false;
         const includeAxes = options.includeAxes ?? document.getElementById('exportAxes')?.checked ?? true;
@@ -1629,11 +1663,13 @@ class GraphAApp {
 
         const originalCtx = this.canvas.ctx;
         const oldShowGrid = this.canvas.showGrid;
-        const oldShowAxes = this.canvas.showAxes;
+        const oldShowXAxis = this.canvas.showXAxis;
+        const oldShowYAxis = this.canvas.showYAxis;
 
         this.canvas.ctx = targetCtx;
         this.canvas.showGrid = includeGrid;
-        this.canvas.showAxes = includeAxes;
+        this.canvas.showXAxis = includeAxes;
+        this.canvas.showYAxis = includeAxes;
 
         if (includeGrid) this.canvas.drawGrid();
         if (includeAxes) this.canvas.drawAxes();
@@ -1646,13 +1682,478 @@ class GraphAApp {
 
         this.canvas.ctx = originalCtx;
         this.canvas.showGrid = oldShowGrid;
-        this.canvas.showAxes = oldShowAxes;
+        this.canvas.showXAxis = oldShowXAxis;
+        this.canvas.showYAxis = oldShowYAxis;
         targetCtx.restore();
+    }
+
+    escapeSVG(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    }
+
+    buildSVGPath(points, close = false) {
+        if (!points || points.length === 0) return '';
+
+        const commands = points.map((point, index) => {
+            const prefix = index === 0 ? 'M' : 'L';
+            return `${prefix} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+        });
+
+        if (close) {
+            commands.push('Z');
+        }
+
+        return commands.join(' ');
+    }
+
+    buildSVGStrokeAttributes(obj, { fill = 'none', fillOpacity = null } = {}) {
+        const attrs = [
+            `stroke="${this.escapeSVG(obj.color || '#111827')}"`,
+            `stroke-width="${obj.lineWidth || 2}"`,
+            `stroke-linecap="round"`,
+            `stroke-linejoin="round"`,
+            `fill="${this.escapeSVG(fill)}"`
+        ];
+
+        if (obj.dashed) {
+            attrs.push('stroke-dasharray="5 5"');
+        }
+        if (fillOpacity !== null) {
+            attrs.push(`fill-opacity="${fillOpacity}"`);
+        }
+
+        return attrs.join(' ');
+    }
+
+    buildSVGGridMarkup() {
+        const bounds = this.canvas.getVisibleBounds();
+        const possibleGaps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
+        const rawGap = 50 / this.canvas.scale;
+        let gap = possibleGaps[possibleGaps.length - 1];
+
+        for (const candidate of possibleGaps) {
+            if (candidate >= rawGap) {
+                gap = candidate;
+                break;
+            }
+        }
+
+        const parts = ['<g id="grid" stroke="#e5e5e5" stroke-width="0.5" fill="none">'];
+        const startX = Math.floor(bounds.minX / gap) * gap;
+        const startY = Math.floor(bounds.minY / gap) * gap;
+
+        for (let x = startX; x <= bounds.maxX; x += gap) {
+            const screenX = this.canvas.toScreen(new Vec2(x, 0)).x;
+            parts.push(
+                `<line x1="${screenX.toFixed(2)}" y1="0" x2="${screenX.toFixed(2)}" y2="${this.canvas.height}" />`
+            );
+        }
+
+        for (let y = startY; y <= bounds.maxY; y += gap) {
+            const screenY = this.canvas.toScreen(new Vec2(0, y)).y;
+            parts.push(
+                `<line x1="0" y1="${screenY.toFixed(2)}" x2="${this.canvas.width}" y2="${screenY.toFixed(2)}" />`
+            );
+        }
+
+        parts.push('</g>');
+        return parts.join('\n');
+    }
+
+    buildSVGAxesMarkup() {
+        const bounds = this.canvas.getVisibleBounds();
+        const origin = this.canvas.toScreen(new Vec2(0, 0));
+        const parts = ['<g id="axes" stroke="#333333" stroke-width="1.5" fill="none">'];
+
+        if (bounds.minY <= 0 && bounds.maxY >= 0) {
+            parts.push(`<line x1="0" y1="${origin.y.toFixed(2)}" x2="${this.canvas.width}" y2="${origin.y.toFixed(2)}" />`);
+            parts.push(
+                `<path d="M ${(this.canvas.width - 10).toFixed(2)} ${(origin.y - 5).toFixed(2)} ` +
+                `L ${this.canvas.width} ${origin.y.toFixed(2)} ` +
+                `L ${(this.canvas.width - 10).toFixed(2)} ${(origin.y + 5).toFixed(2)}" />`
+            );
+        }
+
+        if (bounds.minX <= 0 && bounds.maxX >= 0) {
+            parts.push(`<line x1="${origin.x.toFixed(2)}" y1="0" x2="${origin.x.toFixed(2)}" y2="${this.canvas.height}" />`);
+            parts.push(
+                `<path d="M ${(origin.x - 5).toFixed(2)} 10 ` +
+                `L ${origin.x.toFixed(2)} 0 ` +
+                `L ${(origin.x + 5).toFixed(2)} 10" />`
+            );
+        }
+
+        parts.push('</g>');
+        return parts.join('\n');
+    }
+
+    getSVGLineGeometry(obj) {
+        const point1 = obj.getPoint1 ? obj.getPoint1() : null;
+        const point2 = obj.getPoint2 ? obj.getPoint2() : null;
+
+        if (!point1 || !point2) {
+            return null;
+        }
+
+        const direction = point2.sub(point1);
+        if (direction.length() === 0) {
+            return null;
+        }
+
+        const bounds = this.canvas.getVisibleBounds();
+        const maxDist = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 2;
+
+        if (obj.type === 'segment' || obj.type === 'vector') {
+            return {
+                start: this.canvas.toScreen(point1),
+                end: this.canvas.toScreen(point2)
+            };
+        }
+
+        if (obj.type === 'ray') {
+            const rayEnd = point1.add(direction.normalize().mul(maxDist));
+            return {
+                start: this.canvas.toScreen(point1),
+                end: this.canvas.toScreen(rayEnd)
+            };
+        }
+
+        const unit = direction.normalize();
+        return {
+            start: this.canvas.toScreen(point1.sub(unit.mul(maxDist))),
+            end: this.canvas.toScreen(point1.add(unit.mul(maxDist)))
+        };
+    }
+
+    buildSVGPointMarkup(obj) {
+        const position = obj.getPosition ? obj.getPosition() : obj.position;
+        if (!position) return '';
+
+        const screen = this.canvas.toScreen(position);
+        const radius = obj.pointSize || 4;
+        const fill = this.escapeSVG(obj.color || '#6366f1');
+
+        return [
+            `<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}">`,
+            `<circle cx="${screen.x.toFixed(2)}" cy="${screen.y.toFixed(2)}" r="${(radius + 1.5).toFixed(2)}" fill="#ffffff" />`,
+            `<circle cx="${screen.x.toFixed(2)}" cy="${screen.y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${fill}" />`,
+            '</g>'
+        ].join('');
+    }
+
+    buildSVGLineMarkup(obj) {
+        const geometry = this.getSVGLineGeometry(obj);
+        if (!geometry) return '';
+
+        return `<line x1="${geometry.start.x.toFixed(2)}" y1="${geometry.start.y.toFixed(2)}" ` +
+            `x2="${geometry.end.x.toFixed(2)}" y2="${geometry.end.y.toFixed(2)}" ${this.buildSVGStrokeAttributes(obj)} />`;
+    }
+
+    buildSVGVectorMarkup(obj) {
+        const geometry = this.getSVGLineGeometry(obj);
+        if (!geometry) return '';
+
+        const arrowSize = 10;
+        const dx = geometry.end.x - geometry.start.x;
+        const dy = geometry.end.y - geometry.start.y;
+        const length = Math.hypot(dx, dy);
+
+        if (length < 1) {
+            return this.buildSVGLineMarkup(obj);
+        }
+
+        const ux = dx / length;
+        const uy = dy / length;
+        const px = -uy;
+        const py = ux;
+        const arrowP1 = {
+            x: geometry.end.x - ux * arrowSize - px * arrowSize * 0.4,
+            y: geometry.end.y - uy * arrowSize - py * arrowSize * 0.4
+        };
+        const arrowP2 = {
+            x: geometry.end.x - ux * arrowSize + px * arrowSize * 0.4,
+            y: geometry.end.y - uy * arrowSize + py * arrowSize * 0.4
+        };
+        const color = this.escapeSVG(obj.color || '#ec4899');
+
+        return [
+            `<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}">`,
+            `<line x1="${geometry.start.x.toFixed(2)}" y1="${geometry.start.y.toFixed(2)}" ` +
+            `x2="${geometry.end.x.toFixed(2)}" y2="${geometry.end.y.toFixed(2)}" ${this.buildSVGStrokeAttributes(obj)} />`,
+            `<polygon points="${geometry.end.x.toFixed(2)},${geometry.end.y.toFixed(2)} ` +
+            `${arrowP1.x.toFixed(2)},${arrowP1.y.toFixed(2)} ${arrowP2.x.toFixed(2)},${arrowP2.y.toFixed(2)}" ` +
+            `fill="${color}" />`,
+            '</g>'
+        ].join('');
+    }
+
+    buildSVGCircleMarkup(obj) {
+        const center = obj.getCenter ? obj.getCenter() : null;
+        const radius = obj.getRadius ? obj.getRadius() : null;
+
+        if (!center || radius === null || radius === undefined) {
+            return '';
+        }
+
+        const screenCenter = this.canvas.toScreen(center);
+        const screenRadius = this.canvas.toScreenLength(radius);
+        return `<circle cx="${screenCenter.x.toFixed(2)}" cy="${screenCenter.y.toFixed(2)}" ` +
+            `r="${screenRadius.toFixed(2)}" ${this.buildSVGStrokeAttributes(obj)} />`;
+    }
+
+    sampleArcScreenPoints(obj, samples = 64) {
+        if (!obj.center || !obj.valid) return [];
+
+        const start = obj.startAngle;
+        const end = obj.endAngle;
+        let delta = end - start;
+        while (delta < 0) delta += Math.PI * 2;
+
+        let direction = 1;
+        let sweep = delta;
+        if (obj.mode === 'major') {
+            if (delta <= Math.PI) {
+                direction = -1;
+                sweep = Math.PI * 2 - delta;
+            }
+        } else if (delta > Math.PI) {
+            direction = -1;
+            sweep = Math.PI * 2 - delta;
+        }
+
+        const points = [];
+        for (let i = 0; i <= samples; i++) {
+            const angle = start + direction * sweep * (i / samples);
+            const mathPoint = new Vec2(
+                obj.center.x + obj.radius * Math.cos(angle),
+                obj.center.y + obj.radius * Math.sin(angle)
+            );
+            points.push(this.canvas.toScreen(mathPoint));
+        }
+
+        return points;
+    }
+
+    buildSVGArcMarkup(obj) {
+        const points = this.sampleArcScreenPoints(obj);
+        if (points.length < 2) return '';
+        return `<path d="${this.buildSVGPath(points)}" ${this.buildSVGStrokeAttributes(obj)} />`;
+    }
+
+    buildSVGSectorMarkup(obj) {
+        const points = this.sampleArcScreenPoints(obj);
+        if (points.length < 2 || !obj.center) return '';
+
+        const center = this.canvas.toScreen(obj.center);
+        return `<path d="${this.buildSVGPath([center, ...points], true)}" ` +
+            `${this.buildSVGStrokeAttributes(obj, { fill: obj.fillColor || obj.color, fillOpacity: obj.fillOpacity ?? 0.3 })} />`;
+    }
+
+    buildSVGCircularSegmentMarkup(obj) {
+        const points = this.sampleArcScreenPoints(obj);
+        if (points.length < 2) return '';
+
+        return `<path d="${this.buildSVGPath(points, true)}" ` +
+            `${this.buildSVGStrokeAttributes(obj, { fill: obj.fillColor || obj.color, fillOpacity: obj.fillOpacity ?? 0.3 })} />`;
+    }
+
+    buildSVGFunctionMarkup(obj) {
+        if (!obj.getFunction || !obj.valid) return '';
+
+        const fn = obj.getFunction();
+        if (!fn) return '';
+
+        const bounds = this.canvas.getVisibleBounds();
+        const drawMinX = obj.xMin !== null ? Math.max(bounds.minX, obj.xMin) : bounds.minX;
+        const drawMaxX = obj.xMax !== null ? Math.min(bounds.maxX, obj.xMax) : bounds.maxX;
+
+        if (drawMinX >= drawMaxX) return '';
+
+        const samples = 500;
+        const step = (drawMaxX - drawMinX) / samples;
+        const segments = [];
+        let current = [];
+        let prevY = null;
+        let prevX = null;
+
+        for (let x = drawMinX; x <= drawMaxX; x += step) {
+            const y = fn(x);
+
+            if (Number.isNaN(y) || !Number.isFinite(y)) {
+                if (current.length > 1) {
+                    segments.push(current);
+                }
+                current = [];
+                prevY = null;
+                prevX = null;
+                continue;
+            }
+
+            if (prevY !== null && prevX !== null) {
+                const dy = y - prevY;
+                const dx = x - prevX;
+                const slope = Math.abs(dy / dx);
+                const signChanged = (prevY > 0 && y < 0) || (prevY < 0 && y > 0);
+                const slopeThreshold = Math.max(100, (bounds.maxY - bounds.minY) * 10);
+
+                if ((signChanged && slope > slopeThreshold) || Math.abs(y) > (bounds.maxY - bounds.minY) * 5) {
+                    if (current.length > 1) {
+                        segments.push(current);
+                    }
+                    current = [];
+                }
+            }
+
+            if (y < bounds.minY - 100 || y > bounds.maxY + 100) {
+                if (current.length > 1) {
+                    segments.push(current);
+                }
+                current = [];
+                prevY = y;
+                prevX = x;
+                continue;
+            }
+
+            current.push(this.canvas.toScreen(new Vec2(x, y)));
+            prevY = y;
+            prevX = x;
+        }
+
+        if (current.length > 1) {
+            segments.push(current);
+        }
+
+        return segments.map((points) => {
+            return `<path d="${this.buildSVGPath(points)}" ${this.buildSVGStrokeAttributes(obj)} />`;
+        }).join('\n');
+    }
+
+    buildSVGNumberLineMarkup(obj) {
+        if (!obj.valid) return '';
+
+        const startPos = this.canvas.toScreen(new Vec2(obj.start, obj.y));
+        const endPos = this.canvas.toScreen(new Vec2(obj.end, obj.y));
+        const tickScreenHeight = this.canvas.toScreenLength(obj.tickHeight || 0.15);
+        const color = this.escapeSVG(obj.color || '#111827');
+        const parts = [
+            `<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}" ` +
+            `stroke="${color}" fill="${color}" stroke-width="${obj.lineWidth || 2}">`,
+            `<line x1="${startPos.x.toFixed(2)}" y1="${startPos.y.toFixed(2)}" ` +
+            `x2="${endPos.x.toFixed(2)}" y2="${endPos.y.toFixed(2)}" />`
+        ];
+
+        if (obj.showArrows !== false) {
+            parts.push(
+                `<path d="M ${(startPos.x + 8).toFixed(2)} ${(startPos.y - 4).toFixed(2)} ` +
+                `L ${startPos.x.toFixed(2)} ${startPos.y.toFixed(2)} ` +
+                `L ${(startPos.x + 8).toFixed(2)} ${(startPos.y + 4).toFixed(2)}" fill="none" />`
+            );
+            parts.push(
+                `<path d="M ${(endPos.x - 8).toFixed(2)} ${(endPos.y - 4).toFixed(2)} ` +
+                `L ${endPos.x.toFixed(2)} ${endPos.y.toFixed(2)} ` +
+                `L ${(endPos.x - 8).toFixed(2)} ${(endPos.y + 4).toFixed(2)}" fill="none" />`
+            );
+        }
+
+        for (let value = obj.start; value <= obj.end; value += obj.step) {
+            const rounded = Math.round(value * 1000000) / 1000000;
+            const position = this.canvas.toScreen(new Vec2(rounded, obj.y));
+            parts.push(
+                `<line x1="${position.x.toFixed(2)}" y1="${(position.y - tickScreenHeight).toFixed(2)}" ` +
+                `x2="${position.x.toFixed(2)}" y2="${(position.y + tickScreenHeight).toFixed(2)}" />`
+            );
+        }
+
+        parts.push('</g>');
+        return parts.join('\n');
+    }
+
+    buildSVGObjectMarkup(obj) {
+        switch (obj.type) {
+            case 'point':
+            case 'pointOnObject':
+            case 'intersection':
+            case 'midpoint':
+                return this.buildSVGPointMarkup(obj);
+            case 'segment':
+            case 'line':
+            case 'ray':
+            case 'parallel':
+            case 'perpendicular':
+            case 'perpendicularBisector':
+            case 'angleBisector':
+            case 'tangentCircle':
+            case 'tangentFunction':
+                return this.buildSVGLineMarkup(obj);
+            case 'vector':
+                return this.buildSVGVectorMarkup(obj);
+            case 'circle':
+            case 'circleThreePoints':
+                return this.buildSVGCircleMarkup(obj);
+            case 'function':
+                return this.buildSVGFunctionMarkup(obj);
+            case 'arc':
+                return this.buildSVGArcMarkup(obj);
+            case 'sector':
+                return this.buildSVGSectorMarkup(obj);
+            case 'circularSegment':
+                return this.buildSVGCircularSegmentMarkup(obj);
+            case 'numberLine':
+                return this.buildSVGNumberLineMarkup(obj);
+            default:
+                return '';
+        }
+    }
+
+    buildSVGMarkup({ includeBackground = true, includeGrid = false, includeAxes = true, fallbackDataUrl = null } = {}) {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const parts = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`
+        ];
+
+        if (includeBackground) {
+            parts.push(`<rect width="${width}" height="${height}" fill="${this.escapeSVG(this.canvas.backgroundColor || '#ffffff')}" />`);
+        }
+
+        if (fallbackDataUrl) {
+            parts.push(
+                `<image href="${fallbackDataUrl}" width="${width}" height="${height}" preserveAspectRatio="none" />`
+            );
+        }
+
+        if (includeGrid) {
+            parts.push(this.buildSVGGridMarkup());
+        }
+        if (includeAxes) {
+            parts.push(this.buildSVGAxesMarkup());
+        }
+
+        const objectMarkup = this.getRenderOrderedObjects()
+            .filter((obj) => obj.visible)
+            .map((obj) => this.buildSVGObjectMarkup(obj))
+            .filter(Boolean);
+
+        if (objectMarkup.length > 0) {
+            parts.push('<g id="vector-objects">');
+            parts.push(...objectMarkup);
+            parts.push('</g>');
+        }
+
+        parts.push('</svg>');
+        return parts.join('\n');
     }
 
     doExport(options = {}) {
         const format = options.format ?? document.querySelector('input[name="exportFormat"]:checked')?.value ?? 'png';
-        const scale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
+        const requestedScale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
+        const scale = format === 'png' ? requestedScale : 1;
         const includeBackground = options.includeBackground ?? document.getElementById('exportBackground')?.checked ?? true;
         const includeGrid = options.includeGrid ?? document.getElementById('exportGrid')?.checked ?? false;
         const includeAxes = options.includeAxes ?? document.getElementById('exportAxes')?.checked ?? true;
@@ -1696,11 +2197,12 @@ class GraphAApp {
             });
         }
 
-        const pngDataUrl = sourceCanvas.toDataURL('image/png');
-        const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${this.canvas.width}" height="${this.canvas.height}">
-<image href="${pngDataUrl}" width="${this.canvas.width}" height="${this.canvas.height}" />
-</svg>`;
+        const svg = this.buildSVGMarkup({
+            includeBackground,
+            includeGrid,
+            includeAxes,
+            fallbackDataUrl: sourceCanvas.toDataURL('image/png')
+        });
 
         const blob = new Blob([svg], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -2025,12 +2527,17 @@ class GraphAApp {
         try {
             // 현재 캔버스 상태를 컨텍스트로 전달
             const context = {
-                objects: this.objectManager.getAllObjects().map(o => ({
-                    id: o.id,
-                    type: o.type,
-                    label: o.label,
-                    ...(o.position ? { x: o.position.x, y: o.position.y } : {})
-                }))
+                objects: this.objectManager.getAllObjects().map(o => {
+                    const serialized = typeof o.toJSON === 'function' ? o.toJSON() : {};
+                    return {
+                        ...serialized,
+                        id: o.id,
+                        type: o.type,
+                        label: o.label,
+                        dependencies: Array.isArray(o.dependencies) ? [...o.dependencies] : [],
+                        ...(o.position ? { x: o.position.x, y: o.position.y } : {})
+                    };
+                })
             };
 
             // AIService로 처리

@@ -239,7 +239,7 @@ export class HistoryManager {
     undoPropertyChange(action) {
         const obj = this.objectManager.getObject(action.objectId);
         if (obj) {
-            obj[action.property] = action.oldValue;
+            this.setPropertyValue(obj, action.property, action.oldValue);
             this.objectManager.updateObject(action.objectId);
         }
     }
@@ -247,9 +247,27 @@ export class HistoryManager {
     redoPropertyChange(action) {
         const obj = this.objectManager.getObject(action.objectId);
         if (obj) {
-            obj[action.property] = action.newValue;
+            this.setPropertyValue(obj, action.property, action.newValue);
             this.objectManager.updateObject(action.objectId);
         }
+    }
+
+    setPropertyValue(target, propertyPath, value) {
+        if (!propertyPath.includes('.')) {
+            target[propertyPath] = value;
+            return;
+        }
+
+        const path = propertyPath.split('.');
+        let current = target;
+        for (let i = 0; i < path.length - 1; i++) {
+            current = current?.[path[i]];
+            if (!current) {
+                return;
+            }
+        }
+
+        current[path[path.length - 1]] = value;
     }
 
     undoDrag(action) {

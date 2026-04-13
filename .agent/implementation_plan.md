@@ -212,6 +212,15 @@ mathGraph/
 - [ ] 9.2 버전 표시 업데이트 (index.html)
   - Mk.1 → Mk.2
 
+#### 2026-04-12 진행 메모
+- 입체도형 정점 라벨 가시성과 직접 이동 UX 개선 작업 완료
+- 관련 문서:
+  - `docs/solid3d-vertex-labeling-prd.md`
+  - `.agent/solid3d-vertex-labeling-implementation.md`
+
+#### 2026-04-13 진행 메모
+- 입체도형 회전 상호작용(`Ctrl+드래그`) 추가 작업 완료
+
 ### Phase 10: AI 참고 매뉴얼 확장 [PRD 7]
 - [ ] 10.1 ai-reference.md 확장
   - 새로운 객체 타입 추가 (Arc, Sector, CircularSegment 등)
@@ -386,3 +395,16 @@ mathGraph/
 ### 2026-04-12 Maintenance Note
 - AI reference was synced to the live `operations` / `op` contract.
 - `polygon`, `numberLine`, and settings/view controls are documented as runtime UI features, not AI schema types.
+
+### 2026-04-12 AI Drawing Audit
+- Hardened AI JSON parsing so fenced blocks, prose-wrapped payloads, and array payloads are handled consistently.
+- Improved fallback natural-language drawing for circle center/radius requests, line-like requests, and function graph prompts.
+- Prevented destructive fallback misfires such as turning delete requests into new circle creation.
+- Aligned validator, patch applier, and docs for marker/dimension support and common style fields.
+- Added regression tests for AI parsing, fallback behavior, validator coverage, and patch application.
+
+### 2026-04-12 AI Coverage Expansion
+- Added a deterministic pre-parser for midpoint, parallel, perpendicular, perpendicular bisector, angle bisector, tangent, marker, dimension, arc/sector, circle equation, linear equation, and number-line requests before falling back to the legacy heuristic path.
+- Expanded AI schema/runtime support to include `pointOnLine`, `pointOnCircle`, `circleCenterPoint`, and `numberLine` so natural-language requests can map to more of the existing runtime object APIs.
+- Enriched chat-to-AI context with serialized object data and dependencies so reference-heavy prompts have enough structure to resolve existing objects more reliably.
+- Added regression tests for the new deterministic paths, schema acceptance, and number-line patch application.

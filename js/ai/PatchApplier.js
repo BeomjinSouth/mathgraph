@@ -32,11 +32,12 @@ export class PatchApplier {
         const createdObjects = [];
         const idMap = new Map();
         const rollbackSnapshot = this.createRollbackSnapshot();
+        const stats = { created: 0, updated: 0, deleted: 0 };
 
         try {
             for (const op of operations) {
-                const result = this.applyOperation(op, idMap);
-                if (result.object) {
+                const result = this.applyOperation(op, idMap, stats);
+                if (result.kind === 'create' && result.object) {
                     createdObjects.push(result.object);
                 }
             }
@@ -44,7 +45,7 @@ export class PatchApplier {
             this.objectManager.updateAll();
 
             return PatchResult.success(
-                `${createdObjects.length} objects created`,
+                this.formatSummary(stats),
                 createdObjects
             );
         } catch (error) {
@@ -53,21 +54,22 @@ export class PatchApplier {
         }
     }
 
-    applyOperation(op, idMap) {
+    applyOperation(op, idMap, stats) {
         switch (op.op) {
             case 'create':
-                return this.createObject(op, idMap);
+                return this.createObject(op, idMap, stats);
             case 'update':
-                return this.updateObject(op, idMap);
+                return this.updateObject(op, idMap, stats);
             case 'delete':
-                return this.deleteObject(op, idMap);
+                return this.deleteObject(op, idMap, stats);
             default:
                 throw new Error(`Unsupported operation: ${op.op}`);
         }
     }
 
-    createObject(op, idMap) {
+    createObject(op, idMap, stats) {
         const resolvedOp = this.resolveReferences(op, idMap);
+        const commonParams = this.buildCommonParams(resolvedOp);
 
         let object;
         switch (op.type) {
@@ -75,7 +77,30 @@ export class PatchApplier {
                 object = this.objectManager.createPoint(
                     resolvedOp.x,
                     resolvedOp.y,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
+                );
+                break;
+
+            case 'pointOnLine':
+                object = this.objectManager.createPointOnLine(
+                    resolvedOp.lineId,
+                    resolvedOp.t ?? 0.5,
+                    commonParams
+                );
+                break;
+
+            case 'pointOnCircle':
+                object = this.objectManager.createPointOnCircle(
+                    resolvedOp.circleId,
+                    resolvedOp.angle ?? 0,
+                    commonParams
+                );
+                break;
+
+            case 'circleCenterPoint':
+                object = this.objectManager.createCircleCenterPoint(
+                    resolvedOp.circleId,
+                    commonParams
                 );
                 break;
 
@@ -83,7 +108,7 @@ export class PatchApplier {
                 object = this.objectManager.createSegment(
                     resolvedOp.point1Id,
                     resolvedOp.point2Id,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -91,7 +116,7 @@ export class PatchApplier {
                 object = this.objectManager.createLine(
                     resolvedOp.point1Id,
                     resolvedOp.point2Id,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -99,7 +124,7 @@ export class PatchApplier {
                 object = this.objectManager.createRay(
                     resolvedOp.originId,
                     resolvedOp.directionPointId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -107,7 +132,7 @@ export class PatchApplier {
                 object = this.objectManager.createCircle(
                     resolvedOp.centerId,
                     resolvedOp.pointOnCircleId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -116,7 +141,7 @@ export class PatchApplier {
                     resolvedOp.point1Id,
                     resolvedOp.point2Id,
                     resolvedOp.point3Id,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -125,14 +150,14 @@ export class PatchApplier {
                     resolvedOp.object1Id,
                     resolvedOp.object2Id,
                     null,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
             case 'midpoint':
                 object = this.objectManager.createMidpoint(
                     resolvedOp.segmentId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -140,7 +165,7 @@ export class PatchApplier {
                 object = this.objectManager.createParallelLine(
                     resolvedOp.baseLineId,
                     resolvedOp.throughPointId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -148,14 +173,14 @@ export class PatchApplier {
                 object = this.objectManager.createPerpendicularLine(
                     resolvedOp.throughPointId,
                     resolvedOp.baseLineId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
             case 'perpendicularBisector':
                 object = this.objectManager.createPerpendicularBisector(
                     resolvedOp.segmentId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -163,7 +188,7 @@ export class PatchApplier {
                 object = this.objectManager.createAngleBisector(
                     resolvedOp.line1Id,
                     resolvedOp.line2Id,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -171,7 +196,7 @@ export class PatchApplier {
                 object = this.objectManager.createTangentCircle(
                     resolvedOp.circleId,
                     resolvedOp.tangentPointId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -179,14 +204,14 @@ export class PatchApplier {
                 object = this.objectManager.createTangentFunction(
                     resolvedOp.functionId,
                     resolvedOp.x || 0,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
             case 'function':
                 object = this.objectManager.createFunction(
                     resolvedOp.expression,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -194,7 +219,40 @@ export class PatchApplier {
                 object = this.objectManager.createVector(
                     resolvedOp.startPointId,
                     resolvedOp.endPointId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
+                );
+                break;
+
+            case 'rightAngleMarker':
+                object = this.objectManager.createRightAngleMarker(
+                    resolvedOp.vertexId,
+                    resolvedOp.line1Id,
+                    resolvedOp.line2Id,
+                    commonParams
+                );
+                break;
+
+            case 'equalLengthMarker':
+                object = this.objectManager.createEqualLengthMarker(
+                    resolvedOp.segment1Id,
+                    resolvedOp.segment2Id,
+                    commonParams
+                );
+                break;
+
+            case 'angleDimension':
+                object = this.objectManager.createAngleDimension(
+                    resolvedOp.vertexId,
+                    resolvedOp.point1Id,
+                    resolvedOp.point2Id,
+                    commonParams
+                );
+                break;
+
+            case 'lengthDimension':
+                object = this.objectManager.createLengthDimension(
+                    resolvedOp.segmentId,
+                    commonParams
                 );
                 break;
 
@@ -204,7 +262,7 @@ export class PatchApplier {
                     resolvedOp.startPointId,
                     resolvedOp.endPointId,
                     resolvedOp.mode || 'minor',
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -214,12 +272,7 @@ export class PatchApplier {
                     resolvedOp.startPointId,
                     resolvedOp.endPointId,
                     resolvedOp.mode || 'minor',
-                    {
-                        label: resolvedOp.label,
-                        color: resolvedOp.color,
-                        fillColor: resolvedOp.fillColor,
-                        fillOpacity: resolvedOp.fillOpacity
-                    }
+                    commonParams
                 );
                 break;
 
@@ -229,12 +282,7 @@ export class PatchApplier {
                     resolvedOp.startPointId,
                     resolvedOp.endPointId,
                     resolvedOp.mode || 'minor',
-                    {
-                        label: resolvedOp.label,
-                        color: resolvedOp.color,
-                        fillColor: resolvedOp.fillColor,
-                        fillOpacity: resolvedOp.fillOpacity
-                    }
+                    commonParams
                 );
                 break;
 
@@ -242,7 +290,7 @@ export class PatchApplier {
                 object = this.objectManager.createPrism(
                     resolvedOp.baseVertexIds,
                     resolvedOp.topVertexIds,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
                 break;
 
@@ -250,8 +298,21 @@ export class PatchApplier {
                 object = this.objectManager.createPyramid(
                     resolvedOp.baseVertexIds,
                     resolvedOp.apexId,
-                    { label: resolvedOp.label, color: resolvedOp.color }
+                    commonParams
                 );
+                break;
+
+            case 'numberLine':
+                object = this.objectManager.createNumberLine({
+                    ...commonParams,
+                    ...(resolvedOp.start !== undefined ? { start: resolvedOp.start } : {}),
+                    ...(resolvedOp.end !== undefined ? { end: resolvedOp.end } : {}),
+                    ...(resolvedOp.step !== undefined ? { step: resolvedOp.step } : {}),
+                    ...(resolvedOp.y !== undefined ? { y: resolvedOp.y } : {}),
+                    ...(resolvedOp.showArrows !== undefined ? { showArrows: resolvedOp.showArrows } : {}),
+                    ...(resolvedOp.tickHeight !== undefined ? { tickHeight: resolvedOp.tickHeight } : {}),
+                    ...(resolvedOp.customMarks !== undefined ? { customMarks: resolvedOp.customMarks } : {})
+                });
                 break;
 
             default:
@@ -264,12 +325,13 @@ export class PatchApplier {
 
         if (object) {
             this.historyManager.recordCreate(object);
+            stats.created += 1;
         }
 
-        return { object };
+        return { kind: 'create', object };
     }
 
-    updateObject(op, idMap) {
+    updateObject(op, idMap, stats) {
         const id = idMap.get(op.id) || op.id;
         const object = this.objectManager.getObject(id);
 
@@ -278,37 +340,66 @@ export class PatchApplier {
         }
 
         if (op.x !== undefined && object.position) {
+            this.recordPropertyChange(object, 'position.x', object.position.x, op.x);
             object.position.x = op.x;
         }
         if (op.y !== undefined && object.position) {
+            this.recordPropertyChange(object, 'position.y', object.position.y, op.y);
             object.position.y = op.y;
         }
-        if (op.color !== undefined) {
-            object.color = op.color;
+
+        this.applyPropertyUpdate(object, 'color', op.color);
+        this.applyPropertyUpdate(object, 'label', op.label);
+        this.applyPropertyUpdate(object, 'visible', op.visible);
+        this.applyPropertyUpdate(object, 'lineWidth', op.lineWidth);
+        this.applyPropertyUpdate(object, 'pointSize', op.pointSize);
+        this.applyPropertyUpdate(object, 'fontSize', op.fontSize);
+        this.applyPropertyUpdate(object, 'dashed', op.dashed);
+        this.applyPropertyUpdate(object, 'fillColor', op.fillColor);
+        this.applyPropertyUpdate(object, 'fillOpacity', op.fillOpacity);
+        this.applyPropertyUpdate(object, 'showLabel', op.showLabel);
+        this.applyPropertyUpdate(object, 'expression', op.expression);
+        this.applyPropertyUpdate(object, 'mode', op.mode);
+        this.applyPropertyUpdate(object, 'locked', op.locked);
+        this.applyPropertyUpdate(object, 't', op.t);
+        this.applyPropertyUpdate(object, 'angle', op.angle);
+        this.applyPropertyUpdate(object, 'start', op.start);
+        this.applyPropertyUpdate(object, 'end', op.end);
+        this.applyPropertyUpdate(object, 'step', op.step);
+        this.applyPropertyUpdate(object, 'y', op.y);
+        this.applyPropertyUpdate(object, 'showArrows', op.showArrows);
+        this.applyPropertyUpdate(object, 'tickHeight', op.tickHeight);
+
+        if (op.labelOffset !== undefined && 'labelOffset' in object) {
+            this.recordPropertyChange(object, 'labelOffset', object.labelOffset, op.labelOffset);
+            object.labelOffset = this.cloneValue(op.labelOffset);
         }
-        if (op.label !== undefined) {
-            object.label = op.label;
-        }
-        if (op.visible !== undefined) {
-            object.visible = op.visible;
+
+        if (op.customMarks !== undefined && 'customMarks' in object) {
+            this.recordPropertyChange(object, 'customMarks', object.customMarks, op.customMarks);
+            object.customMarks = this.cloneValue(op.customMarks);
         }
 
         this.objectManager.updateObject(id);
+        stats.updated += 1;
 
-        return { object };
+        return { kind: 'update', object };
     }
 
-    deleteObject(op, idMap) {
+    deleteObject(op, idMap, stats) {
         const id = idMap.get(op.id) || op.id;
         const object = this.objectManager.getObject(id);
 
-        if (object) {
-            const dependents = this.objectManager.getDependents(id).filter(Boolean);
-            this.historyManager.recordDelete([object, ...dependents]);
-            this.objectManager.removeObject(id);
+        if (!object) {
+            throw new Error(`Object not found: ${op.id}`);
         }
 
-        return { object: null };
+        const dependents = this.objectManager.getDependents(id).filter(Boolean);
+        this.historyManager.recordDelete([object, ...dependents]);
+        this.objectManager.removeObject(id);
+        stats.deleted += 1;
+
+        return { kind: 'delete', object: null };
     }
 
     resolveReferences(op, idMap) {
@@ -417,6 +508,67 @@ export class PatchApplier {
         }
 
         return JSON.parse(JSON.stringify(value));
+    }
+
+    buildCommonParams(op) {
+        const params = {};
+        const supportedFields = [
+            'label',
+            'color',
+            'visible',
+            'lineWidth',
+            'pointSize',
+            'fontSize',
+            'dashed',
+            'fillColor',
+            'fillOpacity',
+            'showLabel',
+            'locked'
+        ];
+
+        for (const field of supportedFields) {
+            if (op[field] !== undefined) {
+                params[field] = op[field];
+            }
+        }
+
+        if (op.labelOffset && typeof op.labelOffset === 'object') {
+            params.labelOffset = this.cloneValue(op.labelOffset);
+        }
+
+        return params;
+    }
+
+    applyPropertyUpdate(object, property, newValue) {
+        if (newValue === undefined || !(property in object)) {
+            return;
+        }
+
+        this.recordPropertyChange(object, property, object[property], newValue);
+        object[property] = newValue;
+    }
+
+    recordPropertyChange(object, property, oldValue, newValue) {
+        if (oldValue === newValue) {
+            return;
+        }
+
+        if (typeof this.historyManager?.recordPropertyChange === 'function') {
+            this.historyManager.recordPropertyChange(
+                object.id,
+                property,
+                this.cloneValue(oldValue),
+                this.cloneValue(newValue)
+            );
+        }
+    }
+
+    formatSummary(stats) {
+        const parts = [];
+        if (stats.created) parts.push(`${stats.created} created`);
+        if (stats.updated) parts.push(`${stats.updated} updated`);
+        if (stats.deleted) parts.push(`${stats.deleted} deleted`);
+        return parts.length > 0 ? parts.join(', ') : 'No changes applied';
     }
 }
 

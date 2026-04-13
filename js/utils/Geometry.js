@@ -288,6 +288,183 @@ export const Geometry = {
      * 두 원의 교점
      * @returns {Vec2[]} 교점 배열 (0, 1 또는 2개)
      */
+    /**
+     * 함수와 직선의 교점
+     */
+    functionLineIntersection(fn, lineP1, lineP2, options = {}) {
+        const {
+            lineType = 'line',
+            domainMin = null,
+            domainMax = null
+        } = options;
+
+        if (typeof fn !== 'function' || !lineP1 || !lineP2) {
+            return [];
+        }
+
+        const d = lineP2.sub(lineP1);
+        const dx = d.x;
+        const dy = d.y;
+        const intersections = [];
+
+        const addCandidate = (point) => {
+            if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+                return;
+            }
+
+            if (domainMin !== null && point.x < domainMin - MathUtils.EPSILON) {
+                return;
+            }
+
+            if (domainMax !== null && point.x > domainMax + MathUtils.EPSILON) {
+                return;
+            }
+
+            const isDuplicate = intersections.some(existing =>
+                existing.distanceTo(point) <= 1e-7
+            );
+
+            if (!isDuplicate) {
+                intersections.push(point);
+            }
+        };
+
+        const evaluate = (x) => {
+            let y;
+            try {
+                y = fn(x);
+            } catch {
+                return null;
+            }
+
+            return Number.isFinite(y) ? y : null;
+        };
+
+        if (Math.abs(dx) <= MathUtils.EPSILON) {
+            const x = lineP1.x;
+            const y = evaluate(x);
+            if (y !== null) {
+                addCandidate(new Vec2(x, y));
+            }
+            return intersections;
+        }
+
+        const lineY = (x) => lineP1.y + dy * ((x - lineP1.x) / dx);
+        const difference = (x) => {
+            const y = evaluate(x);
+            if (y === null) {
+                return null;
+            }
+            return y - lineY(x);
+        };
+
+        let minX;
+        let maxX;
+
+        if (lineType === 'segment') {
+            minX = Math.min(lineP1.x, lineP2.x);
+            maxX = Math.max(lineP1.x, lineP2.x);
+        } else if (domainMin !== null && domainMax !== null) {
+            minX = domainMin;
+            maxX = domainMax;
+        } else {
+            const centerX = (lineP1.x + lineP2.x) / 2;
+            const span = Math.max(Math.abs(dx), Math.abs(dy), 10) * 20;
+            minX = centerX - span;
+            maxX = centerX + span;
+        }
+
+        if (domainMin !== null) {
+            minX = Math.max(minX, domainMin);
+        }
+        if (domainMax !== null) {
+            maxX = Math.min(maxX, domainMax);
+        }
+
+        if (!Number.isFinite(minX) || !Number.isFinite(maxX) || minX > maxX) {
+            return [];
+        }
+
+        const span = maxX - minX;
+        const steps = Math.max(64, Math.min(1024, Math.ceil(Math.abs(span) * 32)));
+        const epsilon = 1e-7;
+        const samples = [];
+
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const x = minX + span * t;
+            const value = difference(x);
+
+            if (value !== null) {
+                samples.push({ x, value });
+            }
+        }
+
+        const bisectRoot = (leftX, rightX, leftValue, rightValue) => {
+            let a = leftX;
+            let b = rightX;
+            let fa = leftValue;
+            let fb = rightValue;
+
+            for (let i = 0; i < 64; i++) {
+                const mid = (a + b) / 2;
+                const fm = difference(mid);
+                if (fm === null) {
+                    break;
+                }
+
+                if (Math.abs(fm) <= epsilon || Math.abs(b - a) <= epsilon) {
+                    return mid;
+                }
+
+                if (fa * fm <= 0) {
+                    b = mid;
+                    fb = fm;
+                } else {
+                    a = mid;
+                    fa = fm;
+                }
+
+                if (Math.abs(fa) <= epsilon) {
+                    return a;
+                }
+                if (Math.abs(fb) <= epsilon) {
+                    return b;
+                }
+            }
+
+            return (a + b) / 2;
+        };
+
+        for (let i = 0; i < samples.length; i++) {
+            const current = samples[i];
+
+            if (Math.abs(current.value) <= epsilon) {
+                addCandidate(new Vec2(current.x, lineY(current.x)));
+            }
+
+            const next = samples[i + 1];
+            if (!next) continue;
+
+            if (current.value * next.value < 0) {
+                const rootX = bisectRoot(current.x, next.x, current.value, next.value);
+                const rootY = evaluate(rootX);
+                if (rootY !== null) {
+                    addCandidate(new Vec2(rootX, rootY));
+                }
+            }
+        }
+
+        intersections.sort((a, b) => {
+            if (Math.abs(a.x - b.x) > 1e-9) {
+                return a.x - b.x;
+            }
+            return a.y - b.y;
+        });
+
+        return intersections;
+    },
+
     circleCircleIntersection(c1, r1, c2, r2) {
         const d = c2.sub(c1);
         const dist = d.length();

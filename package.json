@@ -2,9 +2,11 @@
   "name": "mathgraph",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "description": "Static math graph editor",
   "scripts": {
     "build": "echo Static site build step not required",
+    "test": "node --test",
     "vercel-build": "echo Static site build step not required",
     "vercel:dev": "vercel dev",
     "vercel:link": "vercel link",
