@@ -4,6 +4,14 @@ Last updated: 2026-04-25
 
 This map turns the OpenAI docs into a practical routing layer for future "vibe coding" work. It is not a replacement for the official docs. Use it to decide what to read first, then verify current details in the official source.
 
+## Coverage Status
+
+- `docs/openai-url-inventory.yaml` is the full public inventory generated from `developers.openai.com` sitemap, `platform.openai.com` public sitemap, discovered official OpenAI/help/policy links, and external related links.
+- `docs/openai-core-summaries.md` contains detailed summaries for the core implementation-relevant docs.
+- `docs/openai-related-links.md` records external and adjacent official links as inventory-only unless explicitly summarized elsewhere.
+- `platform.openai.com` account/login/dashboard paths are not crawled. Public sitemap currently contributes only public platform URLs, and robots-disallowed account paths are recorded as exclusions.
+- Status label for this repository: `inventory_verified_core_summarized`, not "every linked page fully summarized."
+
 ## Entry Points
 
 | Area | Start here | Use when |

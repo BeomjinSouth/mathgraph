@@ -4,6 +4,8 @@ Last updated: 2026-04-25
 
 Use this as the compact working context for building with OpenAI. It intentionally favors decision rules over copied documentation.
 
+For source discovery, start with `docs/openai-url-inventory.yaml`. For detailed synthesized context, read `docs/openai-core-summaries.md`. This guide only captures operating defaults.
+
 ## Default Architecture Rules
 
 1. Start new API work with the Responses API unless a legacy constraint forces Chat Completions or Assistants.
@@ -69,6 +71,8 @@ Use this shape for substantial tasks:
 - Keep durable rules in `AGENTS.md`.
 - Use `.agents/skills/<skill-name>/SKILL.md` for repeatable workflows. Skill descriptions should be specific enough for implicit activation.
 - Use this repository's `openai-vibecoding-context` skill when building with OpenAI APIs, Codex, Agents, Apps SDK, Computer Use, Realtime, evals, or model optimization.
+- Use `docs/openai-url-inventory.yaml` to find the current official source URL and whether it is readable, failed, excluded, or inventory-only.
+- Use `docs/openai-core-summaries.md` for the implementation-focused summary of the major public docs.
 - For every substantial task, update `docs/progress-log.md` with the document sources checked, verification run, and unresolved issues.
 
 ## Apps SDK Pattern

@@ -12,10 +12,12 @@ Use this skill to load the local OpenAI documentation routing context before des
 Read these files first:
 
 1. `AGENTS.md`
-2. `docs/openai-context-map.md`
-3. `docs/openai-docs-map.yaml`
-4. `docs/vibecoding-openai-guide.md`
-5. `docs/progress-log.md`
+2. `docs/openai-url-inventory.yaml` for exact source coverage and read/exclusion state
+3. `docs/openai-context-map.md`
+4. `docs/openai-core-summaries.md`
+5. `docs/openai-docs-map.yaml`
+6. `docs/vibecoding-openai-guide.md`
+7. `docs/progress-log.md`
 
 ## Source of truth
 
@@ -31,11 +33,12 @@ Read these files first:
 ## Workflow
 
 1. Identify the task area: API, model selection, tools, agents, Codex, Apps SDK, Realtime, evals, fine-tuning, safety, or production.
-2. Open the matching section in `docs/openai-docs-map.yaml`.
-3. Read the relevant local guidance in `docs/vibecoding-openai-guide.md`.
-4. Verify volatile details against official docs before implementation.
-5. For new features or behavior changes, update the relevant context document before or alongside the implementation.
-6. After the task, update `docs/progress-log.md` with sources checked, changes made, verification run, and blocked follow-up.
+2. Search `docs/openai-url-inventory.yaml` for the exact current official URL and read state.
+3. Open the matching section in `docs/openai-docs-map.yaml`.
+4. Read the relevant local guidance in `docs/openai-core-summaries.md` and `docs/vibecoding-openai-guide.md`.
+5. Verify volatile details against official docs before implementation.
+6. For new features or behavior changes, update the relevant context document before or alongside the implementation.
+7. After the task, update `docs/progress-log.md` with sources checked, changes made, verification run, and blocked follow-up.
 
 ## Design defaults
 

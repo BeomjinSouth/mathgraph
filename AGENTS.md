@@ -7,10 +7,12 @@ This repository is a local context hub for OpenAI developer documentation. Use i
 ## Required reading at the start of every task
 
 1. Read this `AGENTS.md`.
-2. Read `docs/openai-context-map.md`.
-3. Read `docs/openai-docs-map.yaml`.
-4. Read `docs/vibecoding-openai-guide.md`.
-5. Read `docs/progress-log.md` for recent decisions, verification notes, and unresolved setup issues.
+2. Read `docs/openai-url-inventory.yaml` when the task needs exact current source coverage.
+3. Read `docs/openai-context-map.md`.
+4. Read `docs/openai-core-summaries.md`.
+5. Read `docs/openai-docs-map.yaml`.
+6. Read `docs/vibecoding-openai-guide.md`.
+7. Read `docs/progress-log.md` for recent decisions, verification notes, and unresolved setup issues.
 
 ## Source of truth
 
@@ -33,6 +35,7 @@ This repository is a local context hub for OpenAI developer documentation. Use i
 ## Verification
 
 - For documentation-only changes, run `git diff --check` when possible.
+- For inventory changes, run `powershell -ExecutionPolicy Bypass -File tools\check-openai-docs-inventory.ps1`.
 - For scripts or generated artifacts, run the narrowest useful validation command and record the result in `docs/progress-log.md`.
 - If verification is skipped or blocked, record the reason in `docs/progress-log.md`.
 

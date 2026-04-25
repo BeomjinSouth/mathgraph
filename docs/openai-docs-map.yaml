@@ -1,6 +1,18 @@
 version: 1
 last_updated: 2026-04-25
 purpose: "Machine-readable routing map for OpenAI documentation context."
+inventory:
+  full_inventory_file: "docs/openai-url-inventory.yaml"
+  core_summaries_file: "docs/openai-core-summaries.md"
+  related_links_file: "docs/openai-related-links.md"
+  build_script: "tools/build-openai-docs-inventory.ps1"
+  check_script: "tools/check-openai-docs-inventory.ps1"
+  status: "inventory_verified_core_summarized"
+  scope:
+    - "developers.openai.com public sitemap"
+    - "platform.openai.com public sitemap"
+    - "official OpenAI/help/policy links discovered from docs"
+    - "external related links as inventory-only"
 source_policy:
   primary: "Use current official OpenAI docs as source of truth."
   prefer_mcp: "Use OpenAI Developer Docs MCP first if available."
