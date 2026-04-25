@@ -90,3 +90,10 @@
 - Ran `powershell -ExecutionPolicy Bypass -File tools\check-openai-docs-inventory.ps1`; passed with 7,460 inventory entries, 2 failed official entries, and 3,991 external related entries.
 - Parsed `docs/openai-url-inventory.yaml` and `docs/openai-docs-map.yaml` with PyYAML in a temporary virtual environment; both parsed successfully.
 - Ran `git diff --check`; passed with line-ending warnings only.
+
+### Git/GitHub
+
+- Committed the inventory rebuild locally with `git commit -m "Rebuild OpenAI docs inventory"` (`81fde44`).
+- Ran `git remote -v`; no remote is configured.
+- Ran `git push`; failed with `fatal: No configured push destination`.
+- Next action: add a GitHub remote with `git remote add origin <url>` and push with `git push -u origin master`.
