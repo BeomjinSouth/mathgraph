@@ -2,6 +2,52 @@
 
 ## Summary
 
+- Task: OpenAI Structured Outputs alignment for AI graph generation
+- Owner: Codex
+- Date: 2026-04-25
+- Related files:
+  - `js/ai/AIService.js`
+  - `index.html`
+  - `tests/ai-flow.test.js`
+  - `docs/ai-reference.md`
+
+## Problem
+
+- The current OpenAI integration uses the Responses API, but still requests the older `json_object` JSON mode.
+- The app already has a validated `operations[]` contract, so OpenAI Structured Outputs can enforce the same shape before the local validator runs.
+- Model defaults and UI options are behind the current OpenAI reference context.
+
+## Goals
+
+- Use Responses API Structured Outputs with a strict JSON Schema for graph operations.
+- Refresh OpenAI model defaults/options through configuration instead of scattered literals.
+- Keep local schema validation and rollback-based patch application as the app-owned safety layer.
+- Preserve the API-free deterministic fallback path.
+
+## Non-Goals
+
+- Do not introduce the Agents SDK or function-calling orchestration for this narrow graph-generation path.
+- Do not migrate API keys to a Vercel serverless proxy in this pass.
+- Do not change the graph object runtime contract beyond null-stripping required by strict structured output compatibility.
+
+## Acceptance Criteria
+
+- [x] OpenAI text and vision requests use `text.format.type = "json_schema"` with `strict: true`.
+- [x] The request body sets `store: false` and uses configured `reasoning.effort` / `text.verbosity`.
+- [x] OpenAI model defaults and UI model options include current reference models.
+- [x] Structured output JSON is parsed and sanitized before the existing validator/applier flow.
+- [x] Unit tests cover request construction without real network calls.
+- [x] `npm.cmd test` passes.
+
+## Risks and Open Questions
+
+- Strict Structured Outputs require all schema fields to be required; optional graph fields will be represented as nullable values and stripped locally before validation/application.
+- Browser-stored API keys remain acceptable only for personal/BYOK usage; public deployment should move API calls behind a server-side proxy in a follow-up.
+
+---
+
+## Previous Summary
+
 - Task: Mk2.2 usability and AI/runtime parity improvements
 - Owner: Codex
 - Date: 2026-04-13

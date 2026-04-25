@@ -1,0 +1,308 @@
+version: 1
+last_updated: 2026-04-25
+purpose: "Machine-readable routing map for OpenAI documentation context."
+inventory:
+  full_inventory_file: "docs/openai-url-inventory.yaml"
+  core_summaries_file: "docs/openai-core-summaries.md"
+  related_links_file: "docs/openai-related-links.md"
+  build_script: "tools/build-openai-docs-inventory.ps1"
+  check_script: "tools/check-openai-docs-inventory.ps1"
+  status: "inventory_verified_core_summarized"
+  scope:
+    - "developers.openai.com public sitemap"
+    - "platform.openai.com public sitemap"
+    - "official OpenAI/help/policy links discovered from docs"
+    - "external related links as inventory-only"
+source_policy:
+  primary: "Use current official OpenAI docs as source of truth."
+  prefer_mcp: "Use OpenAI Developer Docs MCP first if available."
+  fallback_domains:
+    - https://developers.openai.com/
+    - https://platform.openai.com/
+    - https://openai.com/
+    - https://help.openai.com/
+  volatile_verify:
+    - model availability
+    - pricing
+    - rate limits
+    - deprecations
+    - API schemas
+    - safety and policy guidance
+    - app and commerce submission requirements
+
+entrypoints:
+  developers_home: https://developers.openai.com/
+  api_docs: https://developers.openai.com/api/docs
+  api_reference: https://developers.openai.com/api/reference/overview
+  platform_home: https://platform.openai.com/home
+  codex_docs: https://developers.openai.com/codex
+  apps_sdk: https://developers.openai.com/apps-sdk
+  commerce: https://developers.openai.com/commerce
+  learn: https://developers.openai.com/learn
+  cookbook: https://developers.openai.com/cookbook
+
+areas:
+  api_reference:
+    use_when: "Checking exact endpoints, methods, request parameters, response objects, and streaming events."
+    docs:
+      - { title: "API reference overview", url: "https://developers.openai.com/api/reference/overview" }
+      - { title: "Create a model response", url: "https://developers.openai.com/api/reference/resources/responses/methods/create" }
+      - { title: "Realtime reference", url: "https://developers.openai.com/api/reference/resources/realtime" }
+      - { title: "Evals reference", url: "https://developers.openai.com/api/reference/resources/evals" }
+      - { title: "Fine-tuning reference", url: "https://developers.openai.com/api/reference/resources/fine_tuning" }
+      - { title: "Images reference", url: "https://developers.openai.com/api/reference/resources/images" }
+      - { title: "Videos reference", url: "https://developers.openai.com/api/reference/resources/videos", volatile: true }
+      - { title: "Audio reference", url: "https://developers.openai.com/api/reference/resources/audio" }
+      - { title: "Embeddings reference", url: "https://developers.openai.com/api/reference/resources/embeddings" }
+      - { title: "Moderations reference", url: "https://developers.openai.com/api/reference/resources/moderations" }
+
+  api_get_started:
+    use_when: "Starting or upgrading an OpenAI API integration."
+    docs:
+      - { title: "Overview", url: "https://developers.openai.com/api/docs" }
+      - { title: "Quickstart", url: "https://developers.openai.com/api/docs/quickstart" }
+      - { title: "Models", url: "https://developers.openai.com/api/docs/models" }
+      - { title: "Pricing", url: "https://developers.openai.com/api/docs/pricing", volatile: true }
+      - { title: "Libraries", url: "https://developers.openai.com/api/docs/libraries" }
+      - { title: "Latest model", url: "https://developers.openai.com/api/docs/guides/latest-model", volatile: true }
+      - { title: "Prompt guidance", url: "https://developers.openai.com/api/docs/guides/prompt-guidance" }
+
+  api_core_concepts:
+    use_when: "Designing API request/response behavior."
+    docs:
+      - { title: "Text generation", url: "https://developers.openai.com/api/docs/guides/text" }
+      - { title: "Code generation", url: "https://developers.openai.com/api/docs/guides/code-generation" }
+      - { title: "Images and vision", url: "https://developers.openai.com/api/docs/guides/images-vision" }
+      - { title: "Audio and speech", url: "https://developers.openai.com/api/docs/guides/audio" }
+      - { title: "Structured Outputs", url: "https://developers.openai.com/api/docs/guides/structured-outputs" }
+      - { title: "Function calling", url: "https://developers.openai.com/api/docs/guides/function-calling" }
+      - { title: "Responses API", url: "https://developers.openai.com/api/docs/guides/migrate-to-responses" }
+      - { title: "Using tools", url: "https://developers.openai.com/api/docs/guides/tools" }
+
+  agents_sdk:
+    use_when: "The app owns orchestration, tools, state, approvals, or multi-agent behavior."
+    docs:
+      - { title: "Agents SDK overview", url: "https://developers.openai.com/api/docs/guides/agents" }
+      - { title: "Quickstart", url: "https://developers.openai.com/api/docs/guides/agents/quickstart" }
+      - { title: "Agent definitions", url: "https://developers.openai.com/api/docs/guides/agents/define-agents" }
+      - { title: "Models and providers", url: "https://developers.openai.com/api/docs/guides/agents/models" }
+      - { title: "Running agents", url: "https://developers.openai.com/api/docs/guides/agents/running-agents" }
+      - { title: "Sandbox agents", url: "https://developers.openai.com/api/docs/guides/agents/sandboxes" }
+      - { title: "Orchestration and handoffs", url: "https://developers.openai.com/api/docs/guides/agents/orchestration" }
+      - { title: "Guardrails and approvals", url: "https://developers.openai.com/api/docs/guides/agents/guardrails-approvals" }
+      - { title: "Results and state", url: "https://developers.openai.com/api/docs/guides/agents/results" }
+      - { title: "Integrations and observability", url: "https://developers.openai.com/api/docs/guides/agents/integrations-observability" }
+      - { title: "Agent evals", url: "https://developers.openai.com/api/docs/guides/agent-evals" }
+      - { title: "Voice agents", url: "https://developers.openai.com/api/docs/guides/voice-agents" }
+
+  agent_builder_chatkit:
+    use_when: "Using hosted workflow editor, ChatKit, or user-facing hosted chat components."
+    docs:
+      - { title: "Agent Builder", url: "https://developers.openai.com/api/docs/guides/agent-builder" }
+      - { title: "Node reference", url: "https://developers.openai.com/api/docs/guides/node-reference" }
+      - { title: "Safety in building agents", url: "https://developers.openai.com/api/docs/guides/agent-builder-safety" }
+      - { title: "ChatKit", url: "https://developers.openai.com/api/docs/guides/chatkit" }
+      - { title: "Customize ChatKit", url: "https://developers.openai.com/api/docs/guides/chatkit-themes" }
+      - { title: "ChatKit widgets", url: "https://developers.openai.com/api/docs/guides/chatkit-widgets" }
+      - { title: "ChatKit actions", url: "https://developers.openai.com/api/docs/guides/chatkit-actions" }
+      - { title: "Advanced ChatKit", url: "https://developers.openai.com/api/docs/guides/custom-chatkit" }
+
+  tools:
+    use_when: "Adding built-in tools, custom functions, connectors, hosted shell, or CUA."
+    docs:
+      - { title: "Web search", url: "https://developers.openai.com/api/docs/guides/tools-web-search" }
+      - { title: "MCP and Connectors", url: "https://developers.openai.com/api/docs/guides/tools-connectors-mcp" }
+      - { title: "Skills tool", url: "https://developers.openai.com/api/docs/guides/tools-skills" }
+      - { title: "Shell tool", url: "https://developers.openai.com/api/docs/guides/tools-shell" }
+      - { title: "Computer use", url: "https://developers.openai.com/api/docs/guides/tools-computer-use" }
+      - { title: "File search", url: "https://developers.openai.com/api/docs/guides/tools-file-search" }
+      - { title: "Retrieval", url: "https://developers.openai.com/api/docs/guides/retrieval" }
+      - { title: "Tool search", url: "https://developers.openai.com/api/docs/guides/tools-tool-search" }
+      - { title: "Apply Patch", url: "https://developers.openai.com/api/docs/guides/tools-apply-patch" }
+      - { title: "Local shell", url: "https://developers.openai.com/api/docs/guides/tools-local-shell" }
+      - { title: "Image generation tool", url: "https://developers.openai.com/api/docs/guides/tools-image-generation" }
+      - { title: "Code interpreter", url: "https://developers.openai.com/api/docs/guides/tools-code-interpreter" }
+
+  run_and_scale:
+    use_when: "Managing state, long-running tasks, streaming, token/cost efficiency, or prompt design."
+    docs:
+      - { title: "Conversation state", url: "https://developers.openai.com/api/docs/guides/conversation-state" }
+      - { title: "Background mode", url: "https://developers.openai.com/api/docs/guides/background" }
+      - { title: "Streaming", url: "https://developers.openai.com/api/docs/guides/streaming-responses" }
+      - { title: "WebSocket mode", url: "https://developers.openai.com/api/docs/guides/websocket-mode" }
+      - { title: "Webhooks", url: "https://developers.openai.com/api/docs/guides/webhooks" }
+      - { title: "File inputs", url: "https://developers.openai.com/api/docs/guides/file-inputs" }
+      - { title: "Compaction", url: "https://developers.openai.com/api/docs/guides/compaction" }
+      - { title: "Counting tokens", url: "https://developers.openai.com/api/docs/guides/token-counting" }
+      - { title: "Prompt caching", url: "https://developers.openai.com/api/docs/guides/prompt-caching" }
+      - { title: "Prompting", url: "https://developers.openai.com/api/docs/guides/prompting" }
+      - { title: "Prompt engineering", url: "https://developers.openai.com/api/docs/guides/prompt-engineering" }
+      - { title: "Citation formatting", url: "https://developers.openai.com/api/docs/guides/citation-formatting" }
+      - { title: "Reasoning models", url: "https://developers.openai.com/api/docs/guides/reasoning" }
+      - { title: "Reasoning best practices", url: "https://developers.openai.com/api/docs/guides/reasoning-best-practices" }
+
+  evaluation_and_optimization:
+    use_when: "Measuring and improving model quality."
+    docs:
+      - { title: "Evaluation getting started", url: "https://developers.openai.com/api/docs/guides/evaluation-getting-started" }
+      - { title: "Working with evals", url: "https://developers.openai.com/api/docs/guides/evals" }
+      - { title: "Prompt optimizer", url: "https://developers.openai.com/api/docs/guides/prompt-optimizer" }
+      - { title: "External models", url: "https://developers.openai.com/api/docs/guides/external-models" }
+      - { title: "Evaluation best practices", url: "https://developers.openai.com/api/docs/guides/evaluation-best-practices" }
+      - { title: "Model optimization", url: "https://developers.openai.com/api/docs/guides/model-optimization" }
+      - { title: "Supervised fine-tuning", url: "https://developers.openai.com/api/docs/guides/supervised-fine-tuning" }
+      - { title: "Vision fine-tuning", url: "https://developers.openai.com/api/docs/guides/vision-fine-tuning" }
+      - { title: "Direct preference optimization", url: "https://developers.openai.com/api/docs/guides/direct-preference-optimization" }
+      - { title: "Reinforcement fine-tuning", url: "https://developers.openai.com/api/docs/guides/reinforcement-fine-tuning" }
+      - { title: "RFT use cases", url: "https://developers.openai.com/api/docs/guides/rft-use-cases" }
+      - { title: "Fine-tuning best practices", url: "https://developers.openai.com/api/docs/guides/fine-tuning-best-practices" }
+      - { title: "Graders", url: "https://developers.openai.com/api/docs/guides/graders" }
+
+  realtime:
+    use_when: "Building low-latency multimodal, speech, transcription, or telephony experiences."
+    docs:
+      - { title: "Realtime overview", url: "https://developers.openai.com/api/docs/guides/realtime" }
+      - { title: "WebRTC", url: "https://developers.openai.com/api/docs/guides/realtime-webrtc" }
+      - { title: "WebSocket", url: "https://developers.openai.com/api/docs/guides/realtime-websocket" }
+      - { title: "SIP", url: "https://developers.openai.com/api/docs/guides/realtime-sip" }
+      - { title: "Realtime models and prompting", url: "https://developers.openai.com/api/docs/guides/realtime-models-prompting" }
+      - { title: "Realtime conversations", url: "https://developers.openai.com/api/docs/guides/realtime-conversations" }
+      - { title: "Realtime MCP", url: "https://developers.openai.com/api/docs/guides/realtime-mcp" }
+      - { title: "Realtime server controls", url: "https://developers.openai.com/api/docs/guides/realtime-server-controls" }
+      - { title: "Realtime costs", url: "https://developers.openai.com/api/docs/guides/realtime-costs" }
+      - { title: "Realtime transcription", url: "https://developers.openai.com/api/docs/guides/realtime-transcription" }
+
+  specialized_models:
+    use_when: "Using non-text or specialized capabilities."
+    docs:
+      - { title: "Image generation", url: "https://developers.openai.com/api/docs/guides/image-generation" }
+      - { title: "Video generation", url: "https://developers.openai.com/api/docs/guides/video-generation", volatile: true }
+      - { title: "Text to speech", url: "https://developers.openai.com/api/docs/guides/text-to-speech" }
+      - { title: "Speech to text", url: "https://developers.openai.com/api/docs/guides/speech-to-text" }
+      - { title: "Deep research", url: "https://developers.openai.com/api/docs/guides/deep-research" }
+      - { title: "Embeddings", url: "https://developers.openai.com/api/docs/guides/embeddings" }
+      - { title: "Moderation", url: "https://developers.openai.com/api/docs/guides/moderation" }
+
+  going_live:
+    use_when: "Preparing production release or improving reliability, safety, latency, and cost."
+    docs:
+      - { title: "Production best practices", url: "https://developers.openai.com/api/docs/guides/production-best-practices" }
+      - { title: "Deployment checklist", url: "https://developers.openai.com/api/docs/guides/deployment-checklist" }
+      - { title: "Latency optimization", url: "https://developers.openai.com/api/docs/guides/latency-optimization" }
+      - { title: "Predicted Outputs", url: "https://developers.openai.com/api/docs/guides/predicted-outputs" }
+      - { title: "Priority processing", url: "https://developers.openai.com/api/docs/guides/priority-processing" }
+      - { title: "Cost optimization", url: "https://developers.openai.com/api/docs/guides/cost-optimization" }
+      - { title: "Batch", url: "https://developers.openai.com/api/docs/guides/batch" }
+      - { title: "Flex processing", url: "https://developers.openai.com/api/docs/guides/flex-processing" }
+      - { title: "Accuracy optimization", url: "https://developers.openai.com/api/docs/guides/optimizing-llm-accuracy" }
+      - { title: "Safety best practices", url: "https://developers.openai.com/api/docs/guides/safety-best-practices" }
+      - { title: "Safety checks", url: "https://developers.openai.com/api/docs/guides/safety-checks" }
+      - { title: "Cybersecurity checks", url: "https://developers.openai.com/api/docs/guides/safety-checks/cybersecurity" }
+      - { title: "Under 18 API Guidance", url: "https://developers.openai.com/api/docs/guides/safety-checks/under-18-api-guidance" }
+
+  resources_and_legacy:
+    use_when: "Checking policies, org controls, rate limits, data, deprecations, or legacy Assistants."
+    docs:
+      - { title: "Changelog", url: "https://developers.openai.com/api/docs/changelog", volatile: true }
+      - { title: "Your data", url: "https://developers.openai.com/api/docs/guides/your-data", volatile: true }
+      - { title: "Permissions", url: "https://developers.openai.com/api/docs/guides/rbac", volatile: true }
+      - { title: "Rate limits", url: "https://developers.openai.com/api/docs/guides/rate-limits", volatile: true }
+      - { title: "Deprecations", url: "https://developers.openai.com/api/docs/deprecations", volatile: true }
+      - { title: "Docs MCP", url: "https://developers.openai.com/api/docs/mcp" }
+      - { title: "Developer mode", url: "https://developers.openai.com/api/docs/guides/developer-mode" }
+      - { title: "Terms and policies", url: "https://openai.com/policies/", volatile: true }
+      - { title: "Usage policies", url: "https://openai.com/policies/usage-policies/", volatile: true }
+      - { title: "Commerce policies", url: "https://openai.com/policies/commerce-policies/", volatile: true }
+      - { title: "Assistants migration", url: "https://developers.openai.com/api/docs/assistants/migration" }
+      - { title: "Assistants deep dive", url: "https://developers.openai.com/api/docs/assistants/deep-dive" }
+      - { title: "Assistants tools", url: "https://developers.openai.com/api/docs/assistants/tools" }
+
+  codex:
+    use_when: "Configuring Codex, coding workflows, rules, subagents, skills, approvals, browser, or automation."
+    docs:
+      - { title: "Codex overview", url: "https://developers.openai.com/codex" }
+      - { title: "Quickstart", url: "https://developers.openai.com/codex/quickstart" }
+      - { title: "Use cases", url: "https://developers.openai.com/codex/use-cases" }
+      - { title: "Prompting", url: "https://developers.openai.com/codex/prompting" }
+      - { title: "Best practices", url: "https://developers.openai.com/codex/learn/best-practices" }
+      - { title: "Customization", url: "https://developers.openai.com/codex/concepts/customization" }
+      - { title: "Memories", url: "https://developers.openai.com/codex/memories" }
+      - { title: "Sandboxing", url: "https://developers.openai.com/codex/concepts/sandboxing" }
+      - { title: "Subagents concept", url: "https://developers.openai.com/codex/concepts/subagents" }
+      - { title: "Workflows", url: "https://developers.openai.com/codex/workflows" }
+      - { title: "Models", url: "https://developers.openai.com/codex/models", volatile: true }
+      - { title: "App", url: "https://developers.openai.com/codex/app" }
+      - { title: "Review", url: "https://developers.openai.com/codex/app/review" }
+      - { title: "Automations", url: "https://developers.openai.com/codex/app/automations" }
+      - { title: "In-app browser", url: "https://developers.openai.com/codex/app/browser" }
+      - { title: "Computer Use", url: "https://developers.openai.com/codex/app/computer-use" }
+      - { title: "CLI", url: "https://developers.openai.com/codex/cli" }
+      - { title: "Config reference", url: "https://developers.openai.com/codex/config-reference" }
+      - { title: "Rules", url: "https://developers.openai.com/codex/rules" }
+      - { title: "Hooks", url: "https://developers.openai.com/codex/hooks" }
+      - { title: "AGENTS.md", url: "https://developers.openai.com/codex/guides/agents-md" }
+      - { title: "MCP", url: "https://developers.openai.com/codex/mcp" }
+      - { title: "Plugins", url: "https://developers.openai.com/codex/plugins" }
+      - { title: "Skills", url: "https://developers.openai.com/codex/skills" }
+      - { title: "Subagents configuration", url: "https://developers.openai.com/codex/subagents" }
+      - { title: "Agent approvals and security", url: "https://developers.openai.com/codex/agent-approvals-security" }
+      - { title: "Non-interactive mode", url: "https://developers.openai.com/codex/noninteractive" }
+      - { title: "Codex SDK", url: "https://developers.openai.com/codex/sdk" }
+      - { title: "Codex GitHub Action", url: "https://developers.openai.com/codex/github-action" }
+
+  apps_sdk:
+    use_when: "Building ChatGPT apps with an MCP server and embedded UI."
+    docs:
+      - { title: "Apps SDK overview", url: "https://developers.openai.com/apps-sdk" }
+      - { title: "Quickstart", url: "https://developers.openai.com/apps-sdk/quickstart" }
+      - { title: "MCP Apps in ChatGPT", url: "https://developers.openai.com/apps-sdk/mcp-apps-in-chatgpt" }
+      - { title: "MCP server concept", url: "https://developers.openai.com/apps-sdk/concepts/mcp-server" }
+      - { title: "UX principles", url: "https://developers.openai.com/apps-sdk/concepts/ux-principles" }
+      - { title: "UI guidelines", url: "https://developers.openai.com/apps-sdk/concepts/ui-guidelines" }
+      - { title: "Research use cases", url: "https://developers.openai.com/apps-sdk/plan/use-case" }
+      - { title: "Define tools", url: "https://developers.openai.com/apps-sdk/plan/tools" }
+      - { title: "Design components", url: "https://developers.openai.com/apps-sdk/plan/components" }
+      - { title: "Build MCP server", url: "https://developers.openai.com/apps-sdk/build/mcp-server" }
+      - { title: "Build ChatGPT UI", url: "https://developers.openai.com/apps-sdk/build/chatgpt-ui" }
+      - { title: "Auth", url: "https://developers.openai.com/apps-sdk/build/auth" }
+      - { title: "State management", url: "https://developers.openai.com/apps-sdk/build/state-management" }
+      - { title: "Monetization", url: "https://developers.openai.com/apps-sdk/build/monetization" }
+      - { title: "Examples", url: "https://developers.openai.com/apps-sdk/build/examples" }
+      - { title: "Deploy", url: "https://developers.openai.com/apps-sdk/deploy" }
+      - { title: "Connect from ChatGPT", url: "https://developers.openai.com/apps-sdk/deploy/connect-chatgpt" }
+      - { title: "Testing", url: "https://developers.openai.com/apps-sdk/deploy/testing" }
+      - { title: "Submission", url: "https://developers.openai.com/apps-sdk/deploy/submission" }
+      - { title: "Optimize metadata", url: "https://developers.openai.com/apps-sdk/guides/optimize-metadata" }
+      - { title: "Security and privacy", url: "https://developers.openai.com/apps-sdk/guides/security-privacy" }
+      - { title: "Troubleshooting", url: "https://developers.openai.com/apps-sdk/deploy/troubleshooting" }
+      - { title: "Changelog", url: "https://developers.openai.com/apps-sdk/changelog", volatile: true }
+      - { title: "App submission guidelines", url: "https://developers.openai.com/apps-sdk/app-submission-guidelines", volatile: true }
+      - { title: "Reference", url: "https://developers.openai.com/apps-sdk/reference" }
+
+  commerce:
+    use_when: "Integrating product feeds or Agentic Commerce Protocol."
+    docs:
+      - { title: "Commerce overview", url: "https://developers.openai.com/commerce" }
+      - { title: "Get started", url: "https://developers.openai.com/commerce/guides/get-started", volatile: true }
+      - { title: "Best practices", url: "https://developers.openai.com/commerce/guides/best-practices" }
+      - { title: "File upload overview", url: "https://developers.openai.com/commerce/specs/file-upload/overview" }
+      - { title: "Products file", url: "https://developers.openai.com/commerce/specs/file-upload/products" }
+      - { title: "API overview", url: "https://developers.openai.com/commerce/specs/api/overview" }
+      - { title: "Feeds API", url: "https://developers.openai.com/commerce/specs/api/feeds" }
+      - { title: "Products API", url: "https://developers.openai.com/commerce/specs/api/products" }
+      - { title: "Promotions API", url: "https://developers.openai.com/commerce/specs/api/promotions" }
+
+  examples_and_learning:
+    use_when: "Looking for examples, topic guides, demos, and applied recipes."
+    docs:
+      - { title: "Showcase", url: "https://developers.openai.com/showcase" }
+      - { title: "API examples", url: "https://developers.openai.com/showcase/api-examples" }
+      - { title: "Blog", url: "https://developers.openai.com/blog" }
+      - { title: "Cookbook", url: "https://developers.openai.com/cookbook" }
+      - { title: "Learn", url: "https://developers.openai.com/learn" }
+      - { title: "Docs MCP", url: "https://developers.openai.com/learn/docs-mcp" }
+      - { title: "Learn Agents", url: "https://developers.openai.com/learn/agents" }
+      - { title: "Learn Computer Use", url: "https://developers.openai.com/learn/cua" }
+      - { title: "Learn Codex", url: "https://developers.openai.com/learn/codex" }
+      - { title: "Learn Evals", url: "https://developers.openai.com/learn/evals" }
+      - { title: "Learn Tools", url: "https://developers.openai.com/learn/tools" }

@@ -2,6 +2,32 @@
 
 ## Relevant Skills
 
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - This task changes OpenAI Responses API request construction, so local reference maps and current official docs must be checked before implementation.
+- Local context read:
+  - `docs/openai-context-map.md`
+  - `docs/openai-core-summaries.md`
+  - `docs/openai-docs-map.yaml`
+  - `docs/vibecoding-openai-guide.md`
+  - `docs/progress-log.md`
+- Official docs checked:
+  - `https://developers.openai.com/api/docs/models`
+  - `https://developers.openai.com/api/docs/guides/structured-outputs`
+  - `https://developers.openai.com/api/reference/resources/responses/methods/create`
+
+## Current Task Notes
+
+- Use Responses API Structured Outputs (`text.format.type = "json_schema"`) rather than older JSON mode.
+- Keep model IDs configurable; current reference default for complex reasoning/coding is `gpt-5.5`.
+- Strict schemas require required fields; use nullable fields and strip `null` values before local validation/application.
+- Set `store: false` for graph-generation requests unless a future product decision needs stored responses.
+- Direct browser API key storage remains a personal/BYOK compromise, not ideal for public deployment.
+
+---
+
+## Previous Relevant Skills
+
 - Skill: None required beyond core repo work
 - Why it matters:
   - This batch stays within the existing vanilla JS app architecture and does not require a specialized external workflow.

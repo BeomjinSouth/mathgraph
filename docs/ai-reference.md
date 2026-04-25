@@ -22,6 +22,22 @@ Supported input forms in code are slightly more permissive, but AI output should
 
 Legacy `action / changes / objects` examples are outdated and should not be used for new prompts.
 
+## 1.1 OpenAI Request Contract
+
+The OpenAI-backed path should use the Responses API with Structured Outputs rather than legacy JSON mode.
+
+Current request defaults:
+
+- Endpoint: `POST https://api.openai.com/v1/responses`
+- Default model: `gpt-5.5`
+- Text format: `json_schema` named `graph_operations`
+- Strict schema: enabled
+- Store responses: `false`
+- Reasoning effort: configured per app setting, default `low`
+- Text verbosity: configured per app setting, default `low`
+
+The strict schema represents optional graph fields as nullable values because Structured Outputs requires all schema fields to be required. The app strips `null` fields before running `SchemaValidator` and `PatchApplier`.
+
 ## 2. Operation Schema
 
 Each operation uses:

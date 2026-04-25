@@ -40,7 +40,7 @@ import { Vec2 } from './utils/Geometry.js';
 // Mk.2: AI 모듈
 import { SchemaValidator } from './ai/SchemaValidator.js';
 import { PatchApplier } from './ai/PatchApplier.js';
-import { AIService } from './ai/AIService.js';
+import { AIService, OPENAI_MODEL_OPTIONS, GEMINI_MODEL_OPTIONS } from './ai/AIService.js';
 import { parseAIJSONPayload } from './ai/JSONUtils.js';
 
 // Mk.2: UI 모듈
@@ -2299,12 +2299,13 @@ class GraphAApp {
             if (modelSelect) {
                 modelSelect.innerHTML = '';
                 if (provider === 'openai') {
-                    modelSelect.add(new Option('GPT-5.2 (권장)', 'gpt-5.2'));
-                    modelSelect.add(new Option('GPT-5.2 Pro (더 정확)', 'gpt-5.2-pro'));
-                    modelSelect.add(new Option('GPT-5 Mini (빠름/저렴)', 'gpt-5-mini'));
+                    OPENAI_MODEL_OPTIONS.forEach(({ label, value }) => {
+                        modelSelect.add(new Option(label, value));
+                    });
                 } else if (provider === 'gemini') {
-                    modelSelect.add(new Option('Gemini 1.5 Flash', 'gemini-1.5-flash'));
-                    modelSelect.add(new Option('Gemini 1.5 Pro', 'gemini-1.5-pro'));
+                    GEMINI_MODEL_OPTIONS.forEach(({ label, value }) => {
+                        modelSelect.add(new Option(label, value));
+                    });
                 } else {
                     modelSelect.add(new Option('로컬 (패턴 매칭)', 'local'));
                 }
@@ -2367,12 +2368,13 @@ class GraphAApp {
             // 모델 옵션 업데이트
             modelSelect.innerHTML = '';
             if (provider === 'openai') {
-                modelSelect.add(new Option('GPT-5.2 (권장)', 'gpt-5.2'));
-                modelSelect.add(new Option('GPT-5.2 Pro (더 정확)', 'gpt-5.2-pro'));
-                modelSelect.add(new Option('GPT-5 Mini (빠름/저렴)', 'gpt-5-mini'));
+                OPENAI_MODEL_OPTIONS.forEach(({ label, value }) => {
+                    modelSelect.add(new Option(label, value));
+                });
             } else if (provider === 'gemini') {
-                modelSelect.add(new Option('Gemini 1.5 Flash', 'gemini-1.5-flash'));
-                modelSelect.add(new Option('Gemini 1.5 Pro', 'gemini-1.5-pro'));
+                GEMINI_MODEL_OPTIONS.forEach(({ label, value }) => {
+                    modelSelect.add(new Option(label, value));
+                });
             } else {
                 modelSelect.add(new Option('로컬 (패턴 매칭)', 'local'));
             }

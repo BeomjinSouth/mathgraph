@@ -2,17 +2,17 @@
 
 ## Status
 
-- Task: Mk2.2 usability and AI/runtime parity improvements
+- Task: OpenAI Structured Outputs alignment for AI graph generation
 - State: Done
-- Last updated: 2026-04-13
+- Last updated: 2026-04-25
 
 ## Plan
 
-1. Update task docs and lock scope.
-2. Fix export and axis-state consistency in the main app flow.
-3. Extend AI/runtime parity for `numberLine`.
-4. Implement function-line intersection solving.
-5. Verify behavior and update handoff notes.
+1. Read local OpenAI reference context and verify volatile API details against official docs.
+2. Update project planning/context docs before changing runtime behavior.
+3. Replace OpenAI JSON mode requests with Responses API Structured Outputs.
+4. Refresh model defaults/options and sanitize nullable structured-output fields before validation.
+5. Add request-construction regression tests, run verification, update docs, commit, and push.
 
 ## Progress Log
 
@@ -22,44 +22,43 @@
 - [x] Step 4
 - [x] Step 5
 
-## Supplemental Updates
-
-- 2026-04-13: Fixed Solid3D hidden-edge mapping for prism/pyramid closing edges so dashed lines no longer jump to edge index `0`.
-- 2026-04-13: Added regression coverage in `tests/solid3d-hidden-edges.test.js`.
-
 ## Decisions
 
-- Decision: Focus this batch on visible reliability gaps instead of starting a brand-new feature area.
-- Reason: The biggest user-value win comes from completing already-exposed functionality first.
+- Decision: Keep direct Responses API calls for this pass and do not introduce Agents SDK/function calling.
+- Reason: The workflow is a single typed final response, and the app already owns validation and side-effect application.
+- Decision: Use strict Structured Outputs with nullable fields plus local null stripping.
+- Reason: OpenAI strict schemas require all fields to be required, while GraphA operations have type-specific optional fields.
+- Decision: Set `store: false` in OpenAI requests.
+- Reason: This graph-generation path does not need default response storage.
 
 ## Blockers
 
-- Blocker: None for repository connectivity. `origin` is configured and Vercel link state is present.
-- Owner: N/A
-- Next action: Keep implementation/docs/tests aligned, then commit and push after verification.
+- Blocker: None for implementation.
+- Risk: Browser-local API keys remain a public-deployment security concern.
+- Next action: Add Vercel serverless proxy/BYOK split in a follow-up if this becomes a shared production service.
 
 ## Verification
 
 - Checks run:
   - `node --check js/ai/AIService.js`
-  - `node -e "const fs=require('fs'); const acorn=require('acorn'); acorn.parse(fs.readFileSync('js/main.js','utf8'), {ecmaVersion:'latest', sourceType:'module'}); acorn.parse(fs.readFileSync('js/ui/CommandPalette.js','utf8'), {ecmaVersion:'latest', sourceType:'module'}); console.log('parse ok');"`
-  - `node --test tests/number-line-ai-parity.test.js`
-  - `node --test tests/function-line-intersection.test.js`
+  - `node -e "const fs=require('fs'); const acorn=require('acorn'); for (const f of ['js/main.js']) { acorn.parse(fs.readFileSync(f,'utf8'), {ecmaVersion:'latest', sourceType:'module'}); } console.log('parse ok');"`
   - `node --test tests/ai-flow.test.js`
-  - `node --test tests/solid3d-hidden-edges.test.js`
-  - `node --test`
+  - `npm.cmd test`
+  - `git diff --check`
 - Result:
-  - Passed
+  - Passed. `git diff --check` reported line-ending warnings only.
 
 ## Handoff
 
 - What changed:
-  - Export path now uses consistent axis state handling and a hybrid SVG output with vector overlays for common 2D objects.
-  - Command palette view toggles now update the same runtime state model as the right-side panel.
-  - AI validated patch flow now fully supports `numberLine`.
-  - Function-line intersections now resolve real crossings, including vertical line cases.
-  - `AIService.js` was recovered to a valid baseline and re-extended with deterministic handling for delete-safety, center/radius circles, graph functions, midpoints, tangent-to-function requests, circle equations, linear equations, and richer AI context JSON extraction.
+  - OpenAI Responses requests now use strict Structured Outputs with the GraphA `operations[]` JSON Schema.
+  - OpenAI text and vision requests set `store: false`, use configured reasoning effort and verbosity, and reuse shared output extraction.
+  - OpenAI model defaults/options now use the current reference family (`gpt-5.5`, `gpt-5.5-pro`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`).
+  - Nullable fields emitted for strict schema compatibility are stripped before local validation/application.
+  - Unit tests cover OpenAI request construction and response extraction without making network calls.
 - What remains:
-  - Optional follow-up: restore or expand deterministic parsing for every advanced construction helper (`pointOnLine`, `pointOnCircle`, arc/sector, marker/dimension language) so low-context local fallback reaches parity with the documented AI schema.
-- Follow-up:
-  - Revisit `polygon` AI parity, advanced construction-language coverage, and dimension-driving after this batch.
+  - Public deployments should move API calls behind a Vercel/server-side proxy rather than storing API keys in browser local storage.
+- Official sources checked:
+  - `https://developers.openai.com/api/docs/models`
+  - `https://developers.openai.com/api/docs/guides/structured-outputs`
+  - `https://developers.openai.com/api/reference/resources/responses/methods/create`

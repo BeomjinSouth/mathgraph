@@ -7,6 +7,206 @@
 
 import { parseAIJSONPayload } from './JSONUtils.js';
 
+export const DEFAULT_OPENAI_MODEL = 'gpt-5.5';
+
+export const OPENAI_MODEL_OPTIONS = [
+    { value: 'gpt-5.5', label: 'GPT-5.5 (권장)' },
+    { value: 'gpt-5.5-pro', label: 'GPT-5.5 Pro (고난도/느림)' },
+    { value: 'gpt-5.4', label: 'GPT-5.4 (균형)' },
+    { value: 'gpt-5.4-mini', label: 'GPT-5.4 Mini (빠름/저렴)' },
+    { value: 'gpt-5.4-nano', label: 'GPT-5.4 Nano (최저 비용)' }
+];
+
+export const GEMINI_MODEL_OPTIONS = [
+    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }
+];
+
+const GRAPH_OPERATION_TYPES = [
+    'point', 'pointOnLine', 'pointOnCircle', 'circleCenterPoint',
+    'segment', 'line', 'ray', 'circle', 'circleThreePoints',
+    'intersection', 'midpoint', 'parallel', 'perpendicular',
+    'perpendicularBisector', 'angleBisector', 'tangentCircle', 'tangentFunction', 'function',
+    'vector', 'rightAngleMarker', 'equalLengthMarker',
+    'angleDimension', 'lengthDimension',
+    'arc', 'sector', 'circularSegment',
+    'prism', 'pyramid', 'numberLine'
+];
+
+const NULLABLE_STRING = { type: ['string', 'null'] };
+const NULLABLE_NUMBER = { type: ['number', 'null'] };
+const NULLABLE_BOOLEAN = { type: ['boolean', 'null'] };
+
+const customMarkSchema = {
+    type: 'object',
+    properties: {
+        value: NULLABLE_NUMBER,
+        label: NULLABLE_STRING
+    },
+    required: ['value', 'label'],
+    additionalProperties: false
+};
+
+const operationProperties = {
+    op: {
+        type: 'string',
+        enum: ['create', 'update', 'delete'],
+        description: 'Operation to apply to the graph model.'
+    },
+    id: {
+        ...NULLABLE_STRING,
+        description: 'Stable temporary or existing object id. Required for update/delete and recommended for create.'
+    },
+    type: {
+        type: ['string', 'null'],
+        enum: [...GRAPH_OPERATION_TYPES, null],
+        description: 'Object type for create operations. Use null for update/delete operations.'
+    },
+    label: NULLABLE_STRING,
+    x: NULLABLE_NUMBER,
+    y: NULLABLE_NUMBER,
+    point1Id: NULLABLE_STRING,
+    point2Id: NULLABLE_STRING,
+    point3Id: NULLABLE_STRING,
+    centerId: NULLABLE_STRING,
+    pointOnCircleId: NULLABLE_STRING,
+    originId: NULLABLE_STRING,
+    directionPointId: NULLABLE_STRING,
+    lineId: NULLABLE_STRING,
+    circleId: NULLABLE_STRING,
+    segmentId: NULLABLE_STRING,
+    object1Id: NULLABLE_STRING,
+    object2Id: NULLABLE_STRING,
+    baseLineId: NULLABLE_STRING,
+    throughPointId: NULLABLE_STRING,
+    startPointId: NULLABLE_STRING,
+    endPointId: NULLABLE_STRING,
+    functionId: NULLABLE_STRING,
+    vertexId: NULLABLE_STRING,
+    line1Id: NULLABLE_STRING,
+    line2Id: NULLABLE_STRING,
+    segment1Id: NULLABLE_STRING,
+    segment2Id: NULLABLE_STRING,
+    tangentPointId: NULLABLE_STRING,
+    apexId: NULLABLE_STRING,
+    expression: NULLABLE_STRING,
+    mode: {
+        type: ['string', 'null'],
+        enum: ['minor', 'major', null]
+    },
+    baseVertexIds: {
+        type: ['array', 'null'],
+        items: { type: 'string' }
+    },
+    topVertexIds: {
+        type: ['array', 'null'],
+        items: { type: 'string' }
+    },
+    start: NULLABLE_NUMBER,
+    end: NULLABLE_NUMBER,
+    step: NULLABLE_NUMBER,
+    showArrows: NULLABLE_BOOLEAN,
+    tickHeight: NULLABLE_NUMBER,
+    customMarks: {
+        type: ['array', 'null'],
+        items: customMarkSchema
+    },
+    color: NULLABLE_STRING,
+    visible: NULLABLE_BOOLEAN,
+    lineWidth: NULLABLE_NUMBER,
+    pointSize: NULLABLE_NUMBER,
+    fontSize: NULLABLE_NUMBER,
+    dashed: NULLABLE_BOOLEAN,
+    fillColor: NULLABLE_STRING,
+    fillOpacity: NULLABLE_NUMBER,
+    showLabel: NULLABLE_BOOLEAN,
+    locked: NULLABLE_BOOLEAN,
+    t: NULLABLE_NUMBER,
+    angle: NULLABLE_NUMBER,
+    labelOffset: {
+        type: ['object', 'null'],
+        properties: {
+            x: NULLABLE_NUMBER,
+            y: NULLABLE_NUMBER
+        },
+        required: ['x', 'y'],
+        additionalProperties: false
+    }
+};
+
+export const GRAPH_OPERATIONS_JSON_SCHEMA = {
+    type: 'object',
+    properties: {
+        operations: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: operationProperties,
+                required: Object.keys(operationProperties),
+                additionalProperties: false
+            }
+        }
+    },
+    required: ['operations'],
+    additionalProperties: false
+};
+
+export const GRAPH_OPERATIONS_RESPONSE_FORMAT = {
+    type: 'json_schema',
+    name: 'graph_operations',
+    description: 'GraphA patch operations for creating, updating, or deleting graph objects.',
+    strict: true,
+    schema: GRAPH_OPERATIONS_JSON_SCHEMA
+};
+
+export function stripNullFields(value) {
+    if (Array.isArray(value)) {
+        return value.map(item => stripNullFields(item));
+    }
+
+    if (!value || typeof value !== 'object') {
+        return value;
+    }
+
+    const cleaned = {};
+    for (const [key, item] of Object.entries(value)) {
+        if (item === null || item === undefined) {
+            continue;
+        }
+        cleaned[key] = stripNullFields(item);
+    }
+    return cleaned;
+}
+
+export function extractOpenAIResponseText(data) {
+    if (!data || typeof data !== 'object') {
+        return '';
+    }
+
+    if (data.output_parsed !== undefined) {
+        return JSON.stringify(data.output_parsed);
+    }
+
+    if (typeof data.output_text === 'string') {
+        return data.output_text;
+    }
+
+    let content = '';
+    if (Array.isArray(data.output)) {
+        for (const item of data.output) {
+            if (item.type === 'message' && Array.isArray(item.content)) {
+                for (const block of item.content) {
+                    if (block.type === 'output_text' && typeof block.text === 'string') {
+                        content += block.text;
+                    }
+                }
+            }
+        }
+    }
+
+    return content;
+}
+
 // AI 참조 문서에서 가져온 시스템 프롬프트
 const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시스턴트입니다.
 사용자의 요청을 분석하여 아래 JSON 스키마에 맞는 **구조화된 출력만** 생성합니다.
@@ -122,8 +322,8 @@ export class AIServiceConfig {
     constructor() {
         this.provider = 'openai'; // 'openai' | 'gemini' | 'local'
         this.apiKey = '';
-        this.model = 'gpt-5.2'; // GPT-5.2 기본값
-        this.reasoningEffort = 'low'; // none, low, medium, high, xhigh
+        this.model = DEFAULT_OPENAI_MODEL;
+        this.reasoningEffort = 'low'; // none, minimal, low, medium, high, xhigh
         this.verbosity = 'low'; // low, medium, high
     }
 
@@ -177,7 +377,7 @@ export class AIService {
         this.config.provider = provider;
         // 프로바이더별 기본 모델
         if (provider === 'openai') {
-            this.config.model = 'gpt-5.2'; // GPT-5.2 사용
+            this.config.model = DEFAULT_OPENAI_MODEL;
         } else if (provider === 'gemini') {
             this.config.model = 'gemini-1.5-flash';
         }
@@ -279,10 +479,36 @@ export class AIService {
     }
 
     /**
-     * OpenAI Responses API 호출 (GPT-5.2)
-     * https://platform.openai.com/docs/guides/latest-model
+     * OpenAI Responses API 호출
+     * Uses Structured Outputs so the model response matches the GraphA operations schema.
      */
     async callOpenAI(messages) {
+        const requestBody = this.buildOpenAIRequestBody(messages);
+
+        const response = await fetch('https://api.openai.com/v1/responses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.apiKey}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || 'OpenAI Responses API 오류');
+        }
+
+        const data = await response.json();
+        this.lastResponseId = data.id;
+
+        const content = extractOpenAIResponseText(data);
+        this.conversationHistory.push({ role: 'assistant', content });
+
+        return content;
+    }
+
+    buildOpenAIRequestBody(messages, overrides = {}) {
         // 시스템 프롬프트와 사용자 메시지 분리
         const systemContent = messages
             .filter(m => m.role === 'system')
@@ -295,64 +521,48 @@ export class AIService {
             .join('\n\n');
 
         // 이전 응답 ID (대화 연속성을 위해)
-        const previousResponseId = this.lastResponseId || undefined;
+        const previousResponseId = overrides.previousResponseId ?? this.lastResponseId ?? undefined;
 
-        const response = await fetch('https://api.openai.com/v1/responses', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.config.apiKey}`
-            },
-            body: JSON.stringify({
-                model: this.config.model,
-                input: [
-                    { role: 'developer', content: systemContent },
-                    { role: 'user', content: userContent }
-                ],
-                // GPT-5.2 reasoning 설정 - 기하 도형 생성은 복잡하지 않으므로 low
-                reasoning: {
-                    effort: 'low'
-                },
-                // 간결한 JSON 출력을 위해 low verbosity
-                text: {
-                    verbosity: 'low',
-                    format: {
-                        type: 'json_object'
-                    }
-                },
-                // 이전 대화 컨텍스트 유지
-                ...(previousResponseId && { previous_response_id: previousResponseId })
-            })
+        return this.buildOpenAIRequestBodyFromInput([
+            { role: 'developer', content: systemContent },
+            { role: 'user', content: userContent }
+        ], {
+            previousResponseId,
+            reasoningEffort: overrides.reasoningEffort,
+            verbosity: overrides.verbosity,
+            model: overrides.model
         });
+    }
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || 'OpenAI Responses API 오류');
-        }
+    buildOpenAIRequestBodyFromInput(input, options = {}) {
+        const previousResponseId = options.previousResponseId;
+        const model = options.model || this.config.model || DEFAULT_OPENAI_MODEL;
+        const reasoningEffort = this.normalizeReasoningEffort(options.reasoningEffort ?? this.config.reasoningEffort);
+        const verbosity = this.normalizeVerbosity(options.verbosity ?? this.config.verbosity);
 
-        const data = await response.json();
+        return {
+            model,
+            input,
+            store: false,
+            reasoning: {
+                effort: reasoningEffort
+            },
+            text: {
+                verbosity,
+                format: GRAPH_OPERATIONS_RESPONSE_FORMAT
+            },
+            ...(previousResponseId && { previous_response_id: previousResponseId })
+        };
+    }
 
-        // 응답 ID 저장 (다음 턴에서 chain-of-thought 유지)
-        this.lastResponseId = data.id;
+    normalizeReasoningEffort(value) {
+        const allowed = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']);
+        return allowed.has(value) ? value : 'low';
+    }
 
-        // GPT-5.2 Responses API는 output 배열에서 텍스트 추출
-        let content = '';
-        if (data.output) {
-            for (const item of data.output) {
-                if (item.type === 'message' && item.content) {
-                    for (const block of item.content) {
-                        if (block.type === 'output_text') {
-                            content += block.text;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 대화 히스토리에 추가
-        this.conversationHistory.push({ role: 'assistant', content });
-
-        return content;
+    normalizeVerbosity(value) {
+        const allowed = new Set(['low', 'medium', 'high']);
+        return allowed.has(value) ? value : 'low';
     }
 
     /**
@@ -399,7 +609,7 @@ export class AIService {
      */
     extractJSON(text) {
         try {
-            return parseAIJSONPayload(text);
+            return stripNullFields(parseAIJSONPayload(text));
         } catch (e) {
             return null;
         }
@@ -1336,49 +1546,36 @@ export class AIService {
 
         try {
             if (this.config.provider === 'openai') {
-                // GPT-5.2 Responses API로 이미지 분석
+                const requestBody = this.buildOpenAIRequestBodyFromInput([
+                    { role: 'developer', content: SYSTEM_PROMPT },
+                    {
+                        role: 'user',
+                        content: [
+                            { type: 'input_text', text: prompt },
+                            { type: 'input_image', image_url: imageDataUrl, detail: 'high' }
+                        ]
+                    }
+                ], {
+                    reasoningEffort: 'medium',
+                    model: this.config.model || DEFAULT_OPENAI_MODEL
+                });
+
                 const response = await fetch('https://api.openai.com/v1/responses', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${this.config.apiKey}`
                     },
-                    body: JSON.stringify({
-                        model: 'gpt-5.2',
-                        input: [
-                            { role: 'developer', content: SYSTEM_PROMPT },
-                            {
-                                role: 'user',
-                                content: [
-                                    { type: 'input_text', text: prompt },
-                                    { type: 'input_image', image_url: imageDataUrl, detail: 'high' }
-                                ]
-                            }
-                        ],
-                        reasoning: { effort: 'medium' }, // 이미지 분석은 더 깊은 추론 필요
-                        text: { verbosity: 'low', format: { type: 'json_object' } }
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.error?.message || 'OpenAI GPT-5.2 Vision API 오류');
+                    throw new Error(error.error?.message || 'OpenAI Vision API 오류');
                 }
 
                 const data = await response.json();
-                // GPT-5.2 응답에서 텍스트 추출
-                let content = '';
-                if (data.output) {
-                    for (const item of data.output) {
-                        if (item.type === 'message' && item.content) {
-                            for (const block of item.content) {
-                                if (block.type === 'output_text') {
-                                    content += block.text;
-                                }
-                            }
-                        }
-                    }
-                }
+                const content = extractOpenAIResponseText(data);
                 const json = this.extractJSON(content);
 
                 if (json) {

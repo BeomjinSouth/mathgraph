@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { parseAIJSONPayload } from '../js/ai/JSONUtils.js';
-import { AIService } from '../js/ai/AIService.js';
+import {
+    AIService,
+    DEFAULT_OPENAI_MODEL,
+    GRAPH_OPERATIONS_RESPONSE_FORMAT,
+    extractOpenAIResponseText
+} from '../js/ai/AIService.js';
 import { SchemaValidator } from '../js/ai/SchemaValidator.js';
 import { PatchApplier } from '../js/ai/PatchApplier.js';
 
@@ -144,6 +149,147 @@ test('parseAIJSONPayload extracts JSON from prose and code fences', () => {
     const parsedFromProse = parseAIJSONPayload('설명입니다.\n[{"op":"create","type":"point","x":3,"y":4}]\n끝');
     assert.equal(Array.isArray(parsedFromProse), true);
     assert.equal(parsedFromProse[0].x, 3);
+});
+
+test('AIService defaults to current OpenAI reference model', () => {
+    const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+        save() { }
+    });
+
+    assert.equal(service.config.model, DEFAULT_OPENAI_MODEL);
+    assert.equal(DEFAULT_OPENAI_MODEL, 'gpt-5.5');
+});
+
+test('AIService builds OpenAI Responses request with strict Structured Outputs', () => {
+    const service = new AIService({
+        provider: 'openai',
+        apiKey: 'test-key',
+        model: 'gpt-5.4-mini',
+        reasoningEffort: 'medium',
+        verbosity: 'high',
+        save() { }
+    });
+    service.lastResponseId = 'resp_previous';
+
+    const body = service.buildOpenAIRequestBody([
+        { role: 'system', content: 'system rules' },
+        { role: 'user', content: '삼각형을 그려줘' }
+    ]);
+
+    assert.equal(body.model, 'gpt-5.4-mini');
+    assert.equal(body.store, false);
+    assert.deepEqual(body.reasoning, { effort: 'medium' });
+    assert.equal(body.text.verbosity, 'high');
+    assert.equal(body.text.format, GRAPH_OPERATIONS_RESPONSE_FORMAT);
+    assert.equal(body.text.format.type, 'json_schema');
+    assert.equal(body.text.format.strict, true);
+    assert.equal(body.text.format.schema.additionalProperties, false);
+    assert.deepEqual(body.text.format.schema.required, ['operations']);
+    assert.equal(body.previous_response_id, 'resp_previous');
+});
+
+test('AIService callOpenAI sends Structured Outputs request and extracts output text', async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedUrl = null;
+    let capturedOptions = null;
+
+    globalThis.fetch = async (url, options) => {
+        capturedUrl = url;
+        capturedOptions = options;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: 'resp_next',
+                    output: [
+                        {
+                            type: 'message',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: '{"operations":[{"op":"create","type":"point","x":1,"y":2}]}'
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            reasoningEffort: 'low',
+            verbosity: 'low',
+            save() { }
+        });
+
+        const content = await service.callOpenAI([
+            { role: 'system', content: 'system rules' },
+            { role: 'user', content: '점 하나' }
+        ]);
+
+        const body = JSON.parse(capturedOptions.body);
+        assert.equal(capturedUrl, 'https://api.openai.com/v1/responses');
+        assert.equal(capturedOptions.headers.Authorization, 'Bearer test-key');
+        assert.equal(body.text.format.type, 'json_schema');
+        assert.equal(body.text.format.strict, true);
+        assert.equal(body.store, false);
+        assert.equal(content, '{"operations":[{"op":"create","type":"point","x":1,"y":2}]}');
+        assert.equal(service.lastResponseId, 'resp_next');
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('AIService strips nullable Structured Output fields before validation', () => {
+    const service = createAIService();
+    const parsed = service.extractJSON({
+        operations: [
+            {
+                op: 'create',
+                id: 'p1',
+                type: 'point',
+                label: null,
+                x: 1,
+                y: 2,
+                color: null
+            }
+        ]
+    });
+
+    assert.deepEqual(parsed, {
+        operations: [
+            {
+                op: 'create',
+                id: 'p1',
+                type: 'point',
+                x: 1,
+                y: 2
+            }
+        ]
+    });
+});
+
+test('extractOpenAIResponseText supports output_text and parsed responses', () => {
+    assert.equal(
+        extractOpenAIResponseText({
+            output: [
+                { type: 'message', content: [{ type: 'output_text', text: '{"ok":true}' }] }
+            ]
+        }),
+        '{"ok":true}'
+    );
+
+    assert.equal(
+        extractOpenAIResponseText({ output_parsed: { operations: [] } }),
+        '{"operations":[]}'
+    );
 });
 
 test('legacy fallback parses circle center and radius requests', () => {
