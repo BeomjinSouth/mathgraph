@@ -40,7 +40,7 @@ export class SchemaValidator {
             'vector', 'rightAngleMarker', 'equalLengthMarker',
             'angleDimension', 'lengthDimension',
             'arc', 'sector', 'circularSegment',
-            'prism', 'pyramid', 'numberLine'
+            'polygon', 'prism', 'pyramid', 'numberLine'
         ];
 
         this.validOperations = ['create', 'update', 'delete'];
@@ -72,6 +72,7 @@ export class SchemaValidator {
             arc: ['circleId', 'startPointId', 'endPointId'],
             sector: ['circleId', 'startPointId', 'endPointId'],
             circularSegment: ['circleId', 'startPointId', 'endPointId'],
+            polygon: ['vertexIds'],
             prism: ['baseVertexIds', 'topVertexIds'],
             pyramid: ['baseVertexIds', 'apexId'],
             numberLine: ['start', 'end', 'step', 'y']
@@ -145,6 +146,14 @@ export class SchemaValidator {
 
         if (op.topVertexIds !== undefined && !Array.isArray(op.topVertexIds)) {
             errors.push(`${prefix}: topVertexIds must be an array.`);
+        }
+
+        if (op.vertexIds !== undefined && !Array.isArray(op.vertexIds)) {
+            errors.push(`${prefix}: vertexIds must be an array.`);
+        }
+
+        if (op.type === 'polygon' && Array.isArray(op.vertexIds) && op.vertexIds.length < 3) {
+            errors.push(`${prefix}: polygon vertexIds must contain at least 3 vertices.`);
         }
 
         if (op.type === 'prism') {
@@ -245,6 +254,16 @@ export class SchemaValidator {
                         result.addError(`operations[${i}]: topVertexIds item "${refId}" does not exist.`);
                     } else if (deletedIds.has(refId)) {
                         result.addError(`operations[${i}]: topVertexIds item "${refId}" was deleted earlier in the batch.`);
+                    }
+                }
+            }
+
+            if (op.vertexIds && Array.isArray(op.vertexIds)) {
+                for (const refId of op.vertexIds) {
+                    if (!existingIds.has(refId) && !newIds.has(refId)) {
+                        result.addError(`operations[${i}]: vertexIds item "${refId}" does not exist.`);
+                    } else if (deletedIds.has(refId)) {
+                        result.addError(`operations[${i}]: vertexIds item "${refId}" was deleted earlier in the batch.`);
                     }
                 }
             }

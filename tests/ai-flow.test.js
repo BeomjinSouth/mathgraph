@@ -22,6 +22,8 @@ function createAIService() {
 function createPatchHarness() {
     const objects = new Map();
     const history = [];
+    let pointCount = 0;
+    let polygonCount = 0;
 
     const objectManager = {
         selectedObjects: new Set(),
@@ -45,6 +47,46 @@ function createPatchHarness() {
         selectObject() { },
         clearHighlight() { },
         highlightObject() { },
+        createPoint(x, y, params = {}) {
+            const obj = {
+                id: `point_${++pointCount}`,
+                type: 'point',
+                x,
+                y,
+                ...params,
+                toJSON() {
+                    return {
+                        id: this.id,
+                        type: this.type,
+                        x: this.x,
+                        y: this.y,
+                        label: this.label,
+                        color: this.color
+                    };
+                }
+            };
+            objects.set(obj.id, obj);
+            return obj;
+        },
+        createPolygon(vertexIds, params = {}) {
+            const obj = {
+                id: `polygon_${++polygonCount}`,
+                type: 'polygon',
+                vertexIds,
+                ...params,
+                toJSON() {
+                    return {
+                        id: this.id,
+                        type: this.type,
+                        vertexIds: this.vertexIds,
+                        fillColor: this.fillColor,
+                        fillOpacity: this.fillOpacity
+                    };
+                }
+            };
+            objects.set(obj.id, obj);
+            return obj;
+        },
         createRightAngleMarker(vertexId, line1Id, line2Id, params = {}) {
             const obj = {
                 id: 'marker_1',
@@ -325,6 +367,15 @@ test('legacy fallback strips graph suffix from function expressions', () => {
     assert.equal(result.json.operations[0].expression, 'x^2');
 });
 
+test('processCommand uses local fallback when no API key is configured', async () => {
+    const service = createAIService();
+    const result = await service.processCommand('y = x^2 graph', { objects: [] });
+
+    assert.equal(result.success, true);
+    assert.equal(result.json.operations[0].type, 'function');
+    assert.equal(result.json.operations[0].expression, 'x^2');
+});
+
 test('legacy fallback does not create a new circle for delete requests', () => {
     const service = createAIService();
     const result = service.fallbackProcess('원을 지워줘');
@@ -399,6 +450,34 @@ test('SchemaValidator accepts point helpers and number lines', () => {
     assert.equal(validation.valid, true);
 });
 
+test('SchemaValidator accepts polygons with three or more vertices', () => {
+    const validator = new SchemaValidator();
+    const validation = validator.parseAndValidate({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0 },
+            { op: 'create', id: 'B', type: 'point', x: 4, y: 0 },
+            { op: 'create', id: 'C', type: 'point', x: 2, y: 3 },
+            { op: 'create', type: 'polygon', vertexIds: ['A', 'B', 'C'], fillColor: '#3b82f6', fillOpacity: 0.12 }
+        ]
+    });
+
+    assert.equal(validation.valid, true);
+});
+
+test('SchemaValidator rejects polygons with too few vertices', () => {
+    const validator = new SchemaValidator();
+    const validation = validator.parseAndValidate({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0 },
+            { op: 'create', id: 'B', type: 'point', x: 4, y: 0 },
+            { op: 'create', type: 'polygon', vertexIds: ['A', 'B'] }
+        ]
+    });
+
+    assert.equal(validation.valid, false);
+    assert.match(validation.errors.join('\n'), /at least 3 vertices/);
+});
+
 test('PatchApplier supports marker creation and common style fields', () => {
     const { objectManager, historyManager, objects, history } = createPatchHarness();
     const applier = new PatchApplier(objectManager, historyManager);
@@ -456,4 +535,35 @@ test('PatchApplier supports number line creation', () => {
     assert.equal(numberLine.start, -2);
     assert.equal(numberLine.step, 0.5);
     assert.equal(numberLine.color, '#2563eb');
+});
+
+test('PatchApplier creates polygons and resolves temporary vertex ids', () => {
+    const { objectManager, historyManager, objects, history } = createPatchHarness();
+    const applier = new PatchApplier(objectManager, historyManager);
+
+    const result = applier.apply({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 4, y: 0, label: 'B' },
+            { op: 'create', id: 'C', type: 'point', x: 2, y: 3, label: 'C' },
+            {
+                op: 'create',
+                id: 'tri',
+                type: 'polygon',
+                vertexIds: ['A', 'B', 'C'],
+                fillColor: '#22c55e',
+                fillOpacity: 0.2
+            }
+        ]
+    });
+
+    assert.equal(result.success, true);
+    assert.equal(result.message, '4 created');
+
+    const polygon = objects.get('polygon_1');
+    assert.ok(polygon);
+    assert.deepEqual(polygon.vertexIds, ['point_1', 'point_2', 'point_3']);
+    assert.equal(polygon.fillColor, '#22c55e');
+    assert.equal(polygon.fillOpacity, 0.2);
+    assert.deepEqual(history.map(item => item[0]), ['create', 'create', 'create', 'create']);
 });

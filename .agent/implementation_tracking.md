@@ -2,17 +2,18 @@
 
 ## Status
 
-- Task: OpenAI Structured Outputs alignment for AI graph generation
+- Task: PDF-driven geometry and graph coverage improvement
 - State: Done
-- Last updated: 2026-04-25
+- Last updated: 2026-05-19
 
 ## Plan
 
-1. Read local OpenAI reference context and verify volatile API details against official docs.
-2. Update project planning/context docs before changing runtime behavior.
-3. Replace OpenAI JSON mode requests with Responses API Structured Outputs.
-4. Refresh model defaults/options and sanitize nullable structured-output fields before validation.
-5. Add request-construction regression tests, run verification, update docs, commit, and push.
+1. Read project operating docs, local OpenAI context, and relevant PDF/browser skills.
+2. Sample the three local teacher-guide PDFs for representative diagram needs.
+3. Update planning docs before runtime/schema changes.
+4. Add first-class polygon runtime and AI schema parity.
+5. Reconnect deterministic fallback for no-key/failed-API shape generation.
+6. Run unit tests, render browser screenshots, update docs, commit, and push.
 
 ## Progress Log
 
@@ -21,44 +22,53 @@
 - [x] Step 3
 - [x] Step 4
 - [x] Step 5
+- [x] Step 6
 
 ## Decisions
 
-- Decision: Keep direct Responses API calls for this pass and do not introduce Agents SDK/function calling.
-- Reason: The workflow is a single typed final response, and the app already owns validation and side-effect application.
-- Decision: Use strict Structured Outputs with nullable fields plus local null stripping.
-- Reason: OpenAI strict schemas require all fields to be required, while GraphA operations have type-specific optional fields.
-- Decision: Set `store: false` in OpenAI requests.
-- Reason: This graph-generation path does not need default response storage.
+- Decision: Prioritize first-class polygon support.
+- Reason: The sampled PDF pages repeatedly use triangles, quadrilaterals, similarity figures, graph regions, and histogram-like bars; a filled/selectable polygon closes the widest runtime and AI parity gap.
+- Decision: Keep direct Responses API calls and strict Structured Outputs unchanged.
+- Reason: This pass extends the graph operation contract but does not need new OpenAI orchestration or server-side behavior.
+- Decision: Keep large teacher-guide PDFs out of Git.
+- Reason: Each source PDF exceeds normal GitHub file-size limits and is local analysis input rather than app source.
+- Decision: Validate the browser path with local structured JSON instead of a live external API call.
+- Reason: No user API key was available in this environment; the same validated `operations[]` contract is used after OpenAI Responses output parsing.
 
 ## Blockers
 
-- Blocker: None for implementation.
+- Blocker: None.
 - Risk: Browser-local API keys remain a public-deployment security concern.
 - Next action: Add Vercel serverless proxy/BYOK split in a follow-up if this becomes a shared production service.
 
 ## Verification
 
 - Checks run:
-  - `node --check js/ai/AIService.js`
-  - `node -e "const fs=require('fs'); const acorn=require('acorn'); for (const f of ['js/main.js']) { acorn.parse(fs.readFileSync(f,'utf8'), {ecmaVersion:'latest', sourceType:'module'}); } console.log('parse ok');"`
-  - `node --test tests/ai-flow.test.js`
   - `npm.cmd test`
   - `git diff --check`
+  - `node --check js\objects\Polygon.js; node --check js\ai\AIService.js; node --check js\main.js; node --check js\tools\PolygonTool.js`
+  - Headless Chrome/Playwright-core screenshot validation against `http://127.0.0.1:4173/`
 - Result:
-  - Passed. `git diff --check` reported line-ending warnings only.
+  - Passed. Unit tests reported 27 passing tests.
+  - Browser validation produced `tmp/browser-captures/02-ai-polygon-coverage-scene.png` with 18 valid objects and no console errors.
+  - Chat JSON validation produced `tmp/browser-captures/03-chat-json-polygon.png` with 1 valid polygon and no console errors.
 
 ## Handoff
 
 - What changed:
-  - OpenAI Responses requests now use strict Structured Outputs with the GraphA `operations[]` JSON Schema.
-  - OpenAI text and vision requests set `store: false`, use configured reasoning effort and verbosity, and reuse shared output extraction.
-  - OpenAI model defaults/options now use the current reference family (`gpt-5.5`, `gpt-5.5-pro`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`).
-  - Nullable fields emitted for strict schema compatibility are stripped before local validation/application.
-  - Unit tests cover OpenAI request construction and response extraction without making network calls.
+  - Added first-class polygon runtime, tool creation, AI schema validation, AI patch application, SVG export, fallback examples, docs, and tests.
 - What remains:
-  - Public deployments should move API calls behind a Vercel/server-side proxy rather than storing API keys in browser local storage.
+  - Follow-up chart/solid coverage still needed for histogram/frequency polygon/box plots and cylinder/cone/sphere style solids.
 - Official sources checked:
-  - `https://developers.openai.com/api/docs/models`
   - `https://developers.openai.com/api/docs/guides/structured-outputs`
   - `https://developers.openai.com/api/reference/resources/responses/methods/create`
+  - `https://developers.openai.com/api/docs/guides/tools-computer-use`
+
+---
+
+## Previous Task Snapshot
+
+- Task: OpenAI Structured Outputs alignment for AI graph generation
+- State: Done
+- Completed: 2026-04-25
+- Verification: `node --check js/ai/AIService.js`, targeted parse check, `node --test tests/ai-flow.test.js`, `npm.cmd test`, and `git diff --check` all passed.

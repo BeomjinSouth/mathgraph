@@ -13,6 +13,7 @@ import { Vector } from '../objects/Vector.js';
 import { RightAngleMarker, EqualLengthMarker } from '../objects/Marker.js';
 import { Arc, Sector, CircularSegment } from '../objects/Arc.js'; // Mk.2
 import { AngleDimension, LengthDimension } from '../objects/Dimension.js'; // Mk.2
+import { Polygon } from '../objects/Polygon.js'; // Mk.5
 import { Prism, Pyramid } from '../objects/Solid3D.js'; // Mk.3
 import { NumberLine } from '../objects/NumberLine.js'; // Mk.4
 
@@ -531,6 +532,11 @@ export class ObjectManager {
                 obj = new CircularSegment(data.circleId, data.startPointId, data.endPointId, data.mode || 'minor', data);
                 break;
 
+            case ObjectType.POLYGON:
+            case 'polygon':
+                obj = new Polygon(data.vertexIds, data);
+                break;
+
             // 함수
             case ObjectType.FUNCTION:
             case 'function':
@@ -695,6 +701,10 @@ export class ObjectManager {
 
     createCircularSegment(circleId, startPointId, endPointId, mode = 'minor', params = {}) {
         return this.addObject(new CircularSegment(circleId, startPointId, endPointId, mode, params));
+    }
+
+    createPolygon(vertexIds, params = {}) {
+        return this.addObject(new Polygon(vertexIds, params));
     }
 
     // Mk.2: 치수 생성

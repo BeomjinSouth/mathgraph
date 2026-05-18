@@ -286,6 +286,13 @@ export class PatchApplier {
                 );
                 break;
 
+            case 'polygon':
+                object = this.objectManager.createPolygon(
+                    resolvedOp.vertexIds,
+                    commonParams
+                );
+                break;
+
             case 'prism':
                 object = this.objectManager.createPrism(
                     resolvedOp.baseVertexIds,
@@ -426,6 +433,10 @@ export class PatchApplier {
 
         if (resolved.topVertexIds && Array.isArray(resolved.topVertexIds)) {
             resolved.topVertexIds = resolved.topVertexIds.map(id => idMap.get(id) || id);
+        }
+
+        if (resolved.vertexIds && Array.isArray(resolved.vertexIds)) {
+            resolved.vertexIds = resolved.vertexIds.map(id => idMap.get(id) || id);
         }
 
         return resolved;

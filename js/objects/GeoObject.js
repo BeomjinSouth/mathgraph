@@ -29,6 +29,7 @@ export const ObjectType = {
     ARC: 'arc',
     SECTOR: 'sector',
     CIRCULAR_SEGMENT: 'circularSegment',
+    POLYGON: 'polygon',
 
     PARALLEL: 'parallel',
     PERPENDICULAR: 'perpendicular',
@@ -110,7 +111,7 @@ export function generateLabel(type) {
     }
     if (type === ObjectType.CIRCLE || type === ObjectType.CIRCLE_THREE_POINTS ||
         type === ObjectType.ARC || type === ObjectType.SECTOR ||
-        type === ObjectType.CIRCULAR_SEGMENT) {
+        type === ObjectType.CIRCULAR_SEGMENT || type === ObjectType.POLYGON) {
         return labelGenerators.circle();
     }
     if (type === ObjectType.FUNCTION) {
@@ -181,6 +182,7 @@ export class GeoObject {
             [ObjectType.RAY]: '#3b82f6',
             [ObjectType.CIRCLE]: '#22c55e',
             [ObjectType.CIRCLE_THREE_POINTS]: '#22c55e',
+            [ObjectType.POLYGON]: '#3b82f6',
             [ObjectType.PARALLEL]: '#3b82f6',
             [ObjectType.PERPENDICULAR]: '#3b82f6',
             [ObjectType.PERPENDICULAR_BISECTOR]: '#3b82f6',
@@ -311,6 +313,7 @@ export class GeoObject {
             [ObjectType.RAY]: 'line',
             [ObjectType.CIRCLE]: 'circle',
             [ObjectType.CIRCLE_THREE_POINTS]: 'circle',
+            [ObjectType.POLYGON]: 'polygon',
             [ObjectType.FUNCTION]: 'function',
             [ObjectType.VECTOR]: 'vector',
             [ObjectType.RIGHT_ANGLE_MARKER]: 'marker',
@@ -333,6 +336,7 @@ export class GeoObject {
             [ObjectType.RAY]: '반직선',
             [ObjectType.CIRCLE]: '원',
             [ObjectType.CIRCLE_THREE_POINTS]: '세점원',
+            [ObjectType.POLYGON]: '다각형',
             [ObjectType.PARALLEL]: '평행선',
             [ObjectType.PERPENDICULAR]: '수선',
             [ObjectType.PERPENDICULAR_BISECTOR]: '수직이등분선',

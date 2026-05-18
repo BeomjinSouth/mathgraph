@@ -2,6 +2,60 @@
 
 ## Summary
 
+- Task: PDF-driven geometry and graph coverage improvement
+- Owner: Codex
+- Date: 2026-05-19
+- Related files:
+  - `js/objects/Polygon.js`
+  - `js/core/ObjectManager.js`
+  - `js/tools/PolygonTool.js`
+  - `js/ai/AIService.js`
+  - `js/ai/SchemaValidator.js`
+  - `js/ai/PatchApplier.js`
+  - `tests/ai-flow.test.js`
+  - `docs/ai-reference.md`
+
+## Problem
+
+- The three local teacher-guide PDFs include many plane figures, graph figures, and solid figure examples.
+- MathGraph already covers points, lines, circles, arcs/sectors, functions, number lines, prisms, and pyramids.
+- The main visible gap from the sampled pages is a first-class polygon/filled region object. Triangles, quadrilaterals, similarity diagrams, histogram bars, and shaded regions are currently approximated as separate segments, which weakens selection, fill styling, AI schema parity, and visual comparison.
+- The local no-key AI path also bypasses older shape fallbacks when `processCommand()` runs without an API key.
+
+## Goals
+
+- Add a real polygon runtime object with fill/stroke rendering, hit testing, JSON persistence, and UI tool creation.
+- Add AI schema, validation, patch application, and documentation for `polygon`.
+- Reconnect the no-key/failed-API fallback path so common PDF-style shapes still generate deterministically.
+- Keep OpenAI Responses API architecture unchanged: strict Structured Outputs remains the API-backed drawing contract.
+- Add focused tests for polygon AI parity and fallback behavior.
+
+## Non-Goals
+
+- Do not build a full OCR or automatic PDF-to-diagram extraction pipeline in this pass.
+- Do not add every statistical chart or every curved 3D solid type yet.
+- Do not move BYOK API keys behind a Vercel proxy in this pass.
+- Do not commit the large source PDFs.
+
+## Acceptance Criteria
+
+- [x] Runtime can create, render, select, serialize, and restore a polygon object.
+- [x] Polygon tool creates a polygon object instead of only loose segments.
+- [x] AI Structured Outputs schema accepts `polygon` with `vertexIds`.
+- [x] Patch applier can create polygon objects and resolve temporary vertex IDs.
+- [x] Local fallback can draw triangle/quadrilateral requests through `processCommand()` without an API key.
+- [x] Tests and browser validation show the app can render representative PDF-style diagrams.
+
+## Risks and Open Questions
+
+- A polygon object improves the broadest PDF gap, but histograms still need bar/axis ergonomics in a later pass.
+- Curved solid figures such as cylinders, cones, and spheres are still not first-class objects.
+- Browser-stored API keys remain acceptable only for personal/BYOK usage; public deployment should move API calls behind a server-side proxy later.
+
+---
+
+## Previous Summary
+
 - Task: OpenAI Structured Outputs alignment for AI graph generation
 - Owner: Codex
 - Date: 2026-04-25

@@ -62,16 +62,13 @@ export class PolygonTool extends Tool {
             return;
         }
 
-        // 다각형 생성 (선분들로 구성)
-        const segments = [];
-        for (let i = 0; i < this.vertices.length; i++) {
-            const p1 = this.vertices[i];
-            const p2 = this.vertices[(i + 1) % this.vertices.length];
-
-            const segment = app.objectManager.createSegment(p1.id, p2.id);
-            app.historyManager.recordCreate(segment);
-            segments.push(segment);
-        }
+        // 다각형 객체 생성
+        const polygon = app.objectManager.createPolygon(this.vertices.map(vertex => vertex.id), {
+            color: '#22c55e',
+            fillColor: '#22c55e',
+            fillOpacity: 0.12
+        });
+        app.historyManager.recordCreate(polygon);
 
         app.showToast(`${this.vertices.length}각형 생성!`, 'success');
         app.toolManager.returnToSelect();

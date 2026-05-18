@@ -30,7 +30,7 @@ const GRAPH_OPERATION_TYPES = [
     'vector', 'rightAngleMarker', 'equalLengthMarker',
     'angleDimension', 'lengthDimension',
     'arc', 'sector', 'circularSegment',
-    'prism', 'pyramid', 'numberLine'
+    'polygon', 'prism', 'pyramid', 'numberLine'
 ];
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
@@ -99,6 +99,10 @@ const operationProperties = {
         items: { type: 'string' }
     },
     topVertexIds: {
+        type: ['array', 'null'],
+        items: { type: 'string' }
+    },
+    vertexIds: {
         type: ['array', 'null'],
         items: { type: 'string' }
     },
@@ -250,6 +254,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - equalLengthMarker: segment1Id, segment2Id
 - angleDimension: vertexId, point1Id, point2Id
 - lengthDimension: segmentId
+- polygon: vertexIds (array of at least 3 point IDs)
 - arc, sector, circularSegment: circleId, startPointId, endPointId, mode ("minor" 또는 "major")
 - prism: baseVertexIds (배열), topVertexIds (배열) - 각기둥
 - pyramid: baseVertexIds (배열), apexId - 각뿔
@@ -269,9 +274,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
     { "op": "create", "type": "point", "id": "p1", "x": 0, "y": 0, "label": "A" },
     { "op": "create", "type": "point", "id": "p2", "x": 4, "y": 0, "label": "B" },
     { "op": "create", "type": "point", "id": "p3", "x": 2, "y": 3, "label": "C" },
-    { "op": "create", "type": "segment", "id": "s1", "point1Id": "p1", "point2Id": "p2" },
-    { "op": "create", "type": "segment", "id": "s2", "point1Id": "p2", "point2Id": "p3" },
-    { "op": "create", "type": "segment", "id": "s3", "point1Id": "p3", "point2Id": "p1" }
+    { "op": "create", "type": "polygon", "id": "poly1", "vertexIds": ["p1", "p2", "p3"], "fillColor": "#3b82f6", "fillOpacity": 0.12 }
   ]
 }
 
@@ -281,9 +284,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
     { "op": "create", "type": "point", "id": "p1", "x": 0, "y": 0, "label": "A" },
     { "op": "create", "type": "point", "id": "p2", "x": 4, "y": 0, "label": "B" },
     { "op": "create", "type": "point", "id": "p3", "x": 2, "y": 3, "label": "C" },
-    { "op": "create", "type": "segment", "id": "s1", "point1Id": "p1", "point2Id": "p2" },
-    { "op": "create", "type": "segment", "id": "s2", "point1Id": "p2", "point2Id": "p3" },
-    { "op": "create", "type": "segment", "id": "s3", "point1Id": "p3", "point2Id": "p1" },
+    { "op": "create", "type": "polygon", "id": "poly1", "vertexIds": ["p1", "p2", "p3"], "fillColor": "#3b82f6", "fillOpacity": 0.12 },
     { "op": "create", "type": "circleThreePoints", "id": "c1", "point1Id": "p1", "point2Id": "p2", "point3Id": "p3", "label": "외접원" }
   ]
 }
@@ -405,7 +406,7 @@ export class AIService {
         }
 
         if (!this.config.apiKey || this.config.provider === 'local') {
-            return this.fallbackProcessDeterministic(normalizedMessage, context);
+            return this.fallbackProcess(normalizedMessage, context);
         }
 
         try {
@@ -417,7 +418,7 @@ export class AIService {
             } else if (this.config.provider === 'gemini') {
                 response = await this.callGemini(messages);
             } else {
-                return this.fallbackProcessDeterministic(normalizedMessage, context);
+                return this.fallbackProcess(normalizedMessage, context);
             }
 
             // JSON 파싱
@@ -425,11 +426,11 @@ export class AIService {
             if (json) {
                 return { success: true, json, message: response };
             } else {
-                return this.fallbackProcessDeterministic(normalizedMessage, context);
+                return this.fallbackProcess(normalizedMessage, context);
             }
         } catch (error) {
             console.error('AI 처리 오류:', error);
-            return this.fallbackProcessDeterministic(normalizedMessage, context);
+            return this.fallbackProcess(normalizedMessage, context);
         }
     }
 
@@ -733,9 +734,7 @@ export class AIService {
                 { op: 'create', type: 'point', id: 'p1', x: baseCoords[labels[0]].x, y: baseCoords[labels[0]].y, label: labels[0] },
                 { op: 'create', type: 'point', id: 'p2', x: baseCoords[labels[1]].x, y: baseCoords[labels[1]].y, label: labels[1] },
                 { op: 'create', type: 'point', id: 'p3', x: baseCoords[labels[2]].x, y: baseCoords[labels[2]].y, label: labels[2] },
-                { op: 'create', type: 'segment', point1Id: 'p1', point2Id: 'p2' },
-                { op: 'create', type: 'segment', point1Id: 'p2', point2Id: 'p3' },
-                { op: 'create', type: 'segment', point1Id: 'p3', point2Id: 'p1' }
+                { op: 'create', type: 'polygon', id: 'poly1', vertexIds: ['p1', 'p2', 'p3'], fillColor: '#3b82f6', fillOpacity: 0.12 }
             ];
 
             // 외접원
@@ -784,10 +783,7 @@ export class AIService {
                 { op: 'create', type: 'point', id: 'p2', x: 4 + offsetX, y: 0 + offsetY, label: labels[1] },
                 { op: 'create', type: 'point', id: 'p3', x: 4 + offsetX, y: 4 + offsetY, label: labels[2] },
                 { op: 'create', type: 'point', id: 'p4', x: 0 + offsetX, y: 4 + offsetY, label: labels[3] },
-                { op: 'create', type: 'segment', point1Id: 'p1', point2Id: 'p2' },
-                { op: 'create', type: 'segment', point1Id: 'p2', point2Id: 'p3' },
-                { op: 'create', type: 'segment', point1Id: 'p3', point2Id: 'p4' },
-                { op: 'create', type: 'segment', point1Id: 'p4', point2Id: 'p1' }
+                { op: 'create', type: 'polygon', id: 'poly1', vertexIds: ['p1', 'p2', 'p3', 'p4'], fillColor: '#3b82f6', fillOpacity: 0.12 }
             ];
 
             this.addToHistory(operations);

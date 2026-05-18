@@ -1,5 +1,61 @@
 # Progress Log
 
+## 2026-05-19
+
+### PDF-driven geometry and graph coverage improvement
+
+#### Work completed
+
+- Sampled the three local teacher-guide PDFs for representative diagram pressure:
+  - `중_수학1(김화경)_지도서.pdf`: plane geometry, sectors, solids, and statistical graphs.
+  - `중등_수학2_류희찬(15개정)_지도서.pdf`: simultaneous-equation graphs, linear-function questions, plane-figure reasoning, and triangle similarity.
+  - `중등_수학3_이준열(15개정)_지도서.pdf`: number-line radicals, quadratic functions, and trigonometry planning.
+- Added first-class `polygon` support across runtime creation, rendering, hit testing, JSON persistence, object restoration, SVG export, and the manual polygon tool.
+- Added AI parity for `polygon` in the strict Structured Outputs operation schema, local validator, patch applier, AI prompt examples, and `docs/ai-reference.md`.
+- Reconnected `processCommand()` no-key and failed-API paths to the broader local fallback so API-free requests still reach legacy shape generation instead of stopping at the narrower deterministic parser.
+- Added tests for polygon validation, too-few-vertex rejection, temporary ID resolution through the patch applier, and local no-key fallback dispatch.
+- Kept the large PDF source files and temporary render/capture artifacts out of Git via `.gitignore`.
+
+#### Multiagent / audit notes
+
+- Used one explorer subagent to audit remaining PDF-style diagram gaps after polygon support.
+- Remaining high-value follow-ups:
+  - Statistical chart primitives: histogram, frequency polygon, box plot, dot plot, scatter plot, and table-backed chart helpers.
+  - Function-teaching helpers: vertex/intercept/domain/range annotations and graph-family templates.
+  - Geometry relation helpers: similarity/congruence markers, shaded subregions, diagonal/parallel markers.
+  - Curved solid primitives: cylinder, cone, sphere, nets, and revolution diagrams.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, and this progress log.
+- Official docs:
+  - `https://developers.openai.com/api/docs/guides/structured-outputs`
+  - `https://developers.openai.com/api/reference/resources/responses/methods/create`
+  - `https://developers.openai.com/api/docs/guides/tools-computer-use`
+
+#### Verification
+
+- Ran `npm.cmd test`; passed with 27 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran `node --check js\objects\Polygon.js; node --check js\ai\AIService.js; node --check js\main.js; node --check js\tools\PolygonTool.js`; passed.
+- Started a local static server at `http://127.0.0.1:4173/`.
+- Ran headless Chrome/Playwright-core capture for a representative scene; output `tmp/browser-captures/02-ai-polygon-coverage-scene.png`.
+  - Result: 18 valid objects, including polygon, sector, function, number line, and prism; 0 invalid objects; 0 console errors; SVG output included `<polygon>`.
+- Ran chat JSON patch capture through the visible AI assistant panel; output `tmp/browser-captures/03-chat-json-polygon.png`.
+  - Result: 4 created objects, including 1 valid polygon; 0 invalid objects; 0 console errors.
+
+#### Deployment / Vercel
+
+- Existing Vercel configuration remains present: `vercel.json` uses `npm run vercel-build`, output directory `.`, and `.vercel/project.json` exists locally.
+- This change does not alter deployment settings or require new environment variables.
+- Direct browser API-key storage remains a BYOK/personal-use compromise; a server-side proxy is still recommended before shared public OpenAI API use.
+
+#### Follow-up
+
+- Add first-class statistical chart objects before claiming full textbook graph coverage.
+- Add cylinder/cone/sphere/net primitives for full solid-geometry coverage.
+- Add a server-side OpenAI proxy if this app is deployed for shared classroom use.
+
 ## 2026-04-25
 
 ### OpenAI Structured Outputs alignment for MathGraph

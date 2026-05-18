@@ -88,6 +88,7 @@ These object types are currently supported by the AI validator and runtime patch
 - `arc`
 - `sector`
 - `circularSegment`
+- `polygon`
 - `prism`
 - `pyramid`
 - `numberLine`
@@ -97,14 +98,14 @@ Important:
 - Use `tangentCircle` and `tangentFunction`, not a generic `tangent` type.
 - `rightAngleMarker`, `equalLengthMarker`, `angleDimension`, and `lengthDimension` are supported in the current runtime.
 - `arc`, `sector`, and `circularSegment` are supported in the current runtime.
+- Use `polygon` for triangles, quadrilaterals, and filled plane regions that are defined by existing point IDs.
 - `prism` and `pyramid` are supported in the current runtime.
 - `numberLine` is supported in the validated AI patch flow with numeric `start`, `end`, `step`, and `y` fields.
 
 ## 4. Runtime Features Outside The AI Schema
 
-The application UI also exposes some tools and view controls that are part of the runtime but are not yet part of the validated AI JSON schema.
+The application UI also exposes view controls that are part of the runtime but are not yet part of the validated AI JSON schema.
 
-- `polygon`
 - settings and view toggles such as grid, x-axis, y-axis, hidden-object visibility, and style controls
 
 Treat those as UI/runtime features unless the schema validator is expanded to accept them.
@@ -262,7 +263,22 @@ Reference fields should point to existing object IDs unless the referenced objec
 }
 ```
 
-### 6.6 Tangent Objects
+### 6.6 Polygon
+
+```json
+{
+  "op": "create",
+  "id": "poly_ABC",
+  "type": "polygon",
+  "vertexIds": ["A", "B", "C"],
+  "fillColor": "#3b82f6",
+  "fillOpacity": 0.12
+}
+```
+
+Required field: `vertexIds`, an array of at least three point IDs created earlier in the same operation list or already present on the canvas.
+
+### 6.7 Tangent Objects
 
 ```json
 {
@@ -282,7 +298,7 @@ Reference fields should point to existing object IDs unless the referenced objec
 }
 ```
 
-### 6.7 Function
+### 6.8 Function
 
 ```json
 {
@@ -295,7 +311,7 @@ Reference fields should point to existing object IDs unless the referenced objec
 
 Use `*` for multiplication in expressions. The runtime parser also accepts common function names such as `sin`, `cos`, `tan`, `sqrt`, `abs`, `log`, `ln`, and `exp`.
 
-### 6.8 Vector
+### 6.9 Vector
 
 ```json
 {
@@ -306,7 +322,7 @@ Use `*` for multiplication in expressions. The runtime parser also accepts commo
 }
 ```
 
-### 6.9 Markers And Dimensions
+### 6.10 Markers And Dimensions
 
 ```json
 {
@@ -345,7 +361,7 @@ Use `*` for multiplication in expressions. The runtime parser also accepts commo
 }
 ```
 
-### 6.10 Number Line
+### 6.11 Number Line
 
 ```json
 {
@@ -381,7 +397,7 @@ Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared st
 }
 ```
 
-### 6.11 3D Objects
+### 6.12 3D Objects
 
 ```json
 {
@@ -411,9 +427,7 @@ Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared st
     { "op": "create", "id": "A", "type": "point", "label": "A", "x": 0, "y": 0 },
     { "op": "create", "id": "B", "type": "point", "label": "B", "x": 4, "y": 0 },
     { "op": "create", "id": "C", "type": "point", "label": "C", "x": 2, "y": 3 },
-    { "op": "create", "id": "AB", "type": "segment", "point1Id": "A", "point2Id": "B" },
-    { "op": "create", "id": "BC", "type": "segment", "point1Id": "B", "point2Id": "C" },
-    { "op": "create", "id": "CA", "type": "segment", "point1Id": "C", "point2Id": "A" }
+    { "op": "create", "id": "poly_ABC", "type": "polygon", "vertexIds": ["A", "B", "C"], "fillColor": "#3b82f6", "fillOpacity": 0.12 }
   ]
 }
 ```
