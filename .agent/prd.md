@@ -2,6 +2,55 @@
 
 ## Summary
 
+- Task: Teacher-guide PDF diagram sampling and MathGraph AI drawing parity check
+- Owner: Codex
+- Date: 2026-05-24
+- Related files:
+  - `.agent/pdf_ai_drawing_audit.md`
+  - `docs/pdf-ai-drawing-sample-audit.md`
+  - `tests/fixtures/pdf-ai-drawing-samples.json`
+  - `tests/pdf-ai-drawing-samples.test.js`
+  - `tools/render-pdf-ai-drawing-samples.mjs`
+
+## Problem
+
+- The local teacher-guide PDFs contain many diagram styles across number lines, geometry, functions, solids, and statistics.
+- MathGraph needs an evidence-based check of whether AI-generated GraphA patches can reproduce representative diagrams from those PDFs.
+- The important distinction is between exact PDF image cloning and editable vector reconstruction of the same mathematical structure.
+
+## Goals
+
+- Pick representative, non-overlapping sample categories from the three PDFs.
+- Convert each sample into a Korean AI drawing request plus GraphA `operations[]`.
+- Validate every sample against the current AI schema and reference rules.
+- Render every sample in the browser canvas and record pass/fail evidence.
+- Document which categories match, which are structural matches, which are approximations, and which remain gaps.
+
+## Non-Goals
+
+- Do not build a full automatic PDF-to-diagram extraction pipeline.
+- Do not require pixel-perfect reproduction of textbook artwork.
+- Do not add new runtime primitives in this pass.
+- Do not call external OpenAI/Gemini APIs without an available user API key.
+
+## Acceptance Criteria
+
+- [x] At least several non-overlapping diagram categories are sampled from the PDFs.
+- [x] Each sample has a Korean prompt and valid GraphA operations fixture.
+- [x] Samples validate through current `SchemaValidator` and reference checks.
+- [x] Samples render in a browser canvas with non-empty visual output.
+- [x] A report records parity results and remaining gaps.
+
+## Risks and Open Questions
+
+- Curved solids and statistical charts still require first-class primitives before exact parity can be expected.
+- Independent explanatory text labels are not first-class objects, so textbook instruction layouts remain approximate.
+- API-backed quality may differ by model prompt quality, but the local schema/render contract now has repeatable coverage.
+
+---
+
+## Summary
+
 - Task: Token-efficient MathGraph AI drawing reference skill
 - Owner: Codex
 - Date: 2026-05-24

@@ -13,6 +13,7 @@
     "vercel:pull": "vercel pull"
   },
   "devDependencies": {
+    "playwright": "^1.60.0",
     "vercel": "^50.44.0"
   }
 }

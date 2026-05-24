@@ -2,6 +2,67 @@
 
 ## Status
 
+- Task: Teacher-guide PDF diagram sampling and MathGraph AI drawing parity check
+- State: Done
+- Last updated: 2026-05-24
+
+## Plan
+
+1. Read project operating docs, MathGraph drawing skill references, and PDF/browser workflow guidance.
+2. Inspect the three local teacher-guide PDFs and render candidate sample pages.
+3. Select non-overlapping diagram categories by unit/source.
+4. Create Korean AI drawing prompts plus GraphA `operations[]` fixtures.
+5. Validate fixtures with `SchemaValidator` and reference checks.
+6. Render all fixtures in a real browser canvas, record results, update docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+- [x] Step 6
+
+## Decisions
+
+- Decision: Validate the same final `operations[]` contract instead of calling an external paid API.
+- Reason: No API key is available in this environment, and MathGraph's app-owned quality boundary is the strict GraphA patch after model output parsing.
+- Decision: Keep source PDF renders and browser screenshots under `tmp/`.
+- Reason: They are local verification artifacts and the source PDFs/screenshots should not be committed.
+- Decision: Add Playwright as a dev dependency.
+- Reason: The render helper needs a normal Node-importable browser automation package for repeatable local canvas checks.
+
+## Blockers
+
+- Blocker: None for local contract/render verification.
+- Risk: Exact pixel parity with textbook images remains out of scope because the app reconstructs editable vector math objects.
+
+## Verification
+
+- Checks run:
+  - `npm.cmd test`
+  - `node tools\render-pdf-ai-drawing-samples.mjs`
+- Result:
+  - Unit/schema tests passed with 32 tests.
+  - Browser render helper produced 12 screenshots and 0 failures.
+
+## Handoff
+
+- What changed:
+  - Added `.agent/pdf_ai_drawing_audit.md`.
+  - Added `docs/pdf-ai-drawing-sample-audit.md`.
+  - Added `tests/fixtures/pdf-ai-drawing-samples.json`.
+  - Added `tests/pdf-ai-drawing-samples.test.js`.
+  - Added `tools/render-pdf-ai-drawing-samples.mjs`.
+  - Added `playwright` as a dev dependency.
+- What remains:
+  - First-class chart primitives, curved solids, independent text labels, and stronger construction solvers are needed for closer textbook parity.
+
+---
+
+## Status
+
 - Task: Token-efficient MathGraph AI drawing reference skill
 - State: Done
 - Last updated: 2026-05-24

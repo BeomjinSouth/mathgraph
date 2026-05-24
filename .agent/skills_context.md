@@ -2,6 +2,47 @@
 
 ## Relevant Skills
 
+- Skill: PDF
+- Why it matters:
+  - The task samples local teacher-guide PDFs where rendered layout and visible diagrams matter.
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The task converts informal Korean textbook diagram requests into validated GraphA `operations[]`.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The output must be checked in the real MathGraph canvas, not only by JSON parsing.
+
+## Current Task Notes
+
+- Sampled 12 non-overlapping categories from the three local PDFs:
+  - number-line radical construction
+  - parallel-line angle relations
+  - circle sector/arc
+  - rectangular prism plus curved-solid gap
+  - histogram/frequency polygon approximation
+  - linear graph intersection
+  - triangle incircle
+  - similarity triangle pair
+  - quadratic graph
+  - trigonometric right triangle
+  - distribution curves
+  - scatter plot approximation
+- Added fixture/test/render-helper artifacts:
+  - `tests/fixtures/pdf-ai-drawing-samples.json`
+  - `tests/pdf-ai-drawing-samples.test.js`
+  - `tools/render-pdf-ai-drawing-samples.mjs`
+  - `docs/pdf-ai-drawing-sample-audit.md`
+- Verification completed:
+  - `npm.cmd test` passed with 32 tests.
+  - `node tools\render-pdf-ai-drawing-samples.mjs` passed with 12 rendered samples and 0 failures.
+- Current conclusion:
+  - First-class geometric and function categories can reproduce the same mathematical structure.
+  - Chart-style diagrams, curved solids, independent text, and solver-backed construction semantics remain approximation/gap areas.
+
+---
+
+## Relevant Skills
+
 - Skill: Skill Creator
 - Why it matters:
   - The user asked to create a reusable skill, so the project-local skill must follow Codex skill structure with a concise `SKILL.md` and selectively loaded references.

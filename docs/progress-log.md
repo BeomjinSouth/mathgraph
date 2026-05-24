@@ -2,6 +2,47 @@
 
 ## 2026-05-24
 
+### Teacher-guide PDF AI drawing sample audit
+
+#### Work completed
+
+- Sampled the three local teacher-guide PDFs for 12 non-overlapping diagram categories across number lines, plane geometry, circles, solids, functions, trigonometry, and statistics.
+- Added `.agent/pdf_ai_drawing_audit.md` to record scope, method, parity scale, and follow-up notes.
+- Added `docs/pdf-ai-drawing-sample-audit.md` with page/category results and parity findings.
+- Added reusable fixture `tests/fixtures/pdf-ai-drawing-samples.json` with Korean AI drawing prompts and GraphA `operations[]`.
+- Added `tests/pdf-ai-drawing-samples.test.js` to validate sample uniqueness, schema validity, reference validity, and required category coverage.
+- Added `tools/render-pdf-ai-drawing-samples.mjs` to launch a local static server, apply each sample in the real canvas, capture screenshots, and fail on empty render output.
+- Added `playwright` as a dev dependency for repeatable local render checks.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, this progress log, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
+- Project skill references: `.agents/skills/mathgraph-drawing/SKILL.md`, `retrieval-index.json`, `feature-manual.json`, and `synthetic-drawing-data.jsonl`.
+- Source PDFs:
+  - `중_수학1(김화경)_지도서.pdf`
+  - `중등_수학2_류희찬(15개정)_지도서.pdf`
+  - `중등_수학3_이준열(15개정)_지도서.pdf`
+
+#### Verification
+
+- Ran `npm.cmd test`; passed with 32 tests.
+- Ran `node tools\render-pdf-ai-drawing-samples.mjs`; passed with 12 rendered samples and 0 failures.
+- Browser screenshot contact sheet saved to `tmp/browser-captures/pdf-ai-drawing-samples/contact-sheet.png`.
+- Attempted temporary `npx --yes -p playwright node ...`; blocked because the temporary package was not resolvable as a local ESM import on Windows/npm, so Playwright was added as a dev dependency.
+- `npm install --save-dev playwright` completed; npm audit currently reports 33 vulnerabilities inherited in the dev tree. No audit fix was applied because that would be unrelated and potentially broad.
+
+#### Deployment / Vercel
+
+- No runtime deployment settings or Vercel configuration were changed.
+- Existing Vercel project link remains present.
+
+#### Findings
+
+- Direct-match categories: parallel-line angle relations, circle sector/arc, linear graph intersection, and trigonometric right triangle.
+- Structural-match categories: radical number-line construction, rectangular prism, triangle incircle, similarity triangles, quadratic graph, and distribution curves.
+- Approximation categories: histogram/frequency polygon and scatter plot.
+- Remaining gaps: first-class chart primitives, curved solid primitives, independent text labels, stronger construction solvers, function-domain schema support, and multiple-intersection disambiguation.
+
 ### Token-efficient MathGraph AI drawing reference skill
 
 #### Work completed
