@@ -2,6 +2,35 @@
 
 ## 2026-05-24
 
+### Live OpenAI PDF text-prompt drawing verification
+
+#### Work completed
+
+- Added `tools/run-live-openai-pdf-ai-samples.mjs` to call the external OpenAI Responses API directly for the PDF-derived drawing samples.
+- Added clean Korean prompt overrides for 12 sample categories because the existing fixture text is mojibake in this checkout.
+- Added live validation-repair retry logic so invalid field aliases or broken references are resent to OpenAI with the exact GraphA validation errors.
+- Added `.agent/live_openai_pdf_text_prompt_audit.md`.
+- Added `docs/live-openai-pdf-text-prompt-audit.md`.
+- Stored non-committed prompt/output evidence under `tmp/live-openai-pdf-ai-samples/`.
+
+#### Verification
+
+- Ran `node tools\run-live-openai-pdf-ai-samples.mjs` with `OPENAI_API_KEY` supplied only through the process environment.
+- The script checked model availability through `GET https://api.openai.com/v1/models` and used `gpt-4.1-mini`.
+- Final live run called `POST https://api.openai.com/v1/responses` for all 12 samples.
+- Final failures: 0.
+- All 12 final payloads passed `SchemaValidator.validate()`, `SchemaValidator.validateReferences()`, and real MathGraph canvas render smoke checks.
+
+#### Findings
+
+- Direct external API generation works end to end for text-prompt GraphA drawing.
+- The outputs are structurally similar rather than pixel-identical to the original PDF figures.
+- Strict GraphA field-name guidance and validation-repair retries are necessary; earlier raw attempts produced missing `op` fields, invalid aliases, or bad references.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Monochrome default drawing output
 
 #### Work completed
