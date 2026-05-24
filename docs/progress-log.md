@@ -2,6 +2,45 @@
 
 ## 2026-05-24
 
+### Live OpenAI image reference verification
+
+#### Work completed
+
+- Used the user-provided GPT API key for transient live testing only; the key was not written to project files.
+- Verified `GET https://api.openai.com/v1/models`; `gpt-5.5` was available.
+- Ran a real browser-app image paste call against `POST https://api.openai.com/v1/responses`; the call returned HTTP 200, created 7 objects, and had no console errors.
+- Ran four live `AIService.analyzeImage()` calls with textbook PDF crops:
+  - circle/sector source crop,
+  - selected-point partial patch request,
+  - rectangular-prism/cylinder source crop,
+  - linear-graph/intersection source crop.
+- Added `.agent/live_api_image_reference_audit.md`.
+- Added `docs/live-api-image-reference-audit.md`.
+- Stored non-committed visual evidence under `tmp/image-reference-pdf-audit/`, including `live-api-contact-sheet.png` and per-sample screenshots.
+
+#### Verification
+
+- Live API responses returned HTTP 200 for all recorded calls.
+- Returned JSON payloads passed `SchemaValidator`.
+- Returned JSON payloads rendered on the real MathGraph canvas.
+- Console errors: none in the completed live service run.
+- Result summary:
+  - Circle recreate: rendered 8 objects, but missed arc/sector semantics.
+  - Partial patch: schema/reference/render valid, but semantically wrong because it created new exercise-related objects instead of updating only selected point A.
+  - Solid recreate: rendered 60 objects, but was slow and heavy; cylinder remains an approximation.
+  - Linear graph recreate: rendered 58 objects and captured the two lines/intersection, but overgenerated grid/axis objects.
+
+#### Findings
+
+- The external OpenAI API plumbing works end to end.
+- The feature is not yet reliable enough for "exactly change only this part" because patch-mode prompts need stronger instruction priority and semantic post-validation.
+- Recreate mode also needs an operation budget and better filtering of decorative textbook/page elements.
+- Direct browser BYOK worked for this test, but a server-side proxy is still recommended before shared classroom deployment.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Live OpenAI PDF text-prompt drawing verification
 
 #### Work completed
