@@ -4,6 +4,17 @@
 This document defines the JSON contract the AI should emit for the current runtime.
 The app expects JSON only. Do not wrap the result in prose unless the caller explicitly asks for explanation.
 
+## 0. Token-Efficient Reference Skill
+
+For future GPT/OpenAI API orchestration, start with the project-local skill:
+
+- `.agents/skills/mathgraph-drawing/SKILL.md`
+- `.agents/skills/mathgraph-drawing/references/retrieval-index.json`
+- `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+- `.agents/skills/mathgraph-drawing/references/synthetic-drawing-data.jsonl`
+
+Load `retrieval-index.json` first, then fetch only the feature chunks and synthetic examples matching the user's Korean request. This keeps complex drawing prompts from carrying every schema and example on every API call.
+
 ## 1. Runtime Contract
 
 The current runtime consumes an `operations` array.

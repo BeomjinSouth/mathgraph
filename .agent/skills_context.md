@@ -2,6 +2,35 @@
 
 ## Relevant Skills
 
+- Skill: Skill Creator
+- Why it matters:
+  - The user asked to create a reusable skill, so the project-local skill must follow Codex skill structure with a concise `SKILL.md` and selectively loaded references.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The references are intended for GPT/OpenAI API orchestration, so the local OpenAI routing docs and official Structured Outputs/tool-search guidance are relevant.
+- Skill: Local MathGraph Runtime Inventory
+- Why it matters:
+  - The reference files must describe only features that exist today in `SchemaValidator`, `PatchApplier`, `ObjectManager`, `AIService`, UI tools, and export/save paths.
+
+## Current Task Notes
+
+- Build a project-local skill at `.agents/skills/mathgraph-drawing`.
+- Keep `SKILL.md` small and put detailed data in reference files.
+- Target token efficiency by separating:
+  - `retrieval-index.json` for selecting the smallest useful reference subset.
+  - `feature-manual.json` for exact feature schemas and known gaps.
+  - `synthetic-drawing-data.jsonl` for example Korean prompts and `operations[]` payloads.
+- Current AI contract remains strict Structured Outputs through `operations[]`; this task does not change runtime behavior.
+- Official sources checked in this task:
+  - `https://developers.openai.com/api/docs/guides/structured-outputs`
+  - `https://developers.openai.com/api/reference/resources/responses/methods/create`
+  - `https://developers.openai.com/api/docs/guides/tools-skills`
+  - `https://developers.openai.com/api/docs/guides/tools-tool-search`
+
+---
+
+## Previous Relevant Skills
+
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:
   - This task extends the OpenAI Responses API Structured Outputs schema for AI graph generation, so local reference maps and current official docs must be checked before implementation.
@@ -27,7 +56,7 @@
   - `https://developers.openai.com/api/reference/resources/responses/methods/create`
   - `https://developers.openai.com/api/docs/guides/tools-computer-use`
 
-## Current Task Notes
+## Previous Current Task Notes
 
 - Use Responses API Structured Outputs (`text.format.type = "json_schema"`) rather than older JSON mode.
 - Keep model IDs configurable; current reference default for complex reasoning/coding is `gpt-5.5`.

@@ -1,5 +1,45 @@
 # Progress Log
 
+## 2026-05-24
+
+### Token-efficient MathGraph AI drawing reference skill
+
+#### Work completed
+
+- Created project-local skill `.agents/skills/mathgraph-drawing/SKILL.md` for future GPT/API drawing orchestration.
+- Added `.agents/skills/mathgraph-drawing/references/retrieval-index.json` so API prompts can select only relevant feature chunks and examples by Korean prompt tags.
+- Added `.agents/skills/mathgraph-drawing/references/feature-manual.json` covering the current operation contract, AI-create types, common fields, UI/runtime tools, algebra input, fallback parser, export/save behavior, validation flow, and known gaps.
+- Added `.agents/skills/mathgraph-drawing/references/synthetic-drawing-data.jsonl` with 12 Korean synthetic drawing examples for complex plane figures, circles, solids, function graphs, number lines, shaded regions, and chart approximations.
+- Linked the new skill from `docs/ai-reference.md`.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
+- Local runtime/schema files: `js/ai/SchemaValidator.js`, `js/ai/PatchApplier.js`, `js/ai/AIService.js`, `js/core/ObjectManager.js`, `js/objects/*.js`, `js/tools/*.js`, `js/main.js`, `index.html`, `js/ui/CommandPalette.js`, `js/ui/AlgebraInput.js`, and `js/core/EventHandler.js`.
+- Official docs:
+  - `https://developers.openai.com/api/docs/guides/structured-outputs`
+  - `https://developers.openai.com/api/reference/resources/responses/methods/create`
+  - `https://developers.openai.com/api/docs/guides/tools-skills`
+  - `https://developers.openai.com/api/docs/guides/tools-tool-search`
+
+#### Verification
+
+- Ran inline Node JSON/JSONL parsing plus `SchemaValidator` and reference validation for all synthetic examples; passed with 12 validated examples.
+- Ran `py C:\Users\pbj95\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\mathgraph-drawing`; passed with `Skill is valid!`.
+- Ran `npm.cmd test`; passed with 29 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No runtime or Vercel configuration changes were made.
+- Existing Vercel static configuration remains in place.
+
+#### Notes
+
+- This task does not add new primitives. Histogram/box-plot/scatter and cylinder/cone/sphere-style requests are documented as current approximations using existing polygon, line, number-line, prism, and pyramid primitives.
+- Existing non-skill dirty worktree files were not modified or reverted by this task.
+
 ## 2026-05-19
 
 ### PDF-driven geometry and graph coverage improvement

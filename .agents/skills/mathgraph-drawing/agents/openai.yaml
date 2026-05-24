@@ -1,0 +1,4 @@
+interface:
+  display_name: "MathGraph Drawing"
+  short_description: "MathGraph AI drawing schemas and examples"
+  default_prompt: "Use $mathgraph-drawing to plan a Korean natural-language MathGraph drawing request."

@@ -2,6 +2,53 @@
 
 ## Summary
 
+- Task: Token-efficient MathGraph AI drawing reference skill
+- Owner: Codex
+- Date: 2026-05-24
+- Related files:
+  - `.agents/skills/mathgraph-drawing/SKILL.md`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `.agents/skills/mathgraph-drawing/references/synthetic-drawing-data.jsonl`
+  - `.agents/skills/mathgraph-drawing/references/retrieval-index.json`
+  - `docs/ai-reference.md`
+
+## Problem
+
+- MathGraph already has a broad drawing runtime and a strict AI `operations[]` patch contract, but future GPT API calls need a compact way to find only the relevant object schemas, construction heuristics, and examples.
+- Loading every manual, schema, and example into every request would waste tokens and make Korean natural-language prompts less reliable.
+- Complex textbook-style requests often require multi-step planning: create support points first, build base primitives, add derived construction objects, then style or annotate the figure.
+
+## Goals
+
+- Inventory the current runtime, AI JSON schema, UI tools, fallback parser, export, save/load, and settings features in a machine-readable JSON manual.
+- Create synthetic reference examples for complex plane figures, solid figures, function/graph situations, number lines, and mixed diagram tasks.
+- Add a project-local skill that tells future agents/API orchestrators how to load only the relevant references instead of the full dataset.
+- Keep the current app behavior unchanged.
+- Document verification and update the progress log after the reference artifacts are created.
+
+## Non-Goals
+
+- Do not add new drawing primitives in this pass.
+- Do not replace the existing browser-side BYOK API flow or add a server-side OpenAI proxy in this pass.
+- Do not claim full statistical chart or curved-solid coverage beyond the current primitives and composition examples.
+
+## Acceptance Criteria
+
+- [x] A JSON feature manual covers current AI-create types, required fields, optional fields, runtime/UI features, parser/fallback features, and known gaps.
+- [x] Synthetic examples include realistic Korean prompts and valid `operations[]` payloads for complex plane, solid, graph, and mixed situations.
+- [x] A skill exists under `.agents/skills/` with concise loading instructions and a retrieval index for selective reference use.
+- [x] JSON/JSONL artifacts parse successfully.
+- [x] `npm.cmd test` and `git diff --check` are run or any skipped verification is recorded.
+
+## Risks and Open Questions
+
+- If future runtime schemas change, the skill references must be updated alongside `SchemaValidator`, `PatchApplier`, `AIService`, and `docs/ai-reference.md`.
+- Some requested diagrams will still need approximations because histogram/box-plot/scatter primitives and cylinder/cone/sphere objects are not first-class runtime types yet.
+
+---
+
+## Summary
+
 - Task: PDF-driven geometry and graph coverage improvement
 - Owner: Codex
 - Date: 2026-05-19

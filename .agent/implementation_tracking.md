@@ -2,6 +2,69 @@
 
 ## Status
 
+- Task: Token-efficient MathGraph AI drawing reference skill
+- State: Done
+- Last updated: 2026-05-24
+
+## Plan
+
+1. Read project operating docs, local OpenAI context, and existing AI/runtime code.
+2. Inventory the current feature surface from validator, patch applier, object manager, UI tools, fallback parser, and docs.
+3. Update planning docs before creating new reference artifacts.
+4. Create a JSON feature manual, synthetic drawing data, and retrieval index.
+5. Create a project-local skill that points agents/API orchestration to the smallest needed reference file.
+6. Validate JSON/JSONL plus existing tests, update progress log, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+- [x] Step 6
+
+## Decisions
+
+- Decision: Put the new drawing skill under `.agents/skills/mathgraph-drawing`.
+- Reason: The skill is project-specific and should travel with this repository rather than becoming a global Codex skill.
+- Decision: Keep detailed examples in JSON/JSONL references rather than in `SKILL.md`.
+- Reason: Future API prompts should load only matching examples by tag, scenario, or object type.
+- Decision: Keep examples inside the current validated `operations[]` contract.
+- Reason: This avoids adding new runtime behavior while giving GPT calls reliable composition patterns.
+
+## Blockers
+
+- Blocker: None currently.
+- Risk: Direct browser API-key storage remains a BYOK/personal-use compromise and is not changed by this documentation/reference task.
+
+## Verification
+
+- Checks run:
+  - Inline Node JSON/JSONL parse and `SchemaValidator`/reference validation for all synthetic examples.
+  - `py C:\Users\pbj95\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\mathgraph-drawing`
+  - `npm.cmd test`
+  - `git diff --check`
+- Result:
+  - Passed. The synthetic validator checked 12 examples.
+  - Skill validation reported `Skill is valid!`.
+  - Unit tests reported 29 passing tests.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- What changed:
+  - Added `.agents/skills/mathgraph-drawing/SKILL.md`.
+  - Added `feature-manual.json`, `retrieval-index.json`, and `synthetic-drawing-data.jsonl` references.
+  - Linked the new skill from `docs/ai-reference.md`.
+- What remains:
+  - Future runtime/schema changes must update the new references.
+  - Existing non-skill dirty files in the worktree were left untouched.
+
+---
+
+## Previous Status
+
 - Task: PDF-driven geometry and graph coverage improvement
 - State: Done
 - Last updated: 2026-05-19
