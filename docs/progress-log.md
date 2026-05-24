@@ -1,5 +1,37 @@
 # Progress Log
 
+## 2026-05-25
+
+### Live OpenAI PDF drawing quality diagnosis
+
+#### Work completed
+
+- Re-reviewed the live OpenAI PDF text-prompt drawing evidence after user feedback that many outputs looked wrong.
+- Added `.agent/live_openai_pdf_quality_diagnosis.md`.
+- Added `docs/live-openai-pdf-quality-diagnosis.md`.
+- Created temporary diagnostic contact sheets:
+  - `tmp/live-openai-pdf-ai-samples/contact-sheet-diagnosis.png`
+  - `tmp/live-openai-pdf-ai-samples/source-vs-ai-contact-sheet.png`
+
+#### Verification
+
+- Re-read `AGENTS.md`, OpenAI context docs, `docs/progress-log.md`, project `mathgraph-drawing` skill references, and the PDF skill.
+- Inspected `tmp/live-openai-pdf-ai-samples/live-openai-results.json`.
+- Inspected the generated screenshots and source page renders in `tmp/pdf-ai-audit/`.
+- Ran `node --check tools\run-live-openai-pdf-ai-samples.mjs`; passed.
+
+#### Findings
+
+- The previous live API run proved external API calls and renderability, but not PDF fidelity.
+- The main failure was an overly weak acceptance gate: schema validity, reference validity, and non-empty pixels cannot catch wrong geometry.
+- The live runner used text summaries rather than exact PDF figure crops, so results were concept sketches rather than true reproductions.
+- Several examples require semantic validators, such as verifying √2 radius construction, rectangular histogram bars, incircle tangency, requested function intersections, and scatter/distribution shape.
+- Chart and curved-solid categories remain approximation-only until MathGraph gets first-class primitives.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-24
 
 ### Live OpenAI PDF text-prompt drawing verification
