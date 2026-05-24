@@ -6,6 +6,7 @@ import {
     AIService,
     DEFAULT_OPENAI_MODEL,
     GRAPH_OPERATIONS_RESPONSE_FORMAT,
+    DEFAULT_IMAGE_RECREATE_INSTRUCTION,
     extractOpenAIResponseText
 } from '../js/ai/AIService.js';
 import { SchemaValidator } from '../js/ai/SchemaValidator.js';
@@ -332,6 +333,96 @@ test('extractOpenAIResponseText supports output_text and parsed responses', () =
         extractOpenAIResponseText({ output_parsed: { operations: [] } }),
         '{"operations":[]}'
     );
+});
+
+test('AIService builds image prompts for recreation and targeted patching', () => {
+    const service = createAIService();
+    const recreatePrompt = service.buildImageAnalysisPrompt('', null, 'recreate');
+
+    assert.match(recreatePrompt, /이미지 재현/);
+    assert.match(recreatePrompt, /GraphA operations\[\]/);
+    assert.match(recreatePrompt, new RegExp(DEFAULT_IMAGE_RECREATE_INSTRUCTION.slice(0, 12)));
+
+    const patchPrompt = service.buildImageAnalysisPrompt('점 A만 빨간색으로 바꿔줘', {
+        objects: [
+            { id: 'point_a', type: 'point', label: 'A', x: 0, y: 0 }
+        ],
+        selectedObjectIds: ['point_a']
+    }, 'patch');
+
+    assert.match(patchPrompt, /부분 수정 패치/);
+    assert.match(patchPrompt, /point_a/);
+    assert.match(patchPrompt, /관련 없는 객체/);
+    assert.equal(service.getDataUrlMimeType('data:image/jpeg;base64,AAAA'), 'image/jpeg');
+});
+
+test('AIService analyzeImage sends image input with targeted patch prompt', async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedUrl = null;
+    let capturedOptions = null;
+
+    globalThis.fetch = async (url, options) => {
+        capturedUrl = url;
+        capturedOptions = options;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: 'resp_image_patch',
+                    output: [
+                        {
+                            type: 'message',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: '{"operations":[{"op":"update","id":"point_a","color":"#ef4444"}]}'
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+
+        const result = await service.analyzeImage('data:image/png;base64,AAAA', {
+            instruction: '점 A만 빨간색으로 바꿔줘',
+            mode: 'patch',
+            context: {
+                objects: [{ id: 'point_a', type: 'point', label: 'A', x: 0, y: 0 }],
+                selectedObjectIds: ['point_a']
+            }
+        });
+
+        const body = JSON.parse(capturedOptions.body);
+        const userContent = body.input[1].content;
+
+        assert.equal(capturedUrl, 'https://api.openai.com/v1/responses');
+        assert.equal(result.success, true);
+        assert.equal(result.json.operations[0].op, 'update');
+        assert.equal(service.lastResponseId, 'resp_image_patch');
+        assert.equal(body.store, false);
+        assert.equal(body.reasoning.effort, 'medium');
+        assert.equal(body.text.format.type, 'json_schema');
+        assert.equal(userContent[0].type, 'input_text');
+        assert.match(userContent[0].text, /부분 수정 패치/);
+        assert.match(userContent[0].text, /point_a/);
+        assert.deepEqual(userContent[1], {
+            type: 'input_image',
+            image_url: 'data:image/png;base64,AAAA',
+            detail: 'high'
+        });
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
 });
 
 test('legacy fallback parses circle center and radius requests', () => {

@@ -49,6 +49,25 @@ Current request defaults:
 
 The strict schema represents optional graph fields as nullable values because Structured Outputs requires all schema fields to be required. The app strips `null` fields before running `SchemaValidator` and `PatchApplier`.
 
+## 1.2 Image Reference And Targeted Patching
+
+The chat image workflow uses the same Responses API and strict `operations[]` output contract. Images are sent as `input_image` content with a text instruction. The app then validates and applies the returned graph-object patch through `SchemaValidator` and `PatchApplier`.
+
+Modes:
+
+- Image-only paste/upload: recreate the visible math diagram as new GraphA objects.
+- Image plus text instruction: treat the image as a reference and return only the requested `update`, `delete`, or targeted `create` operations.
+
+Context sent with image requests:
+
+- Current canvas objects, including ids, labels, coordinates when available, dependencies, and selected-object ids.
+- Selected objects are treated as the preferred edit target for partial-change requests.
+
+Important boundary:
+
+- This is vector-object reconstruction and patching. It is not pixel-level image editing or mask-based raster inpainting.
+- True raster edits would require a separate Images API edit workflow and, for precise local changes, a mask UI with same-size alpha-channel masks.
+
 ## 2. Operation Schema
 
 Each operation uses:

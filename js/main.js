@@ -65,6 +65,7 @@ class GraphAApp {
         this.schemaValidator = new SchemaValidator();
         this.patchApplier = new PatchApplier(this.objectManager, this.historyManager);
         this.aiService = new AIService();
+        this.lastImageReference = null;
 
         // Mk.2: UI 모듈 초기화
         this.algebraInput = new AlgebraInput(this.objectManager);
@@ -2258,7 +2259,12 @@ class GraphAApp {
             const file = e.target.files?.[0];
             if (file) {
                 this.handleImageUpload(file);
+                e.target.value = '';
             }
+        });
+
+        document.addEventListener('paste', (e) => {
+            this.handleClipboardPaste(e);
         });
     }
 
@@ -2507,8 +2513,7 @@ class GraphAApp {
 
         const image = document.createElement('img');
         image.src = imageDataUrl;
-        image.style.maxWidth = '200px';
-        image.style.borderRadius = '8px';
+        image.className = 'chat-image-preview';
         image.alt = '업로드한 이미지 미리보기';
 
         body.appendChild(image);
@@ -2542,19 +2547,7 @@ class GraphAApp {
 
         try {
             // 현재 캔버스 상태를 컨텍스트로 전달
-            const context = {
-                objects: this.objectManager.getAllObjects().map(o => {
-                    const serialized = typeof o.toJSON === 'function' ? o.toJSON() : {};
-                    return {
-                        ...serialized,
-                        id: o.id,
-                        type: o.type,
-                        label: o.label,
-                        dependencies: Array.isArray(o.dependencies) ? [...o.dependencies] : [],
-                        ...(o.position ? { x: o.position.x, y: o.position.y } : {})
-                    };
-                })
-            };
+            const context = this.buildAIContext();
 
             // AIService로 처리
             const result = await this.aiService.processCommand(message, context);
@@ -2572,6 +2565,23 @@ class GraphAApp {
             this.removeChatMessage(loadingMessage);
             this.updateSidebar();
         }
+    }
+
+    buildAIContext() {
+        return {
+            objects: this.objectManager.getAllObjects().map(o => {
+                const serialized = typeof o.toJSON === 'function' ? o.toJSON() : {};
+                return {
+                    ...serialized,
+                    id: o.id,
+                    type: o.type,
+                    label: o.label,
+                    dependencies: Array.isArray(o.dependencies) ? [...o.dependencies] : [],
+                    ...(o.position ? { x: o.position.x, y: o.position.y } : {})
+                };
+            }),
+            selectedObjectIds: this.objectManager.getSelectedObjects().map(o => o.id)
+        };
     }
 
     /**
@@ -2631,24 +2641,81 @@ class GraphAApp {
     /**
      * 이미지 업로드 처리 (AIService 비전 사용)
      */
-    handleImageUpload(file) {
+    handleClipboardPaste(event) {
+        const file = this.getClipboardImageFile(event.clipboardData);
+        if (!file) {
+            return;
+        }
+
+        const target = event.target;
+        const inChat = typeof target?.closest === 'function' && target.closest('#chat-panel');
+        const inEditable = typeof target?.closest === 'function' &&
+            target.closest('input, textarea, [contenteditable="true"]');
+
+        if (inEditable && !inChat) {
+            return;
+        }
+
+        event.preventDefault();
+        document.getElementById('chat-panel')?.classList.remove('collapsed');
+        this.handleImageUpload(file, { source: 'paste' });
+    }
+
+    getClipboardImageFile(clipboardData) {
+        const items = Array.from(clipboardData?.items || []);
+        for (const item of items) {
+            if (item.type?.startsWith('image/')) {
+                return item.getAsFile();
+            }
+        }
+        return null;
+    }
+
+    handleImageUpload(file, options = {}) {
         const reader = new FileReader();
 
         reader.onload = async (e) => {
             const imageDataUrl = e.target.result;
+            const input = document.getElementById('chatInput');
+            const instruction = input?.value.trim() || '';
+            const mode = instruction ? 'patch' : 'recreate';
+
+            if (instruction) {
+                this.addChatMessage(instruction, 'user');
+                input.value = '';
+                input.style.height = 'auto';
+            }
 
             // 이미지 미리보기 메시지
             this.addChatImagePreview(imageDataUrl);
+            this.lastImageReference = {
+                imageDataUrl,
+                source: options.source || 'upload',
+                mode,
+                instruction
+            };
 
             // 로딩 메시지
-            const loadingMessage = this.addChatMessage('이미지를 분석 중입니다... 🔍', 'assistant');
+            const loadingText = mode === 'patch'
+                ? '이미지와 요청을 바탕으로 필요한 부분만 수정 중입니다...'
+                : '이미지를 GraphA 도형으로 변환 중입니다...';
+            const loadingMessage = this.addChatMessage(loadingText, 'assistant');
 
             try {
                 // AIService로 이미지 분석
-                const result = await this.aiService.analyzeImage(imageDataUrl);
+                const result = await this.aiService.analyzeImage(imageDataUrl, {
+                    instruction,
+                    mode,
+                    context: this.buildAIContext()
+                });
 
                 if (result.success && result.json) {
-                    this.addChatMessage('이미지에서 도형을 인식했습니다! 📐', 'assistant');
+                    this.addChatMessage(
+                        mode === 'patch'
+                            ? '요청한 부분 수정 패치를 만들었습니다.'
+                            : '이미지에서 도형을 인식했습니다.',
+                        'assistant'
+                    );
                     this.processAIJSON(result.json);
                 } else if (result.error) {
                     this.addChatMessage(`❌ ${result.error}`, 'assistant');

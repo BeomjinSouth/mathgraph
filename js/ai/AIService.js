@@ -316,6 +316,9 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 
 이제 사용자 요청에 맞는 JSON을 생성하세요.`;
 
+export const DEFAULT_IMAGE_RECREATE_INSTRUCTION =
+    '참조 이미지에 보이는 수학 도형, 그래프, 라벨, 보조선, 음영을 GraphA 객체로 최대한 비슷하게 재구성해줘.';
+
 /**
  * AI 서비스 설정
  */
@@ -443,29 +446,8 @@ export class AIService {
         ];
 
         // 현재 캔버스 상태 컨텍스트 추가
-        if (context && context.objects && context.objects.length > 0) {
-            const contextStr = `현재 캔버스에는 다음 객체들이 있습니다:\n${context.objects.map(o => {
-                const parts = [
-                    `type=${o.type}`,
-                    `id=${o.id}`,
-                    `label=${o.label || ''}`
-                ];
-
-                if (Number.isFinite(o.x) && Number.isFinite(o.y)) {
-                    parts.push(`x=${o.x}`, `y=${o.y}`);
-                }
-                if (typeof o.expression === 'string') {
-                    parts.push(`expression=${o.expression}`);
-                }
-                if (Number.isFinite(o.start) && Number.isFinite(o.end)) {
-                    parts.push(`start=${o.start}`, `end=${o.end}`, `step=${o.step ?? 1}`, `yLine=${o.y ?? 0}`);
-                }
-                if (Array.isArray(o.dependencies) && o.dependencies.length > 0) {
-                    parts.push(`deps=${o.dependencies.join(',')}`);
-                }
-
-                return `- ${parts.join(', ')}`;
-            }).join('\n')}\n\n새로운 객체를 추가할 때 기존 객체 id를 참조할 수 있습니다.`;
+        const contextStr = this.buildCanvasContextPrompt(context);
+        if (contextStr) {
             messages.push({ role: 'system', content: contextStr });
         }
 
@@ -477,6 +459,58 @@ export class AIService {
         messages.push({ role: 'user', content: userMessage });
 
         return messages;
+    }
+
+    buildCanvasContextPrompt(context) {
+        const objects = Array.isArray(context?.objects) ? context.objects : [];
+        const selectedObjectIds = Array.isArray(context?.selectedObjectIds)
+            ? context.selectedObjectIds.filter(Boolean)
+            : [];
+
+        if (objects.length === 0 && selectedObjectIds.length === 0) {
+            return '';
+        }
+
+        const lines = [];
+        if (objects.length > 0) {
+            lines.push('현재 캔버스에는 다음 객체들이 있습니다:');
+            lines.push(...objects.map(o => `- ${this.formatContextObject(o)}`));
+        }
+
+        if (selectedObjectIds.length > 0) {
+            lines.push(`현재 선택된 객체 id: ${selectedObjectIds.join(', ')}`);
+        }
+
+        lines.push('새로운 객체를 추가할 때 기존 객체 id를 참조할 수 있습니다.');
+        lines.push('기존 일부만 바꾸라는 요청이면 관련 객체만 update/delete/create하고 나머지는 유지하세요.');
+
+        return lines.join('\n');
+    }
+
+    formatContextObject(o) {
+        const parts = [
+            `type=${o.type}`,
+            `id=${o.id}`,
+            `label=${o.label || ''}`
+        ];
+
+        if (Number.isFinite(o.x) && Number.isFinite(o.y)) {
+            parts.push(`x=${o.x}`, `y=${o.y}`);
+        }
+        if (typeof o.expression === 'string') {
+            parts.push(`expression=${o.expression}`);
+        }
+        if (Number.isFinite(o.start) && Number.isFinite(o.end)) {
+            parts.push(`start=${o.start}`, `end=${o.end}`, `step=${o.step ?? 1}`, `yLine=${o.y ?? 0}`);
+        }
+        if (Array.isArray(o.vertexIds) && o.vertexIds.length > 0) {
+            parts.push(`vertexIds=${o.vertexIds.join(',')}`);
+        }
+        if (Array.isArray(o.dependencies) && o.dependencies.length > 0) {
+            parts.push(`deps=${o.dependencies.join(',')}`);
+        }
+
+        return parts.join(', ');
     }
 
     /**
@@ -1527,18 +1561,84 @@ export class AIService {
         this.conversationHistory = [];
     }
 
+    normalizeImageAnalysisOptions(promptOrOptions = DEFAULT_IMAGE_RECREATE_INSTRUCTION) {
+        if (typeof promptOrOptions === 'string') {
+            const instruction = promptOrOptions.trim() || DEFAULT_IMAGE_RECREATE_INSTRUCTION;
+            return {
+                instruction,
+                mode: 'recreate',
+                context: null
+            };
+        }
+
+        const instruction = typeof promptOrOptions?.instruction === 'string'
+            ? promptOrOptions.instruction.trim()
+            : '';
+        const mode = promptOrOptions?.mode === 'patch' || promptOrOptions?.mode === 'recreate'
+            ? promptOrOptions.mode
+            : (instruction ? 'patch' : 'recreate');
+
+        return {
+            instruction: instruction || DEFAULT_IMAGE_RECREATE_INSTRUCTION,
+            mode,
+            context: promptOrOptions?.context || null
+        };
+    }
+
+    buildImageAnalysisPrompt(instruction = DEFAULT_IMAGE_RECREATE_INSTRUCTION, context = null, mode = 'recreate') {
+        const normalizedInstruction = String(instruction || '').trim() || DEFAULT_IMAGE_RECREATE_INSTRUCTION;
+        const normalizedMode = mode === 'patch' ? 'patch' : 'recreate';
+        const contextPrompt = this.buildCanvasContextPrompt(context);
+        const modeGuide = normalizedMode === 'patch'
+            ? [
+                '작업 모드: 부분 수정 패치.',
+                '참조 이미지와 사용자 지시를 기준으로 현재 캔버스에서 바뀌어야 하는 객체만 최소한으로 수정하세요.',
+                '기존 객체를 재사용할 수 있으면 id를 유지하고 update를 우선 사용하세요.',
+                '선택된 객체가 있으면 그 객체를 우선 수정 대상으로 간주하세요.',
+                '관련 없는 객체를 다시 만들거나 삭제하지 마세요.',
+                '현재 캔버스가 비어 있으면 참조 이미지 전체를 재구성하되 사용자 지시를 반영하세요.'
+            ].join('\n')
+            : [
+                '작업 모드: 이미지 재현.',
+                '참조 이미지에 보이는 수학 도형을 GraphA 객체로 새로 재구성하세요.',
+                '점, 선분, 직선, 원, 호, 다각형, 함수, 수직선, 치수, 입체 도형 등 현재 스키마가 지원하는 객체만 사용하세요.',
+                '이미지의 픽셀 자체를 생성하지 말고 GraphA operations[]만 반환하세요.'
+            ].join('\n');
+
+        return [
+            '당신은 MathGraph 이미지 참조 변환 모드입니다.',
+            '출력은 반드시 GraphA operations[] JSON만이어야 하며 설명 문장은 쓰지 마세요.',
+            modeGuide,
+            `사용자 지시: ${normalizedInstruction}`,
+            contextPrompt ? `현재 캔버스 컨텍스트:\n${contextPrompt}` : '',
+            '불확실한 세부 요소는 가장 가까운 수학 도형 구성으로 근사하되, 라벨과 주요 위치 관계를 우선 보존하세요.'
+        ].filter(Boolean).join('\n\n');
+    }
+
+    getDataUrlMimeType(imageDataUrl) {
+        const match = String(imageDataUrl || '').match(/^data:([^;,]+)[;,]/);
+        return match?.[1] || 'image/png';
+    }
+
     /**
      * 이미지 분석 (비전 모델)
      * @param {string} imageDataUrl - Base64 인코딩된 이미지
-     * @param {string} prompt - 분석 지시
+     * @param {string|object} promptOrOptions - 분석 지시 또는 { instruction, mode, context }
      */
-    async analyzeImage(imageDataUrl, prompt = '이 이미지에 있는 도형을 그래프A JSON으로 변환해주세요.') {
+    async analyzeImage(imageDataUrl, promptOrOptions = DEFAULT_IMAGE_RECREATE_INSTRUCTION) {
         if (!this.config.apiKey) {
             return {
                 success: false,
                 error: 'AI API 키가 설정되지 않았습니다. 설정에서 API 키를 입력해주세요.'
             };
         }
+
+        const options = this.normalizeImageAnalysisOptions(promptOrOptions);
+        const promptText = this.buildImageAnalysisPrompt(
+            options.instruction,
+            options.context,
+            options.mode
+        );
 
         try {
             if (this.config.provider === 'openai') {
@@ -1547,7 +1647,7 @@ export class AIService {
                     {
                         role: 'user',
                         content: [
-                            { type: 'input_text', text: prompt },
+                            { type: 'input_text', text: promptText },
                             { type: 'input_image', image_url: imageDataUrl, detail: 'high' }
                         ]
                     }
@@ -1571,6 +1671,7 @@ export class AIService {
                 }
 
                 const data = await response.json();
+                this.lastResponseId = data.id || this.lastResponseId;
                 const content = extractOpenAIResponseText(data);
                 const json = this.extractJSON(content);
 
@@ -1581,6 +1682,7 @@ export class AIService {
             } else if (this.config.provider === 'gemini') {
                 // Gemini Vision
                 const base64Data = imageDataUrl.split(',')[1];
+                const mimeType = this.getDataUrlMimeType(imageDataUrl);
                 const response = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.config.apiKey}`,
                     {
@@ -1589,8 +1691,8 @@ export class AIService {
                         body: JSON.stringify({
                             contents: [{
                                 parts: [
-                                    { text: SYSTEM_PROMPT + '\n\n' + prompt },
-                                    { inline_data: { mime_type: 'image/png', data: base64Data } }
+                                    { text: SYSTEM_PROMPT + '\n\n' + promptText },
+                                    { inline_data: { mime_type: mimeType, data: base64Data } }
                                 ]
                             }]
                         })

@@ -1671,6 +1671,14 @@ body {
     border-bottom-left-radius: var(--radius-sm);
 }
 
+.chat-image-preview {
+    display: block;
+    max-width: 200px;
+    max-height: 160px;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+}
+
 .chat-input-area {
     padding: var(--spacing-md);
     border-top: 1px solid var(--border-color);

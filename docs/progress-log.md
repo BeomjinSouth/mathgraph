@@ -40,6 +40,54 @@
 - This task does not add new primitives. Histogram/box-plot/scatter and cylinder/cone/sphere-style requests are documented as current approximations using existing polygon, line, number-line, prism, and pyramid primitives.
 - Existing non-skill dirty worktree files were not modified or reverted by this task.
 
+### Clipboard image reference and targeted graph patching
+
+#### Work completed
+
+- Added a dedicated planning note at `.agent/image_reference_patching.md`.
+- Added clipboard image paste handling for the AI chat.
+- Changed image upload/paste behavior so image-only input asks the vision path to recreate the diagram as GraphA objects, while image plus chat text asks for a targeted graph-object patch.
+- Added current canvas and selected-object context to image analysis prompts.
+- Added AIService prompt builders for image recreation versus partial patching.
+- Updated the chat placeholder and upload tooltip for the new image-reference workflow.
+- Documented the boundary between MathGraph vector-object patching and separate raster image-editing workflows in `docs/ai-reference.md`.
+- Added unit coverage for image prompt construction and OpenAI image-input request construction without live API calls.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, and this progress log.
+- Official docs:
+  - `https://developers.openai.com/api/docs/guides/image-generation`
+  - `https://developers.openai.com/api/docs/guides/images-vision`
+  - `https://developers.openai.com/api/reference/resources/responses/methods/create`
+
+#### Verification
+
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 23 tests.
+- Ran `npm.cmd test`; passed with 29 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- In-app Browser attempt for `http://127.0.0.1:4173/` was blocked by `ERR_BLOCKED_BY_CLIENT`, so Playwright CLI was used as fallback.
+- Started a local static server at `http://127.0.0.1:4173/`.
+- Ran Playwright CLI checks:
+  - page loaded with title `그래프A Mk2.1`.
+  - console error count was 0.
+  - chat placeholder and image-upload title matched the new workflow.
+  - `window.app` existed and exposed `handleClipboardPaste`, `getClipboardImageFile`, `buildAIContext`, and image prompt helpers.
+  - viewport screenshot saved to `tmp/browser-captures/image-reference-chat-ui.png`.
+
+#### Deployment / Vercel
+
+- Existing Vercel configuration remains unchanged.
+- This change does not alter deployment settings or require new environment variables.
+- Direct browser API-key storage remains a BYOK/personal-use compromise; a server-side proxy is still recommended before shared public OpenAI API use.
+
+#### Follow-up
+
+- Add a dedicated mask UI and server-side image edit endpoint only if the product needs true raster inpainting.
+- Add stronger UX for delayed "paste first, type instruction later" flows if classroom usage shows that pattern is common.
+
 ## 2026-05-19
 
 ### PDF-driven geometry and graph coverage improvement
