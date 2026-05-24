@@ -111,7 +111,7 @@ export class TangentFunctionTool extends Tool {
         if (this.selectedFunction) {
             // 선택된 함수 강조
             canvas.drawFunction(this.selectedFunction.getFunction(), {
-                color: '#f97316',
+                color: '#000000',
                 width: 3
             });
         }

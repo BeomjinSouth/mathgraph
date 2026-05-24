@@ -87,7 +87,7 @@ export class RightAngleTool extends Tool {
         for (const line of this.selectedLines) {
             if (line.valid) {
                 canvas.drawLine(line.getPoint1(), line.getPoint2(), {
-                    color: '#8b5cf6',
+                    color: '#000000',
                     width: 3
                 });
             }
@@ -170,7 +170,7 @@ export class EqualLengthTool extends Tool {
         for (const segment of this.selectedSegments) {
             if (segment.valid) {
                 canvas.drawSegment(segment.getPoint1(), segment.getPoint2(), {
-                    color: '#8b5cf6',
+                    color: '#000000',
                     width: 3
                 });
             }

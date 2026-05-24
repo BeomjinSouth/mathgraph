@@ -5,6 +5,8 @@
 
 import { Vec2 } from '../utils/Geometry.js';
 
+export const DEFAULT_OBJECT_COLOR = '#000000';
+
 // 유니크 ID 생성
 let idCounter = 0;
 function generateId() {
@@ -140,7 +142,7 @@ export class GeoObject {
         this.showLabel = params.showLabel !== undefined ? params.showLabel : !isLineType;
 
         // 스타일 (기본: 검정색, 굵기 3, 폰트 30)
-        this.color = params.color || '#000000';
+        this.color = params.color || DEFAULT_OBJECT_COLOR;
         this.lineWidth = params.lineWidth || 3;
         this.pointSize = params.pointSize || 6;
         this.fontSize = params.fontSize || 30;
@@ -172,29 +174,7 @@ export class GeoObject {
      * 기본 색상 (타입별)
      */
     getDefaultColor() {
-        const colorMap = {
-            [ObjectType.POINT]: '#6366f1',
-            [ObjectType.POINT_ON_OBJECT]: '#6366f1',
-            [ObjectType.INTERSECTION]: '#6366f1',
-            [ObjectType.MIDPOINT]: '#6366f1',
-            [ObjectType.SEGMENT]: '#3b82f6',
-            [ObjectType.LINE]: '#3b82f6',
-            [ObjectType.RAY]: '#3b82f6',
-            [ObjectType.CIRCLE]: '#22c55e',
-            [ObjectType.CIRCLE_THREE_POINTS]: '#22c55e',
-            [ObjectType.POLYGON]: '#3b82f6',
-            [ObjectType.PARALLEL]: '#3b82f6',
-            [ObjectType.PERPENDICULAR]: '#3b82f6',
-            [ObjectType.PERPENDICULAR_BISECTOR]: '#3b82f6',
-            [ObjectType.ANGLE_BISECTOR]: '#3b82f6',
-            [ObjectType.TANGENT_CIRCLE]: '#3b82f6',
-            [ObjectType.TANGENT_FUNCTION]: '#3b82f6',
-            [ObjectType.FUNCTION]: '#f97316',
-            [ObjectType.VECTOR]: '#ec4899',
-            [ObjectType.RIGHT_ANGLE_MARKER]: '#8b5cf6',
-            [ObjectType.EQUAL_LENGTH_MARKER]: '#8b5cf6'
-        };
-        return colorMap[this.type] || '#3b82f6';
+        return DEFAULT_OBJECT_COLOR;
     }
 
     /**

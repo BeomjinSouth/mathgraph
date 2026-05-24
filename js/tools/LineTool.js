@@ -79,7 +79,7 @@ export class SegmentTool extends Tool {
         if (this.firstPoint && this.previewEnd) {
             const p1 = this.firstPoint.getPosition();
             canvas.drawSegment(p1, this.previewEnd, {
-                color: 'rgba(59, 130, 246, 0.5)',
+                color: 'rgba(0, 0, 0, 0.5)',
                 width: 2,
                 dashed: true,
                 dashPattern: [5, 5]
@@ -151,7 +151,7 @@ export class LineTool extends Tool {
         if (this.firstPoint && this.previewEnd) {
             const p1 = this.firstPoint.getPosition();
             canvas.drawLine(p1, this.previewEnd, {
-                color: 'rgba(59, 130, 246, 0.5)',
+                color: 'rgba(0, 0, 0, 0.5)',
                 width: 2,
                 dashed: true
             });
@@ -223,7 +223,7 @@ export class RayTool extends Tool {
             const origin = this.originPoint.getPosition();
             const dir = this.previewEnd.sub(origin);
             canvas.drawRay(origin, dir, {
-                color: 'rgba(59, 130, 246, 0.5)',
+                color: 'rgba(0, 0, 0, 0.5)',
                 width: 2,
                 dashed: true
             });
@@ -294,7 +294,7 @@ export class VectorTool extends Tool {
         if (this.startPoint && this.previewEnd) {
             const start = this.startPoint.getPosition();
             canvas.drawVector(start, this.previewEnd, {
-                color: 'rgba(236, 72, 153, 0.5)',
+                color: 'rgba(0, 0, 0, 0.5)',
                 width: 2
             });
         }

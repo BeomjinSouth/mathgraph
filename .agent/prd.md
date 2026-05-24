@@ -2,6 +2,53 @@
 
 ## Summary
 
+- Task: Monochrome default drawing output
+- Owner: Codex
+- Date: 2026-05-24
+- Related files:
+  - `js/objects/GeoObject.js`
+  - `js/core/SettingsManager.js`
+  - `js/core/Canvas.js`
+  - `js/ai/AIService.js`
+  - `.agents/skills/mathgraph-drawing/`
+  - `tests/fixtures/pdf-ai-drawing-samples.json`
+
+## Problem
+
+- Runtime defaults, AI examples, and synthetic references still contain mixed blue, green, orange, purple, and red colors.
+- As a result, Korean natural-language drawing requests and reference-based tests can keep producing multi-color diagrams even when the desired baseline is a black exam-style figure.
+- Existing browser localStorage may also preserve legacy default colors.
+
+## Goals
+
+- Make black (`#000000`) the default stroke/fill color for newly created MathGraph objects.
+- Keep explicit color support available when a user intentionally asks for a specific color.
+- Normalize AI prompt examples, skill references, synthetic data, and PDF sample fixtures so default examples render in black.
+- Migrate legacy saved default style colors to black so old browser settings do not keep reintroducing colored defaults.
+
+## Non-Goals
+
+- Do not remove color controls or explicit color fields from the schema.
+- Do not change grid, axes, selection highlight, or other UI feedback colors unless they are object default output colors.
+- Do not add new drawing primitives.
+
+## Acceptance Criteria
+
+- [x] Runtime constructors and canvas primitive fallback colors use black by default.
+- [x] Settings and color picker defaults start from black, including legacy setting migration.
+- [x] AI/skill reference examples no longer teach multi-color defaults.
+- [x] Tests confirm synthetic/PDF reference operation colors are black by default.
+- [x] Browser rendering verification passes with the updated sample set.
+
+## Risks and Open Questions
+
+- Existing saved drawings with explicit colors should remain colored because those colors are part of the saved document, not defaults.
+- Selection and hover colors may still appear during editing; the exported/generated object baseline should be black.
+
+---
+
+## Summary
+
 - Task: Teacher-guide PDF diagram sampling and MathGraph AI drawing parity check
 - Owner: Codex
 - Date: 2026-05-24

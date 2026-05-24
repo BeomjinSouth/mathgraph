@@ -366,8 +366,8 @@ export class Canvas {
 
         const {
             radius = 4,
-            color = '#6366f1',
-            borderColor = '#ffffff',
+            color = '#000000',
+            borderColor = '#000000',
             borderWidth = 1.5,
             highlighted = false,
             selected = false
@@ -405,7 +405,7 @@ export class Canvas {
         const s2 = this.toScreen(p2);
 
         const {
-            color = '#3b82f6',
+            color = '#000000',
             width = 2,
             dashed = false,
             dashPattern = [5, 5],
@@ -480,7 +480,7 @@ export class Canvas {
         const screenRadius = this.toScreenLength(radius);
 
         const {
-            color = '#22c55e',
+            color = '#000000',
             width = 2,
             fillColor = null,
             dashed = false,
@@ -527,7 +527,7 @@ export class Canvas {
         const s2 = this.toScreen(to);
 
         const {
-            color = '#ec4899',
+            color = '#000000',
             width = 2,
             arrowSize = 10,
             highlighted = false,
@@ -572,7 +572,7 @@ export class Canvas {
 
         const {
             fontSize = 14,
-            color = '#333333',
+            color = '#000000',
             offsetX = 8,
             offsetY = -8,
             backgroundColor = null,
@@ -613,7 +613,7 @@ export class Canvas {
     drawRightAngleMarker(vertex, p1, p2, options = {}) {
         const ctx = this.ctx;
         const size = options.size || 12;
-        const color = options.color || '#8b5cf6';
+        const color = options.color || '#000000';
 
         const screenVertex = this.toScreen(vertex);
         const dir1 = p1.sub(vertex).normalize();
@@ -649,7 +649,7 @@ export class Canvas {
         const ctx = this.ctx;
         const tickCount = options.tickCount || 1;
         const baseSize = options.size || 8;
-        const color = options.color || '#8b5cf6';
+        const color = options.color || '#000000';
         const lineWidth = options.lineWidth || 2;
 
         // lineWidth에 비례하여 전체 크기 스케일링
@@ -701,7 +701,7 @@ export class Canvas {
         const bounds = this.getVisibleBounds();
 
         const {
-            color = '#f97316',
+            color = '#000000',
             width = 2,
             samples = 500,
             highlighted = false,
@@ -808,7 +808,7 @@ export class Canvas {
 
         const {
             fontSize = 14,
-            color = '#333333',
+            color = '#000000',
             offsetX = 8,
             offsetY = -8,
             backgroundColor = null
@@ -1028,7 +1028,7 @@ export class Canvas {
         const ctx = this.ctx;
 
         const {
-            strokeColor = '#3b82f6',
+            strokeColor = '#000000',
             fillColor = null,
             width = 2,
             dashed = false,

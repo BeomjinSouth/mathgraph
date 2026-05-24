@@ -147,16 +147,16 @@ Most object types accept the following optional properties:
 | Field | Type | Notes |
 | --- | --- | --- |
 | `label` | string | Human-readable name for the object |
-| `color` | string | Hex color string |
+| `color` | string | Hex color string. Default drawing output should use `#000000` unless the user explicitly asks for another color. |
 | `visible` | boolean | Visibility flag |
 | `lineWidth` | number | Stroke width |
 | `pointSize` | number | Point radius/size |
 | `fontSize` | number | Label size |
 | `dashed` | boolean | Dashed stroke toggle |
-| `fillColor` | string | Fill color for area objects |
+| `fillColor` | string | Fill color for area objects. Default fill examples use `#000000` with opacity. |
 | `fillOpacity` | number | Fill opacity between `0` and `1` |
 
-These common style fields are applied during both `create` and `update` operations when the target runtime object supports them.
+These common style fields are applied during both `create` and `update` operations when the target runtime object supports them. For token-efficient AI calls, omit color fields unless a color is requested; the runtime default is black.
 
 Reference fields should point to existing object IDs unless the referenced object is created earlier in the same `operations` list.
 
@@ -277,7 +277,7 @@ Reference fields should point to existing object IDs unless the referenced objec
   "startPointId": "P1",
   "endPointId": "P2",
   "mode": "minor",
-  "fillColor": "#22c55e",
+  "fillColor": "#000000",
   "fillOpacity": 0.3
 }
 ```
@@ -301,7 +301,7 @@ Reference fields should point to existing object IDs unless the referenced objec
   "id": "poly_ABC",
   "type": "polygon",
   "vertexIds": ["A", "B", "C"],
-  "fillColor": "#3b82f6",
+  "fillColor": "#000000",
   "fillOpacity": 0.12
 }
 ```
@@ -457,7 +457,7 @@ Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared st
     { "op": "create", "id": "A", "type": "point", "label": "A", "x": 0, "y": 0 },
     { "op": "create", "id": "B", "type": "point", "label": "B", "x": 4, "y": 0 },
     { "op": "create", "id": "C", "type": "point", "label": "C", "x": 2, "y": 3 },
-    { "op": "create", "id": "poly_ABC", "type": "polygon", "vertexIds": ["A", "B", "C"], "fillColor": "#3b82f6", "fillOpacity": 0.12 }
+    { "op": "create", "id": "poly_ABC", "type": "polygon", "vertexIds": ["A", "B", "C"], "fillColor": "#000000", "fillOpacity": 0.12 }
   ]
 }
 ```
@@ -478,7 +478,7 @@ Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared st
 ```json
 {
   "operations": [
-    { "op": "update", "id": "A", "label": "A_1", "color": "#ef4444" },
+    { "op": "update", "id": "A", "label": "A_1", "color": "#000000" },
     { "op": "delete", "id": "old_circle" }
   ]
 }

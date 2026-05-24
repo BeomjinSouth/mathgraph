@@ -220,6 +220,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 2. 참조 순서를 준수하세요. 참조되는 객체(점)가 먼저 정의되어야 합니다.
 3. 정수 좌표를 권장합니다. 예: (2, 0), (-3, 5)
 4. 필수 필드를 포함하세요.
+5. 기본 도형 색상은 #000000입니다. 사용자가 색을 명시적으로 요청하지 않으면 여러 색을 넣지 마세요.
 
 ## JSON 스키마
 
@@ -262,7 +263,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 
 ### 선택적 공통 속성
 - label: 객체 이름
-- color: 색상 (HEX, 예: "#3b82f6")
+- color: 색상 (HEX, 기본 예: "#000000")
 - lineWidth: 선 굵기 (1-5)
 - dashed: 점선 여부
 
@@ -274,7 +275,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
     { "op": "create", "type": "point", "id": "p1", "x": 0, "y": 0, "label": "A" },
     { "op": "create", "type": "point", "id": "p2", "x": 4, "y": 0, "label": "B" },
     { "op": "create", "type": "point", "id": "p3", "x": 2, "y": 3, "label": "C" },
-    { "op": "create", "type": "polygon", "id": "poly1", "vertexIds": ["p1", "p2", "p3"], "fillColor": "#3b82f6", "fillOpacity": 0.12 }
+    { "op": "create", "type": "polygon", "id": "poly1", "vertexIds": ["p1", "p2", "p3"], "fillColor": "#000000", "fillOpacity": 0.12 }
   ]
 }
 
@@ -284,7 +285,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
     { "op": "create", "type": "point", "id": "p1", "x": 0, "y": 0, "label": "A" },
     { "op": "create", "type": "point", "id": "p2", "x": 4, "y": 0, "label": "B" },
     { "op": "create", "type": "point", "id": "p3", "x": 2, "y": 3, "label": "C" },
-    { "op": "create", "type": "polygon", "id": "poly1", "vertexIds": ["p1", "p2", "p3"], "fillColor": "#3b82f6", "fillOpacity": 0.12 },
+    { "op": "create", "type": "polygon", "id": "poly1", "vertexIds": ["p1", "p2", "p3"], "fillColor": "#000000", "fillOpacity": 0.12 },
     { "op": "create", "type": "circleThreePoints", "id": "c1", "point1Id": "p1", "point2Id": "p2", "point3Id": "p3", "label": "외접원" }
   ]
 }
@@ -768,7 +769,7 @@ export class AIService {
                 { op: 'create', type: 'point', id: 'p1', x: baseCoords[labels[0]].x, y: baseCoords[labels[0]].y, label: labels[0] },
                 { op: 'create', type: 'point', id: 'p2', x: baseCoords[labels[1]].x, y: baseCoords[labels[1]].y, label: labels[1] },
                 { op: 'create', type: 'point', id: 'p3', x: baseCoords[labels[2]].x, y: baseCoords[labels[2]].y, label: labels[2] },
-                { op: 'create', type: 'polygon', id: 'poly1', vertexIds: ['p1', 'p2', 'p3'], fillColor: '#3b82f6', fillOpacity: 0.12 }
+                { op: 'create', type: 'polygon', id: 'poly1', vertexIds: ['p1', 'p2', 'p3'], fillColor: '#000000', fillOpacity: 0.12 }
             ];
 
             // 외접원
@@ -817,7 +818,7 @@ export class AIService {
                 { op: 'create', type: 'point', id: 'p2', x: 4 + offsetX, y: 0 + offsetY, label: labels[1] },
                 { op: 'create', type: 'point', id: 'p3', x: 4 + offsetX, y: 4 + offsetY, label: labels[2] },
                 { op: 'create', type: 'point', id: 'p4', x: 0 + offsetX, y: 4 + offsetY, label: labels[3] },
-                { op: 'create', type: 'polygon', id: 'poly1', vertexIds: ['p1', 'p2', 'p3', 'p4'], fillColor: '#3b82f6', fillOpacity: 0.12 }
+                { op: 'create', type: 'polygon', id: 'poly1', vertexIds: ['p1', 'p2', 'p3', 'p4'], fillColor: '#000000', fillOpacity: 0.12 }
             ];
 
             this.addToHistory(operations);

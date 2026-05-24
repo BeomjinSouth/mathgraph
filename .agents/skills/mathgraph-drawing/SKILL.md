@@ -32,6 +32,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Use `polygon` for triangles, quadrilaterals, shaded regions, bars, and other filled plane regions.
 - Use `prism` and `pyramid` for current solid support. Approximate cylinders, cones, spheres, nets, box plots, histograms, and scatter plots with current primitives and state the limitation when needed.
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.
+- Default object stroke and fill color is `#000000`; omit color fields unless a user explicitly requests color, and never introduce multiple colors on your own.
 
 ## Quality Checks
 
@@ -43,4 +44,4 @@ Before returning final JSON, check:
 - References point to existing canvas IDs or IDs created earlier in the same batch.
 - `polygon.vertexIds`, `prism.baseVertexIds`, and `pyramid.baseVertexIds` contain at least three point IDs.
 - `numberLine.start < numberLine.end` and `numberLine.step > 0`.
-- Styling fields are simple values: hex colors, numeric widths/opacities, booleans for toggles.
+- Styling fields are simple values: hex colors, numeric widths/opacities, booleans for toggles. Default color fields, when included, should be `#000000`.

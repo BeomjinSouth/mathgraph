@@ -69,7 +69,7 @@ export class CircleTool extends Tool {
     render(canvas, app) {
         if (this.centerPoint && this.previewRadius) {
             canvas.drawCircle(this.centerPoint.getPosition(), this.previewRadius, {
-                color: 'rgba(34, 197, 94, 0.5)',
+                color: 'rgba(0, 0, 0, 0.5)',
                 width: 2,
                 dashed: true
             });
@@ -156,7 +156,7 @@ export class CircleThreePointsTool extends Tool {
             const pos = point.getPosition();
             canvas.drawPoint(pos, {
                 radius: 6,
-                color: '#22c55e',
+                color: '#000000',
                 highlighted: true
             });
         }
@@ -232,7 +232,7 @@ export class TangentCircleTool extends Tool {
             const center = this.selectedCircle.getCenter();
             const radius = this.selectedCircle.getRadius();
             canvas.drawCircle(center, radius, {
-                color: '#22c55e',
+                color: '#000000',
                 width: 3
             });
         }

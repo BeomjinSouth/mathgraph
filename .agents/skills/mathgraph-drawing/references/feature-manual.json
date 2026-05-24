@@ -4,6 +4,7 @@
   "updatedAt": "2026-05-24",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
+  "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
   "sourceOfTruth": {
     "runtime": ["js/core/ObjectManager.js", "js/objects/*.js", "js/tools/*.js", "js/main.js"],
     "aiContract": ["js/ai/SchemaValidator.js", "js/ai/PatchApplier.js", "js/ai/AIService.js", "docs/ai-reference.md"],
@@ -91,13 +92,13 @@
     "createAndUpdate": [
       { "name": "id", "type": "string", "scope": "create/update/delete", "note": "Stable temporary ID for within-batch references or existing ID for mutation." },
       { "name": "label", "type": "string", "scope": "create/update", "note": "Human-readable label such as A, B, f, c." },
-      { "name": "color", "type": "hex color string", "scope": "create/update", "note": "Stroke or primary object color." },
+      { "name": "color", "type": "hex color string", "scope": "create/update", "note": "Stroke or primary object color. Default output is #000000; omit unless explicitly needed." },
       { "name": "visible", "type": "boolean", "scope": "create/update", "note": "Whether object renders and can be selected without show-hidden mode." },
       { "name": "lineWidth", "type": "number", "scope": "create/update", "note": "Stroke width." },
       { "name": "pointSize", "type": "number", "scope": "create/update", "note": "Point radius/size." },
       { "name": "fontSize", "type": "number", "scope": "create/update", "note": "Label size." },
       { "name": "dashed", "type": "boolean", "scope": "create/update", "note": "Dashed stroke toggle." },
-      { "name": "fillColor", "type": "hex color string", "scope": "create/update", "note": "Area fill color for polygon, sector, circularSegment." },
+      { "name": "fillColor", "type": "hex color string", "scope": "create/update", "note": "Area fill color for polygon, sector, circularSegment. Default fill is #000000 with opacity." },
       { "name": "fillOpacity", "type": "number 0..1", "scope": "create/update", "note": "Area opacity." },
       { "name": "showLabel", "type": "boolean", "scope": "create/update", "note": "Label visibility." },
       { "name": "locked", "type": "boolean", "scope": "create/update", "note": "Prevents direct dragging when supported." },
@@ -328,7 +329,7 @@
       "tags": ["circle", "sector", "area"],
       "requiredFields": ["circleId", "startPointId", "endPointId"],
       "optionalFields": ["mode", "fillColor", "fillOpacity", "label"],
-      "template": { "op": "create", "id": "sector_AOB", "type": "sector", "circleId": "c1", "startPointId": "A", "endPointId": "B", "mode": "minor", "fillColor": "#22c55e", "fillOpacity": 0.25 },
+      "template": { "op": "create", "id": "sector_AOB", "type": "sector", "circleId": "c1", "startPointId": "A", "endPointId": "B", "mode": "minor", "fillColor": "#000000", "fillOpacity": 0.25 },
       "notes": ["Use for central-angle shaded regions."]
     },
     {
@@ -337,7 +338,7 @@
       "tags": ["circle", "area"],
       "requiredFields": ["circleId", "startPointId", "endPointId"],
       "optionalFields": ["mode", "fillColor", "fillOpacity", "label"],
-      "template": { "op": "create", "id": "segment_arc_AB", "type": "circularSegment", "circleId": "c1", "startPointId": "A", "endPointId": "B", "mode": "minor", "fillColor": "#f59e0b", "fillOpacity": 0.2 },
+      "template": { "op": "create", "id": "segment_arc_AB", "type": "circularSegment", "circleId": "c1", "startPointId": "A", "endPointId": "B", "mode": "minor", "fillColor": "#000000", "fillOpacity": 0.2 },
       "notes": ["Use for area between a chord and an arc."]
     },
     {
@@ -346,7 +347,7 @@
       "tags": ["plane", "polygon", "area"],
       "requiredFields": ["vertexIds"],
       "optionalFields": ["fillColor", "fillOpacity", "label", "color", "lineWidth", "dashed"],
-      "template": { "op": "create", "id": "poly_ABC", "type": "polygon", "vertexIds": ["A", "B", "C"], "fillColor": "#3b82f6", "fillOpacity": 0.12 },
+      "template": { "op": "create", "id": "poly_ABC", "type": "polygon", "vertexIds": ["A", "B", "C"], "fillColor": "#000000", "fillOpacity": 0.12 },
       "validationRules": ["vertexIds must contain at least 3 point IDs."],
       "notes": ["Best current primitive for triangles, quadrilaterals, filled graph regions, and histogram bars."]
     },

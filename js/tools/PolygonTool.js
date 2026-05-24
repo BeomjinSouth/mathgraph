@@ -64,8 +64,8 @@ export class PolygonTool extends Tool {
 
         // 다각형 객체 생성
         const polygon = app.objectManager.createPolygon(this.vertices.map(vertex => vertex.id), {
-            color: '#22c55e',
-            fillColor: '#22c55e',
+            color: '#000000',
+            fillColor: '#000000',
             fillOpacity: 0.12
         });
         app.historyManager.recordCreate(polygon);
@@ -93,7 +93,7 @@ export class PolygonTool extends Tool {
         if (positions.length >= 2) {
             for (let i = 0; i < positions.length - 1; i++) {
                 canvas.drawSegment(positions[i], positions[i + 1], {
-                    color: 'rgba(34, 197, 94, 0.7)',
+                    color: 'rgba(0, 0, 0, 0.7)',
                     width: 2
                 });
             }
@@ -102,7 +102,7 @@ export class PolygonTool extends Tool {
         // 현재 위치까지 미리보기 선
         if (this.previewPos && positions.length > 0) {
             canvas.drawSegment(positions[positions.length - 1], this.previewPos, {
-                color: 'rgba(34, 197, 94, 0.4)',
+                color: 'rgba(0, 0, 0, 0.4)',
                 width: 2,
                 dashed: true
             });
@@ -110,7 +110,7 @@ export class PolygonTool extends Tool {
             // 시작점으로 돌아가는 선
             if (positions.length >= 3) {
                 canvas.drawSegment(this.previewPos, positions[0], {
-                    color: 'rgba(34, 197, 94, 0.3)',
+                    color: 'rgba(0, 0, 0, 0.3)',
                     width: 1,
                     dashed: true
                 });
@@ -122,7 +122,7 @@ export class PolygonTool extends Tool {
             const pos = vertex.getPosition();
             canvas.drawPoint(pos, {
                 radius: 6,
-                color: '#22c55e',
+                color: '#000000',
                 highlighted: true
             });
         }
@@ -131,7 +131,7 @@ export class PolygonTool extends Tool {
         if (positions.length >= 3) {
             canvas.drawPoint(positions[0], {
                 radius: 10,
-                color: 'rgba(34, 197, 94, 0.5)'
+                color: 'rgba(0, 0, 0, 0.5)'
             });
         }
     }

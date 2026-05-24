@@ -2,6 +2,32 @@
 
 ## Relevant Skills
 
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The behavior change must update both GraphA operation examples and the selective reference skill used by GPT/API orchestration.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The user-visible fix is whether diagrams render as black defaults in the actual canvas, not only whether JSON parses.
+
+## Current Task Notes
+
+- New default rule:
+  - MathGraph-created objects should default to black (`#000000`) for object strokes and fills.
+  - AI-generated operations should omit style colors unless needed, or use `#000000` for default examples.
+  - Explicit user color requests remain supported.
+- Reference updates needed:
+  - `.agents/skills/mathgraph-drawing/SKILL.md`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `.agents/skills/mathgraph-drawing/references/synthetic-drawing-data.jsonl`
+  - `tests/fixtures/pdf-ai-drawing-samples.json`
+- Verification completed:
+  - `npm.cmd test` passed with 35 tests.
+  - `node tools\render-pdf-ai-drawing-samples.mjs` passed with 12 rendered samples and 0 failures.
+
+---
+
+## Relevant Skills
+
 - Skill: PDF
 - Why it matters:
   - The task samples local teacher-guide PDFs where rendered layout and visible diagrams matter.

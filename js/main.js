@@ -1714,7 +1714,7 @@ class GraphAApp {
 
     buildSVGStrokeAttributes(obj, { fill = 'none', fillOpacity = null } = {}) {
         const attrs = [
-            `stroke="${this.escapeSVG(obj.color || '#111827')}"`,
+            `stroke="${this.escapeSVG(obj.color || '#000000')}"`,
             `stroke-width="${obj.lineWidth || 2}"`,
             `stroke-linecap="round"`,
             `stroke-linejoin="round"`,
@@ -1837,11 +1837,11 @@ class GraphAApp {
 
         const screen = this.canvas.toScreen(position);
         const radius = obj.pointSize || 4;
-        const fill = this.escapeSVG(obj.color || '#6366f1');
+        const fill = this.escapeSVG(obj.color || '#000000');
 
         return [
             `<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}">`,
-            `<circle cx="${screen.x.toFixed(2)}" cy="${screen.y.toFixed(2)}" r="${(radius + 1.5).toFixed(2)}" fill="#ffffff" />`,
+            `<circle cx="${screen.x.toFixed(2)}" cy="${screen.y.toFixed(2)}" r="${(radius + 1.5).toFixed(2)}" fill="${fill}" />`,
             `<circle cx="${screen.x.toFixed(2)}" cy="${screen.y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${fill}" />`,
             '</g>'
         ].join('');
@@ -1880,7 +1880,7 @@ class GraphAApp {
             x: geometry.end.x - ux * arrowSize + px * arrowSize * 0.4,
             y: geometry.end.y - uy * arrowSize + py * arrowSize * 0.4
         };
-        const color = this.escapeSVG(obj.color || '#ec4899');
+        const color = this.escapeSVG(obj.color || '#000000');
 
         return [
             `<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}">`,
@@ -2052,7 +2052,7 @@ class GraphAApp {
         const startPos = this.canvas.toScreen(new Vec2(obj.start, obj.y));
         const endPos = this.canvas.toScreen(new Vec2(obj.end, obj.y));
         const tickScreenHeight = this.canvas.toScreenLength(obj.tickHeight || 0.15);
-        const color = this.escapeSVG(obj.color || '#111827');
+        const color = this.escapeSVG(obj.color || '#000000');
         const parts = [
             `<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}" ` +
             `stroke="${color}" fill="${color}" stroke-width="${obj.lineWidth || 2}">`,

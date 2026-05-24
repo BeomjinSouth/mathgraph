@@ -2,6 +2,62 @@
 
 ## Status
 
+- Task: Monochrome default drawing output
+- State: Done
+- Last updated: 2026-05-24
+
+## Plan
+
+1. Record the behavior change in the project planning docs.
+2. Change runtime constructors, canvas primitive fallbacks, settings defaults, and UI color input defaults to black.
+3. Update AI prompt examples and project-local drawing skill guidance to prefer black unless a color is explicitly requested.
+4. Normalize synthetic/PDF sample operations so reference-generated diagrams render in black.
+5. Add focused tests for monochrome defaults and run unit/browser render verification.
+6. Update progress log, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+- [x] Step 6
+
+## Decisions
+
+- Decision: Preserve explicit color support while changing defaults and examples.
+- Reason: Users may still ask for red/blue highlights intentionally, but the default exam-style output should not introduce colors on its own.
+- Decision: Treat legacy stored default palette values as stale defaults and migrate them to black on load.
+- Reason: Otherwise the app could keep showing colored output on browsers that had opened earlier builds.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Checks run:
+  - `npm.cmd test`
+  - `node tools\render-pdf-ai-drawing-samples.mjs`
+  - `git diff --check`
+- Result:
+  - Unit/schema/render contract tests passed with 35 tests.
+  - Browser render helper produced 12 sample screenshots and 0 failures.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- What changed:
+  - Runtime object defaults, canvas primitive fallbacks, tool previews, AI prompt examples, skill references, synthetic data, and PDF fixtures now default style colors to `#000000`.
+  - Added `tests/monochrome-defaults.test.js` to guard runtime defaults, legacy palette migration, and reference sample colors.
+- What remains:
+  - Explicit user-requested colors remain supported by the schema and update flow.
+
+---
+
+## Status
+
 - Task: Teacher-guide PDF diagram sampling and MathGraph AI drawing parity check
 - State: Done
 - Last updated: 2026-05-24

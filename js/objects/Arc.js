@@ -2,7 +2,7 @@
  * Arc.js - 호, 부채꼴, 활꼴 객체 (Mk.2)
  */
 
-import { GeoObject, ObjectType } from './GeoObject.js';
+import { DEFAULT_OBJECT_COLOR, GeoObject, ObjectType } from './GeoObject.js';
 import { Vec2 } from '../utils/Geometry.js';
 
 /**
@@ -177,7 +177,7 @@ export class Sector extends GeoObject {
         this.mode = mode;
 
         // 채움 스타일
-        this.fillColor = params.fillColor || '#22c55e';
+        this.fillColor = params.fillColor || DEFAULT_OBJECT_COLOR;
         this.fillOpacity = params.fillOpacity ?? 0.3;
 
         this.addDependency(circleId);
@@ -342,7 +342,7 @@ export class CircularSegment extends GeoObject {
         this.endPointId = endPointId;
         this.mode = mode;
 
-        this.fillColor = params.fillColor || '#3b82f6';
+        this.fillColor = params.fillColor || DEFAULT_OBJECT_COLOR;
         this.fillOpacity = params.fillOpacity ?? 0.3;
 
         this.addDependency(circleId);

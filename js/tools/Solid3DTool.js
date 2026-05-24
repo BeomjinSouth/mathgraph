@@ -143,7 +143,7 @@ export class PrismTool extends Tool {
         if (positions.length >= 2) {
             for (let i = 0; i < positions.length - 1; i++) {
                 canvas.drawSegment(positions[i], positions[i + 1], {
-                    color: 'rgba(59, 130, 246, 0.7)',
+                    color: 'rgba(0, 0, 0, 0.7)',
                     width: 2
                 });
             }
@@ -151,7 +151,7 @@ export class PrismTool extends Tool {
             // 닫기 선 (밑면 완료 시)
             if (this.phase === 'height') {
                 canvas.drawSegment(positions[positions.length - 1], positions[0], {
-                    color: 'rgba(59, 130, 246, 0.7)',
+                    color: 'rgba(0, 0, 0, 0.7)',
                     width: 2
                 });
             }
@@ -160,7 +160,7 @@ export class PrismTool extends Tool {
         // 현재 위치까지 미리보기
         if (this.previewPos && positions.length > 0 && this.phase === 'base') {
             canvas.drawSegment(positions[positions.length - 1], this.previewPos, {
-                color: 'rgba(59, 130, 246, 0.4)',
+                color: 'rgba(0, 0, 0, 0.4)',
                 width: 2,
                 dashed: true
             });
@@ -183,14 +183,14 @@ export class PrismTool extends Tool {
 
                 // 세로 모서리
                 canvas.drawSegment(positions[i], topPos, {
-                    color: 'rgba(34, 197, 94, 0.4)',
+                    color: 'rgba(0, 0, 0, 0.4)',
                     width: 2,
                     dashed: true
                 });
 
                 // 상단면 모서리
                 canvas.drawSegment(topPos, nextTopPos, {
-                    color: 'rgba(34, 197, 94, 0.4)',
+                    color: 'rgba(0, 0, 0, 0.4)',
                     width: 2,
                     dashed: true
                 });
@@ -202,7 +202,7 @@ export class PrismTool extends Tool {
             const pos = vertex.getPosition();
             canvas.drawPoint(pos, {
                 radius: 6,
-                color: '#3b82f6',
+                color: '#000000',
                 highlighted: true
             });
         }
@@ -211,7 +211,7 @@ export class PrismTool extends Tool {
         if (positions.length >= 3 && this.phase === 'base') {
             canvas.drawPoint(positions[0], {
                 radius: 10,
-                color: 'rgba(34, 197, 94, 0.5)'
+                color: 'rgba(0, 0, 0, 0.5)'
             });
         }
     }
@@ -325,7 +325,7 @@ export class PyramidTool extends Tool {
         if (positions.length >= 2) {
             for (let i = 0; i < positions.length - 1; i++) {
                 canvas.drawSegment(positions[i], positions[i + 1], {
-                    color: 'rgba(59, 130, 246, 0.7)',
+                    color: 'rgba(0, 0, 0, 0.7)',
                     width: 2
                 });
             }
@@ -333,7 +333,7 @@ export class PyramidTool extends Tool {
             // 닫기 선 (밑면 완료 시)
             if (this.phase === 'apex') {
                 canvas.drawSegment(positions[positions.length - 1], positions[0], {
-                    color: 'rgba(59, 130, 246, 0.7)',
+                    color: 'rgba(0, 0, 0, 0.7)',
                     width: 2
                 });
             }
@@ -342,7 +342,7 @@ export class PyramidTool extends Tool {
         // 현재 위치까지 미리보기
         if (this.previewPos && positions.length > 0 && this.phase === 'base') {
             canvas.drawSegment(positions[positions.length - 1], this.previewPos, {
-                color: 'rgba(59, 130, 246, 0.4)',
+                color: 'rgba(0, 0, 0, 0.4)',
                 width: 2,
                 dashed: true
             });
@@ -352,7 +352,7 @@ export class PyramidTool extends Tool {
         if (this.phase === 'apex' && this.previewPos) {
             for (const pos of positions) {
                 canvas.drawSegment(pos, this.previewPos, {
-                    color: 'rgba(236, 72, 153, 0.4)',
+                    color: 'rgba(0, 0, 0, 0.4)',
                     width: 2,
                     dashed: true
                 });
@@ -364,7 +364,7 @@ export class PyramidTool extends Tool {
             const pos = vertex.getPosition();
             canvas.drawPoint(pos, {
                 radius: 6,
-                color: '#3b82f6',
+                color: '#000000',
                 highlighted: true
             });
         }
@@ -373,7 +373,7 @@ export class PyramidTool extends Tool {
         if (positions.length >= 3 && this.phase === 'base') {
             canvas.drawPoint(positions[0], {
                 radius: 10,
-                color: 'rgba(34, 197, 94, 0.5)'
+                color: 'rgba(0, 0, 0, 0.5)'
             });
         }
     }

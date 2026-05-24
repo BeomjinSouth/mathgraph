@@ -2,14 +2,14 @@
  * Polygon.js - filled polygon object.
  */
 
-import { GeoObject, ObjectType } from './GeoObject.js';
+import { DEFAULT_OBJECT_COLOR, GeoObject, ObjectType } from './GeoObject.js';
 import { Geometry } from '../utils/Geometry.js';
 
 export class Polygon extends GeoObject {
     constructor(vertexIds, params = {}) {
         super(ObjectType.POLYGON, params);
         this.vertexIds = Array.isArray(vertexIds) ? [...vertexIds] : [];
-        this.fillColor = params.fillColor || '#3b82f6';
+        this.fillColor = params.fillColor || DEFAULT_OBJECT_COLOR;
         this.fillOpacity = params.fillOpacity ?? 0.12;
         this.vertices = [];
 
@@ -107,7 +107,7 @@ export class Polygon extends GeoObject {
 
     hexToRgba(hex, opacity) {
         if (typeof hex !== 'string' || !/^#[0-9a-f]{6}$/i.test(hex)) {
-            return hex || `rgba(59, 130, 246, ${opacity})`;
+            return hex || `rgba(0, 0, 0, ${opacity})`;
         }
 
         const r = parseInt(hex.slice(1, 3), 16);

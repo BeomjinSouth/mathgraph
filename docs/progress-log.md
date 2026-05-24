@@ -2,6 +2,31 @@
 
 ## 2026-05-24
 
+### Monochrome default drawing output
+
+#### Work completed
+
+- Changed runtime object defaults so newly created objects use black (`#000000`) by default across base objects, filled polygons, sectors, circular segments, canvas primitive fallbacks, SVG export fallbacks, UI color picker defaults, and tool previews.
+- Added legacy settings migration so previously stored built-in palette values (`#6366f1`, `#3b82f6`, `#22c55e`, `#f97316`) are normalized to black on load.
+- Updated AI prompt guidance, `docs/ai-reference.md`, and the project-local `mathgraph-drawing` skill so default GPT/API examples do not introduce multiple colors unless the user explicitly requests color.
+- Normalized `.agents/skills/mathgraph-drawing/references/feature-manual.json`, `synthetic-drawing-data.jsonl`, and `tests/fixtures/pdf-ai-drawing-samples.json` so reference-generated diagrams render with black style colors by default.
+- Added `tests/monochrome-defaults.test.js` to guard runtime defaults, localStorage palette migration, and reference sample style colors.
+
+#### Verification
+
+- Ran `npm.cmd test`; passed with 35 tests.
+- Ran `node tools\render-pdf-ai-drawing-samples.mjs`; passed with 12 rendered samples and 0 failures.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
+#### Notes
+
+- Explicit user-requested colors remain supported through `color` and `fillColor`; only the default behavior and default reference examples now prefer black.
+- Editing selection/highlight colors remain as UI feedback and are not part of the generated object default.
+
 ### Teacher-guide PDF AI drawing sample audit
 
 #### Work completed

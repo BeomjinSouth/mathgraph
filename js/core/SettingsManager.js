@@ -1,3 +1,7 @@
+const DEFAULT_STYLE_COLOR = '#000000';
+const LEGACY_STYLE_COLORS = new Set(['#6366f1', '#3b82f6', '#22c55e', '#f97316']);
+const DEFAULT_STYLE_COLOR_KEYS = ['pointColor', 'lineColor', 'circleColor', 'functionColor'];
+
 /**
  * SettingsManager.js - 전역 설정 관리 (Mk.2)
  */
@@ -15,10 +19,10 @@ export class SettingsManager {
         this.defaultStyles = {
             pointSize: 4,
             lineWidth: 2,
-            pointColor: '#6366f1',
-            lineColor: '#3b82f6',
-            circleColor: '#22c55e',
-            functionColor: '#f97316',
+            pointColor: DEFAULT_STYLE_COLOR,
+            lineColor: DEFAULT_STYLE_COLOR,
+            circleColor: DEFAULT_STYLE_COLOR,
+            functionColor: DEFAULT_STYLE_COLOR,
             fontSize: 14
         };
 
@@ -81,6 +85,20 @@ export class SettingsManager {
             this.defaultStyles[key] = value;
             this.save();
         }
+    }
+
+    normalizeDefaultStyleColors() {
+        let changed = false;
+
+        for (const key of DEFAULT_STYLE_COLOR_KEYS) {
+            const value = this.defaultStyles[key];
+            if (typeof value === 'string' && LEGACY_STYLE_COLORS.has(value.toLowerCase())) {
+                this.defaultStyles[key] = DEFAULT_STYLE_COLOR;
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     /**
@@ -149,6 +167,10 @@ export class SettingsManager {
                 if (data.defaultStyles) Object.assign(this.defaultStyles, data.defaultStyles);
                 if (data.showLabels !== undefined) this.showLabels = data.showLabels;
                 if (data.hidePoints !== undefined) this.hidePoints = data.hidePoints;
+
+                if (this.normalizeDefaultStyleColors()) {
+                    this.save();
+                }
             }
         } catch (e) {
             console.warn('설정 불러오기 실패:', e);
