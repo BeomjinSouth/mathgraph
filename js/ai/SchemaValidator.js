@@ -275,6 +275,96 @@ export class SchemaValidator {
 
         return result;
     }
+
+    validateIntent(data, options = {}) {
+        const operations = data.operations || (Array.isArray(data) ? data : [data]);
+        if (!Array.isArray(operations)) {
+            return ValidationResult.failure('operations must be an array before intent validation.');
+        }
+
+        const result = ValidationResult.success();
+        const mode = options.mode === 'patch' || options.mode === 'recreate'
+            ? options.mode
+            : null;
+
+        if (mode === 'recreate') {
+            const maxOperations = Number.isFinite(options.maxOperations)
+                ? options.maxOperations
+                : null;
+            if (maxOperations !== null && operations.length > maxOperations) {
+                result.addError(
+                    `image recreate returned ${operations.length} operations, over the ${maxOperations} operation budget.`
+                );
+            }
+            return result;
+        }
+
+        if (mode !== 'patch') {
+            return result;
+        }
+
+        const selectedIds = new Set(
+            (options.context?.selectedObjectIds || options.selectedObjectIds || [])
+                .filter(id => typeof id === 'string' && id.trim())
+        );
+
+        if (selectedIds.size === 0) {
+            return result;
+        }
+
+        const instruction = String(options.instruction || '');
+        const strictSelectedEdit = this.isStrictSelectedPatchInstruction(instruction);
+        const selectedMutationRequired = strictSelectedEdit || this.looksLikeMutationInstruction(instruction);
+
+        if (selectedMutationRequired) {
+            const touchesSelectedId = operations.some(op =>
+                (op.op === 'update' || op.op === 'delete') && selectedIds.has(op.id)
+            );
+
+            if (!touchesSelectedId) {
+                result.addError(
+                    `patch mode must update or delete at least one selected object id: ${Array.from(selectedIds).join(', ')}.`
+                );
+            }
+        }
+
+        if (!strictSelectedEdit) {
+            return result;
+        }
+
+        for (let i = 0; i < operations.length; i++) {
+            const op = operations[i];
+            if (op.op === 'create') {
+                result.addError(
+                    `operations[${i}]: strict selected-object edit cannot create new objects.`
+                );
+            }
+
+            if ((op.op === 'update' || op.op === 'delete') && !selectedIds.has(op.id)) {
+                result.addError(
+                    `operations[${i}]: strict selected-object edit cannot mutate unselected id="${op.id}".`
+                );
+            }
+        }
+
+        return result;
+    }
+
+    isStrictSelectedPatchInstruction(instruction) {
+        const text = String(instruction || '').toLowerCase();
+        if (!text) return false;
+
+        return /only|just|selected|selection|this part|that part/.test(text) ||
+            /선택|해당|그 부분|이 부분|저 부분|만\b|만\s|만$/.test(text);
+    }
+
+    looksLikeMutationInstruction(instruction) {
+        const text = String(instruction || '').toLowerCase();
+        if (!text) return false;
+
+        return /change|modify|edit|replace|move|resize|red|blue|green|color|bigger|smaller|larger|thicker|thinner|delete|remove/.test(text) ||
+            /바꿔|변경|수정|이동|색|빨간|빨강|파란|파랑|초록|크게|작게|굵게|얇게|삭제|지워/.test(text);
+    }
 }
 
 export default SchemaValidator;

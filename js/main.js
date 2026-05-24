@@ -2587,7 +2587,7 @@ class GraphAApp {
     /**
      * Mk.2: AI JSON 패치 처리
      */
-    processAIJSON(jsonInput) {
+    processAIJSON(jsonInput, intentOptions = {}) {
         // 1. 스키마 검증
         const validationResult = this.schemaValidator.parseAndValidate(jsonInput);
 
@@ -2623,6 +2623,23 @@ class GraphAApp {
         }
 
         // 4. 패치 적용
+        const intentResult = this.schemaValidator.validateIntent(data, {
+            ...intentOptions,
+            context: intentOptions.context || this.buildAIContext(),
+            maxOperations: intentOptions.mode === 'recreate'
+                ? (intentOptions.maxOperations ?? 45)
+                : intentOptions.maxOperations
+        });
+
+        if (!intentResult.valid) {
+            this.addChatMessage(
+                `❌ AI 요청 의미 검증 실패:\n• ${intentResult.errors.join('\n• ')}`,
+                'assistant'
+            );
+            console.error('AI semantic validation failed:', intentResult.errors);
+            return;
+        }
+
         const patchResult = this.patchApplier.apply(data);
 
         if (patchResult.success) {
@@ -2679,6 +2696,7 @@ class GraphAApp {
             const input = document.getElementById('chatInput');
             const instruction = input?.value.trim() || '';
             const mode = instruction ? 'patch' : 'recreate';
+            const aiContext = this.buildAIContext();
 
             if (instruction) {
                 this.addChatMessage(instruction, 'user');
@@ -2706,7 +2724,7 @@ class GraphAApp {
                 const result = await this.aiService.analyzeImage(imageDataUrl, {
                     instruction,
                     mode,
-                    context: this.buildAIContext()
+                    context: aiContext
                 });
 
                 if (result.success && result.json) {
@@ -2716,7 +2734,12 @@ class GraphAApp {
                             : '이미지에서 도형을 인식했습니다.',
                         'assistant'
                     );
-                    this.processAIJSON(result.json);
+                    this.processAIJSON(result.json, {
+                        mode,
+                        instruction,
+                        context: aiContext,
+                        maxOperations: mode === 'recreate' ? 45 : undefined
+                    });
                 } else if (result.error) {
                     this.addChatMessage(`❌ ${result.error}`, 'assistant');
                 } else {

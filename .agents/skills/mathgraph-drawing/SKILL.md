@@ -23,12 +23,15 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Graphs/functions: load function, tangentFunction, intersection, line/segment, numberLine, and examples tagged `graph`.
 - Statistical or chart-like requests: load polygon, numberLine, line/segment, and examples tagged `chart_approximation`; mention that chart primitives are not first-class yet.
 - API integration prompts: load `api_prompting`, `operationContract`, and `validationWorkflow` from the feature manual.
+- Image reference or patching prompts: load `api_prompting`, `operationContract`, `validationWorkflow`, known gaps, and only the object chunks relevant to the pasted image/instruction.
 
 ## Output Rules
 
 - Create referenced objects before the objects that refer to them.
 - Prefer stable temporary IDs such as `A`, `AB`, `poly_ABC`, or `prism_1`.
 - Use only supported create `type` values from the feature manual.
+- For selected-object patch requests, prefer `update`/`delete` operations on existing selected IDs. Do not create unrelated objects when the user says only this part/selected object should change.
+- For image recreation, stay within the current operation budget and ignore dense page text, decorative grids, and unsupported textbook furniture unless requested.
 - Use `polygon` for triangles, quadrilaterals, shaded regions, bars, and other filled plane regions.
 - Use `prism` and `pyramid` for current solid support. Approximate cylinders, cones, spheres, nets, box plots, histograms, and scatter plots with current primitives and state the limitation when needed.
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.

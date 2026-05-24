@@ -2,6 +2,59 @@
 
 ## Summary
 
+- Task: Image reference guardrails and JSON manual retrieval
+- Owner: Codex
+- Date: 2026-05-25
+- Related files:
+  - `js/ai/AIService.js`
+  - `js/ai/SchemaValidator.js`
+  - `js/main.js`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `.agents/skills/mathgraph-drawing/references/retrieval-index.json`
+  - `tests/ai-flow.test.js`
+  - `docs/ai-reference.md`
+
+## Problem
+
+- Live OpenAI image-reference verification showed that the external API call path works, but the product accepted semantically wrong patches.
+- In patch mode, a model response could create new textbook-exercise objects instead of updating the selected object because the app only checked JSON shape, references, and renderability.
+- The existing JSON feature manual and retrieval index document the current GraphA contract, but the runtime API prompt path does not yet use them.
+- Recreate mode can overgenerate dense grids or unsupported textbook details because the prompt does not carry a compact operation budget and current primitive limitations from the manual.
+
+## Goals
+
+- Add semantic validation for image patch mode so selected-object edits must actually update or delete selected ids.
+- Reject strict selected-object patch responses that create new objects or mutate unrelated objects when the user asks to change only the selected part.
+- Add an OpenAI image repair retry that resubmits semantic validation errors once before failing.
+- Load the project JSON manual/retrieval references in browser API calls and inject a compact, selected GraphA reference into text and image prompts.
+- Add recreate-mode guidance and validation for operation budgets and known current gaps.
+
+## Non-Goals
+
+- Do not add new curved-solid or chart primitives in this pass.
+- Do not add a server-side OpenAI proxy in this pass.
+- Do not implement pixel-level raster inpainting or mask editing.
+- Do not make API keys persistent outside the current BYOK browser settings flow.
+
+## Acceptance Criteria
+
+- [x] Patch-mode semantic validation fails when selected ids are ignored.
+- [x] Strict selected-object edits fail when the model creates unrelated new objects.
+- [x] Image analysis retries once with semantic validation errors and accepts a corrected patch.
+- [x] Prompt construction includes compact reference-manual guidance selected from `feature-manual.json`.
+- [x] Tests cover manual-reference prompt injection, semantic patch validation, and repair retry behavior.
+- [x] `npm.cmd test` and `git diff --check` pass.
+
+## Risks and Open Questions
+
+- Fetching `.agents/skills/...` reference files from a deployed static site depends on those files being published with the app; if a deployment later excludes hidden directories, a public `docs` or `assets` copy may be needed.
+- Operation budgets improve quality and latency but may reject legitimately complex textbook reconstructions; users may still need to crop or simplify input images.
+- Exact textbook parity for cylinders, cones, spheres, charts, and independent text remains limited until the runtime gains first-class primitives.
+
+---
+
+## Summary
+
 - Task: Monochrome default drawing output
 - Owner: Codex
 - Date: 2026-05-24

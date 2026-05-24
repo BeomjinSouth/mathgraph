@@ -56,3 +56,11 @@ MathGraph already supports AI drawing through the OpenAI Responses API and a str
 - Vision-to-vector conversion is approximate and cannot guarantee pixel-identical reconstruction.
 - Targeted edits are most reliable when the user selects objects, references labels, or describes the target unambiguously.
 - The browser-side BYOK key storage remains a personal-use compromise.
+
+## 2026-05-25 Guardrail Update
+
+- Patch mode now performs semantic intent validation after schema/reference validation.
+- If a selected-object mutation request ignores selected IDs, the app rejects it instead of applying a schema-valid but wrong patch.
+- Strict selected-object edits cannot create new objects or mutate unselected IDs.
+- OpenAI image analysis retries once with the validation errors before failing.
+- Image/text prompts now try to load the project JSON manual and inject compact supported-type, required-field, known-gap, and operation-budget guidance.

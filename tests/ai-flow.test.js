@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { parseAIJSONPayload } from '../js/ai/JSONUtils.js';
@@ -7,10 +8,18 @@ import {
     DEFAULT_OPENAI_MODEL,
     GRAPH_OPERATIONS_RESPONSE_FORMAT,
     DEFAULT_IMAGE_RECREATE_INSTRUCTION,
+    IMAGE_RECREATE_OPERATION_BUDGET,
     extractOpenAIResponseText
 } from '../js/ai/AIService.js';
 import { SchemaValidator } from '../js/ai/SchemaValidator.js';
 import { PatchApplier } from '../js/ai/PatchApplier.js';
+
+const manual = JSON.parse(
+    readFileSync(new URL('../.agents/skills/mathgraph-drawing/references/feature-manual.json', import.meta.url), 'utf8')
+);
+const retrievalIndex = JSON.parse(
+    readFileSync(new URL('../.agents/skills/mathgraph-drawing/references/retrieval-index.json', import.meta.url), 'utf8')
+);
 
 function createAIService() {
     return new AIService({
@@ -19,6 +28,36 @@ function createAIService() {
         save() { }
     });
 }
+
+const TEST_REFERENCE_MANUAL = {
+    defaultStylePolicy: {
+        colorFieldGuidance: 'Omit color unless the user explicitly asks for it.'
+    },
+    operationContract: {
+        supportedCreateTypes: ['point', 'segment', 'circle', 'sector', 'function', 'prism', 'pyramid']
+    },
+    aiCreatableObjects: [
+        { type: 'point', requiredFields: ['x', 'y'], optionalFields: ['label', 'color', 'pointSize'] },
+        { type: 'circle', requiredFields: ['centerId', 'pointOnCircleId'], optionalFields: ['label'] },
+        { type: 'sector', requiredFields: ['circleId', 'startPointId', 'endPointId'], optionalFields: ['mode', 'fillOpacity'] },
+        { type: 'function', requiredFields: ['expression'], optionalFields: ['label'] },
+        { type: 'prism', requiredFields: ['baseVertexIds', 'topVertexIds'], optionalFields: ['label'] },
+        { type: 'pyramid', requiredFields: ['baseVertexIds', 'apexId'], optionalFields: ['label'] }
+    ],
+    knownGapsAndApproximations: [
+        {
+            gap: 'Curved solid primitives are not first-class objects.',
+            currentApproximation: 'Approximate cylinders with composed supported primitives.'
+        }
+    ]
+};
+
+const TEST_REFERENCE_INDEX = {
+    chunks: [
+        { id: 'objects-circle-core', objectTypes: ['point', 'circle', 'sector'] },
+        { id: 'objects-solid', objectTypes: ['point', 'prism', 'pyramid'] }
+    ]
+};
 
 function createPatchHarness() {
     const objects = new Map();
@@ -356,6 +395,101 @@ test('AIService builds image prompts for recreation and targeted patching', () =
     assert.equal(service.getDataUrlMimeType('data:image/jpeg;base64,AAAA'), 'image/jpeg');
 });
 
+test('AIService builds compact prompt references from the JSON feature manual', async () => {
+    const service = new AIService({
+        provider: 'local',
+        apiKey: '',
+        referenceManual: TEST_REFERENCE_MANUAL,
+        referenceIndex: TEST_REFERENCE_INDEX,
+        save() { }
+    });
+
+    const referencePrompt = await service.buildDrawingReferencePrompt(
+        '원기둥과 원의 부채꼴을 교과서 그림처럼 다시 그려줘',
+        { objects: [] },
+        'recreate'
+    );
+
+    assert.match(referencePrompt, /MathGraph reference manual context/);
+    assert.match(referencePrompt, /feature-manual\.json/);
+    assert.match(referencePrompt, /sector: required circleId, startPointId, endPointId/);
+    assert.match(referencePrompt, /Curved solid primitives are not first-class objects/);
+    assert.match(referencePrompt, new RegExp(String(IMAGE_RECREATE_OPERATION_BUDGET)));
+
+    const imagePrompt = service.buildImageAnalysisPrompt(
+        '원기둥과 원의 부채꼴',
+        null,
+        'recreate',
+        referencePrompt
+    );
+    assert.match(imagePrompt, /MathGraph reference manual context/);
+});
+
+test('AIService can build prompt references from the real JSON manual', () => {
+    const service = createAIService();
+    const referencePrompt = service.buildDrawingReferencePromptFromManual(
+        manual,
+        retrievalIndex,
+        'histogram scatter plot',
+        null,
+        'recreate'
+    );
+
+    assert.match(referencePrompt, /feature-manual\.json/);
+    assert.match(referencePrompt, /polygon/);
+    assert.match(referencePrompt, /numberLine/);
+    assert.match(referencePrompt, /Statistical chart primitives/);
+});
+
+test('SchemaValidator rejects selected-object patch responses that ignore the selected id', () => {
+    const validator = new SchemaValidator();
+
+    const invalid = validator.validateIntent({
+        operations: [
+            { op: 'create', id: 'new_sector', type: 'sector', circleId: 'circle_1', startPointId: 'a', endPointId: 'b' }
+        ]
+    }, {
+        mode: 'patch',
+        instruction: '선택한 점 A만 빨간색으로 크게 바꿔줘',
+        context: { selectedObjectIds: ['point_a'] }
+    });
+
+    assert.equal(invalid.valid, false);
+    assert.match(invalid.errors.join('\n'), /must update or delete at least one selected object id/);
+    assert.match(invalid.errors.join('\n'), /cannot create new objects/);
+
+    const valid = validator.validateIntent({
+        operations: [
+            { op: 'update', id: 'point_a', color: '#ef4444', pointSize: 10 }
+        ]
+    }, {
+        mode: 'patch',
+        instruction: '선택한 점 A만 빨간색으로 크게 바꿔줘',
+        context: { selectedObjectIds: ['point_a'] }
+    });
+
+    assert.equal(valid.valid, true);
+});
+
+test('SchemaValidator enforces image recreation operation budget', () => {
+    const validator = new SchemaValidator();
+    const operations = Array.from({ length: IMAGE_RECREATE_OPERATION_BUDGET + 1 }, (_, index) => ({
+        op: 'create',
+        id: `p${index}`,
+        type: 'point',
+        x: index,
+        y: 0
+    }));
+
+    const result = validator.validateIntent({ operations }, {
+        mode: 'recreate',
+        maxOperations: IMAGE_RECREATE_OPERATION_BUDGET
+    });
+
+    assert.equal(result.valid, false);
+    assert.match(result.errors.join('\n'), /operation budget/);
+});
+
 test('AIService analyzeImage sends image input with targeted patch prompt', async () => {
     const originalFetch = globalThis.fetch;
     let capturedUrl = null;
@@ -420,6 +554,69 @@ test('AIService analyzeImage sends image input with targeted patch prompt', asyn
             image_url: 'data:image/png;base64,AAAA',
             detail: 'high'
         });
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('AIService retries image patch when semantic validation rejects the first response', async () => {
+    const originalFetch = globalThis.fetch;
+    const capturedBodies = [];
+
+    globalThis.fetch = async (url, options) => {
+        capturedBodies.push(JSON.parse(options.body));
+        const firstCall = capturedBodies.length === 1;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: firstCall ? 'resp_bad_patch' : 'resp_repaired_patch',
+                    output: [
+                        {
+                            type: 'message',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: firstCall
+                                        ? '{"operations":[{"op":"create","id":"new_sector","type":"sector","circleId":"circle_1","startPointId":"a","endPointId":"b"}]}'
+                                        : '{"operations":[{"op":"update","id":"point_a","color":"#ef4444","pointSize":10}]}'
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            referenceManual: TEST_REFERENCE_MANUAL,
+            referenceIndex: TEST_REFERENCE_INDEX,
+            save() { }
+        });
+
+        const result = await service.analyzeImage('data:image/png;base64,AAAA', {
+            instruction: '선택한 점 A만 빨간색으로 크게 바꿔줘',
+            mode: 'patch',
+            context: {
+                objects: [{ id: 'point_a', type: 'point', label: 'A', x: 0, y: 0 }],
+                selectedObjectIds: ['point_a']
+            }
+        });
+
+        assert.equal(result.success, true);
+        assert.equal(result.repaired, true);
+        assert.equal(result.json.operations[0].op, 'update');
+        assert.equal(result.json.operations[0].id, 'point_a');
+        assert.equal(capturedBodies.length, 2);
+        assert.match(capturedBodies[0].input[1].content[0].text, /MathGraph reference manual context/);
+        assert.match(capturedBodies[1].input[1].content[0].text, /failed local semantic validation/);
+        assert.equal(capturedBodies[1].previous_response_id, 'resp_bad_patch');
+        assert.equal(service.lastResponseId, 'resp_repaired_patch');
     } finally {
         globalThis.fetch = originalFetch;
     }

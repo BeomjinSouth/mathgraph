@@ -29,7 +29,9 @@
       "rootShape": "{ \"operations\": [...] }",
       "statePolicy": "Use current canvas objects as compact context with id, type, label, coordinates, expressions, number-line fields, and dependencies.",
       "tokenPolicy": "Keep stable reusable instructions and selected schema chunks before request-specific prompt text. Do not include the full synthetic dataset unless retrieval selects it.",
-      "storagePolicy": "Current local OpenAI path sets store: false."
+      "storagePolicy": "Current local OpenAI path sets store: false.",
+      "runtimeReferenceLoading": "AIService tries to fetch retrieval-index.json and feature-manual.json in browser API calls, selects relevant object types from the prompt/context, and injects a compact manual summary before the request-specific instruction.",
+      "imagePatchRepair": "OpenAI image analysis retries once when semantic intent validation rejects the first GraphA payload."
     },
     "toolSearchPattern": "For future API orchestration with many tool/function schemas, defer rarely used tool definitions and use tool_search or an app-owned retrieval step to load only relevant MathGraph schema chunks."
   },
@@ -477,6 +479,7 @@
     "Parse JSON with parseAIJSONPayload.",
     "Validate operation and required fields with SchemaValidator.",
     "Validate references against existing IDs plus earlier create IDs.",
+    "Validate intent constraints for image patch/recreate workflows, including selected-object mutation and recreate operation budget.",
     "Apply operations sequentially with PatchApplier.",
     "Rollback object/history/selection state if any operation fails.",
     "Render and update sidebar after success."

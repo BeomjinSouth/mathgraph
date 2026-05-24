@@ -2,6 +2,67 @@
 
 ## Status
 
+- Task: Image reference guardrails and JSON manual retrieval
+- State: Done
+- Last updated: 2026-05-25
+
+## Plan
+
+1. Record the behavior change in planning docs.
+2. Add selected-object patch semantic validation to the local GraphA validation layer.
+3. Load and summarize the JSON feature manual/retrieval index for text and image OpenAI prompts.
+4. Add image-analysis repair retry when semantic validation fails.
+5. Wire intent validation into the browser image apply path.
+6. Update docs/tests, run verification, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+- [x] Step 6
+
+## Decisions
+
+- Decision: Treat selected-object patching as an app-owned contract, not only a prompt preference.
+- Reason: Live API output can be schema-valid and still ignore the selected object.
+- Decision: Use the existing JSON manual as a compact prompt reference rather than embedding the full manual every time.
+- Reason: The retrieval index and feature manual already describe supported types, required fields, known gaps, and current approximation rules.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Checks run:
+  - `npm.cmd test`
+  - `node -e "JSON.parse(require('fs').readFileSync('.agents/skills/mathgraph-drawing/references/feature-manual.json','utf8')); JSON.parse(require('fs').readFileSync('.agents/skills/mathgraph-drawing/references/retrieval-index.json','utf8')); console.log('reference json ok')"`
+  - `node tools\render-pdf-ai-drawing-samples.mjs`
+  - `git diff --check`
+- Result:
+  - Unit/schema tests passed with 40 tests.
+  - Reference JSON files parsed successfully.
+  - Browser render helper produced 12 sample screenshots and 0 failures.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- What changed:
+  - Added prompt-time JSON manual loading and compact reference selection for OpenAI text/image requests.
+  - Added selected-object patch semantic validation and image recreate operation-budget validation.
+  - Added one OpenAI image repair retry when semantic validation rejects the first response.
+  - Wired image patch/recreate intent validation through the browser apply path.
+- What remains:
+  - Curved solids/charts still need first-class primitives for higher fidelity.
+  - Server-side API proxy remains a separate production hardening follow-up.
+
+---
+
+## Status
+
 - Task: Monochrome default drawing output
 - State: Done
 - Last updated: 2026-05-24

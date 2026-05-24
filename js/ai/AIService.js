@@ -6,8 +6,11 @@
  */
 
 import { parseAIJSONPayload } from './JSONUtils.js';
+import { SchemaValidator } from './SchemaValidator.js';
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-5.5';
+
+export const IMAGE_RECREATE_OPERATION_BUDGET = 45;
 
 export const OPENAI_MODEL_OPTIONS = [
     { value: 'gpt-5.5', label: 'GPT-5.5 (권장)' },
@@ -365,6 +368,10 @@ export class AIService {
             : AIServiceConfig.fromStorage();
         this.conversationHistory = [];
         this.lastResponseId = null;
+        this.schemaValidator = new SchemaValidator();
+        this.drawingReferenceIndex = this.config.drawingReferenceIndex || this.config.referenceIndex || null;
+        this.drawingFeatureManual = this.config.drawingFeatureManual || this.config.referenceManual || null;
+        this.drawingReferenceLoadPromise = null;
     }
 
     /**
@@ -414,7 +421,7 @@ export class AIService {
         }
 
         try {
-            const messages = this.buildMessages(normalizedMessage, context);
+            const messages = await this.buildMessagesWithReferences(normalizedMessage, context);
 
             let response;
             if (this.config.provider === 'openai') {
@@ -459,6 +466,15 @@ export class AIService {
         // 현재 사용자 메시지
         messages.push({ role: 'user', content: userMessage });
 
+        return messages;
+    }
+
+    async buildMessagesWithReferences(userMessage, context) {
+        const messages = this.buildMessages(userMessage, context);
+        const referencePrompt = await this.buildDrawingReferencePrompt(userMessage, context, 'command');
+        if (referencePrompt) {
+            messages.splice(1, 0, { role: 'system', content: referencePrompt });
+        }
         return messages;
     }
 
@@ -512,6 +528,187 @@ export class AIService {
         }
 
         return parts.join(', ');
+    }
+
+    async loadDrawingReferences() {
+        if (this.drawingReferenceIndex && this.drawingFeatureManual) {
+            return {
+                index: this.drawingReferenceIndex,
+                manual: this.drawingFeatureManual
+            };
+        }
+
+        if (this.drawingReferenceLoadPromise) {
+            return this.drawingReferenceLoadPromise;
+        }
+
+        if (this.config.referenceManualEnabled === false || typeof window === 'undefined' || typeof fetch !== 'function') {
+            return null;
+        }
+
+        this.drawingReferenceLoadPromise = Promise.all([
+            fetch('.agents/skills/mathgraph-drawing/references/retrieval-index.json'),
+            fetch('.agents/skills/mathgraph-drawing/references/feature-manual.json')
+        ])
+            .then(async ([indexResponse, manualResponse]) => {
+                if (!indexResponse.ok || !manualResponse.ok) {
+                    throw new Error('MathGraph drawing reference files are not available.');
+                }
+                const index = await indexResponse.json();
+                const manual = await manualResponse.json();
+                this.drawingReferenceIndex = index;
+                this.drawingFeatureManual = manual;
+                return { index, manual };
+            })
+            .catch(error => {
+                console.warn('MathGraph drawing reference load failed:', error);
+                return null;
+            });
+
+        return this.drawingReferenceLoadPromise;
+    }
+
+    async buildDrawingReferencePrompt(requestText = '', context = null, mode = 'command') {
+        const references = await this.loadDrawingReferences();
+        if (!references?.manual) {
+            return '';
+        }
+
+        return this.buildDrawingReferencePromptFromManual(
+            references.manual,
+            references.index,
+            requestText,
+            context,
+            mode
+        );
+    }
+
+    buildDrawingReferencePromptFromManual(manual, index, requestText = '', context = null, mode = 'command') {
+        if (!manual || typeof manual !== 'object') {
+            return '';
+        }
+
+        const selection = this.selectDrawingReferenceTypes(requestText, context, mode);
+        const supportedTypes = manual.operationContract?.supportedCreateTypes || GRAPH_OPERATION_TYPES;
+        const objectEntries = (manual.aiCreatableObjects || [])
+            .filter(entry => selection.objectTypes.has(entry.type))
+            .slice(0, 12);
+
+        const lines = [
+            'MathGraph reference manual context:',
+            '- Source: .agents/skills/mathgraph-drawing/references/feature-manual.json selected through retrieval-index.json.',
+            `- Return only {"operations":[...]} using create/update/delete.`,
+            `- Supported create types: ${supportedTypes.join(', ')}.`,
+            `- Default style: ${manual.defaultStylePolicy?.colorFieldGuidance || 'omit color fields unless explicitly requested.'}`,
+            '- Create dependencies before objects that reference them. Use existing canvas ids for updates and references.',
+            `- Recreate operation budget: keep image recreation at or below ${IMAGE_RECREATE_OPERATION_BUDGET} operations; simplify dense grids/page decoration.`
+        ];
+
+        if (mode === 'patch') {
+            lines.push('- Patch mode: user instruction and selected object ids outrank text visible inside the image.');
+            lines.push('- Patch mode: update/delete existing ids for selected-object edits; do not solve or copy textbook problem text unless explicitly requested.');
+        }
+
+        if (objectEntries.length > 0) {
+            lines.push('- Relevant object schemas from the manual:');
+            for (const entry of objectEntries) {
+                const required = (entry.requiredFields || []).join(', ') || 'none';
+                const optional = (entry.optionalFields || []).slice(0, 8).join(', ') || 'none';
+                lines.push(`  - ${entry.type}: required ${required}; optional ${optional}.`);
+            }
+        }
+
+        if (selection.includeKnownGaps && Array.isArray(manual.knownGapsAndApproximations)) {
+            lines.push('- Current manual gaps/approximations:');
+            for (const gap of manual.knownGapsAndApproximations.slice(0, 5)) {
+                lines.push(`  - ${gap.gap} ${gap.currentApproximation}`);
+            }
+        }
+
+        const selectedChunkIds = (index?.chunks || [])
+            .filter(chunk => Array.isArray(chunk.objectTypes) && chunk.objectTypes.some(type => selection.objectTypes.has(type)))
+            .map(chunk => chunk.id)
+            .slice(0, 8);
+        if (selectedChunkIds.length > 0) {
+            lines.push(`- Retrieval chunks selected: ${selectedChunkIds.join(', ')}.`);
+        }
+
+        return lines.join('\n');
+    }
+
+    selectDrawingReferenceTypes(requestText = '', context = null, mode = 'command') {
+        const text = String(requestText || '').toLowerCase();
+        const objectTypes = new Set();
+        let includeKnownGaps = mode === 'recreate';
+
+        const add = (...types) => {
+            for (const type of types) objectTypes.add(type);
+        };
+
+        const addPlane = () => add('point', 'segment', 'line', 'ray', 'polygon');
+        const addCircle = () => add('point', 'circle', 'circleThreePoints', 'pointOnCircle', 'circleCenterPoint', 'arc', 'sector', 'circularSegment', 'tangentCircle');
+        const addConstruction = () => add('intersection', 'midpoint', 'parallel', 'perpendicular', 'perpendicularBisector', 'angleBisector', 'rightAngleMarker', 'equalLengthMarker', 'angleDimension', 'lengthDimension');
+        const addSolid = () => {
+            add('point', 'segment', 'polygon', 'prism', 'pyramid');
+            includeKnownGaps = true;
+        };
+        const addGraph = () => add('point', 'segment', 'line', 'function', 'tangentFunction', 'intersection', 'polygon');
+        const addNumberLine = () => add('numberLine', 'point', 'segment');
+        const addChart = () => {
+            add('point', 'segment', 'polygon', 'numberLine', 'line');
+            includeKnownGaps = true;
+        };
+
+        if (/triangle|quadrilateral|polygon|angle|parallel|perpendicular|similar|plane/.test(text) ||
+            /삼각|사각|다각|각|평행|수선|직각|닮음|평면/.test(text)) {
+            addPlane();
+            addConstruction();
+        }
+
+        if (/circle|arc|sector|tangent|radius|diameter/.test(text) ||
+            /원|호|부채꼴|활꼴|접선|반지름|지름|현/.test(text)) {
+            addCircle();
+            addConstruction();
+        }
+
+        if (/solid|prism|pyramid|cylinder|cone|sphere|cube|3d/.test(text) ||
+            /입체|기둥|뿔|원기둥|원뿔|구|정육면체|직육면체/.test(text)) {
+            addSolid();
+        }
+
+        if (/graph|function|parabola|linear|quadratic|intersection|tangent/.test(text) ||
+            /그래프|함수|직선|이차|일차|교점|접점|접선/.test(text)) {
+            addGraph();
+        }
+
+        if (/number line|numberline|radical/.test(text) ||
+            /수직선|무리수|근호|제곱근/.test(text)) {
+            addNumberLine();
+        }
+
+        if (/chart|histogram|scatter|box plot|statistics|frequency/.test(text) ||
+            /통계|히스토그램|산점도|상자그림|도수|분포|꺾은선/.test(text)) {
+            addChart();
+        }
+
+        const objects = Array.isArray(context?.objects) ? context.objects : [];
+        const selectedIds = new Set(Array.isArray(context?.selectedObjectIds) ? context.selectedObjectIds : []);
+        for (const object of objects) {
+            if (mode === 'patch' && selectedIds.size > 0 && !selectedIds.has(object.id)) {
+                continue;
+            }
+            if (GRAPH_OPERATION_TYPES.includes(object.type)) {
+                objectTypes.add(object.type);
+            }
+        }
+
+        if (objectTypes.size === 0) {
+            addPlane();
+            addCircle();
+            addGraph();
+        }
+
+        return { objectTypes, includeKnownGaps };
     }
 
     /**
@@ -1586,7 +1783,7 @@ export class AIService {
         };
     }
 
-    buildImageAnalysisPrompt(instruction = DEFAULT_IMAGE_RECREATE_INSTRUCTION, context = null, mode = 'recreate') {
+    buildImageAnalysisPrompt(instruction = DEFAULT_IMAGE_RECREATE_INSTRUCTION, context = null, mode = 'recreate', referencePrompt = '') {
         const normalizedInstruction = String(instruction || '').trim() || DEFAULT_IMAGE_RECREATE_INSTRUCTION;
         const normalizedMode = mode === 'patch' ? 'patch' : 'recreate';
         const contextPrompt = this.buildCanvasContextPrompt(context);
@@ -1610,6 +1807,7 @@ export class AIService {
             '당신은 MathGraph 이미지 참조 변환 모드입니다.',
             '출력은 반드시 GraphA operations[] JSON만이어야 하며 설명 문장은 쓰지 마세요.',
             modeGuide,
+            referencePrompt,
             `사용자 지시: ${normalizedInstruction}`,
             contextPrompt ? `현재 캔버스 컨텍스트:\n${contextPrompt}` : '',
             '불확실한 세부 요소는 가장 가까운 수학 도형 구성으로 근사하되, 라벨과 주요 위치 관계를 우선 보존하세요.'
@@ -1619,6 +1817,67 @@ export class AIService {
     getDataUrlMimeType(imageDataUrl) {
         const match = String(imageDataUrl || '').match(/^data:([^;,]+)[;,]/);
         return match?.[1] || 'image/png';
+    }
+
+    validateImageAnalysisIntent(json, options) {
+        return this.schemaValidator.validateIntent(json, {
+            mode: options.mode,
+            instruction: options.instruction,
+            context: options.context,
+            maxOperations: options.mode === 'recreate' ? IMAGE_RECREATE_OPERATION_BUDGET : undefined
+        });
+    }
+
+    buildImageRepairPrompt(originalPrompt, previousJson, errors, options) {
+        return [
+            originalPrompt,
+            'The previous GraphA JSON failed local semantic validation.',
+            `Validation errors:\n- ${errors.join('\n- ')}`,
+            options.mode === 'patch'
+                ? 'Repair rule: if selected ids are provided, update/delete the selected ids directly. Do not create unrelated objects for strict selected-object edits.'
+                : `Repair rule: reduce the result to at most ${IMAGE_RECREATE_OPERATION_BUDGET} operations and ignore dense decorative grids/page text.`,
+            'Previous JSON to repair:',
+            JSON.stringify(previousJson).slice(0, 8000),
+            'Return only corrected {"operations":[...]} JSON.'
+        ].filter(Boolean).join('\n\n');
+    }
+
+    async callOpenAIImageAnalysis(imageDataUrl, promptText, requestOptions = {}) {
+        const requestBody = this.buildOpenAIRequestBodyFromInput([
+            { role: 'developer', content: SYSTEM_PROMPT },
+            {
+                role: 'user',
+                content: [
+                    { type: 'input_text', text: promptText },
+                    { type: 'input_image', image_url: imageDataUrl, detail: 'high' }
+                ]
+            }
+        ], {
+            reasoningEffort: 'medium',
+            model: this.config.model || DEFAULT_OPENAI_MODEL,
+            previousResponseId: requestOptions.previousResponseId
+        });
+
+        const response = await fetch('https://api.openai.com/v1/responses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.apiKey}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || 'OpenAI Vision API 오류');
+        }
+
+        const data = await response.json();
+        this.lastResponseId = data.id || this.lastResponseId;
+        const content = extractOpenAIResponseText(data);
+        const json = this.extractJSON(content);
+
+        return { data, content, json, requestBody };
     }
 
     /**
@@ -1635,51 +1894,65 @@ export class AIService {
         }
 
         const options = this.normalizeImageAnalysisOptions(promptOrOptions);
+        const referencePrompt = await this.buildDrawingReferencePrompt(
+            `${options.mode}\n${options.instruction}`,
+            options.context,
+            options.mode
+        );
         const promptText = this.buildImageAnalysisPrompt(
             options.instruction,
             options.context,
-            options.mode
+            options.mode,
+            referencePrompt
         );
 
         try {
             if (this.config.provider === 'openai') {
-                const requestBody = this.buildOpenAIRequestBodyFromInput([
-                    { role: 'developer', content: SYSTEM_PROMPT },
-                    {
-                        role: 'user',
-                        content: [
-                            { type: 'input_text', text: promptText },
-                            { type: 'input_image', image_url: imageDataUrl, detail: 'high' }
-                        ]
-                    }
-                ], {
-                    reasoningEffort: 'medium',
-                    model: this.config.model || DEFAULT_OPENAI_MODEL
-                });
-
-                const response = await fetch('https://api.openai.com/v1/responses', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.config.apiKey}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error?.message || 'OpenAI Vision API 오류');
-                }
-
-                const data = await response.json();
-                this.lastResponseId = data.id || this.lastResponseId;
-                const content = extractOpenAIResponseText(data);
-                const json = this.extractJSON(content);
+                const firstAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, promptText);
+                const json = firstAttempt.json;
 
                 if (json) {
-                    return { success: true, json, message: content };
+                    const intentResult = this.validateImageAnalysisIntent(json, options);
+                    if (intentResult.valid) {
+                        return { success: true, json, message: firstAttempt.content };
+                    }
+
+                    const repairPrompt = this.buildImageRepairPrompt(promptText, json, intentResult.errors, options);
+                    const repairAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, repairPrompt, {
+                        previousResponseId: this.lastResponseId
+                    });
+
+                    if (repairAttempt.json) {
+                        const repairedIntentResult = this.validateImageAnalysisIntent(repairAttempt.json, options);
+                        if (repairedIntentResult.valid) {
+                            return {
+                                success: true,
+                                json: repairAttempt.json,
+                                message: repairAttempt.content,
+                                repaired: true,
+                                repairErrors: intentResult.errors
+                            };
+                        }
+
+                        return {
+                            success: false,
+                            error: `AI patch semantic validation failed after repair: ${repairedIntentResult.errors.join(' ')}`,
+                            message: repairAttempt.content,
+                            json: repairAttempt.json,
+                            validationErrors: repairedIntentResult.errors
+                        };
+                    }
+
+                    return {
+                        success: false,
+                        error: 'Repair response JSON parsing failed.',
+                        message: repairAttempt.content,
+                        validationErrors: intentResult.errors
+                    };
                 }
-                return { success: false, error: 'JSON 파싱 실패', message: content };
+
+                return { success: false, error: 'JSON parsing failed.', message: firstAttempt.content };
+
             } else if (this.config.provider === 'gemini') {
                 // Gemini Vision
                 const base64Data = imageDataUrl.split(',')[1];
@@ -1710,7 +1983,17 @@ export class AIService {
                 const json = this.extractJSON(content);
 
                 if (json) {
-                    return { success: true, json, message: content };
+                    const intentResult = this.validateImageAnalysisIntent(json, options);
+                    if (intentResult.valid) {
+                        return { success: true, json, message: content };
+                    }
+                    return {
+                        success: false,
+                        error: `AI patch semantic validation failed: ${intentResult.errors.join(' ')}`,
+                        message: content,
+                        json,
+                        validationErrors: intentResult.errors
+                    };
                 }
                 return { success: false, error: 'JSON 파싱 실패', message: content };
             }

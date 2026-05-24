@@ -4,6 +4,33 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The fix must use the project-local `feature-manual.json` and `retrieval-index.json` to constrain GPT/OpenAI prompts to supported GraphA primitives.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The behavior sits on the Responses API, strict Structured Outputs, and app-owned output validation guardrails.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The visible outcome is whether pasted image requests apply valid canvas patches, and browser validation remains useful after unit coverage.
+
+## Current Task Notes
+
+- Live image-reference API calls proved the network/Structured Outputs path works, but the model can still return semantically wrong patches.
+- Patch mode should be treated as a constrained mutation workflow:
+  - selected ids must be updated or deleted,
+  - strict "only this part" requests must not create unrelated objects,
+  - image text should not outrank the user's instruction or selection.
+- Recreate mode should use the JSON manual to remind the model about supported primitives, known gaps, and operation budget limits.
+- The manual/retrieval files are:
+  - `.agents/skills/mathgraph-drawing/references/retrieval-index.json`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `.agents/skills/mathgraph-drawing/references/synthetic-drawing-data.jsonl`
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The behavior change must update both GraphA operation examples and the selective reference skill used by GPT/API orchestration.
 - Skill: Browser / Playwright
 - Why it matters:

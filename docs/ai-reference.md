@@ -15,6 +15,8 @@ For future GPT/OpenAI API orchestration, start with the project-local skill:
 
 Load `retrieval-index.json` first, then fetch only the feature chunks and synthetic examples matching the user's Korean request. This keeps complex drawing prompts from carrying every schema and example on every API call.
 
+The browser AI service now uses the same idea at runtime: before OpenAI text/image requests, it tries to load `retrieval-index.json` and `feature-manual.json`, selects the relevant object types from the user instruction and selected canvas objects, and injects a compact manual summary into the prompt. If those files are unavailable in a deployment, the API call still runs with the built-in prompt, but fidelity may be weaker.
+
 ## 1. Runtime Contract
 
 The current runtime consumes an `operations` array.
@@ -67,6 +69,11 @@ Important boundary:
 
 - This is vector-object reconstruction and patching. It is not pixel-level image editing or mask-based raster inpainting.
 - True raster edits would require a separate Images API edit workflow and, for precise local changes, a mask UI with same-size alpha-channel masks.
+- Patch-mode responses run semantic intent validation after schema/reference validation:
+  - If selected ids exist and the instruction asks to mutate the selected part, at least one selected id must be updated or deleted.
+  - Strict selected-object edits such as "only this point" cannot create new objects or mutate unselected ids.
+  - OpenAI image analysis retries once with the semantic validation errors before failing.
+- Image recreation has an operation budget of 45 operations. Dense textbook grids, page text, and decorative elements should be simplified or ignored unless explicitly requested.
 
 ## 2. Operation Schema
 

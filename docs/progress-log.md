@@ -2,6 +2,35 @@
 
 ## 2026-05-25
 
+### Image reference guardrails and JSON manual retrieval
+
+#### Work completed
+
+- Added selected-object semantic validation for image patch workflows.
+- Strict selected-object edits now fail when the model creates new objects or mutates unselected ids.
+- Added recreate-mode operation budget validation for image reconstruction.
+- Added OpenAI image repair retry: when the first image response fails semantic validation, the app resubmits the validation errors once and accepts the corrected GraphA patch if valid.
+- Wired the browser image apply path to pass mode, instruction, and selected-object context into semantic validation.
+- Added runtime loading of `.agents/skills/mathgraph-drawing/references/retrieval-index.json` and `feature-manual.json` so text/image OpenAI prompts receive compact, selected GraphA manual guidance.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `.agent/image_reference_patching.md`, `.agents/skills/mathgraph-drawing/SKILL.md`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, and `docs/ai-reference.md`.
+
+#### Verification
+
+- Ran `npm.cmd test`; passed with 40 tests.
+- Ran reference JSON parse check for `feature-manual.json` and `retrieval-index.json`; passed.
+- Ran `node tools\render-pdf-ai-drawing-samples.mjs`; passed with 12 rendered samples and 0 failures.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Findings
+
+- The failure mode from the live image audit is now blocked locally: a selected point edit cannot be accepted if the model ignores the selected id and creates unrelated textbook objects.
+- The existing JSON manual is now useful at runtime as prompt context, not only as human/agent documentation.
+- Exact fidelity for curved solids, charts, and dense textbook diagrams still needs new first-class primitives and/or a dedicated simplification pipeline.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Live OpenAI PDF drawing quality diagnosis
 
 #### Work completed
