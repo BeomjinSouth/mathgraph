@@ -15,11 +15,19 @@
 ## Current Task Notes
 
 - Live image-reference API calls proved the network/Structured Outputs path works, but the model can still return semantically wrong patches.
+- Live PDF text-prompt calls also proved that schema/reference/render checks are too weak for textbook fidelity; category semantics must be checked separately.
 - Patch mode should be treated as a constrained mutation workflow:
   - selected ids must be updated or deleted,
   - strict "only this part" requests must not create unrelated objects,
   - image text should not outrank the user's instruction or selection.
 - Recreate mode should use the JSON manual to remind the model about supported primitives, known gaps, and operation budget limits.
+- PDF sample validation now uses `js/ai/SemanticValidator.js` to check category-specific structure:
+  - radical number-line construction,
+  - rectangular histogram bars and frequency polygon segments,
+  - incircle contact tangency,
+  - quadratic vertex/intersection structure,
+  - smooth distribution functions,
+  - scatter spread rather than a perfect line.
 - The manual/retrieval files are:
   - `.agents/skills/mathgraph-drawing/references/retrieval-index.json`
   - `.agents/skills/mathgraph-drawing/references/feature-manual.json`

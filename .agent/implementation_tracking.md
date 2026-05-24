@@ -2,7 +2,7 @@
 
 ## Status
 
-- Task: Image reference guardrails and JSON manual retrieval
+- Task: Image/PDF reference guardrails and JSON manual retrieval
 - State: Done
 - Last updated: 2026-05-25
 
@@ -13,7 +13,8 @@
 3. Load and summarize the JSON feature manual/retrieval index for text and image OpenAI prompts.
 4. Add image-analysis repair retry when semantic validation fails.
 5. Wire intent validation into the browser image apply path.
-6. Update docs/tests, run verification, commit, and push.
+6. Add PDF category semantic validation for live OpenAI sample results.
+7. Update docs/tests, run verification, commit, and push.
 
 ## Progress Log
 
@@ -23,6 +24,7 @@
 - [x] Step 4
 - [x] Step 5
 - [x] Step 6
+- [x] Step 7
 
 ## Decisions
 
@@ -30,6 +32,8 @@
 - Reason: Live API output can be schema-valid and still ignore the selected object.
 - Decision: Use the existing JSON manual as a compact prompt reference rather than embedding the full manual every time.
 - Reason: The retrieval index and feature manual already describe supported types, required fields, known gaps, and current approximation rules.
+- Decision: Treat PDF sample acceptance as a category-specific semantic gate rather than a render smoke test.
+- Reason: The failed live outputs were often valid GraphA JSON but had wrong math structure.
 
 ## Blockers
 
@@ -39,13 +43,13 @@
 
 - Checks run:
   - `npm.cmd test`
-  - `node -e "JSON.parse(require('fs').readFileSync('.agents/skills/mathgraph-drawing/references/feature-manual.json','utf8')); JSON.parse(require('fs').readFileSync('.agents/skills/mathgraph-drawing/references/retrieval-index.json','utf8')); console.log('reference json ok')"`
   - `node tools\render-pdf-ai-drawing-samples.mjs`
+  - `node tools\validate-live-openai-pdf-results.mjs` with expected non-zero result converted to success for the old weak live output set
   - `git diff --check`
 - Result:
-  - Unit/schema tests passed with 40 tests.
-  - Reference JSON files parsed successfully.
+  - Unit/schema tests passed with 41 tests.
   - Browser render helper produced 12 sample screenshots and 0 failures.
+  - Saved live-result semantic validation intentionally rejected 7 previous weak outputs and wrote `tmp/live-openai-pdf-ai-samples/semantic-validation-report.json`.
   - `git diff --check` passed with line-ending warnings only.
 
 ## Handoff
@@ -55,8 +59,12 @@
   - Added selected-object patch semantic validation and image recreate operation-budget validation.
   - Added one OpenAI image repair retry when semantic validation rejects the first response.
   - Wired image patch/recreate intent validation through the browser apply path.
+  - Added `SemanticValidator` category gates for the 12 PDF sample categories.
+  - Updated the live OpenAI PDF runner to inject the JSON manual, optionally attach available source page/crop images, and retry on semantic failures.
+  - Added a report tool that rechecks prior live results and records exact semantic failure causes.
 - What remains:
-  - Curved solids/charts still need first-class primitives for higher fidelity.
+  - Curved solids/charts still need first-class primitives for true textbook parity.
+  - Exact PDF crops and crop metadata should be preserved for future vision-based reruns.
   - Server-side API proxy remains a separate production hardening follow-up.
 
 ---

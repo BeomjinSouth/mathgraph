@@ -5,12 +5,21 @@ import { fileURLToPath } from 'node:url';
 
 import { chromium } from 'playwright';
 
-import { extractOpenAIResponseText, stripNullFields } from '../js/ai/AIService.js';
+import {
+    AIService,
+    IMAGE_RECREATE_OPERATION_BUDGET,
+    extractOpenAIResponseText,
+    stripNullFields
+} from '../js/ai/AIService.js';
 import { parseAIJSONPayload } from '../js/ai/JSONUtils.js';
 import { SchemaValidator } from '../js/ai/SchemaValidator.js';
+import { SemanticValidator } from '../js/ai/SemanticValidator.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fixturePath = path.join(repoRoot, 'tests', 'fixtures', 'pdf-ai-drawing-samples.json');
+const referenceIndexPath = path.join(repoRoot, '.agents', 'skills', 'mathgraph-drawing', 'references', 'retrieval-index.json');
+const featureManualPath = path.join(repoRoot, '.agents', 'skills', 'mathgraph-drawing', 'references', 'feature-manual.json');
+const pdfAuditDir = path.join(repoRoot, 'tmp', 'pdf-ai-audit');
 const outputDir = process.env.LIVE_AI_OUTPUT_DIR
     ? path.resolve(process.env.LIVE_AI_OUTPUT_DIR)
     : path.join(repoRoot, 'tmp', 'live-openai-pdf-ai-samples');
@@ -148,7 +157,7 @@ async function chooseModel(apiKey) {
     return preferred.at(-1);
 }
 
-function developerPrompt() {
+function developerPrompt(referencePrompt = '') {
     return [
         'You convert Korean middle-school math textbook figure requests into GraphA operations JSON.',
         'Return only JSON matching {"operations":[...]} and do not include prose or Markdown.',
@@ -159,8 +168,10 @@ function developerPrompt() {
         'Prefer explicit coordinates plus point, segment, line, circle, polygon, arc, sector, function, prism, numberLine, angleDimension, lengthDimension, rightAngleMarker, and equalLengthMarker.',
         'Avoid construction helper types unless every required field is present.',
         'Required field names: point x/y; segment/line point1Id/point2Id; circle centerId/pointOnCircleId; intersection object1Id/object2Id; angleDimension vertexId/point1Id/point2Id; lengthDimension segmentId; polygon vertexIds; arc/sector circleId/startPointId/endPointId/mode; function expression; prism baseVertexIds/topVertexIds; numberLine start/end/step/y.',
-        'Valid example: {"operations":[{"op":"create","id":"A","type":"point","x":0,"y":0},{"op":"create","id":"B","type":"point","x":4,"y":0},{"op":"create","id":"AB","type":"segment","point1Id":"A","point2Id":"B"}]}'
-    ].join('\n');
+        `Keep recreation at or below ${IMAGE_RECREATE_OPERATION_BUDGET} operations unless repair feedback asks otherwise.`,
+        'Valid example: {"operations":[{"op":"create","id":"A","type":"point","x":0,"y":0},{"op":"create","id":"B","type":"point","x":4,"y":0},{"op":"create","id":"AB","type":"segment","point1Id":"A","point2Id":"B"}]}',
+        referencePrompt
+    ].filter(Boolean).join('\n');
 }
 
 function sampleMeta(sample) {
@@ -176,6 +187,73 @@ function sampleMeta(sample) {
     };
 }
 
+async function buildReferencePrompt(sample) {
+    try {
+        const [manual, index] = await Promise.all([
+            readFile(featureManualPath, 'utf8').then(JSON.parse),
+            readFile(referenceIndexPath, 'utf8').then(JSON.parse)
+        ]);
+        const service = new AIService({
+            provider: 'local',
+            apiKey: '',
+            referenceManual: manual,
+            referenceIndex: index,
+            save() { }
+        });
+        const meta = sampleMeta(sample);
+        return service.buildDrawingReferencePromptFromManual(
+            manual,
+            index,
+            `${meta.category}\n${meta.promptKo}`,
+            null,
+            'recreate'
+        );
+    } catch (error) {
+        console.warn(`Manual reference prompt unavailable: ${error.message}`);
+        return '';
+    }
+}
+
+async function pathExists(filePath) {
+    try {
+        await access(filePath);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function findSourceImage(sample) {
+    if (sample.sourceImagePath) {
+        const direct = path.resolve(repoRoot, sample.sourceImagePath);
+        if (await pathExists(direct)) return direct;
+    }
+
+    const page = String(sample.sourcePage).padStart(4, '0');
+    const direct = path.join(pdfAuditDir, `${sample.pdfKey}_p${page}.png`);
+    if (await pathExists(direct)) return direct;
+
+    try {
+        const files = await readdir(pdfAuditDir);
+        const match = files.find(file => file.endsWith(`_p${page}.png`) && file.startsWith(`${sample.pdfKey}_`));
+        if (match) return path.join(pdfAuditDir, match);
+    } catch {
+        // Source renders are optional and live under tmp/.
+    }
+
+    return null;
+}
+
+async function imageContentBlock(sourceImagePath) {
+    if (!sourceImagePath) return null;
+    const data = await readFile(sourceImagePath);
+    return {
+        type: 'input_image',
+        image_url: `data:image/png;base64,${data.toString('base64')}`,
+        detail: 'high'
+    };
+}
+
 function userPrompt(sample, repair = null) {
     const meta = sampleMeta(sample);
     const lines = [
@@ -185,6 +263,7 @@ function userPrompt(sample, repair = null) {
         `source page: ${meta.sourcePage}`,
         `unit: ${meta.unit}`,
         `non-overlapping category: ${meta.category}`,
+        `semantic gate: ${meta.category}`,
         '',
         '그림 요청:',
         meta.promptKo,
@@ -197,6 +276,13 @@ function userPrompt(sample, repair = null) {
         '5. 모든 참조 id는 앞에서 생성된 객체를 가리키게 하세요.',
         '6. 출력은 JSON 객체 하나만 반환하세요.'
     ];
+
+    lines.push(
+        '',
+        '[Quality gate]',
+        `The returned operations must pass the local category semantic validator for "${meta.category}".`,
+        'Schema-valid drawings that use wrong geometry, slanted histogram bars, missing tangency, polygon-only curves, or line-like scatter plots will be rejected.'
+    );
 
     if (repair) {
         lines.push(
@@ -223,12 +309,26 @@ function parsePayload(data) {
     return { rawText, payload };
 }
 
-async function callSample(apiKey, model, sample, repair = null, attempt = 1) {
+async function callSample(apiKey, model, sample, repair = null, attempt = 1, referencePrompt = '', sourceImagePath = null) {
+    const useSourceImage = process.env.LIVE_AI_USE_SOURCE_IMAGE !== '0' && sourceImagePath;
+    const userText = [
+        userPrompt(sample, repair),
+        useSourceImage
+            ? 'A source page/crop image is attached. Use it as visual reference and ignore unrelated page decoration.'
+            : 'No source image was attached; this is a text-prompt structural recreation.'
+    ].filter(Boolean).join('\n\n');
+    const userContent = [{ type: 'input_text', text: userText }];
+    if (useSourceImage) {
+        userContent.push(await imageContentBlock(sourceImagePath));
+    }
+
     const request = {
         endpoint,
         model,
-        developerPrompt: developerPrompt(),
-        userPrompt: userPrompt(sample, repair),
+        developerPrompt: developerPrompt(referencePrompt),
+        userPrompt: userText,
+        sourceImagePath: sourceImagePath ? asMarkdownPath(sourceImagePath) : null,
+        usedSourceImage: Boolean(useSourceImage),
         attempt
     };
     const data = await openAIRequest(apiKey, endpoint, {
@@ -237,7 +337,7 @@ async function callSample(apiKey, model, sample, repair = null, attempt = 1) {
             model,
             input: [
                 { role: 'developer', content: request.developerPrompt },
-                { role: 'user', content: request.userPrompt }
+                { role: 'user', content: userContent }
             ],
             text: { format: compactFormat },
             temperature: Number(process.env.LIVE_AI_TEMPERATURE || 0),
@@ -257,27 +357,48 @@ async function callSample(apiKey, model, sample, repair = null, attempt = 1) {
     };
 }
 
-function validate(result, validator) {
+function validate(result, validator, semanticValidator) {
     const schema = validator.validate(result.response.payload);
     const refs = validator.validateReferences(result.response.payload, new Set());
+    const intent = validator.validateIntent(result.response.payload, {
+        mode: 'recreate',
+        maxOperations: IMAGE_RECREATE_OPERATION_BUDGET
+    });
+    const semantic = semanticValidator.validatePdfSample(result.response.payload, result.sample);
     return {
         schemaValid: schema.valid,
         schemaErrors: schema.errors,
         referencesValid: refs.valid,
         referenceErrors: refs.errors,
+        intentValid: intent.valid,
+        intentErrors: intent.errors,
+        semanticValid: semantic.valid,
+        semanticErrors: semantic.errors,
         operationCount: result.response.payload.operations.length
     };
 }
 
-async function callWithRetries(apiKey, model, sample, validator) {
+async function callWithRetries(apiKey, model, sample, validator, semanticValidator) {
     const maxAttempts = Number(process.env.LIVE_AI_MAX_ATTEMPTS || 3);
+    const referencePrompt = await buildReferencePrompt(sample);
+    const sourceImagePath = await findSourceImage(sample);
     let repair = null;
     let result = null;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        result = await callSample(apiKey, model, sample, repair, attempt);
-        result.validation = validate(result, validator);
-        if (result.validation.schemaValid && result.validation.referencesValid) return result;
-        const errors = [...result.validation.schemaErrors, ...result.validation.referenceErrors];
+        result = await callSample(apiKey, model, sample, repair, attempt, referencePrompt, sourceImagePath);
+        result.validation = validate(result, validator, semanticValidator);
+        if (result.validation.schemaValid &&
+            result.validation.referencesValid &&
+            result.validation.intentValid &&
+            result.validation.semanticValid) {
+            return result;
+        }
+        const errors = [
+            ...result.validation.schemaErrors,
+            ...result.validation.referenceErrors,
+            ...result.validation.intentErrors,
+            ...result.validation.semanticErrors
+        ];
         console.error(`Validation failed for ${sample.id} on attempt ${attempt}: ${errors.join(' | ')}`);
         repair = { errors, payload: result.response.payload };
     }
@@ -414,7 +535,11 @@ function report(meta, results) {
         lines.push(`- category: ${result.sample.category}`);
         lines.push(`- responseId: ${result.response.id}`);
         lines.push(`- attempt: ${result.request.attempt}`);
-        lines.push(`- validation: schema=${result.validation.schemaValid}, references=${result.validation.referencesValid}, render=${result.render?.rendered}`);
+        lines.push(`- validation: schema=${result.validation.schemaValid}, references=${result.validation.referencesValid}, intent=${result.validation.intentValid}, semantic=${result.validation.semanticValid}, render=${result.render?.rendered}`);
+        lines.push(`- sourceImage: ${result.request.sourceImagePath || 'not attached'}`);
+        if (result.validation.semanticErrors?.length) {
+            lines.push(`- semanticErrors: ${result.validation.semanticErrors.join(' | ')}`);
+        }
         lines.push(`- screenshot: ${result.render?.screenshotPath || ''}`);
         lines.push('');
         if (result.render?.screenshotPath) lines.push(`![${result.sample.id}](${result.render.screenshotPath})`, '');
@@ -431,11 +556,12 @@ async function main() {
     const selected = samples.slice(0, Number(process.env.LIVE_AI_SAMPLE_LIMIT || samples.length));
     const model = await chooseModel(apiKey);
     const validator = new SchemaValidator();
+    const semanticValidator = new SemanticValidator();
     await mkdir(outputDir, { recursive: true });
     const results = [];
     for (const sample of selected) {
         console.log(`Calling OpenAI for ${sample.id} with ${model}...`);
-        results.push(await callWithRetries(apiKey, model, sample, validator));
+        results.push(await callWithRetries(apiKey, model, sample, validator, semanticValidator));
     }
     await render(results);
     const meta = {
@@ -448,7 +574,13 @@ async function main() {
     const reportPath = path.join(outputDir, 'live-openai-prompt-output-report.md');
     await writeFile(resultPath, JSON.stringify({ meta, results }, null, 2), 'utf8');
     await writeFile(reportPath, report(meta, results), 'utf8');
-    const failures = results.filter(result => !result.validation.schemaValid || !result.validation.referencesValid || !result.render?.rendered);
+    const failures = results.filter(result =>
+        !result.validation.schemaValid ||
+        !result.validation.referencesValid ||
+        !result.validation.intentValid ||
+        !result.validation.semanticValid ||
+        !result.render?.rendered
+    );
     console.log(JSON.stringify({
         meta,
         resultPath: asMarkdownPath(resultPath),

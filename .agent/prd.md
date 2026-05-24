@@ -2,16 +2,20 @@
 
 ## Summary
 
-- Task: Image reference guardrails and JSON manual retrieval
+- Task: Image/PDF reference guardrails and JSON manual retrieval
 - Owner: Codex
 - Date: 2026-05-25
 - Related files:
   - `js/ai/AIService.js`
   - `js/ai/SchemaValidator.js`
+  - `js/ai/SemanticValidator.js`
   - `js/main.js`
+  - `tools/run-live-openai-pdf-ai-samples.mjs`
+  - `tools/validate-live-openai-pdf-results.mjs`
   - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
   - `.agents/skills/mathgraph-drawing/references/retrieval-index.json`
   - `tests/ai-flow.test.js`
+  - `tests/pdf-ai-drawing-samples.test.js`
   - `docs/ai-reference.md`
 
 ## Problem
@@ -20,6 +24,7 @@
 - In patch mode, a model response could create new textbook-exercise objects instead of updating the selected object because the app only checked JSON shape, references, and renderability.
 - The existing JSON feature manual and retrieval index document the current GraphA contract, but the runtime API prompt path does not yet use them.
 - Recreate mode can overgenerate dense grids or unsupported textbook details because the prompt does not carry a compact operation budget and current primitive limitations from the manual.
+- The live PDF text-prompt runner accepted outputs that were drawable but mathematically wrong for their category, such as missing number lines, trapezoid histogram bars, non-tangent incircle points, polygon-only distribution curves, and line-like scatter plots.
 
 ## Goals
 
@@ -28,6 +33,8 @@
 - Add an OpenAI image repair retry that resubmits semantic validation errors once before failing.
 - Load the project JSON manual/retrieval references in browser API calls and inject a compact, selected GraphA reference into text and image prompts.
 - Add recreate-mode guidance and validation for operation budgets and known current gaps.
+- Add PDF sample semantic validation so live OpenAI results are rejected or repaired when they miss category-specific math structure.
+- Let the live PDF runner use the JSON feature manual and attach available source page/crop images as visual references.
 
 ## Non-Goals
 
@@ -43,6 +50,8 @@
 - [x] Image analysis retries once with semantic validation errors and accepts a corrected patch.
 - [x] Prompt construction includes compact reference-manual guidance selected from `feature-manual.json`.
 - [x] Tests cover manual-reference prompt injection, semantic patch validation, and repair retry behavior.
+- [x] PDF sample fixtures pass category semantic validation.
+- [x] Previous live PDF outputs can be rechecked with a semantic validation report that identifies failing samples and causes.
 - [x] `npm.cmd test` and `git diff --check` pass.
 
 ## Risks and Open Questions

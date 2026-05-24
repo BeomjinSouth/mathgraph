@@ -66,3 +66,13 @@ The previous live API run proved that external OpenAI calls can return GraphA JS
 4. Add category-specific semantic validators before accepting output.
 5. Add a visual rubric that checks source crop presence, key feature presence, label legibility, and clean screenshot capture.
 6. Add first-class chart and curved-solid primitives, or explicitly mark those cases as unsupported/approximation.
+
+## Improvement Added
+
+The weak pass/fail gate has been replaced for this workflow with a semantic validation layer:
+
+- `js/ai/SemanticValidator.js` checks category-specific math structure for all 12 PDF sample categories.
+- `tools/run-live-openai-pdf-ai-samples.mjs` now injects the JSON manual/retrieval context, can attach available source page/crop images, enforces the recreate operation budget, and retries when semantic validation fails.
+- `tools/validate-live-openai-pdf-results.mjs` rechecks saved live results and writes `tmp/live-openai-pdf-ai-samples/semantic-validation-report.json`.
+
+Rechecking the previous live result file now correctly rejects 7 samples: radical number line, circle sector, histogram/frequency polygon, triangle incircle, similarity triangles, distribution curves, and scatter plot. The failures are no longer vague visual complaints; they name the missing or wrong mathematical structure.

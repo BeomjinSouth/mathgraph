@@ -53,3 +53,29 @@
    - scatter/distribution: verify appropriate primitive choice and spread shape.
 4. Add a visual review rubric: source crop present, target feature present, no severe overlap, no UI overlay in evidence screenshot.
 5. Add missing primitives or declare hard limitations before claiming parity for charts and curved solids.
+
+## Implemented Improvement
+
+- Added `js/ai/SemanticValidator.js` with category-specific checks for the 12 PDF sample categories.
+- Updated `tests/pdf-ai-drawing-samples.test.js` so the curated fixture set must pass semantic checks, not only schema/reference checks.
+- Corrected the triangle-incircle fixture contact points so its radii are perpendicular to the triangle sides.
+- Updated `tools/run-live-openai-pdf-ai-samples.mjs` so live API runs:
+  - inject the compact JSON manual reference from `feature-manual.json` / `retrieval-index.json`;
+  - attach available source page/crop images from `tmp/pdf-ai-audit/` unless `LIVE_AI_USE_SOURCE_IMAGE=0`;
+  - enforce the 45-operation recreate budget;
+  - retry on schema, reference, intent, or semantic validation failures.
+- Added `tools/validate-live-openai-pdf-results.mjs` to recheck saved live outputs.
+
+## Recheck Result On Previous Live Outputs
+
+Running `node tools\validate-live-openai-pdf-results.mjs` against the prior live result file now fails 7 of 12 samples, which is the intended behavior for the previous weak output set:
+
+| Failed sample | New caught cause |
+| --- | --- |
+| `math3_p0127_radical_number_line` | Missing real `numberLine` object. |
+| `math1_p0156_circle_sector` | Missing `arc` object. |
+| `math1_p0638_histogram_frequency_polygon` | Fewer than four axis-aligned rectangular bars. |
+| `math2_p0404_triangle_incircle` | Contact points/radii do not satisfy side tangency. |
+| `math2_p0437_similarity_triangles` | Missing two triangle polygons. |
+| `math3_p0443_distribution_curves` | Missing two smooth function curves and bell-shaped expressions. |
+| `math3_p0442_scatter_plot` | Data points are too collinear for a scatter plot. |

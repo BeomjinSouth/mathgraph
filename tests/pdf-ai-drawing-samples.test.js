@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import { SchemaValidator } from '../js/ai/SchemaValidator.js';
+import { SemanticValidator } from '../js/ai/SemanticValidator.js';
 
 const samples = JSON.parse(
     readFileSync(new URL('./fixtures/pdf-ai-drawing-samples.json', import.meta.url), 'utf8')
@@ -23,6 +24,18 @@ test('PDF-derived AI drawing samples validate against GraphA operations schema',
 
         const references = validator.validateReferences(payload, new Set());
         assert.equal(references.valid, true, `${sample.id}: ${references.errors.join('; ')}`);
+    }
+});
+
+test('PDF-derived AI drawing samples pass category semantic checks', () => {
+    const semanticValidator = new SemanticValidator();
+
+    for (const sample of samples) {
+        const semantic = semanticValidator.validatePdfSample(
+            { operations: sample.operations },
+            sample
+        );
+        assert.equal(semantic.valid, true, `${sample.id}: ${semantic.errors.join('; ')}`);
     }
 });
 

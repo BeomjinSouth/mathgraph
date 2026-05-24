@@ -2,6 +2,33 @@
 
 ## 2026-05-25
 
+### PDF/OpenAI semantic quality gate and JSON manual reuse
+
+#### Work completed
+
+- Added `js/ai/SemanticValidator.js` for category-specific semantic checks across the 12 PDF-derived sample categories.
+- Updated `tests/pdf-ai-drawing-samples.test.js` so curated PDF fixtures must pass schema, reference, and semantic checks.
+- Corrected the triangle-incircle fixture so contact points are actually tangent to the incircle.
+- Updated `tools/run-live-openai-pdf-ai-samples.mjs` to inject the JSON manual/retrieval prompt reference, attach available source page/crop images from `tmp/pdf-ai-audit/`, enforce the recreate operation budget, and retry on semantic failures.
+- Added `tools/validate-live-openai-pdf-results.mjs` to recheck saved live OpenAI outputs and record exact semantic failure causes.
+- Updated `.agent/live_openai_pdf_quality_diagnosis.md`, `docs/live-openai-pdf-quality-diagnosis.md`, `docs/ai-reference.md`, and task planning notes.
+
+#### Verification
+
+- Ran `npm.cmd test`; passed with 41 tests.
+- Ran `node tools\render-pdf-ai-drawing-samples.mjs`; passed with 12 rendered samples and 0 failures.
+- Ran `node tools\validate-live-openai-pdf-results.mjs`; expected rejection of the previous weak live output set occurred, with 7 of 12 samples failing semantic checks and a report written to `tmp/live-openai-pdf-ai-samples/semantic-validation-report.json`.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Findings
+
+- The previous live result failures are now concrete and reproducible: missing real number line, missing arc, non-rectangular histogram bars, non-tangent incircle points, missing triangle polygons, polygon-only distribution curves, and scatter points that are too collinear.
+- The JSON manual is useful as a prompt-time compact reference. It should remain synchronized with `SchemaValidator`, `PatchApplier`, and fixture examples whenever supported GraphA operations change.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Image reference guardrails and JSON manual retrieval
 
 #### Work completed

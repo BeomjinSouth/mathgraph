@@ -75,6 +75,20 @@ Important boundary:
   - OpenAI image analysis retries once with the semantic validation errors before failing.
 - Image recreation has an operation budget of 45 operations. Dense textbook grids, page text, and decorative elements should be simplified or ignored unless explicitly requested.
 
+## 1.3 PDF Sample Semantic Validation
+
+PDF-derived samples use one more gate beyond schema/reference/render checks: `js/ai/SemanticValidator.js`.
+
+The validator checks category-specific math structure before a live OpenAI result is accepted:
+
+- radical number-line construction: real `numberLine`, sqrt(2) location, right triangle, and sqrt(2)-radius circle;
+- circle sector: circle, arc, sector, and central-angle marker;
+- histogram/frequency polygon: rectangular bars on a common baseline plus connected frequency segments;
+- incircle: contact points on triangle sides with perpendicular radius segments;
+- similarity, linear graph, quadratic graph, trigonometry, distribution curves, scatter, and prism categories each have matching structure checks.
+
+`tools/run-live-openai-pdf-ai-samples.mjs` now injects the JSON manual reference into the live prompt, optionally attaches available source page/crop images from `tmp/pdf-ai-audit/`, and retries when schema/reference/intent/semantic validation fails. `tools/validate-live-openai-pdf-results.mjs` can recheck a saved live result file and writes `tmp/live-openai-pdf-ai-samples/semantic-validation-report.json`.
+
 ## 2. Operation Schema
 
 Each operation uses:
