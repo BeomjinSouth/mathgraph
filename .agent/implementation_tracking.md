@@ -2,6 +2,68 @@
 
 ## Status
 
+- Task: Random OpenAI drawing smoke semantic recovery
+- State: Done
+- Last updated: 2026-05-25
+
+## Plan
+
+1. Diagnose why the previous live smoke screenshots accepted missing/invalid visible math objects.
+2. Tighten GraphA validation for runtime-ignored helper fields and invalid function expressions.
+3. Add smoke-level semantic gates for visible circle sectors and real quadratic function graphs.
+4. Add regression tests and record the blocked live-rerun condition.
+5. Run verification, update progress log, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Treat schema/reference/render success as insufficient for the random drawing smoke test.
+- Reason: A valid-looking payload can still collapse a sector to zero area or create an invalid function object that renders nothing.
+- Decision: Reject `pointOnCircle.t` and function expressions containing `y=` at the shared GraphA validation layer.
+- Reason: `pointOnCircle.t` is ignored by the runtime and `y=` is rejected by the function parser, so both produce invisible or misleading objects after application.
+- Decision: Keep this pass network-free.
+- Reason: The latest verification of the user-provided API key returned 401 `Incorrect API key`; a fresh valid key is needed before another external OpenAI call.
+
+## Blockers
+
+- Blocker: Live OpenAI rerun is blocked until a valid API key is supplied.
+
+## Verification
+
+- Checks run:
+  - `node --check js\ai\SchemaValidator.js`
+  - `node --check js\ai\AIService.js`
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --test tests\live-openai-random-smoke.test.js`
+  - `npm.cmd test`
+  - `git diff --check`
+- Result:
+  - Syntax checks passed.
+  - Focused regression tests passed with 5 tests.
+  - Full test suite passed with 51 tests.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- What changed:
+  - `SchemaValidator` now rejects `pointOnCircle` payloads that use `t` and function expressions that include `y=`.
+  - `AIService` prompt guidance now states the same `pointOnCircle.angle` and RHS-only function-expression rules explicitly.
+  - `tools/run-live-openai-random-drawing-smoke.mjs` now retries/rejects sector prompts when the sector has no resolvable visible angle and graph prompts when no real quadratic function/tangentFunction exists.
+  - Added `tests/live-openai-random-smoke.test.js` to keep these two observed failures from being accepted again.
+- What remains:
+  - Rerun the live external OpenAI smoke set with a fresh valid API key and compare the new screenshots.
+
+---
+
+## Status
+
 - Task: Scene graph based image/PDF reconstruction foundation
 - State: Done
 - Last updated: 2026-05-25

@@ -150,6 +150,11 @@ function developerPrompt(referencePrompt = '') {
         'Prefer black default geometry. Omit color fields unless a non-black color is explicitly requested.',
         `Keep the drawing at or below ${IMAGE_RECREATE_OPERATION_BUDGET} operations.`,
         'For graph/function prompts, create functions with expression strings only, such as "x^2 - 4". Never include "y=" in a function expression.',
+        'For quadratic/parabola prompts, create an actual function object for the parabola; do not approximate it only with points or line segments.',
+        'For pointOnCircle, use angle in radians. Do not use t for pointOnCircle.',
+        'For sector/arc requests, create distinct start and end points on the circle so the shaded sector has visible area.',
+        'For tangent-to-circle requests, prefer tangentCircle with circleId and tangentPointId.',
+        'For tangent-to-function requests, prefer tangentFunction with functionId and x.',
         'For chart-like or unsupported details, approximate with points, segments, polygons, numberLine, prism, or pyramid only.',
         referencePrompt
     ].filter(Boolean).join('\n');
@@ -180,7 +185,7 @@ function parsePayload(data) {
     return { rawText, payload };
 }
 
-function validatePayload(payload, validator) {
+export function validatePayload(payload, validator, prompt = null) {
     const schema = validator.validate(payload);
     const refs = validator.validateReferences(payload, new Set());
     const intent = validator.validateIntent(payload, {
@@ -188,24 +193,27 @@ function validatePayload(payload, validator) {
         maxOperations: IMAGE_RECREATE_OPERATION_BUDGET
     });
     const runtimeErrors = validateRuntimeReadablePayload(payload);
+    const semanticErrors = prompt ? validateSmokeSemantics(payload, prompt) : [];
     const errors = [
         ...schema.errors,
         ...refs.errors,
         ...intent.errors,
-        ...runtimeErrors
+        ...runtimeErrors,
+        ...semanticErrors
     ];
     return {
         schemaValid: schema.valid,
         referencesValid: refs.valid,
         intentValid: intent.valid,
         runtimeReadable: runtimeErrors.length === 0,
-        valid: schema.valid && refs.valid && intent.valid && runtimeErrors.length === 0,
+        semanticValid: semanticErrors.length === 0,
+        valid: schema.valid && refs.valid && intent.valid && runtimeErrors.length === 0 && semanticErrors.length === 0,
         errors,
         operationCount: payload.operations.length
     };
 }
 
-function validateRuntimeReadablePayload(payload) {
+export function validateRuntimeReadablePayload(payload) {
     const operations = Array.isArray(payload?.operations) ? payload.operations : [];
     const errors = [];
     operations.forEach((operation, index) => {
@@ -214,8 +222,123 @@ function validateRuntimeReadablePayload(payload) {
                 errors.push(`operations[${index}]: function expression must omit "y=" and contain only the right-hand side.`);
             }
         }
+        if (operation.type === 'pointOnCircle' && operation.t !== undefined) {
+            errors.push(`operations[${index}]: pointOnCircle must use angle in radians; t is ignored by the runtime.`);
+        }
     });
     return errors;
+}
+
+export function validateSmokeSemantics(payload, prompt) {
+    const operations = Array.isArray(payload?.operations) ? payload.operations : [];
+    const ctx = buildOperationContext(operations);
+    const errors = [];
+
+    if (prompt?.id === 'circle_sector_tangent') {
+        const sectors = ctx.byType('sector');
+        const arcs = ctx.byType('arc');
+        if (sectors.length === 0) {
+            errors.push('circle_sector_tangent: expected a sector object for the requested sector AOB.');
+        }
+        if (arcs.length === 0) {
+            errors.push('circle_sector_tangent: expected an arc object for the requested minor arc AB.');
+        }
+
+        for (const sector of sectors) {
+            const span = angularSpanForCircleRegion(ctx, sector);
+            if (!Number.isFinite(span)) {
+                errors.push(`circle_sector_tangent: sector "${sector.id || '(no id)'}" must reference resolvable distinct circle start/end points.`);
+            } else if (span < 0.15) {
+                errors.push(`circle_sector_tangent: sector "${sector.id || '(no id)'}" has near-zero angular span, so it will not appear as a visible sector.`);
+            }
+            if (sector.fillOpacity !== undefined && sector.fillOpacity <= 0.05) {
+                errors.push(`circle_sector_tangent: sector "${sector.id || '(no id)'}" fillOpacity is too low to serve as a visible shaded sector.`);
+            }
+        }
+    }
+
+    if (prompt?.id === 'quadratic_line_intersections') {
+        const quadraticFunctions = ctx.byType('function').filter(operation =>
+            isQuadraticExpression(operation.expression) && !String(operation.expression || '').includes('=')
+        );
+        if (quadraticFunctions.length === 0) {
+            errors.push('quadratic_line_intersections: expected an actual function object with RHS-only quadratic expression, for example "x^2 - 4".');
+        }
+        if (ctx.byType('tangentFunction').length === 0) {
+            errors.push('quadratic_line_intersections: expected a tangentFunction object for the requested tangent at x=1.');
+        }
+    }
+
+    return errors;
+}
+
+function buildOperationContext(operations) {
+    const creates = operations.filter(operation => operation?.op === 'create');
+    const byId = new Map();
+    for (const operation of creates) {
+        if (typeof operation.id === 'string' && operation.id) {
+            byId.set(operation.id, operation);
+        }
+    }
+    return {
+        creates,
+        byId,
+        byType(type) {
+            return creates.filter(operation => operation.type === type);
+        }
+    };
+}
+
+function angularSpanForCircleRegion(ctx, region) {
+    const circle = ctx.byId.get(region.circleId);
+    const center = resolvePoint(ctx, circle?.centerId, new Set());
+    const start = resolvePoint(ctx, region.startPointId, new Set());
+    const end = resolvePoint(ctx, region.endPointId, new Set());
+    if (!center || !start || !end) return NaN;
+    if (distance(start, end) < 0.05) return 0;
+    const startAngle = Math.atan2(start.y - center.y, start.x - center.x);
+    const endAngle = Math.atan2(end.y - center.y, end.x - center.x);
+    let span = endAngle - startAngle;
+    while (span < 0) span += Math.PI * 2;
+    while (span >= Math.PI * 2) span -= Math.PI * 2;
+    if (region.mode === 'major') {
+        return Math.PI * 2 - span;
+    }
+    return Math.min(span, Math.PI * 2 - span);
+}
+
+function resolvePoint(ctx, id, visited) {
+    if (!id || visited.has(id)) return null;
+    visited.add(id);
+    const operation = ctx.byId.get(id);
+    if (!operation) return null;
+    if (operation.type === 'point') {
+        if (!Number.isFinite(operation.x) || !Number.isFinite(operation.y)) return null;
+        return { x: operation.x, y: operation.y };
+    }
+    if (operation.type === 'pointOnCircle') {
+        if (!Number.isFinite(operation.angle)) return null;
+        const circle = ctx.byId.get(operation.circleId);
+        const center = resolvePoint(ctx, circle?.centerId, visited);
+        const radiusPoint = resolvePoint(ctx, circle?.pointOnCircleId, visited);
+        if (!center || !radiusPoint) return null;
+        const radius = distance(center, radiusPoint);
+        if (radius <= 0) return null;
+        return {
+            x: center.x + radius * Math.cos(operation.angle),
+            y: center.y + radius * Math.sin(operation.angle)
+        };
+    }
+    return null;
+}
+
+function distance(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function isQuadraticExpression(expression) {
+    const normalized = String(expression || '').replace(/\s+/g, '').toLowerCase();
+    return /x\^2|x\*\*2|x\*x|pow\(x,2\)/.test(normalized);
 }
 
 async function callPrompt(apiKey, model, prompt, validator) {
@@ -251,7 +374,7 @@ async function callPrompt(apiKey, model, prompt, validator) {
             body: JSON.stringify(requestBody)
         });
         const parsed = parsePayload(data);
-        const validation = validatePayload(parsed.payload, validator);
+        const validation = validatePayload(parsed.payload, validator, prompt);
         lastResult = {
             prompt,
             request: {
@@ -454,7 +577,7 @@ function report(meta, results) {
         lines.push(`- title: ${result.prompt.title}`);
         lines.push(`- responseId: ${result.response.id}`);
         lines.push(`- attempt: ${result.request.attempt}`);
-        lines.push(`- validation: schema=${result.validation.schemaValid}, references=${result.validation.referencesValid}, intent=${result.validation.intentValid}`);
+        lines.push(`- validation: schema=${result.validation.schemaValid}, references=${result.validation.referencesValid}, intent=${result.validation.intentValid}, runtime=${result.validation.runtimeReadable}, semantic=${result.validation.semanticValid}`);
         lines.push(`- render: rendered=${result.render?.rendered}, objects=${result.render?.objectCount}, nonWhitePixels=${result.render?.nonWhitePixels}`);
         lines.push(`- screenshot: ${result.render?.screenshotPath}`);
         if (result.validation.errors.length > 0) {
@@ -516,7 +639,11 @@ async function main() {
     }
 }
 
-main().catch(error => {
-    console.error(error.message);
-    process.exit(1);
-});
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) {
+    main().catch(error => {
+        console.error(error.message);
+        process.exit(1);
+    });
+}

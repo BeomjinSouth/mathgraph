@@ -2,6 +2,38 @@
 
 ## 2026-05-25
 
+### Random OpenAI drawing smoke semantic recovery
+
+#### Work completed
+
+- Re-analyzed the saved live OpenAI random drawing evidence after user feedback that sample 2 did not visibly draw the sector and sample 3 did not draw the quadratic graph.
+- Identified sample 2's root cause: the generated `pointOnCircle` used `t: 0.75`, but MathGraph runtime only uses `angle` for circle-bound points, so B fell back to angle `0`, overlapped A, and collapsed the sector to zero area.
+- Identified sample 3's root cause: the generated function expression was `y=x^2-4`, but MathGraph functions require the right-hand side only, so the function parser rejected it and the parabola did not render.
+- Updated `SchemaValidator` to reject `pointOnCircle.t`, `pointOnLine.angle`, and function expressions that include `y=`.
+- Updated `AIService` prompt guidance so OpenAI text requests explicitly use `pointOnCircle.angle` and right-hand-side-only function expressions.
+- Updated `tools/run-live-openai-random-drawing-smoke.mjs` so future live random drawing runs reject/retry degenerate circle-sector outputs and graph outputs that do not contain a real RHS-only quadratic `function` plus `tangentFunction`.
+- Added `tests/live-openai-random-smoke.test.js` covering the two observed failure modes and valid corrected shapes.
+- Updated `.agent/implementation_tracking.md` and `docs/ai-reference.md`.
+
+#### Verification
+
+- Ran `node --check js\ai\SchemaValidator.js`; passed.
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 5 tests.
+- Ran `npm.cmd test`; passed with 51 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Findings
+
+- The earlier live run proved external API plumbing and canvas application, but the acceptance gate was still too weak for semantic math quality.
+- The corrected gate now fails before screenshot acceptance when a sector exists only as a zero-area object or when a requested quadratic is represented by invalid/missing function geometry.
+- A new external OpenAI rerun is still blocked until a fresh valid API key is supplied; the previously supplied key returned 401 `Incorrect API key` on the latest check.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Live OpenAI random drawing smoke test
 
 #### Work completed

@@ -195,6 +195,23 @@ export class SchemaValidator {
             }
         }
 
+        if (op.type === 'pointOnCircle') {
+            if (op.t !== undefined) {
+                errors.push(`${prefix}: pointOnCircle uses "angle" in radians; "t" is ignored at runtime and can collapse arcs/sectors.`);
+            }
+            if (op.angle !== undefined && !Number.isFinite(op.angle)) {
+                errors.push(`${prefix}: pointOnCircle angle must be a finite number.`);
+            }
+        }
+
+        if (op.type === 'pointOnLine' && op.angle !== undefined) {
+            errors.push(`${prefix}: pointOnLine uses "t"; "angle" is only for pointOnCircle.`);
+        }
+
+        if (op.type === 'function' && typeof op.expression === 'string' && op.expression.includes('=')) {
+            errors.push(`${prefix}: function expression must omit "y=" and contain only the right-hand side.`);
+        }
+
         return errors;
     }
 

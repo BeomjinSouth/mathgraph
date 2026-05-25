@@ -239,6 +239,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - point: x, y (좌표)
 - pointOnLine: lineId, t (0~1 권장)
 - pointOnCircle: circleId, angle
+- pointOnCircle uses angle in radians. Never use t for pointOnCircle.
 - circleCenterPoint: circleId
 - segment, line: point1Id, point2Id
 - ray: originId, directionPointId  
@@ -253,6 +254,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - tangentCircle: circleId, tangentPointId
 - tangentFunction: functionId, x
 - function: expression (예: "x^2 - 2*x + 1")
+- function expression is the right-hand side only. Never include "y=".
 - vector: startPointId, endPointId
 - rightAngleMarker: vertexId, line1Id, line2Id
 - equalLengthMarker: segment1Id, segment2Id

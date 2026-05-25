@@ -212,6 +212,8 @@ Reference fields should point to existing object IDs unless the referenced objec
 
 ### 6.2 Point Helpers
 
+`pointOnLine` uses `t`. `pointOnCircle` uses `angle` in radians. Do not send `t` for `pointOnCircle`; the runtime ignores it and can collapse arcs or sectors when the generated circle point falls back to angle `0`.
+
 ```json
 {
   "op": "create",
@@ -375,6 +377,8 @@ Required field: `vertexIds`, an array of at least three point IDs created earlie
 ```
 
 Use `*` for multiplication in expressions. The runtime parser also accepts common function names such as `sin`, `cos`, `tan`, `sqrt`, `abs`, `log`, `ln`, and `exp`.
+
+Function expressions must be right-hand-side expressions only. Use `"x^2 - 4"`, not `"y=x^2-4"`; including `y=` makes the function invalid and prevents the graph from rendering.
 
 ### 6.9 Vector
 
