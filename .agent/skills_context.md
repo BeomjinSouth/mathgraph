@@ -4,6 +4,31 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The root fix needs the project-local GraphA manual to constrain which scene graph nodes can become real runtime objects.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The OpenAI path should use structured intermediate output, then app-owned validation and compilation.
+- Skill: Browser / Playwright
+- Why it matters:
+  - Once live prompts are switched to scene graph mode, rendered canvas output must be compared against source crops and semantic validators.
+
+## Current Task Notes
+
+- The previous fix was a guardrail, not a root solution.
+- Root direction:
+  - image/PDF or pasted image -> high-level scene graph,
+  - scene graph -> deterministic GraphA compiler,
+  - GraphA operations -> existing schema/reference/semantic/render validation.
+- Direct GPT-to-GraphA operations should remain useful for simple text commands and compatibility, but image/PDF reconstruction should move to scene graph mode.
+- The existing JSON manual should be used as a selected capability map and compiler limit source, not only as prompt prose.
+- Unsupported primitives must produce explicit warnings; otherwise the model/app can silently draw a plausible but wrong substitute.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The fix must use the project-local `feature-manual.json` and `retrieval-index.json` to constrain GPT/OpenAI prompts to supported GraphA primitives.
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:

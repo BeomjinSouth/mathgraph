@@ -1,13 +1,13 @@
 {
   "manualVersion": 1,
   "project": "MathGraph",
-  "updatedAt": "2026-05-24",
+  "updatedAt": "2026-05-25",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
   "sourceOfTruth": {
     "runtime": ["js/core/ObjectManager.js", "js/objects/*.js", "js/tools/*.js", "js/main.js"],
-    "aiContract": ["js/ai/SchemaValidator.js", "js/ai/PatchApplier.js", "js/ai/AIService.js", "docs/ai-reference.md"],
+    "aiContract": ["js/ai/SchemaValidator.js", "js/ai/PatchApplier.js", "js/ai/AIService.js", "js/ai/SceneGraphCompiler.js", "docs/ai-reference.md"],
     "ui": ["index.html", "js/ui/CommandPalette.js", "js/ui/AlgebraInput.js", "js/core/EventHandler.js"],
     "officialOpenAISourcesChecked": [
       "https://developers.openai.com/api/docs/guides/structured-outputs",
@@ -34,6 +34,25 @@
       "imagePatchRepair": "OpenAI image analysis retries once when semantic intent validation rejects the first GraphA payload."
     },
     "toolSearchPattern": "For future API orchestration with many tool/function schemas, defer rarely used tool definitions and use tool_search or an app-owned retrieval step to load only relevant MathGraph schema chunks."
+  },
+  "sceneGraphPipeline": {
+    "purpose": "Root architecture for image/PDF recreation: ask the model for a high-level math scene, then compile it deterministically into GraphA operations.",
+    "recommendedFor": ["pasted image recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
+    "sceneRootShape": {
+      "sceneType": "diagram",
+      "nodes": "Array of math entities such as point, segment, circle, arc, sector, polygon, function, numberLine, prism, pyramid.",
+      "relations": "Array of constraints or annotations such as intersection, midpoint, parallel, perpendicular, rightAngle, equalLength, angleDimension, lengthDimension, tangentFunction.",
+      "unsupported": "Array of unsupported first-class requests such as cylinder, cone, sphere, native histogram, scatterPlot, boxPlot, table, or textLabel.",
+      "notes": "Optional source evidence, uncertainty, or crop notes."
+    },
+    "compiler": {
+      "file": "js/ai/SceneGraphCompiler.js",
+      "outputRoot": "{ \"operations\": [...] }",
+      "rule": "The compiler creates support points first, then base primitives, then relation/annotation objects.",
+      "warningPolicy": "Unsupported scene nodes must become warnings, not guessed invalid GraphA operations.",
+      "validation": ["SchemaValidator.validate", "SchemaValidator.validateReferences", "SemanticValidator where category metadata exists", "browser render smoke checks"]
+    },
+    "promptingRule": "For image/PDF recreate mode, the model should preserve visible mathematical structure and relations in the scene graph. It should not directly invent low-level GraphA operations when a scene graph path is available."
   },
   "operationContract": {
     "root": "operations",

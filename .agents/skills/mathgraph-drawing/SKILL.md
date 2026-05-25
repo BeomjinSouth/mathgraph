@@ -13,7 +13,8 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 2. Select the smallest matching reference chunks by `tags`, `objectTypes`, and `loadWhen`.
 3. Read only the needed parts of `references/feature-manual.json`.
 4. Read only matching records from `references/synthetic-drawing-data.jsonl` when an example pattern is useful.
-5. Emit GraphA JSON as `{ "operations": [...] }` when the caller needs a drawable patch.
+5. For image/PDF recreation, prefer a high-level scene graph first, then compile it through the app-owned scene graph compiler.
+6. Emit GraphA JSON as `{ "operations": [...] }` when the caller needs a drawable patch.
 
 ## Reference Selection
 
@@ -36,6 +37,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Use `prism` and `pyramid` for current solid support. Approximate cylinders, cones, spheres, nets, box plots, histograms, and scatter plots with current primitives and state the limitation when needed.
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.
 - Default object stroke and fill color is `#000000`; omit color fields unless a user explicitly requests color, and never introduce multiple colors on your own.
+- For image/PDF recreation, do not silently approximate unsupported first-class nodes such as cylinder, cone, sphere, native histogram/scatter/box plot, or standalone text. Emit a scene graph unsupported item or compiler warning unless the user explicitly accepts approximation.
 
 ## Quality Checks
 

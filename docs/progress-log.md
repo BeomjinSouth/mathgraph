@@ -2,6 +2,34 @@
 
 ## 2026-05-25
 
+### Scene graph based image/PDF reconstruction foundation
+
+#### Work completed
+
+- Added `.agent/scene_graph_pipeline.md` to record the root architecture shift: image/PDF crop -> high-level math scene graph -> deterministic GraphA compiler -> schema/reference/semantic/render validation.
+- Added `js/ai/SceneGraphCompiler.js` for compiling scene nodes and relations into app-owned GraphA `operations[]`.
+- Added warnings for unsupported first-class scene nodes such as cylinder, cone, sphere, native histogram/scatter/box plot, and standalone text labels instead of silently emitting invalid or misleading GraphA.
+- Added `tests/scene-graph-compiler.test.js` covering circle/sector scenes, graph plus number-line scenes, numeric-radius circle support points, unsupported primitives, and strict selected patch behavior.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `.agents/skills/mathgraph-drawing/SKILL.md`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, `.agents/skills/mathgraph-drawing/references/retrieval-index.json`, and `docs/ai-reference.md`.
+
+#### Verification
+
+- Ran `node --check js\ai\SceneGraphCompiler.js`; passed.
+- Ran `node --test tests\scene-graph-compiler.test.js`; passed with 5 tests.
+- Ran JSON parse check for `feature-manual.json` and `retrieval-index.json`; passed.
+- Ran `npm.cmd test`; passed with 46 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Findings
+
+- The previous guardrail work was necessary but not sufficient: it catches bad low-level operations after the model has already chosen them.
+- The new root boundary is a high-level scene representation that MathGraph owns and compiles deterministically.
+- This pass creates the compiler foundation but does not yet switch every live OpenAI image/PDF recreate call to scene graph mode.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### PDF/OpenAI semantic quality gate and JSON manual reuse
 
 #### Work completed

@@ -2,6 +2,54 @@
 
 ## Summary
 
+- Task: Scene graph based image/PDF reconstruction foundation
+- Owner: Codex
+- Date: 2026-05-25
+- Related files:
+  - `.agent/scene_graph_pipeline.md`
+  - `js/ai/SceneGraphCompiler.js`
+  - `tests/scene-graph-compiler.test.js`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `.agents/skills/mathgraph-drawing/references/retrieval-index.json`
+  - `docs/ai-reference.md`
+
+## Problem
+
+- The current OpenAI image/PDF path can return schema-valid GraphA `operations[]` that still do not match the requested diagram.
+- Guardrails, retries, and semantic validators catch more bad outputs, but they do not change the brittle architecture: the model is still asked to directly author low-level app operations.
+- Exact or targeted image reconstruction needs an app-owned intermediate representation so MathGraph can compile, validate, and reject unsupported geometry deterministically.
+- Partial edits need a stable target model: selected object ids or scene-node ids should determine what can change.
+
+## Goals
+
+- Add a high-level scene graph contract for image/PDF diagram understanding.
+- Add a deterministic compiler from scene graph nodes/relations to current GraphA `operations[]`.
+- Make unsupported textbook features explicit as warnings rather than silently approximating them as wrong geometry.
+- Document how the existing JSON manual and retrieval index should guide scene graph prompting and compilation.
+
+## Non-Goals
+
+- Do not fully replace every live OpenAI image/PDF call in this pass.
+- Do not add new chart, cylinder, cone, sphere, OCR, or raster inpainting primitives in this pass.
+- Do not change the existing BYOK API-key storage model in this pass.
+
+## Acceptance Criteria
+
+- [x] Scene graph compiler creates valid GraphA operations for plane, circle, graph, number-line, and relation examples.
+- [x] Unsupported first-class requests such as cylinder/native chart/text label produce warnings instead of invalid GraphA.
+- [x] Tests validate compiler output through `SchemaValidator.validate()` and `validateReferences()`.
+- [x] Project docs explain that direct GPT-to-GraphA is only a compatibility path for image/PDF reconstruction, not the root long-term design.
+
+## Risks and Open Questions
+
+- The live OpenAI prompt path still needs a follow-up switch to scene graph mode before this architecture affects all user-facing image/PDF recreation.
+- Current GraphA lacks native chart and curved-solid primitives, so exact textbook parity remains impossible for those categories until runtime support is added.
+- Scene graph extraction quality still requires evals against real PDF crops; compiler correctness alone is necessary but not sufficient.
+
+---
+
+## Summary
+
 - Task: Image/PDF reference guardrails and JSON manual retrieval
 - Owner: Codex
 - Date: 2026-05-25

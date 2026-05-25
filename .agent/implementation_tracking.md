@@ -2,6 +2,68 @@
 
 ## Status
 
+- Task: Scene graph based image/PDF reconstruction foundation
+- State: Done
+- Last updated: 2026-05-25
+
+## Plan
+
+1. Record the root architecture shift in planning docs.
+2. Add a deterministic scene graph to GraphA compiler.
+3. Add tests proving compiled output passes current schema/reference validation.
+4. Update the JSON manual/retrieval notes so they guide scene graph prompts and compiler limits.
+5. Run verification, update progress log, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Introduce scene graph as the image/PDF reconstruction boundary before changing every live API call.
+- Reason: Direct GPT-authored `operations[]` can be valid JSON while still wrong, and an app-owned compiler is needed to make unsupported or ambiguous structures explicit.
+- Decision: Keep current GraphA operations as the runtime application contract.
+- Reason: `PatchApplier`, rendering, save/export, and existing tests already depend on `operations[]`; scene graph should compile into that contract rather than replacing the runtime model.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Checks run:
+  - `node --check js\ai\SceneGraphCompiler.js`
+  - `node --test tests\scene-graph-compiler.test.js`
+  - JSON parse check for `feature-manual.json` and `retrieval-index.json`
+  - `npm.cmd test`
+  - `git diff --check`
+- Result:
+  - Scene graph compiler syntax check passed.
+  - Focused compiler tests passed with 5 tests.
+  - Reference JSON parse check passed.
+  - Full test suite passed with 46 tests.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- What changed:
+  - Added `.agent/scene_graph_pipeline.md` to document the root image/PDF reconstruction architecture.
+  - Added `js/ai/SceneGraphCompiler.js` to compile high-level scene nodes and relations into deterministic GraphA operations.
+  - Added `tests/scene-graph-compiler.test.js` for circle-sector scenes, graph/number-line scenes, radius support points, unsupported primitive warnings, and strict selected patch behavior.
+  - Updated the MathGraph drawing skill and JSON manual/retrieval references to describe scene graph prompting and compiler limits.
+- What remains:
+  - Wire live image/PDF recreate-mode OpenAI prompts to request scene graphs by default.
+  - Add first-class chart and curved-solid primitives before claiming exact textbook parity for those categories.
+  - Add source-crop visual evals that compare compiled renders against PDF crops.
+
+---
+
+## Status
+
 - Task: Image/PDF reference guardrails and JSON manual retrieval
 - State: Done
 - Last updated: 2026-05-25

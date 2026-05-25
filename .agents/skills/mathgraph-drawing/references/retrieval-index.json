@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "MathGraph",
-  "updatedAt": "2026-05-24",
+  "updatedAt": "2026-05-25",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
   "referenceFiles": [
     {
@@ -62,6 +62,11 @@
       "id": "api-prompting",
       "file": "feature-manual.json",
       "jsonPointers": ["/apiPrompting", "/sourceOfTruth"]
+    },
+    {
+      "id": "scene-graph-pipeline",
+      "file": "feature-manual.json",
+      "jsonPointers": ["/sceneGraphPipeline", "/knownGapsAndApproximations"]
     },
     {
       "id": "objects-plane-core",

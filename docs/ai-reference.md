@@ -75,6 +75,20 @@ Important boundary:
   - OpenAI image analysis retries once with the semantic validation errors before failing.
 - Image recreation has an operation budget of 45 operations. Dense textbook grids, page text, and decorative elements should be simplified or ignored unless explicitly requested.
 
+## 1.2.1 Scene Graph Reconstruction Direction
+
+The root architecture for image/PDF reconstruction is moving away from direct model-authored GraphA operations.
+
+Preferred pipeline for recreate-mode image/PDF work:
+
+1. Ask the model to describe the source crop as a high-level scene graph: nodes, relations, unsupported elements, and uncertainty.
+2. Compile that scene graph into GraphA operations with app-owned deterministic code.
+3. Validate the compiled operations with `SchemaValidator`, reference checks, semantic validators, and rendered canvas checks.
+
+The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `circle`, `arc`, `sector`, `polygon`, `function`, `numberLine`, `prism`, and `pyramid`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
+
+Unsupported scene nodes such as `cylinder`, `cone`, `sphere`, native `histogram`, native `scatterPlot`, and independent `textLabel` are returned as warnings instead of invalid GraphA. That is intentional: exact textbook parity for those features requires new first-class runtime primitives.
+
 ## 1.3 PDF Sample Semantic Validation
 
 PDF-derived samples use one more gate beyond schema/reference/render checks: `js/ai/SemanticValidator.js`.
