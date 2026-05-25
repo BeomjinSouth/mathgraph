@@ -2,6 +2,63 @@
 
 ## Status
 
+- Task: Extended live OpenAI drawing smoke run
+- State: Done
+- Last updated: 2026-05-25
+
+## Plan
+
+1. Add a selectable extended prompt set for diverse live GPT drawing checks.
+2. Re-run the external OpenAI Responses API through the real GraphA validation and browser render path.
+3. Preserve prompt, response, screenshot, and contact-sheet evidence under `tmp/`.
+4. Record quality observations, verification, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+
+## Decisions
+
+- Decision: Add `LIVE_AI_PROMPT_SET=extended` to the existing live smoke runner instead of creating a separate script.
+- Reason: The existing runner already handles model selection, strict Structured Outputs, GraphA validation, browser rendering, reports, and screenshot generation.
+- Decision: Treat truncated JSON responses as retryable validation failures.
+- Reason: The histogram prompt initially produced an unterminated JSON response when the output token cap was too low.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Checks run:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --test tests\live-openai-random-smoke.test.js`
+  - `node tools\run-live-openai-random-drawing-smoke.mjs` with `LIVE_AI_PROMPT_SET=extended`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-diverse-drawing-smoke`, and the API key supplied only through the process environment
+  - `npm.cmd test`
+  - `git diff --check`
+- Result:
+  - Syntax check passed.
+  - Focused smoke regression tests passed with 5 tests.
+  - Live extended run used `gpt-5.4-mini`, returned 5 response IDs, produced 5 rendered screenshots, and reported 0 failures / 0 console errors.
+  - Full test suite passed with 51 tests.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- What changed:
+  - Added five diverse prompt cases: triangle incircle contacts, parallel/transversal angles, absolute-value graph region, histogram/frequency polygon approximation, and triangular prism hidden edges.
+  - Added prompt-set selection and report metadata to the live smoke runner.
+  - Added parse-failure retry behavior for truncated JSON responses.
+- What remains:
+  - The live sketches are proof of API/render flow, not exact geometry guarantees. The incircle sample rendered but used infinite lines for triangle sides, and the parallel-angle sample has some label overlap.
+
+---
+
+## Status
+
 - Task: Random OpenAI drawing smoke semantic recovery
 - State: Done
 - Last updated: 2026-05-25

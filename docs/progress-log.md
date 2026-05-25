@@ -2,6 +2,49 @@
 
 ## 2026-05-25
 
+### Extended live OpenAI diverse drawing smoke run
+
+#### Work completed
+
+- Added an `extended` prompt set to `tools/run-live-openai-random-drawing-smoke.mjs` for diverse live GPT drawing checks:
+  - triangle incircle with contact radii,
+  - parallel lines with a transversal and angle markers,
+  - absolute-value function plus line and shaded region,
+  - histogram/frequency-polygon approximation,
+  - triangular prism with hidden edges.
+- Added `LIVE_AI_PROMPT_SET` support and included the prompt set in generated reports.
+- Added parse-failure retry behavior so truncated or incomplete JSON responses can be resent for a shorter corrected GraphA payload.
+- Ran a real external OpenAI Responses API call set using the user-provided key only through the process environment.
+- Stored non-committed output evidence under `tmp/live-openai-diverse-drawing-smoke/`.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 5 tests.
+- Ran `node tools\run-live-openai-random-drawing-smoke.mjs` with `LIVE_AI_PROMPT_SET=extended`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-diverse-drawing-smoke`, and `LIVE_AI_MAX_OUTPUT_TOKENS=14000`; passed.
+- Ran `npm.cmd test`; passed with 51 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- The live run selected `gpt-5.4-mini` and returned real response IDs:
+  - `resp_0729d6b9e674613e016a1453dac0b0819985bc54a8317c1eec`
+  - `resp_0e34cb0b4044b7bd016a14540adbe081988f6b62d0775df309`
+  - `resp_07c0c373715da4ea016a14543609cc81998c7652d388f8803c`
+  - `resp_03723af14415bc6d016a1454944700819ba2d60e979cdc1c09`
+  - `resp_02a1d9f203dbf66c016a1454c1d79c8199ba5bdff1090c3db1`
+- Final live run failures: 0.
+- Browser render console errors: 0.
+- Output report: `tmp/live-openai-diverse-drawing-smoke/live-openai-random-report.md`.
+- Contact sheet: `tmp/live-openai-diverse-drawing-smoke/contact-sheet.png`.
+
+#### Findings
+
+- The same API key now authenticated and completed the live request set.
+- The histogram prompt initially produced truncated JSON under the default token cap, so the rerun used a larger output token cap and the script now treats parse failures as retryable.
+- All five outputs rendered. Visual quality is mixed: the histogram and triangular prism are clear, the absolute-value graph is usable, while the incircle sample uses infinite side lines and the parallel-line sample has label overlap.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Random OpenAI drawing smoke semantic recovery
 
 #### Work completed

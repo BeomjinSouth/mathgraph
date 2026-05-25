@@ -62,6 +62,49 @@ const smokePrompts = [
     }
 ];
 
+const extendedSmokePrompts = [
+    {
+        id: 'triangle_incircle_contacts',
+        title: 'Triangle incircle and contact radii',
+        tags: 'plane triangle circle incircle tangent marker',
+        promptKo: '삼각형 ABC를 그리고 세 변에 접하는 내접원, 내심 I, 접점 D, E, F를 표시해줘. I에서 각 접점으로 가는 반지름 선분과 접점에서의 직각 표시도 함께 그려줘.',
+        showAxes: false
+    },
+    {
+        id: 'parallel_transversal_angles',
+        title: 'Parallel lines with transversal angles',
+        tags: 'plane line parallel angle construction',
+        promptKo: '서로 평행한 두 직선 l, m과 이들을 가로지르는 횡단선 t를 그리고, 엇각 두 쌍과 동위각 한 쌍을 각 표시로 구분해서 보여줘.',
+        showAxes: false
+    },
+    {
+        id: 'absolute_value_line_region',
+        title: 'Absolute value function and shaded region',
+        tags: 'graph function line intersection polygon',
+        promptKo: '좌표평면에 함수 y=|x|-1과 직선 y=1을 그리고 두 교점을 표시해줘. 두 그래프와 x축 근처 꼭짓점이 만드는 가운데 영역을 연하게 칠해줘.',
+        showAxes: true
+    },
+    {
+        id: 'histogram_frequency_polygon',
+        title: 'Histogram and frequency polygon approximation',
+        tags: 'chart approximation histogram polygon number_line statistics',
+        promptKo: '도수분포표를 설명하는 간단한 히스토그램을 5개의 직사각형 막대로 그리고, 각 막대의 가운데를 잇는 도수다각형을 함께 그려줘. 가로축 눈금도 보이게 해줘.',
+        showAxes: true
+    },
+    {
+        id: 'triangular_prism_hidden_edges',
+        title: 'Triangular prism with hidden edges',
+        tags: 'solid prism polygon dashed dimension',
+        promptKo: '삼각기둥 ABC-A′B′C′를 그리고 앞면과 윗면 모서리는 실선, 뒤쪽에 가려지는 모서리는 점선으로 나타내줘. 밑면 삼각형과 높이 방향도 알아보이게 표시해줘.',
+        showAxes: false
+    }
+];
+
+const promptSets = {
+    default: smokePrompts,
+    extended: extendedSmokePrompts
+};
+
 const mimeTypes = new Map([
     ['.html', 'text/html; charset=utf-8'],
     ['.js', 'application/javascript; charset=utf-8'],
@@ -72,6 +115,15 @@ const mimeTypes = new Map([
 ]);
 
 const asMarkdownPath = filePath => path.resolve(filePath).replaceAll(path.sep, '/');
+
+function getPromptSet() {
+    const name = process.env.LIVE_AI_PROMPT_SET || 'default';
+    const prompts = promptSets[name];
+    if (!prompts) {
+        throw new Error(`Unknown LIVE_AI_PROMPT_SET="${name}". Valid sets: ${Object.keys(promptSets).join(', ')}.`);
+    }
+    return { name, prompts };
+}
 
 async function openAIRequest(apiKey, url, options = {}) {
     const response = await fetch(url, {
@@ -166,6 +218,8 @@ function repairPrompt(prompt, previousPayload, errors) {
         '',
         '위 요청에 대한 이전 GraphA JSON이 로컬 검증에 실패했습니다.',
         '아래 오류를 모두 고쳐서 {"operations":[...]} JSON만 다시 반환하세요.',
+        '',
+        'If the previous response was truncated or too long, return fewer objects and omit optional labels/styles while preserving the requested main structure.',
         '',
         'Validation errors:',
         errors.map(error => `- ${error}`).join('\n'),
@@ -373,7 +427,40 @@ async function callPrompt(apiKey, model, prompt, validator) {
             method: 'POST',
             body: JSON.stringify(requestBody)
         });
-        const parsed = parsePayload(data);
+        let parsed;
+        try {
+            parsed = parsePayload(data);
+        } catch (error) {
+            errors = [`OpenAI response could not be parsed as complete GraphA JSON: ${error.message}`];
+            previousPayload = null;
+            lastResult = {
+                prompt,
+                request: {
+                    endpoint,
+                    model,
+                    attempt,
+                    userPrompt: userText,
+                    developerPrompt: developerPrompt(referencePrompt)
+                },
+                response: {
+                    id: data.id || null,
+                    model: data.model || model,
+                    rawText: extractOpenAIResponseText(data),
+                    payload: { operations: [] }
+                },
+                validation: {
+                    schemaValid: false,
+                    referencesValid: false,
+                    intentValid: false,
+                    runtimeReadable: false,
+                    semanticValid: false,
+                    valid: false,
+                    errors,
+                    operationCount: 0
+                }
+            };
+            continue;
+        }
         const validation = validatePayload(parsed.payload, validator, prompt);
         lastResult = {
             prompt,
@@ -565,6 +652,7 @@ function report(meta, results) {
         `- generatedAt: ${meta.generatedAt}`,
         `- endpoint: ${endpoint}`,
         `- model: ${meta.model}`,
+        `- promptSet: ${meta.promptSet}`,
         '- apiKey: provided via OPENAI_API_KEY, not written to this report',
         `- contactSheet: ${meta.contactSheetPath}`,
         '',
@@ -597,8 +685,9 @@ async function main() {
     await mkdir(outputDir, { recursive: true });
     const validator = new SchemaValidator();
     const model = await chooseModel(apiKey);
-    const limit = Number(process.env.LIVE_AI_SAMPLE_LIMIT || smokePrompts.length);
-    const selectedPrompts = smokePrompts.slice(0, limit);
+    const promptSet = getPromptSet();
+    const limit = Number(process.env.LIVE_AI_SAMPLE_LIMIT || promptSet.prompts.length);
+    const selectedPrompts = promptSet.prompts.slice(0, limit);
     const results = [];
 
     for (const prompt of selectedPrompts) {
@@ -611,6 +700,7 @@ async function main() {
         generatedAt: new Date().toISOString(),
         endpoint,
         model,
+        promptSet: promptSet.name,
         promptCount: results.length,
         contactSheetPath: renderMeta.contactSheetPath,
         consoleErrorCount: renderMeta.consoleErrors.length,
