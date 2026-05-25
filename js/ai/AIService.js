@@ -123,6 +123,11 @@ const operationProperties = {
     lineWidth: NULLABLE_NUMBER,
     pointSize: NULLABLE_NUMBER,
     fontSize: NULLABLE_NUMBER,
+    arcRadius: NULLABLE_NUMBER,
+    showValue: NULLABLE_BOOLEAN,
+    markerCount: NULLABLE_NUMBER,
+    customText: NULLABLE_STRING,
+    labelFontSize: NULLABLE_NUMBER,
     dashed: NULLABLE_BOOLEAN,
     fillColor: NULLABLE_STRING,
     fillOpacity: NULLABLE_NUMBER,
@@ -258,7 +263,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - vector: startPointId, endPointId
 - rightAngleMarker: vertexId, line1Id, line2Id
 - equalLengthMarker: segment1Id, segment2Id
-- angleDimension: vertexId, point1Id, point2Id
+- angleDimension: vertexId, point1Id, point2Id (optional arcRadius, showValue, markerCount, customText, labelOffset)
 - lengthDimension: segmentId
 - polygon: vertexIds (array of at least 3 point IDs)
 - arc, sector, circularSegment: circleId, startPointId, endPointId, mode ("minor" 또는 "major")

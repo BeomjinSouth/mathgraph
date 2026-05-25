@@ -2,6 +2,56 @@
 
 ## 2026-05-25
 
+### Extended OpenAI drawing semantic correction
+
+#### Work completed
+
+- Re-analyzed the saved extended live OpenAI outputs after visual feedback:
+  - incircle/right-angle markers were accepted even when triangle sides were infinite `line` objects or `rightAngleMarker` fields were wrong,
+  - transversal angle markers were accepted with too few markers or overlapping arcs/degree labels,
+  - histogram bars were accepted on half-offset intervals such as `[0.5,1.5]`,
+  - the triangular prism was accepted when drawn as a hand-made dashed/solid segment set instead of a first-class `prism`.
+- Tightened the extended smoke prompts for:
+  - finite triangle sides and `rightAngleMarker.line1Id/line2Id`,
+  - six separate angleDimension markers using true line/transversal intersections,
+  - histogram bins exactly `[0,1]` through `[4,5]`,
+  - triangular prisms represented by the runtime `prism` object.
+- Added semantic validators for incircle contacts, parallel/transversal angles, histogram class boundaries, and triangular prism representation.
+- Added angleDimension display controls (`arcRadius`, `showValue`, `markerCount`, `customText`, `labelFontSize`) to the OpenAI structured-output schema and patch application path.
+- Updated the MathGraph drawing feature manual and AI reference docs for angleDimension display fields.
+- Added focused regression coverage to `tests/live-openai-random-smoke.test.js`.
+- Ran real external OpenAI Responses API calls using the user-provided key only through the process environment.
+- Stored final non-committed output evidence under `tmp/live-openai-diverse-drawing-smoke-fixed5/`.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check js\ai\SchemaValidator.js`; passed.
+- Ran `node --check js\ai\PatchApplier.js`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 16 tests.
+- Ran `node tools\run-live-openai-random-drawing-smoke.mjs` with `LIVE_AI_PROMPT_SET=extended`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-diverse-drawing-smoke-fixed5`, `LIVE_AI_MAX_OUTPUT_TOKENS=14000`, and `LIVE_AI_MAX_ATTEMPTS=4`; passed.
+- The final live run selected `gpt-5.4-mini` and returned real response IDs:
+  - `resp_0e6781a2c7ffa167016a145f27020c8199a2a883a879be799e`
+  - `resp_06f265007f6e62ca016a145f4b877c81999bd8d1f54eb4361b`
+  - `resp_0dc72e979453e700016a145f86ec3081989c6f1d98193074c2`
+  - `resp_0efdc3e4b8ea7dd4016a145fd8bd90819bae90904bb27542fa`
+  - `resp_00bf3d79eb3d992b016a1460121f08819ab56cc518be7de6dc`
+- Final live run failures: 0.
+- Browser render console errors: 0.
+- Output report: `tmp/live-openai-diverse-drawing-smoke-fixed5/live-openai-random-report.md`.
+- Contact sheet: `tmp/live-openai-diverse-drawing-smoke-fixed5/contact-sheet.png`.
+
+#### Findings
+
+- The root cause was not the OpenAI API call itself; the pipeline accepted schema-valid drawings without enough category-specific semantic checks.
+- The old checks did not verify whether angle markers were anchored on the actual intersection rays, whether class intervals matched the requested histogram boundary, or whether prism hidden edges were delegated to the runtime solid object.
+- The patch applier also dropped newly added angleDimension display fields until this pass, so `showValue:false` and staggered `arcRadius` were not reflected on canvas before that fix.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Extended live OpenAI diverse drawing smoke run
 
 #### Work completed

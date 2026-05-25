@@ -67,14 +67,14 @@ const extendedSmokePrompts = [
         id: 'triangle_incircle_contacts',
         title: 'Triangle incircle and contact radii',
         tags: 'plane triangle circle incircle tangent marker',
-        promptKo: '삼각형 ABC를 그리고 세 변에 접하는 내접원, 내심 I, 접점 D, E, F를 표시해줘. I에서 각 접점으로 가는 반지름 선분과 접점에서의 직각 표시도 함께 그려줘.',
+        promptKo: '삼각형 ABC를 A(0,0), B(6,0), C(0,8)의 유한한 세 변 segment와 polygon으로 그려줘. 내심 I는 (2,2), 접점은 D(2,0), E(0,2), F(3.6,3.2)로 직접 point를 만들어 세 변에 접하는 내접원을 표시해줘. I에서 각 접점으로 가는 반지름은 segment로 그리고, 각 접점의 직각 표시는 rightAngleMarker의 line1Id/line2Id가 반지름 segment와 해당 변 segment를 참조하게 해줘. rightAngleMarker에 segment1Id/segment2Id를 쓰지 말고, 삼각형의 변도 무한 직선 line으로 만들지 마.',
         showAxes: false
     },
     {
         id: 'parallel_transversal_angles',
         title: 'Parallel lines with transversal angles',
         tags: 'plane line parallel angle construction',
-        promptKo: '서로 평행한 두 직선 l, m과 이들을 가로지르는 횡단선 t를 그리고, 엇각 두 쌍과 동위각 한 쌍을 각 표시로 구분해서 보여줘.',
+        promptKo: '서로 평행한 두 직선 l, m과 이들을 가로지르는 횡단선 t를 그리고, l,t의 교점과 m,t의 교점을 만든 뒤 그 교점을 꼭짓점으로 angleDimension을 배치해줘. 엇각 두 쌍과 동위각 한 쌍은 각 하나마다 별도 angleDimension을 만들어 총 6개의 각 표시로 보여줘. 각 표시의 보조점은 반드시 해당 직선이나 횡단선 위에 놓아줘. 같은 교점에 놓인 angleDimension들은 arcRadius를 0.35, 0.55, 0.75처럼 서로 다르게 하고 showValue:false로 두어 숫자 라벨이 겹치지 않게 해줘.',
         showAxes: false
     },
     {
@@ -88,14 +88,14 @@ const extendedSmokePrompts = [
         id: 'histogram_frequency_polygon',
         title: 'Histogram and frequency polygon approximation',
         tags: 'chart approximation histogram polygon number_line statistics',
-        promptKo: '도수분포표를 설명하는 간단한 히스토그램을 5개의 직사각형 막대로 그리고, 각 막대의 가운데를 잇는 도수다각형을 함께 그려줘. 가로축 눈금도 보이게 해줘.',
+        promptKo: '도수분포표를 설명하는 간단한 히스토그램을 5개의 직사각형 막대로 그려줘. 막대의 계급 구간은 정확히 [0,1], [1,2], [2,3], [3,4], [4,5]로 시작하고, 막대 가운데 x=0.5,1.5,2.5,3.5,4.5를 잇는 도수다각형을 함께 그려줘. 가로축 눈금은 0부터 5까지 보이게 해줘.',
         showAxes: true
     },
     {
         id: 'triangular_prism_hidden_edges',
         title: 'Triangular prism with hidden edges',
         tags: 'solid prism polygon dashed dimension',
-        promptKo: '삼각기둥 ABC-A′B′C′를 그리고 앞면과 윗면 모서리는 실선, 뒤쪽에 가려지는 모서리는 점선으로 나타내줘. 밑면 삼각형과 높이 방향도 알아보이게 표시해줘.',
+        promptKo: '삼각기둥 ABC-A′B′C′를 prism 객체로 그려줘. baseVertexIds는 A,B,C, topVertexIds는 A′,B′,C′가 되게 하고, 숨은 모서리의 점선/보이는 모서리의 실선 처리는 prism 런타임에 맡겨줘. 길이 표시가 필요하면 별도 segment를 추가하되, 삼각기둥 전체를 손으로 그린 dashed/solid segment 묶음만으로 대체하지 마.',
         showAxes: false
     }
 ];
@@ -207,6 +207,12 @@ function developerPrompt(referencePrompt = '') {
         'For sector/arc requests, create distinct start and end points on the circle so the shaded sector has visible area.',
         'For tangent-to-circle requests, prefer tangentCircle with circleId and tangentPointId.',
         'For tangent-to-function requests, prefer tangentFunction with functionId and x.',
+        'For triangle or polygon sides, use finite segment objects for the sides. Use line only when an infinite construction line is explicitly requested.',
+        'For rightAngleMarker, the fields are vertexId, line1Id, and line2Id. Never use segment1Id or segment2Id for rightAngleMarker; those fields are only for equalLengthMarker.',
+        'For angleDimension, create one marker per shown angle. Use the actual intersection point as vertexId and choose point1Id/point2Id on the two rays that form that angle.',
+        'For multiple angleDimension markers at the same vertex, use staggered arcRadius values and set showValue:false or customText to avoid overlapping automatic degree labels.',
+        'For histograms, draw bars on the requested class-interval boundaries, such as [0,1], [1,2], not centered half-offset ranges such as [0.5,1.5] unless explicitly requested.',
+        'For prism or solid prompts, prefer the first-class prism/pyramid object so hidden-edge dashed rendering is determined consistently by the runtime.',
         'For chart-like or unsupported details, approximate with points, segments, polygons, numberLine, prism, or pyramid only.',
         referencePrompt
     ].filter(Boolean).join('\n');
@@ -220,6 +226,7 @@ function repairPrompt(prompt, previousPayload, errors) {
         '아래 오류를 모두 고쳐서 {"operations":[...]} JSON만 다시 반환하세요.',
         '',
         'If the previous response was truncated or too long, return fewer objects and omit optional labels/styles while preserving the requested main structure.',
+        'Important field rule: rightAngleMarker must use line1Id and line2Id. Do not use segment1Id or segment2Id unless the type is equalLengthMarker.',
         '',
         'Validation errors:',
         errors.map(error => `- ${error}`).join('\n'),
@@ -323,7 +330,128 @@ export function validateSmokeSemantics(payload, prompt) {
         }
     }
 
+    if (prompt?.id === 'triangle_incircle_contacts') {
+        validateTriangleIncircleContacts(ctx, errors);
+    }
+
+    if (prompt?.id === 'parallel_transversal_angles') {
+        validateParallelTransversalAngles(ctx, errors);
+    }
+
+    if (prompt?.id === 'histogram_frequency_polygon') {
+        validateHistogramFrequencyPolygon(ctx, errors);
+    }
+
+    if (prompt?.id === 'triangular_prism_hidden_edges') {
+        validateTriangularPrismHiddenEdges(ctx, errors);
+    }
+
     return errors;
+}
+
+function validateTriangleIncircleContacts(ctx, errors) {
+    const triangleIds = namedPointIds(ctx, ['A', 'B', 'C']);
+    const explicitTriangleSides = triangleIds
+        ? triangleEdges(triangleIds).every(([a, b]) => findSegmentBetween(ctx, a, b))
+        : false;
+    const polygonTriangleSides = ctx.byType('polygon')
+        .filter(polygon => Array.isArray(polygon.vertexIds) && polygon.vertexIds.length === 3)
+        .some(polygon => triangleEdges(polygon.vertexIds).every(([a, b]) => findSegmentBetween(ctx, a, b)));
+
+    if (!explicitTriangleSides && !polygonTriangleSides) {
+        errors.push('triangle_incircle_contacts: expected finite segment sides for triangle ABC; infinite line objects make contact and right-angle markers visually ambiguous.');
+    }
+
+    if (triangleIds) {
+        const infiniteSideLines = triangleEdges(triangleIds)
+            .filter(([a, b]) => findLineBetween(ctx, a, b));
+        if (infiniteSideLines.length > 0) {
+            errors.push('triangle_incircle_contacts: triangle sides AB, BC, and CA must be finite segment objects, not infinite line objects.');
+        }
+    }
+
+    if (!findNamedPointId(ctx, 'I')) {
+        errors.push('triangle_incircle_contacts: expected a resolvable incenter point labeled or id "I".');
+    }
+
+    if (ctx.byType('circle').length === 0 && ctx.byType('circleThreePoints').length === 0) {
+        errors.push('triangle_incircle_contacts: expected a circle object for the incircle.');
+    }
+
+    const markers = ctx.byType('rightAngleMarker');
+    if (markers.length < 3) {
+        errors.push('triangle_incircle_contacts: expected three rightAngleMarker objects at the contact points D, E, and F.');
+    }
+
+    const badMarkers = markers.filter(marker => !rightAngleMarkerUsesFinitePerpendicularSegments(ctx, marker));
+    if (badMarkers.length > 0) {
+        errors.push('triangle_incircle_contacts: each contact rightAngleMarker must reference a radius segment and a finite side segment that are perpendicular at the contact point.');
+    }
+}
+
+function validateParallelTransversalAngles(ctx, errors) {
+    const angleDimensions = ctx.byType('angleDimension');
+    if (angleDimensions.length < 6) {
+        errors.push('parallel_transversal_angles: expected at least 6 angleDimension objects, one for each angle in two alternate-interior pairs and one corresponding-angle pair.');
+    }
+
+    const setup = findParallelTransversalSetup(ctx);
+    if (!setup) {
+        errors.push('parallel_transversal_angles: expected two parallel line-like objects and one transversal that intersects both.');
+        return;
+    }
+
+    const badAngles = angleDimensions.filter(angle => !angleDimensionUsesTransversalIntersection(ctx, setup, angle));
+    if (badAngles.length > 0) {
+        errors.push('parallel_transversal_angles: every angleDimension must use a line/transversal intersection as vertexId and helper points on the two rays.');
+    }
+
+    const unstaggeredVertices = angleDimensionGroupsByVertex(angleDimensions)
+        .filter(group => group.length > 1)
+        .filter(group => uniqueApprox(group.map(angle => Number.isFinite(angle.arcRadius) ? angle.arcRadius : 0.5), 0.04).length < group.length);
+    if (unstaggeredVertices.length > 0) {
+        errors.push('parallel_transversal_angles: angleDimensions sharing the same vertex must use distinct arcRadius values so the angle markers do not overlap.');
+    }
+
+    const valueLabelsShown = angleDimensions.filter(angle => angle.showValue !== false);
+    if (valueLabelsShown.length > 0) {
+        errors.push('parallel_transversal_angles: set showValue:false on each angleDimension so automatic degree labels do not overlap the angle markers.');
+    }
+}
+
+function validateHistogramFrequencyPolygon(ctx, errors) {
+    const bars = ctx.byType('polygon')
+        .map(polygon => rectangleBounds(ctx, polygon))
+        .filter(bounds => bounds && nearlyEqual(bounds.minY, 0, 0.1) && bounds.maxY > 0.2)
+        .sort((a, b) => a.minX - b.minX);
+
+    if (bars.length < 5) {
+        errors.push('histogram_frequency_polygon: expected five rectangular histogram bar polygons.');
+        return;
+    }
+
+    const firstFive = bars.slice(0, 5);
+    for (let index = 0; index < firstFive.length; index += 1) {
+        const bar = firstFive[index];
+        const expectedMin = index;
+        const expectedMax = index + 1;
+        if (!nearlyEqual(bar.minX, expectedMin, 0.12) || !nearlyEqual(bar.maxX, expectedMax, 0.12)) {
+            errors.push(`histogram_frequency_polygon: bar ${index + 1} should cover class interval [${expectedMin},${expectedMax}], not [${formatNumber(bar.minX)},${formatNumber(bar.maxX)}].`);
+        }
+    }
+}
+
+function validateTriangularPrismHiddenEdges(ctx, errors) {
+    const triangularPrism = ctx.byType('prism').find(prism =>
+        Array.isArray(prism.baseVertexIds) &&
+        Array.isArray(prism.topVertexIds) &&
+        prism.baseVertexIds.length === 3 &&
+        prism.topVertexIds.length === 3
+    );
+
+    if (!triangularPrism) {
+        errors.push('triangular_prism_hidden_edges: expected a first-class prism object with three base vertices and three top vertices; hand-drawn dashed/solid segment sets are rejected because hidden-edge visibility is ambiguous.');
+    }
 }
 
 function buildOperationContext(operations) {
@@ -383,11 +511,331 @@ function resolvePoint(ctx, id, visited) {
             y: center.y + radius * Math.sin(operation.angle)
         };
     }
+    if (operation.type === 'pointOnLine') {
+        const line = ctx.byId.get(operation.lineId);
+        const endpoints = linearEndpoints(ctx, line, visited);
+        if (!endpoints || !Number.isFinite(operation.t)) return null;
+        return lerp(endpoints[0], endpoints[1], operation.t);
+    }
+    if (operation.type === 'midpoint') {
+        const object = ctx.byId.get(operation.segmentId);
+        const endpoints = linearEndpoints(ctx, object, visited);
+        if (!endpoints) return null;
+        return midpoint(endpoints[0], endpoints[1]);
+    }
+    if (operation.type === 'intersection') {
+        const object1 = ctx.byId.get(operation.object1Id);
+        const object2 = ctx.byId.get(operation.object2Id);
+        const endpoints1 = linearEndpoints(ctx, object1, visited);
+        const endpoints2 = linearEndpoints(ctx, object2, visited);
+        if (!endpoints1 || !endpoints2) return null;
+        return lineIntersection(endpoints1, endpoints2);
+    }
     return null;
+}
+
+function namedPointIds(ctx, names) {
+    const ids = names.map(name => findNamedPointId(ctx, name));
+    return ids.every(Boolean) ? ids : null;
+}
+
+function findNamedPointId(ctx, name) {
+    const normalize = value => String(value || '').replace(/\s+/g, '');
+    const candidates = ctx.creates.filter(operation =>
+        operation.type === 'point' ||
+        operation.type === 'pointOnLine' ||
+        operation.type === 'pointOnCircle' ||
+        operation.type === 'midpoint' ||
+        operation.type === 'intersection'
+    );
+    const found = candidates.find(operation =>
+        normalize(operation.id) === name || normalize(operation.label) === name
+    );
+    return found?.id || null;
+}
+
+function triangleEdges(vertexIds) {
+    return [
+        [vertexIds[0], vertexIds[1]],
+        [vertexIds[1], vertexIds[2]],
+        [vertexIds[2], vertexIds[0]]
+    ];
+}
+
+function findSegmentBetween(ctx, id1, id2) {
+    return ctx.byType('segment').find(segment => sameEndpointPair(segment, id1, id2));
+}
+
+function findLineBetween(ctx, id1, id2) {
+    return ctx.byType('line').find(line => sameEndpointPair(line, id1, id2));
+}
+
+function sameEndpointPair(operation, id1, id2) {
+    return (operation.point1Id === id1 && operation.point2Id === id2) ||
+        (operation.point1Id === id2 && operation.point2Id === id1);
+}
+
+function rightAngleMarkerUsesFinitePerpendicularSegments(ctx, marker) {
+    const vertex = resolvePoint(ctx, marker.vertexId, new Set());
+    const object1 = ctx.byId.get(marker.line1Id);
+    const object2 = ctx.byId.get(marker.line2Id);
+    if (!vertex || object1?.type !== 'segment' || object2?.type !== 'segment') return false;
+
+    const direction1 = directionAtVertex(ctx, object1, vertex, marker.vertexId);
+    const direction2 = directionAtVertex(ctx, object2, vertex, marker.vertexId);
+    if (!direction1 || !direction2) return false;
+
+    const lengths = magnitude(direction1) * magnitude(direction2);
+    if (lengths <= 0) return false;
+    return Math.abs(dot(direction1, direction2) / lengths) <= 0.2;
+}
+
+function directionAtVertex(ctx, operation, vertex, vertexId) {
+    const endpoints = linearEndpoints(ctx, operation, new Set());
+    if (!endpoints) return null;
+    const [a, b] = endpoints;
+    if (operation.point1Id === vertexId) return subtract(b, vertex);
+    if (operation.point2Id === vertexId) return subtract(a, vertex);
+    if (!pointLiesOnSegmentLine(vertex, a, b, 0.15)) return null;
+    return subtract(b, a);
+}
+
+function findParallelTransversalSetup(ctx) {
+    const lineLikes = ctx.creates
+        .filter(operation => ['line', 'segment', 'ray'].includes(operation.type))
+        .map(operation => ({ operation, endpoints: linearEndpoints(ctx, operation, new Set()) }))
+        .filter(item => item.endpoints && distance(item.endpoints[0], item.endpoints[1]) > 0.1);
+
+    for (let i = 0; i < lineLikes.length; i += 1) {
+        for (let j = i + 1; j < lineLikes.length; j += 1) {
+            if (!areParallel(lineLikes[i].endpoints, lineLikes[j].endpoints)) continue;
+            for (const transversal of lineLikes) {
+                if (transversal === lineLikes[i] || transversal === lineLikes[j]) continue;
+                if (areParallel(lineLikes[i].endpoints, transversal.endpoints)) continue;
+                const intersection1 = lineIntersection(lineLikes[i].endpoints, transversal.endpoints);
+                const intersection2 = lineIntersection(lineLikes[j].endpoints, transversal.endpoints);
+                if (intersection1 && intersection2 && distance(intersection1, intersection2) > 0.2) {
+                    return {
+                        parallel1: lineLikes[i],
+                        parallel2: lineLikes[j],
+                        transversal,
+                        intersection1,
+                        intersection2
+                    };
+                }
+            }
+        }
+    }
+    return null;
+}
+
+function angleDimensionUsesTransversalIntersection(ctx, setup, angle) {
+    const vertex = resolvePoint(ctx, angle.vertexId, new Set());
+    const point1 = resolvePoint(ctx, angle.point1Id, new Set());
+    const point2 = resolvePoint(ctx, angle.point2Id, new Set());
+    if (!vertex || !point1 || !point2) return false;
+
+    const atFirst = distance(vertex, setup.intersection1) <= 0.2;
+    const atSecond = distance(vertex, setup.intersection2) <= 0.2;
+    if (!atFirst && !atSecond) return false;
+
+    const parallelLine = atFirst ? setup.parallel1 : setup.parallel2;
+    const onParallel1 = pointLiesOnLine(point1, parallelLine.endpoints, 0.15);
+    const onTransversal1 = pointLiesOnLine(point1, setup.transversal.endpoints, 0.15);
+    const onParallel2 = pointLiesOnLine(point2, parallelLine.endpoints, 0.15);
+    const onTransversal2 = pointLiesOnLine(point2, setup.transversal.endpoints, 0.15);
+
+    return (onParallel1 && onTransversal2) || (onTransversal1 && onParallel2);
+}
+
+function angleDimensionGroupsByVertex(angleDimensions) {
+    const groups = new Map();
+    for (const angle of angleDimensions) {
+        if (!groups.has(angle.vertexId)) groups.set(angle.vertexId, []);
+        groups.get(angle.vertexId).push(angle);
+    }
+    return [...groups.values()];
+}
+
+function rectangleBounds(ctx, polygon) {
+    if (!Array.isArray(polygon.vertexIds) || polygon.vertexIds.length !== 4) return null;
+    const points = polygon.vertexIds.map(id => resolvePoint(ctx, id, new Set()));
+    if (points.some(point => !point)) return null;
+
+    const xs = uniqueApprox(points.map(point => point.x), 0.08);
+    const ys = uniqueApprox(points.map(point => point.y), 0.08);
+    if (xs.length !== 2 || ys.length !== 2) return null;
+
+    return {
+        minX: Math.min(...xs),
+        maxX: Math.max(...xs),
+        minY: Math.min(...ys),
+        maxY: Math.max(...ys)
+    };
+}
+
+function linearEndpoints(ctx, operation, visited) {
+    if (!operation) return null;
+    if (operation.type === 'segment' || operation.type === 'line') {
+        const p1 = resolvePoint(ctx, operation.point1Id, new Set(visited));
+        const p2 = resolvePoint(ctx, operation.point2Id, new Set(visited));
+        return p1 && p2 ? [p1, p2] : null;
+    }
+    if (operation.type === 'ray') {
+        const p1 = resolvePoint(ctx, operation.originId, new Set(visited));
+        const p2 = resolvePoint(ctx, operation.directionPointId, new Set(visited));
+        return p1 && p2 ? [p1, p2] : null;
+    }
+    if (operation.type === 'parallel') {
+        const base = linearEndpoints(ctx, ctx.byId.get(operation.baseLineId), new Set(visited));
+        const through = resolvePoint(ctx, operation.throughPointId, new Set(visited));
+        if (!base || !through) return null;
+        const dir = normalizeVector(subtract(base[1], base[0]));
+        return dir ? [through, add(through, dir)] : null;
+    }
+    if (operation.type === 'perpendicular') {
+        const base = linearEndpoints(ctx, ctx.byId.get(operation.baseLineId), new Set(visited));
+        const through = resolvePoint(ctx, operation.throughPointId, new Set(visited));
+        if (!base || !through) return null;
+        const dir = normalizeVector(subtract(base[1], base[0]));
+        return dir ? [through, add(through, perpendicularVector(dir))] : null;
+    }
+    if (operation.type === 'perpendicularBisector') {
+        const segment = linearEndpoints(ctx, ctx.byId.get(operation.segmentId), new Set(visited));
+        if (!segment) return null;
+        const mid = midpoint(segment[0], segment[1]);
+        const dir = normalizeVector(subtract(segment[1], segment[0]));
+        return dir ? [mid, add(mid, perpendicularVector(dir))] : null;
+    }
+    if (operation.type === 'angleBisector') {
+        const line1 = linearEndpoints(ctx, ctx.byId.get(operation.line1Id), new Set(visited));
+        const line2 = linearEndpoints(ctx, ctx.byId.get(operation.line2Id), new Set(visited));
+        if (!line1 || !line2) return null;
+        const vertex = lineIntersection(line1, line2);
+        if (!vertex) return null;
+        const dir1 = normalizeVector(subtract(line1[1], line1[0]));
+        const dir2 = normalizeVector(subtract(line2[1], line2[0]));
+        if (!dir1 || !dir2) return null;
+        let bisector = normalizeVector(add(dir1, dir2));
+        if (!bisector) bisector = perpendicularVector(dir1);
+        if (operation.exterior) bisector = perpendicularVector(bisector);
+        return [vertex, add(vertex, bisector)];
+    }
+    return null;
+}
+
+function lineIntersection([a, b], [c, d]) {
+    const denominator = (a.x - b.x) * (c.y - d.y) - (a.y - b.y) * (c.x - d.x);
+    if (Math.abs(denominator) < 1e-9) return null;
+    return {
+        x: ((a.x * b.y - a.y * b.x) * (c.x - d.x) - (a.x - b.x) * (c.x * d.y - c.y * d.x)) / denominator,
+        y: ((a.x * b.y - a.y * b.x) * (c.y - d.y) - (a.y - b.y) * (c.x * d.y - c.y * d.x)) / denominator
+    };
+}
+
+function areParallel(endpoints1, endpoints2) {
+    const v1 = subtract(endpoints1[1], endpoints1[0]);
+    const v2 = subtract(endpoints2[1], endpoints2[0]);
+    return Math.abs(cross(v1, v2)) <= 0.05 * magnitude(v1) * magnitude(v2);
+}
+
+function pointLiesOnSegmentLine(point, a, b, tolerance) {
+    if (!pointLiesOnLine(point, [a, b], tolerance)) return false;
+    const lengthSquared = squaredDistance(a, b);
+    if (lengthSquared <= 0) return false;
+    const t = dot(subtract(point, a), subtract(b, a)) / lengthSquared;
+    return t >= -0.05 && t <= 1.05;
+}
+
+function pointLiesOnLine(point, [a, b], tolerance) {
+    const lineLength = distance(a, b);
+    if (lineLength <= 0) return false;
+    return Math.abs(cross(subtract(b, a), subtract(point, a))) / lineLength <= tolerance;
+}
+
+function uniqueApprox(values, tolerance) {
+    const sorted = [...values].sort((a, b) => a - b);
+    const unique = [];
+    for (const value of sorted) {
+        if (!unique.some(existing => nearlyEqual(existing, value, tolerance))) {
+            unique.push(value);
+        }
+    }
+    return unique;
+}
+
+function nearlyEqual(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+}
+
+function midpoint(a, b) {
+    return {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+    };
+}
+
+function lerp(a, b, t) {
+    return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t
+    };
+}
+
+function subtract(a, b) {
+    return {
+        x: a.x - b.x,
+        y: a.y - b.y
+    };
+}
+
+function add(a, b) {
+    return {
+        x: a.x + b.x,
+        y: a.y + b.y
+    };
+}
+
+function dot(a, b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+function cross(a, b) {
+    return a.x * b.y - a.y * b.x;
+}
+
+function magnitude(vector) {
+    return Math.hypot(vector.x, vector.y);
+}
+
+function normalizeVector(vector) {
+    const length = magnitude(vector);
+    if (length <= 0) return null;
+    return {
+        x: vector.x / length,
+        y: vector.y / length
+    };
+}
+
+function perpendicularVector(vector) {
+    return {
+        x: -vector.y,
+        y: vector.x
+    };
+}
+
+function squaredDistance(a, b) {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    return dx * dx + dy * dy;
 }
 
 function distance(a, b) {
     return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function formatNumber(value) {
+    return Number.isFinite(value) ? Number(value.toFixed(2)).toString() : String(value);
 }
 
 function isQuadraticExpression(expression) {

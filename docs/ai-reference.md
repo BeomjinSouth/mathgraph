@@ -187,6 +187,7 @@ Most object types accept the following optional properties:
 | `lineWidth` | number | Stroke width |
 | `pointSize` | number | Point radius/size |
 | `fontSize` | number | Label size |
+| `labelOffset` | object | Label offset such as `{ "x": 0.2, "y": 0.1 }` |
 | `dashed` | boolean | Dashed stroke toggle |
 | `fillColor` | string | Fill color for area objects. Default fill examples use `#000000` with opacity. |
 | `fillOpacity` | number | Fill opacity between `0` and `1` |
@@ -418,9 +419,13 @@ Function expressions must be right-hand-side expressions only. Use `"x^2 - 4"`, 
   "type": "angleDimension",
   "vertexId": "B",
   "point1Id": "A",
-  "point2Id": "C"
+  "point2Id": "C",
+  "arcRadius": 0.5,
+  "showValue": false
 }
 ```
+
+Optional `angleDimension` display fields include `arcRadius`, `showValue`, `markerCount`, `customText`, `labelFontSize`, and `labelOffset`. When several angle markers share one vertex, stagger `arcRadius` values to keep the arcs legible.
 
 ```json
 {

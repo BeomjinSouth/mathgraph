@@ -2,6 +2,68 @@
 
 ## Status
 
+- Task: Extended OpenAI drawing semantic correction
+- State: Done
+- Last updated: 2026-05-25
+
+## Plan
+
+1. Diagnose the angle-marker, histogram-bin, and triangular-prism hidden-edge failures from the saved live outputs.
+2. Tighten the live smoke prompts and semantic validators so structurally valid but visually wrong GraphA payloads fail.
+3. Add angleDimension display controls to the AI response schema and patch application path.
+4. Re-run external OpenAI live smoke generation and browser rendering.
+5. Record verification, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Reject triangle incircle outputs that use infinite side lines or rightAngleMarker field aliases.
+- Reason: Those outputs can render but place contact/right-angle markers ambiguously or not at all.
+- Decision: Reject histogram bars that start at half-offset class intervals when the prompt asks for intervals starting at 0.
+- Reason: A rendered chart can still misrepresent the intended class boundaries.
+- Decision: Require first-class `prism` objects for the triangular-prism smoke case.
+- Reason: The runtime prism object owns hidden-edge dashed/solid classification; hand-drawn segments made that distinction inconsistent.
+- Decision: Allow and apply `angleDimension` display controls, then require staggered `arcRadius` and `showValue:false` in the transversal smoke case.
+- Reason: Multiple angle markers at the same vertex otherwise overlap and look inaccurate even when their references are geometrically valid.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Checks run:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --check js\ai\AIService.js`
+  - `node --check js\ai\SchemaValidator.js`
+  - `node --check js\ai\PatchApplier.js`
+  - `node --test tests\live-openai-random-smoke.test.js`
+  - live external OpenAI smoke with `LIVE_AI_PROMPT_SET=extended`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-diverse-drawing-smoke-fixed5`, and the API key supplied only through the process environment
+- Result:
+  - Syntax checks passed.
+  - Focused smoke regression tests passed with 16 tests.
+  - Live external run selected `gpt-5.4-mini`, returned 5 valid/rendered outputs, and reported 0 failures / 0 browser console errors.
+
+## Handoff
+
+- What changed:
+  - The extended smoke runner now rejects inaccurate incircle/right-angle, transversal-angle, histogram-bin, and triangular-prism representations.
+  - The OpenAI structured-output schema and patch applier now pass angle-dimension display fields through to the runtime.
+  - The final evidence is under `tmp/live-openai-diverse-drawing-smoke-fixed5/`.
+- What remains:
+  - The screenshots still use model-chosen point labels, so some labels can be visually busy; the geometry-specific failures reported in this task are now covered by semantic gates.
+
+---
+
+## Status
+
 - Task: Extended live OpenAI drawing smoke run
 - State: Done
 - Last updated: 2026-05-25

@@ -212,6 +212,21 @@ export class SchemaValidator {
             errors.push(`${prefix}: function expression must omit "y=" and contain only the right-hand side.`);
         }
 
+        if (op.type === 'angleDimension') {
+            if (op.arcRadius !== undefined && (!Number.isFinite(op.arcRadius) || op.arcRadius <= 0)) {
+                errors.push(`${prefix}: angleDimension arcRadius must be a positive finite number.`);
+            }
+            if (op.showValue !== undefined && typeof op.showValue !== 'boolean') {
+                errors.push(`${prefix}: angleDimension showValue must be a boolean.`);
+            }
+            if (op.markerCount !== undefined && (!Number.isInteger(op.markerCount) || op.markerCount < 0)) {
+                errors.push(`${prefix}: angleDimension markerCount must be a non-negative integer.`);
+            }
+            if (op.labelFontSize !== undefined && (!Number.isFinite(op.labelFontSize) || op.labelFontSize <= 0)) {
+                errors.push(`${prefix}: angleDimension labelFontSize must be a positive finite number.`);
+            }
+        }
+
         return errors;
     }
 

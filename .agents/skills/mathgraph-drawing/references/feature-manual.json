@@ -322,9 +322,9 @@
       "koreanName": "각도 치수",
       "tags": ["dimension"],
       "requiredFields": ["vertexId", "point1Id", "point2Id"],
-      "optionalFields": ["label", "color", "fontSize"],
+      "optionalFields": ["label", "color", "fontSize", "arcRadius", "showValue", "markerCount", "customText", "labelFontSize", "labelOffset"],
       "template": { "op": "create", "id": "angle_ABC", "type": "angleDimension", "vertexId": "B", "point1Id": "A", "point2Id": "C" },
-      "notes": ["Use three points; vertexId is the middle/angle vertex."]
+      "notes": ["Use three points; vertexId is the middle/angle vertex.", "When multiple angle markers share the same vertex, use different arcRadius values and consider showValue:false to avoid overlapping labels."]
     },
     {
       "type": "lengthDimension",
