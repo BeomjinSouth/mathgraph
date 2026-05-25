@@ -2,6 +2,42 @@
 
 ## 2026-05-25
 
+### Live OpenAI random drawing smoke test
+
+#### Work completed
+
+- Added `tools/run-live-openai-random-drawing-smoke.mjs` for a reusable live OpenAI Responses API smoke test that sends arbitrary Korean MathGraph drawing prompts, validates returned GraphA `operations[]`, applies them to the real browser canvas, and stores non-committed evidence under `tmp/live-openai-random-drawing-smoke/`.
+- Ran a real external OpenAI API test with the API key supplied only through the process environment.
+- The live model check selected `gpt-5.4-mini`.
+- Sent five arbitrary drawing requests: triangle with circumcircle and altitude, circle sector with tangent, quadratic/line graph, radical number-line construction, and square pyramid.
+- Stored screenshots and a local contact sheet under `tmp/live-openai-random-drawing-smoke/`.
+- Tightened the smoke script after the first run so future runs reject function expressions that include `y=` and generate contact sheets without blocked local file URLs.
+
+#### Verification
+
+- Ran `node tools\run-live-openai-random-drawing-smoke.mjs` with `OPENAI_API_KEY` supplied only through the process environment.
+- `GET https://api.openai.com/v1/models` succeeded during the first run.
+- `POST https://api.openai.com/v1/responses` returned real response IDs for all five requests:
+  - `resp_04ab4c6dd7b88a53016a13cd552f808198ac5d57f9a408fdb9`
+  - `resp_01f97150706faf06016a13cd84f7f8819aa23a6bb3c93cc4d1`
+  - `resp_0da826622525f7dc016a13cd9355ac81989953cfa8393539f9`
+  - `resp_04f6002445d87a56016a13cdbe2f04819abcd5359892f02599`
+  - `resp_011d1efb7c22e2f6016a13cdcbc1348198963262a74443770b`
+- First-run payloads all passed `SchemaValidator.validate()`, `SchemaValidator.validateReferences()`, and recreate intent operation-budget validation.
+- First-run payloads all rendered as non-empty MathGraph canvas drawings with 10-17 runtime objects per sample.
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- A second live rerun after script tightening was blocked because the supplied API key returned `Incorrect API key`; the key was not written to repository files or reports.
+
+#### Findings
+
+- The external GPT/OpenAI API plumbing works end to end for arbitrary MathGraph drawing prompts when the key is valid.
+- Schema/reference/render success does not guarantee mathematical quality. The first graph sample rendered but exposed a function-expression issue (`y=` included in an expression), so the new smoke script now rejects that class before browser rendering.
+- The generated figures are usable smoke-test sketches, not exact mathematical proof-quality diagrams. Label overlap and approximate constructions remain visible in some outputs.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Scene graph based image/PDF reconstruction foundation
 
 #### Work completed
