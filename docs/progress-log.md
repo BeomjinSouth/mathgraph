@@ -12,6 +12,7 @@
 - Sent five arbitrary drawing requests: triangle with circumcircle and altitude, circle sector with tangent, quadratic/line graph, radical number-line construction, and square pyramid.
 - Stored screenshots and a local contact sheet under `tmp/live-openai-random-drawing-smoke/`.
 - Tightened the smoke script after the first run so future runs reject function expressions that include `y=` and generate contact sheets without blocked local file URLs.
+- On a follow-up request to rerun with different shapes, re-read the previous prompt/result evidence and attempted to verify the same user-provided key before sending new prompts.
 
 #### Verification
 
@@ -27,12 +28,14 @@
 - First-run payloads all rendered as non-empty MathGraph canvas drawings with 10-17 runtime objects per sample.
 - Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
 - A second live rerun after script tightening was blocked because the supplied API key returned `Incorrect API key`; the key was not written to repository files or reports.
+- Follow-up `GET https://api.openai.com/v1/models` check also returned 401 `Incorrect API key`, so no additional external GPT drawing calls were made.
 
 #### Findings
 
 - The external GPT/OpenAI API plumbing works end to end for arbitrary MathGraph drawing prompts when the key is valid.
 - Schema/reference/render success does not guarantee mathematical quality. The first graph sample rendered but exposed a function-expression issue (`y=` included in an expression), so the new smoke script now rejects that class before browser rendering.
 - The generated figures are usable smoke-test sketches, not exact mathematical proof-quality diagrams. Label overlap and approximate constructions remain visible in some outputs.
+- A fresh valid API key is required before rerunning the alternate-shape smoke set.
 
 #### Deployment / Vercel
 
