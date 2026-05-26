@@ -2,6 +2,68 @@
 
 ## Status
 
+- Task: Stress OpenAI drawing set with complex graphs and solids
+- State: Done
+- Last updated: 2026-05-26
+
+## Plan
+
+1. Add a 10-prompt `stress` live smoke set covering multi-function graphs, complex plane geometry, and nested solids.
+2. Add lightweight per-prompt type expectations so obviously incomplete outputs fail before screenshot acceptance.
+3. Run the external OpenAI Responses API path and render all 10 outputs.
+4. Inspect screenshots, record prompt/output evidence, and update progress docs.
+5. Run verification, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Use a new `LIVE_AI_PROMPT_SET=stress` instead of replacing the previous `extended` set.
+- Reason: The previous set is now a regression baseline for the specific failures already fixed.
+- Decision: Use prompt-local type expectations for this exploratory batch.
+- Reason: These 10 samples are intentionally varied, so lightweight expectations catch missing core objects without overfitting every diagram.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Checks run:
+  - syntax checks for changed scripts,
+  - focused smoke tests,
+  - live external OpenAI run,
+  - full `npm.cmd test`,
+  - `git diff --check`.
+- Result:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs` passed.
+  - `node --test tests\live-openai-random-smoke.test.js` passed with 19 tests.
+  - The first live stress run rendered 9/10 outputs; the remaining compound solid used pixel-style coordinates outside the default view.
+  - Added a coordinate-range semantic gate and reran the live stress set.
+  - The final live stress run used `gpt-5.4-mini`, rendered all 10 outputs, and reported 0 failures / 0 browser console errors.
+  - `npm.cmd test` passed with 65 tests.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- What changed:
+  - Added `LIVE_AI_PROMPT_SET=stress` with 10 complex graph/geometry/solid prompts.
+  - Added prompt-local minimum object-family expectations.
+  - Added a default-view coordinate-range gate to reject pixel-style coordinates that would render blank.
+  - Final evidence is under `tmp/live-openai-stress-drawing-smoke-fixed/`.
+- What remains:
+  - Commit and push the completed changes.
+
+---
+
+## Status
+
 - Task: Extended OpenAI drawing semantic correction
 - State: Done
 - Last updated: 2026-05-25

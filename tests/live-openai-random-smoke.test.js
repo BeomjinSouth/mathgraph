@@ -280,6 +280,58 @@ test('extended smoke semantics accepts first-class triangular prism objects', ()
     assert.deepEqual(validateSmokeSemantics(payload, prismPrompt), []);
 });
 
+test('prompt-local smoke expectations reject missing required object families', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'f', type: 'function', expression: 'x^2' }
+        ]
+    };
+    const prompt = {
+        id: 'stress_expectation_sample',
+        expect: { minTypes: { function: 2, prism: 1 } }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /expected at least 2 "function"/);
+    assert.match(errors.join('\n'), /expected at least 1 "prism"/);
+});
+
+test('prompt-local smoke expectations accept the requested object families', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'f1', type: 'function', expression: 'x^2' },
+            { op: 'create', id: 'f2', type: 'function', expression: 'x^3' },
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0 },
+            { op: 'create', id: 'B', type: 'point', x: 2, y: 0 },
+            { op: 'create', id: 'C', type: 'point', x: 0, y: 2 },
+            { op: 'create', id: 'Ap', type: 'point', x: 0.5, y: 1 },
+            { op: 'create', id: 'Bp', type: 'point', x: 2.5, y: 1 },
+            { op: 'create', id: 'Cp', type: 'point', x: 0.5, y: 3 },
+            { op: 'create', id: 'prism_1', type: 'prism', baseVertexIds: ['A', 'B', 'C'], topVertexIds: ['Ap', 'Bp', 'Cp'] }
+        ]
+    };
+    const prompt = {
+        id: 'stress_expectation_sample',
+        expect: { minTypes: { function: 2, prism: 1 } }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
+});
+
+test('smoke semantics rejects pixel-style point coordinates outside the default view', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 120, y: 260 }
+        ]
+    };
+    const prompt = { id: 'stress_coordinate_sample' };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /coordinates must stay within \+\/-20/);
+});
+
 function parallelBasePayload(angles) {
     return {
         operations: [

@@ -1,5 +1,62 @@
 # Progress Log
 
+## 2026-05-26
+
+### Stress live OpenAI drawing set
+
+#### Work completed
+
+- Added a `stress` prompt set to `tools/run-live-openai-random-drawing-smoke.mjs` with 10 new live drawing cases:
+  - cubic/quadratic/reference-line graph,
+  - three trigonometric functions,
+  - rational function with vertical/horizontal asymptotes,
+  - absolute-value/parabola shaded region,
+  - cubic graph with three tangents,
+  - circle sector/chord/tangent/angle bundle,
+  - triangle centers and altitude construction,
+  - nested rectangular prisms,
+  - pyramid inside a prism,
+  - compound nested solid frame with two prisms and a pyramid.
+- Added prompt-local `expect.minTypes` checks so each exploratory prompt can require its core object families.
+- Added a live-smoke coordinate-range semantic gate to reject pixel-style point coordinates such as `120,260` that are valid GraphA but render outside the default MathGraph view.
+- Added focused regression tests for prompt-local expectations and out-of-view coordinates.
+- Ran real external OpenAI Responses API calls using the user-provided key only through the process environment.
+- Stored final non-committed output evidence under `tmp/live-openai-stress-drawing-smoke-fixed/`.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 19 tests.
+- First live stress run with `LIVE_AI_PROMPT_SET=stress` rendered 9/10 outputs; `compound_nested_solid_frame` was schema/semantic valid but blank because generated points used pixel-style coordinates outside the default view.
+- After adding the coordinate-range gate, reran `node tools\run-live-openai-random-drawing-smoke.mjs` with `LIVE_AI_PROMPT_SET=stress`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-stress-drawing-smoke-fixed`, `LIVE_AI_MAX_OUTPUT_TOKENS=14000`, and `LIVE_AI_MAX_ATTEMPTS=4`; passed.
+- Ran `npm.cmd test`; passed with 65 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- The final live run selected `gpt-5.4-mini` and returned real response IDs:
+  - `resp_03eed1366501c10c016a157017ca7481998b0aac896aa22d03`
+  - `resp_0181691b8d7f37ef016a157029dbb8819b97e36bc1aec8d1c6`
+  - `resp_0abc240be967f9dd016a157037b3a48198a10a76448626c091`
+  - `resp_0a995e14545ef2be016a15704487e88199ac49882bc7211274`
+  - `resp_0a0e476209c61866016a1570634f848198b49b59086f0dfe61`
+  - `resp_062fff2febea9bb2016a157083ea34819996f4becfee6342a2`
+  - `resp_092db428b89d54a9016a1570b4065081989d3a35c4a2a968c4`
+  - `resp_0ca50f78dd4a203a016a1570c964f0819ab421ca0403149ef9`
+  - `resp_0171c5a71d30047a016a1570fd9f04819ba4c29f8dd973e6a4`
+  - `resp_08fe782623bdda61016a15710ebaf8819b92d9708acea62d0e`
+- Final live run failures: 0.
+- Browser render console errors: 0.
+- Output report: `tmp/live-openai-stress-drawing-smoke-fixed/live-openai-random-report.md`.
+- Contact sheet: `tmp/live-openai-stress-drawing-smoke-fixed/contact-sheet.png`.
+
+#### Findings
+
+- The stress set confirms the API/render path handles more complex function graphs and nested first-class solids than the earlier five-case set.
+- Lightweight expectations are useful for exploratory prompt families, but they are still not a substitute for deep category-specific geometry checks.
+- Some generated point labels are visually busy, especially in nested solids; the geometric objects render, but label placement is still a quality area for future UI/prompt tuning.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-25
 
 ### Extended OpenAI drawing semantic correction

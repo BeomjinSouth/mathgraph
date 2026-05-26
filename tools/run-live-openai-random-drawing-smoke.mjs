@@ -100,9 +100,93 @@ const extendedSmokePrompts = [
     }
 ];
 
+const stressSmokePrompts = [
+    {
+        id: 'multi_function_cubic_quadratic_line',
+        title: 'Cubic, quadratic, and reference line',
+        tags: 'graph function cubic quadratic line intersection',
+        promptKo: '좌표평면에 함수 x^3 - 3*x, x^2 - 1, 그리고 x축 기준선 y=0을 함께 그려줘. 두 함수의 주요 교점과 각 함수의 대표 꼭짓점/극값 근처 점을 point로 표시하되, 전체는 45개 operations 이내로 간결하게 만들어줘.',
+        showAxes: true,
+        expect: { minTypes: { function: 2, line: 1, point: 4 } }
+    },
+    {
+        id: 'trig_wave_family',
+        title: 'Three trigonometric waves',
+        tags: 'graph function trigonometry multiple',
+        promptKo: '좌표평면에 sin(x), cos(x), 0.5*sin(2*x) 세 개의 삼각함수 그래프를 동시에 그리고, x=-π, 0, π 위치를 점이나 수직 기준선으로 표시해줘. 함수 expression에는 y=를 넣지 말고 operations는 45개 이하로 유지해줘.',
+        showAxes: true,
+        expect: { minTypes: { function: 3, point: 3 } }
+    },
+    {
+        id: 'rational_asymptote_window',
+        title: 'Rational function with asymptotes',
+        tags: 'graph function rational asymptote line',
+        promptKo: '좌표평면에 유리함수 1/(x - 1) + 2를 그리고, 점선 수직점근선 x=1과 점선 수평점근선 y=2를 함께 표시해줘. 점근선은 각각 두 점과 line으로 만들고 dashed:true로 해줘.',
+        showAxes: true,
+        expect: { minTypes: { function: 1, line: 2, point: 4 } }
+    },
+    {
+        id: 'absolute_parabola_shaded_region',
+        title: 'Absolute value and parabola shaded lens',
+        tags: 'graph function absolute quadratic polygon region',
+        promptKo: '좌표평면에 abs(x)-1과 0.25*x^2 그래프를 그리고, 교점 (-2,1), (2,1)과 아래쪽 꼭짓점 (0,-1), 위쪽 점 (0,0)을 표시해줘. 두 그래프 사이 가운데 렌즈 모양 영역은 polygon으로 연하게 칠해줘.',
+        showAxes: true,
+        expect: { minTypes: { function: 2, polygon: 1, point: 4 } }
+    },
+    {
+        id: 'cubic_tangent_bundle',
+        title: 'Cubic with three tangents',
+        tags: 'graph function cubic tangent tangentFunction',
+        promptKo: '함수 x^3 - 3*x를 그리고 x=-1, x=0, x=1에서의 접선을 tangentFunction 세 개로 표시해줘. 세 접점도 point로 표시하고 자동 각/길이 치수는 넣지 말아줘.',
+        showAxes: true,
+        expect: { minTypes: { function: 1, tangentFunction: 3, point: 3 } }
+    },
+    {
+        id: 'circle_sector_chord_tangent_bundle',
+        title: 'Circle with sector, chord, tangent, and angle',
+        tags: 'circle sector arc chord tangent angle',
+        promptKo: '중심 O, 반지름 4인 원을 그리고 A(4,0), B(0,4), C(-4,0)을 잡아줘. 부채꼴 AOB, 작은 호 AB, 현 AC, A에서의 접선, 중심각 AOB 표시를 함께 그려줘.',
+        showAxes: false,
+        expect: { minTypes: { circle: 1, sector: 1, arc: 1, segment: 1, tangentCircle: 1, angleDimension: 1 } }
+    },
+    {
+        id: 'triangle_centers_and_altitude',
+        title: 'Triangle centers and altitude construction',
+        tags: 'plane triangle midpoint altitude circle marker',
+        promptKo: '삼각형 ABC를 A(-3,0), B(4,0), C(1,5)로 그리고 세 변 segment와 polygon을 만들어줘. AB와 BC의 중점, C에서 AB로 내린 높이와 발 H, 직각 표시, 세 꼭짓점을 지나는 외접원을 함께 그려줘.',
+        showAxes: false,
+        expect: { minTypes: { polygon: 1, segment: 4, midpoint: 2, perpendicular: 1, intersection: 1, rightAngleMarker: 1, circleThreePoints: 1 } }
+    },
+    {
+        id: 'nested_rectangular_prisms',
+        title: 'Small rectangular prism inside large rectangular prism',
+        tags: 'solid prism nested rectangular',
+        promptKo: '큰 직육면체를 prism 객체로 그리고, 그 안쪽에 더 작은 직육면체도 prism 객체로 배치해줘. 두 입체가 서로 다른 크기임이 보이도록 모든 꼭짓점을 point로 만들고, 숨은선 처리는 prism 런타임에 맡겨줘.',
+        showAxes: false,
+        expect: { minTypes: { prism: 2, point: 16 } }
+    },
+    {
+        id: 'pyramid_inside_prism',
+        title: 'Pyramid inside a prism',
+        tags: 'solid prism pyramid nested',
+        promptKo: '투명한 상자처럼 보이는 직육면체 prism 안에 사각뿔 pyramid가 들어 있는 모습을 그려줘. 바깥 직육면체는 prism, 안쪽 사각뿔은 pyramid 객체를 사용하고, 사각뿔 밑면은 상자 바닥 안쪽에 놓이게 해줘.',
+        showAxes: false,
+        expect: { minTypes: { prism: 1, pyramid: 1, point: 9 } }
+    },
+    {
+        id: 'compound_nested_solid_frame',
+        title: 'Compound nested solid frame',
+        tags: 'solid prism pyramid nested triangular rectangular',
+        promptKo: '큰 직육면체 prism 안에 작은 삼각기둥 prism을 넣고, 그 위쪽에는 작은 사각뿔 pyramid가 얹힌 것처럼 보이는 복합 입체를 그려줘. 모든 입체는 first-class prism/pyramid 객체를 사용하고 손그림 dashed segment 묶음으로 대체하지 마.',
+        showAxes: false,
+        expect: { minTypes: { prism: 2, pyramid: 1, point: 13 } }
+    }
+];
+
 const promptSets = {
     default: smokePrompts,
-    extended: extendedSmokePrompts
+    extended: extendedSmokePrompts,
+    stress: stressSmokePrompts
 };
 
 const mimeTypes = new Map([
@@ -201,6 +285,7 @@ function developerPrompt(referencePrompt = '') {
         'Every referenced id must be created earlier in the same operations array unless it already exists in the canvas context.',
         'Prefer black default geometry. Omit color fields unless a non-black color is explicitly requested.',
         `Keep the drawing at or below ${IMAGE_RECREATE_OPERATION_BUDGET} operations.`,
+        'Use MathGraph math coordinates near the default view, usually between -8 and 8. Do not use pixel-style coordinates such as 120 or 260.',
         'For graph/function prompts, create functions with expression strings only, such as "x^2 - 4". Never include "y=" in a function expression.',
         'For quadratic/parabola prompts, create an actual function object for the parabola; do not approximate it only with points or line segments.',
         'For pointOnCircle, use angle in radians. Do not use t for pointOnCircle.',
@@ -346,7 +431,34 @@ export function validateSmokeSemantics(payload, prompt) {
         validateTriangularPrismHiddenEdges(ctx, errors);
     }
 
+    validateSmokeCoordinateRange(ctx, prompt, errors);
+    validatePromptExpectations(ctx, prompt, errors);
+
     return errors;
+}
+
+function validateSmokeCoordinateRange(ctx, prompt, errors) {
+    if (!prompt) return;
+    const maxAbsCoordinate = prompt.maxAbsCoordinate || 20;
+    const outOfViewPoints = ctx.byType('point').filter(point =>
+        Math.abs(point.x) > maxAbsCoordinate || Math.abs(point.y) > maxAbsCoordinate
+    );
+    if (outOfViewPoints.length > 0) {
+        const ids = outOfViewPoints.slice(0, 4).map(point => point.id || '(no id)').join(', ');
+        errors.push(`${prompt.id}: point coordinates must stay within +/-${maxAbsCoordinate} math units for the default render view; out-of-range point(s): ${ids}.`);
+    }
+}
+
+function validatePromptExpectations(ctx, prompt, errors) {
+    const expectations = prompt?.expect;
+    if (!expectations?.minTypes) return;
+
+    for (const [type, minimum] of Object.entries(expectations.minTypes)) {
+        const count = ctx.byType(type).length;
+        if (count < minimum) {
+            errors.push(`${prompt.id}: expected at least ${minimum} "${type}" object(s), but found ${count}.`);
+        }
+    }
 }
 
 function validateTriangleIncircleContacts(ctx, errors) {
