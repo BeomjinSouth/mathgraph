@@ -1666,11 +1666,13 @@ class GraphAApp {
         const oldShowGrid = this.canvas.showGrid;
         const oldShowXAxis = this.canvas.showXAxis;
         const oldShowYAxis = this.canvas.showYAxis;
+        const oldLabelBounds = this.canvas.labelBounds;
 
         this.canvas.ctx = targetCtx;
         this.canvas.showGrid = includeGrid;
         this.canvas.showXAxis = includeAxes;
         this.canvas.showYAxis = includeAxes;
+        this.canvas.resetLabelLayout();
 
         if (includeGrid) this.canvas.drawGrid();
         if (includeAxes) this.canvas.drawAxes();
@@ -1685,6 +1687,7 @@ class GraphAApp {
         this.canvas.showGrid = oldShowGrid;
         this.canvas.showXAxis = oldShowXAxis;
         this.canvas.showYAxis = oldShowYAxis;
+        this.canvas.labelBounds = oldLabelBounds;
         targetCtx.restore();
     }
 

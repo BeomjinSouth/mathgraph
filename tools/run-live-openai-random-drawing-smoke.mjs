@@ -105,81 +105,81 @@ const stressSmokePrompts = [
         id: 'multi_function_cubic_quadratic_line',
         title: 'Cubic, quadratic, and reference line',
         tags: 'graph function cubic quadratic line intersection',
-        promptKo: '좌표평면에 함수 x^3 - 3*x, x^2 - 1, 그리고 x축 기준선 y=0을 함께 그려줘. 두 함수의 주요 교점과 각 함수의 대표 꼭짓점/극값 근처 점을 point로 표시하되, 전체는 45개 operations 이내로 간결하게 만들어줘.',
+        promptKo: '좌표평면에 함수 x^3 - 3*x, x^2 - 1, 그리고 x축 기준선 y=0을 함께 그려줘. 두 함수의 주요 교점과 각 함수의 대표 꼭짓점/극값 근처 점을 point로 표시하되, 함수와 기준선 라벨은 showLabel:false로 숨기고 화면에 보이는 라벨은 A,B,C,D처럼 2글자 이하의 짧은 핵심 점 4개 이하만 남겨줘. 전체는 45개 operations 이내로 간결하게 만들어줘.',
         showAxes: true,
-        expect: { minTypes: { function: 2, line: 1, point: 4 } }
+        expect: { minTypes: { function: 2, line: 1, point: 4 }, maxVisibleLabels: 4, maxLabelTextLength: 2 }
     },
     {
         id: 'trig_wave_family',
         title: 'Three trigonometric waves',
         tags: 'graph function trigonometry multiple',
-        promptKo: '좌표평면에 sin(x), cos(x), 0.5*sin(2*x) 세 개의 삼각함수 그래프를 동시에 그리고, x=-π, 0, π 위치를 점이나 수직 기준선으로 표시해줘. 함수 expression에는 y=를 넣지 말고 operations는 45개 이하로 유지해줘.',
+        promptKo: '좌표평면에 sin(x), cos(x), 0.5*sin(2*x) 세 개의 삼각함수 그래프를 동시에 그리고, x=-π, 0, π 위치를 점이나 수직 기준선으로 표시해줘. 세 함수 객체는 showLabel:false로 두고, 보이는 라벨은 -π, 0, π 세 개만 남겨줘. 함수 expression에는 y=를 넣지 말고 operations는 45개 이하로 유지해줘.',
         showAxes: true,
-        expect: { minTypes: { function: 3, point: 3 } }
+        expect: { minTypes: { function: 3, point: 3 }, maxVisibleLabels: 3, maxLabelTextLength: 2 }
     },
     {
         id: 'rational_asymptote_window',
         title: 'Rational function with asymptotes',
         tags: 'graph function rational asymptote line',
-        promptKo: '좌표평면에 유리함수 1/(x - 1) + 2를 그리고, 점선 수직점근선 x=1과 점선 수평점근선 y=2를 함께 표시해줘. 점근선은 각각 두 점과 line으로 만들고 dashed:true로 해줘.',
+        promptKo: '좌표평면에 유리함수 1/(x - 1) + 2를 그리고, 점선 수직점근선 x=1과 점선 수평점근선 y=2를 함께 표시해줘. 점근선은 각각 두 점과 line으로 만들고 dashed:true로 해줘. 보조점은 visible:false 또는 showLabel:false로 숨기고 화면에 보이는 라벨은 함수/점근선 3개 이하만 남겨줘.',
         showAxes: true,
-        expect: { minTypes: { function: 1, line: 2, point: 4 } }
+        expect: { minTypes: { function: 1, line: 2, point: 4 }, minDashedLines: 2, maxVisibleLabels: 3, maxLabelTextLength: 8 }
     },
     {
         id: 'absolute_parabola_shaded_region',
         title: 'Absolute value and parabola shaded lens',
         tags: 'graph function absolute quadratic polygon region',
-        promptKo: '좌표평면에 abs(x)-1과 0.25*x^2 그래프를 그리고, 교점 (-2,1), (2,1)과 아래쪽 꼭짓점 (0,-1), 위쪽 점 (0,0)을 표시해줘. 두 그래프 사이 가운데 렌즈 모양 영역은 polygon으로 연하게 칠해줘.',
+        promptKo: '좌표평면에 abs(x)-1과 0.25*x^2 그래프를 그리고, 교점 (-2,1), (2,1)과 아래쪽 꼭짓점 (0,-1), 위쪽 점 (0,0)을 표시해줘. 함수 라벨은 showLabel:false로 숨기고, 보이는 라벨은 A,B,C,D처럼 2글자 이하의 네 점만 남겨줘. 두 그래프 사이 가운데 렌즈 모양 영역은 polygon으로 연하게 칠해줘.',
         showAxes: true,
-        expect: { minTypes: { function: 2, polygon: 1, point: 4 } }
+        expect: { minTypes: { function: 2, polygon: 1, point: 4 }, maxVisibleLabels: 4, maxLabelTextLength: 2 }
     },
     {
         id: 'cubic_tangent_bundle',
         title: 'Cubic with three tangents',
         tags: 'graph function cubic tangent tangentFunction',
-        promptKo: '함수 x^3 - 3*x를 그리고 x=-1, x=0, x=1에서의 접선을 tangentFunction 세 개로 표시해줘. 세 접점도 point로 표시하고 자동 각/길이 치수는 넣지 말아줘.',
+        promptKo: '함수 x^3 - 3*x를 그리고 x=-1, x=0, x=1에서의 접선을 tangentFunction 세 개로 표시해줘. 함수와 접선 라벨은 showLabel:false로 숨기고, 세 접점 라벨만 보이게 해줘. 자동 각/길이 치수는 넣지 말아줘.',
         showAxes: true,
-        expect: { minTypes: { function: 1, tangentFunction: 3, point: 3 } }
+        expect: { minTypes: { function: 1, tangentFunction: 3, point: 3 }, requiredTangentXs: [-1, 0, 1], maxVisibleLabels: 3, maxLabelTextLength: 1 }
     },
     {
         id: 'circle_sector_chord_tangent_bundle',
         title: 'Circle with sector, chord, tangent, and angle',
         tags: 'circle sector arc chord tangent angle',
-        promptKo: '중심 O, 반지름 4인 원을 그리고 A(4,0), B(0,4), C(-4,0)을 잡아줘. 부채꼴 AOB, 작은 호 AB, 현 AC, A에서의 접선, 중심각 AOB 표시를 함께 그려줘.',
+        promptKo: '중심 O, 반지름 4인 원을 그리고 A(4,0), B(0,4), C(-4,0)을 잡아줘. 부채꼴 AOB, 작은 호 AB, 현 AC, A에서의 접선, 중심각 AOB 표시를 함께 그려줘. 원/호/부채꼴/접선 라벨은 showLabel:false로 숨기고, 화면에는 O,A,B,C 네 점 라벨만 보이게 해줘.',
         showAxes: false,
-        expect: { minTypes: { circle: 1, sector: 1, arc: 1, segment: 1, tangentCircle: 1, angleDimension: 1 } }
+        expect: { minTypes: { circle: 1, sector: 1, arc: 1, segment: 1, tangentCircle: 1, angleDimension: 1 }, minSectorSpan: 0.3, maxVisibleLabels: 4, maxLabelTextLength: 1 }
     },
     {
         id: 'triangle_centers_and_altitude',
         title: 'Triangle centers and altitude construction',
         tags: 'plane triangle midpoint altitude circle marker',
-        promptKo: '삼각형 ABC를 A(-3,0), B(4,0), C(1,5)로 그리고 세 변 segment와 polygon을 만들어줘. AB와 BC의 중점, C에서 AB로 내린 높이와 발 H, 직각 표시, 세 꼭짓점을 지나는 외접원을 함께 그려줘.',
+        promptKo: '삼각형 ABC를 A(-3,0), B(4,0), C(1,5)로 그리고 세 변 segment와 polygon을 만들어줘. AB와 BC의 중점, C에서 AB로 내린 높이와 발 H, 직각 표시, 세 꼭짓점을 지나는 외접원을 함께 그려줘. 중점/보조선/외접원 라벨은 showLabel:false로 숨기고 화면에는 A,B,C,H 네 라벨만 보이게 해줘.',
         showAxes: false,
-        expect: { minTypes: { polygon: 1, segment: 4, midpoint: 2, perpendicular: 1, intersection: 1, rightAngleMarker: 1, circleThreePoints: 1 } }
+        expect: { minTypes: { polygon: 1, segment: 4, midpoint: 2, perpendicular: 1, intersection: 1, rightAngleMarker: 1, circleThreePoints: 1 }, maxVisibleLabels: 4, maxLabelTextLength: 1 }
     },
     {
         id: 'nested_rectangular_prisms',
         title: 'Small rectangular prism inside large rectangular prism',
         tags: 'solid prism nested rectangular',
-        promptKo: '큰 직육면체를 prism 객체로 그리고, 그 안쪽에 더 작은 직육면체도 prism 객체로 배치해줘. 두 입체가 서로 다른 크기임이 보이도록 모든 꼭짓점을 point로 만들고, 숨은선 처리는 prism 런타임에 맡겨줘.',
+        promptKo: '큰 직육면체를 prism 객체로 그리고, 그 안쪽에 더 작은 직육면체도 prism 객체로 배치해줘. 두 입체가 서로 다른 크기임이 보이도록 모든 꼭짓점을 point로 만들고, 숨은선 처리는 prism 런타임에 맡겨줘. 모든 꼭짓점과 prism 객체는 showLabel:false로 두어 라벨이 하나도 보이지 않게 해줘.',
         showAxes: false,
-        expect: { minTypes: { prism: 2, point: 16 } }
+        expect: { minTypes: { prism: 2, point: 16 }, maxVisibleLabels: 0 }
     },
     {
         id: 'pyramid_inside_prism',
         title: 'Pyramid inside a prism',
         tags: 'solid prism pyramid nested',
-        promptKo: '투명한 상자처럼 보이는 직육면체 prism 안에 사각뿔 pyramid가 들어 있는 모습을 그려줘. 바깥 직육면체는 prism, 안쪽 사각뿔은 pyramid 객체를 사용하고, 사각뿔 밑면은 상자 바닥 안쪽에 놓이게 해줘.',
+        promptKo: '투명한 상자처럼 보이는 직육면체 prism 안에 사각뿔 pyramid가 들어 있는 모습을 그려줘. 바깥 직육면체는 prism, 안쪽 사각뿔은 pyramid 객체를 사용하고, 사각뿔 밑면은 상자 바닥 안쪽에 놓이게 해줘. 보이는 라벨은 사각뿔 꼭짓점과 기준점 등 3개 이하만 남기고 나머지 point/prism/pyramid는 showLabel:false로 숨겨줘.',
         showAxes: false,
-        expect: { minTypes: { prism: 1, pyramid: 1, point: 9 } }
+        expect: { minTypes: { prism: 1, pyramid: 1, point: 9 }, maxVisibleLabels: 3, maxLabelTextLength: 1 }
     },
     {
         id: 'compound_nested_solid_frame',
         title: 'Compound nested solid frame',
         tags: 'solid prism pyramid nested triangular rectangular',
-        promptKo: '큰 직육면체 prism 안에 작은 삼각기둥 prism을 넣고, 그 위쪽에는 작은 사각뿔 pyramid가 얹힌 것처럼 보이는 복합 입체를 그려줘. 모든 입체는 first-class prism/pyramid 객체를 사용하고 손그림 dashed segment 묶음으로 대체하지 마.',
+        promptKo: '큰 직육면체 prism 안에 작은 삼각기둥 prism을 넣고, 그 위쪽에는 작은 사각뿔 pyramid가 얹힌 것처럼 보이는 복합 입체를 그려줘. 모든 입체는 first-class prism/pyramid 객체를 사용하고 손그림 dashed segment 묶음으로 대체하지 마. 복잡한 입체가 겹치므로 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨 라벨이 하나도 보이지 않게 해줘.',
         showAxes: false,
-        expect: { minTypes: { prism: 2, pyramid: 1, point: 13 } }
+        expect: { minTypes: { prism: 2, pyramid: 1, point: 13 }, maxVisibleLabels: 0 }
     }
 ];
 
@@ -298,6 +298,7 @@ function developerPrompt(referencePrompt = '') {
         'For multiple angleDimension markers at the same vertex, use staggered arcRadius values and set showValue:false or customText to avoid overlapping automatic degree labels.',
         'For histograms, draw bars on the requested class-interval boundaries, such as [0,1], [1,2], not centered half-offset ranges such as [0.5,1.5] unless explicitly requested.',
         'For prism or solid prompts, prefer the first-class prism/pyramid object so hidden-edge dashed rendering is determined consistently by the runtime.',
+        'For dense graphs or solids, label only the essential points requested by the prompt. Set showLabel:false on helper points, functions, circles, arcs, sectors, prisms, and pyramids when labels would clutter the drawing.',
         'For chart-like or unsupported details, approximate with points, segments, polygons, numberLine, prism, or pyramid only.',
         referencePrompt
     ].filter(Boolean).join('\n');
@@ -449,14 +450,123 @@ function validateSmokeCoordinateRange(ctx, prompt, errors) {
     }
 }
 
+const RUNTIME_DEFAULT_LABEL_TYPES = new Set([
+    'point',
+    'pointOnLine',
+    'pointOnCircle',
+    'circleCenterPoint',
+    'intersection',
+    'midpoint',
+    'circle',
+    'circleThreePoints',
+    'arc',
+    'sector',
+    'circularSegment',
+    'polygon',
+    'function'
+]);
+
+function hasRuntimeVisibleLabel(operation) {
+    if (!operation || operation.visible === false) return false;
+
+    if (operation.type === 'angleDimension') {
+        return operation.showValue !== false;
+    }
+
+    if (operation.showLabel === false) return false;
+    if (operation.showLabel === true) return true;
+    if (typeof operation.label === 'string' && operation.label.trim()) return true;
+
+    return RUNTIME_DEFAULT_LABEL_TYPES.has(operation.type);
+}
+
+function describeRuntimeLabel(operation) {
+    const label = typeof operation.label === 'string' && operation.label.trim()
+        ? operation.label.trim()
+        : '(runtime default)';
+    return `${operation.type || '(unknown)'}:${operation.id || '(no id)'}:${label}`;
+}
+
+function runtimeVisibleLabelText(operation) {
+    if (!hasRuntimeVisibleLabel(operation)) return null;
+    if (operation.type === 'angleDimension') {
+        if (typeof operation.customText === 'string') return operation.customText;
+        return '90°';
+    }
+    if (typeof operation.label === 'string' && operation.label.trim()) {
+        return operation.label.trim();
+    }
+    if (operation.type === 'circle' || operation.type === 'circleThreePoints' ||
+        operation.type === 'arc' || operation.type === 'sector' ||
+        operation.type === 'circularSegment' || operation.type === 'polygon') {
+        return 'c1';
+    }
+    return 'A';
+}
+
+function countRuntimeVisibleLabels(payload) {
+    const operations = Array.isArray(payload?.operations) ? payload.operations : [];
+    return operations.filter(operation => operation?.op === 'create' && hasRuntimeVisibleLabel(operation)).length;
+}
+
 function validatePromptExpectations(ctx, prompt, errors) {
     const expectations = prompt?.expect;
-    if (!expectations?.minTypes) return;
+    if (!expectations) return;
 
-    for (const [type, minimum] of Object.entries(expectations.minTypes)) {
-        const count = ctx.byType(type).length;
-        if (count < minimum) {
-            errors.push(`${prompt.id}: expected at least ${minimum} "${type}" object(s), but found ${count}.`);
+    if (expectations.minTypes) {
+        for (const [type, minimum] of Object.entries(expectations.minTypes)) {
+            const count = ctx.byType(type).length;
+            if (count < minimum) {
+                errors.push(`${prompt.id}: expected at least ${minimum} "${type}" object(s), but found ${count}.`);
+            }
+        }
+    }
+
+    if (Number.isFinite(expectations.maxVisibleLabels)) {
+        const labeled = ctx.creates.filter(hasRuntimeVisibleLabel);
+        if (labeled.length > expectations.maxVisibleLabels) {
+            const examples = labeled.slice(0, 6).map(describeRuntimeLabel).join(', ');
+            errors.push(`${prompt.id}: expected at most ${expectations.maxVisibleLabels} runtime-visible label(s), but found ${labeled.length}; hide nonessential labels with showLabel:false. Examples: ${examples}.`);
+        }
+    }
+
+    if (Number.isFinite(expectations.maxLabelTextLength)) {
+        const longLabels = ctx.creates
+            .filter(hasRuntimeVisibleLabel)
+            .map(operation => ({ operation, text: runtimeVisibleLabelText(operation) || '' }))
+            .filter(item => item.text.length > expectations.maxLabelTextLength);
+        if (longLabels.length > 0) {
+            const examples = longLabels.slice(0, 6)
+                .map(({ operation, text }) => `${operation.type || '(unknown)'}:${operation.id || '(no id)'}:${text}`)
+                .join(', ');
+            errors.push(`${prompt.id}: visible labels must be ${expectations.maxLabelTextLength} character(s) or shorter to avoid overlap; long label(s): ${examples}.`);
+        }
+    }
+
+    if (Number.isFinite(expectations.minDashedLines)) {
+        const dashedLines = ctx.byType('line').filter(line => line.dashed === true);
+        if (dashedLines.length < expectations.minDashedLines) {
+            errors.push(`${prompt.id}: expected at least ${expectations.minDashedLines} dashed line object(s), but found ${dashedLines.length}.`);
+        }
+    }
+
+    if (Array.isArray(expectations.requiredTangentXs)) {
+        const tangentXs = ctx.byType('tangentFunction')
+            .map(tangent => Number(tangent.x))
+            .filter(Number.isFinite);
+        for (const requiredX of expectations.requiredTangentXs) {
+            if (!tangentXs.some(actualX => nearlyEqual(actualX, requiredX, 0.02))) {
+                errors.push(`${prompt.id}: expected a tangentFunction at x=${requiredX}, but found x values [${tangentXs.map(formatNumber).join(', ')}].`);
+            }
+        }
+    }
+
+    if (Number.isFinite(expectations.minSectorSpan)) {
+        const sectors = ctx.byType('sector');
+        const collapsed = sectors.filter(sector => angularSpanForCircleRegion(ctx, sector) < expectations.minSectorSpan);
+        if (sectors.length > 0 && collapsed.length === sectors.length) {
+            const ids = collapsed.map(sector => sector.id || '(no id)').join(', ');
+            errors.push(`${prompt.id}: expected a visible sector span of at least ${formatNumber(expectations.minSectorSpan)} radians; collapsed or tiny sector(s): ${ids}.`);
         }
     }
 }
@@ -1167,10 +1277,11 @@ async function render(results) {
         const cards = await Promise.all(results.map(async result => {
             const imageData = await readFile(path.resolve(result.render.screenshotPath));
             const imageUrl = `data:image/png;base64,${imageData.toString('base64')}`;
+            const labelCount = countRuntimeVisibleLabels(result.response.payload);
             return `
                 <figure>
                     <img src="${imageUrl}" alt="${result.prompt.id}">
-                    <figcaption>${result.prompt.title}<br>${result.validation.operationCount} ops, ${result.render.objectCount} objects</figcaption>
+                    <figcaption>${result.prompt.title}<br>${result.validation.operationCount} ops, ${result.render.objectCount} objects, ${labelCount} labels</figcaption>
                 </figure>
             `;
         }));
@@ -1226,6 +1337,7 @@ function report(meta, results) {
         lines.push(`- responseId: ${result.response.id}`);
         lines.push(`- attempt: ${result.request.attempt}`);
         lines.push(`- validation: schema=${result.validation.schemaValid}, references=${result.validation.referencesValid}, intent=${result.validation.intentValid}, runtime=${result.validation.runtimeReadable}, semantic=${result.validation.semanticValid}`);
+        lines.push(`- visibleLabels: ${countRuntimeVisibleLabels(result.response.payload)}`);
         lines.push(`- render: rendered=${result.render?.rendered}, objects=${result.render?.objectCount}, nonWhitePixels=${result.render?.nonWhitePixels}`);
         lines.push(`- screenshot: ${result.render?.screenshotPath}`);
         if (result.validation.errors.length > 0) {

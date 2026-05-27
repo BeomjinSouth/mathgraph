@@ -2,6 +2,71 @@
 
 ## Status
 
+- Task: Stress OpenAI drawing visual validation and label-overlap correction
+- State: Done
+- Last updated: 2026-05-27
+
+## Plan
+
+1. Audit each saved stress output against both GraphA semantics and the rendered screenshot.
+2. Identify the common failure modes behind accepted-but-visually-wrong outputs.
+3. Tighten the live stress prompts and semantic validators so excessive runtime-visible labels fail.
+4. Add a canvas-level label collision fallback to reduce overlap when labels are still present.
+5. Re-run focused tests and the external OpenAI stress set, then record evidence, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Treat runtime-visible default labels as labels even when the GraphA operation did not explicitly provide a `label` field.
+- Reason: Point, function, circle, arc, sector, and polygon objects can render generated labels by default, which caused the previous smoke gate to accept visually cluttered diagrams.
+- Decision: Use prompt-local label budgets for dense stress prompts.
+- Reason: Sparse labels are useful on small constructions, but nested solids and multi-graph scenes become unreadable when every helper vertex or function label is displayed.
+- Decision: Add a canvas label collision fallback in addition to prompt/semantic constraints.
+- Reason: AI output should avoid clutter, but user-created or legacy diagrams can still place labels near each other; the renderer now tries alternate nearby label positions before drawing.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Checks run:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --check js\core\Canvas.js`
+  - `node --check js\main.js`
+  - `node --test tests\live-openai-random-smoke.test.js`
+  - live external OpenAI stress run with `LIVE_AI_PROMPT_SET=stress`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-stress-drawing-smoke-label-fixed2`, `LIVE_AI_MAX_OUTPUT_TOKENS=14000`, and `LIVE_AI_MAX_ATTEMPTS=4`
+  - `npm.cmd test`
+  - `git diff --check`
+- Result:
+  - Syntax checks passed.
+  - Focused live-smoke tests passed with 23 tests.
+  - Final live stress run used `gpt-5.4-mini`, rendered all 10 outputs, and reported 0 failures / 0 browser console errors.
+  - Label budgets in the final live run were satisfied: 4, 3, 2, 4, 3, 4, 4, 0, 3, 0 visible labels by prompt order.
+  - Full test suite passed with 69 tests.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- What changed:
+  - Tightened the stress prompt set so dense graphs and solids hide helper labels and use short labels only.
+  - Added prompt-local semantic checks for runtime-visible label count, visible label text length, dashed asymptote lines, required tangent x-values, and visible sector span.
+  - Added canvas-level label collision avoidance for ordinary `drawLabel` calls.
+  - Final evidence is under `tmp/live-openai-stress-drawing-smoke-label-fixed2/`.
+- What remains:
+  - Curved regions between function graphs are still represented by `polygon` approximations because GraphA does not currently have a first-class "fill between arbitrary functions" object.
+
+---
+
+## Status
+
 - Task: Stress OpenAI drawing set with complex graphs and solids
 - State: Done
 - Last updated: 2026-05-26

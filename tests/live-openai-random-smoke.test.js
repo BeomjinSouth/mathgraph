@@ -319,6 +319,83 @@ test('prompt-local smoke expectations accept the requested object families', () 
     assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
 });
 
+test('prompt-local smoke expectations reject runtime-generated label clutter', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'f', type: 'function', expression: 'x^2' },
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0 },
+            { op: 'create', id: 'B', type: 'point', x: 1, y: 0 },
+            { op: 'create', id: 'C', type: 'point', x: 0, y: 1 }
+        ]
+    };
+    const prompt = {
+        id: 'label_budget_sample',
+        expect: { maxVisibleLabels: 2 }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /at most 2 runtime-visible label/);
+    assert.match(errors.join('\n'), /runtime default/);
+});
+
+test('prompt-local smoke expectations accept hidden helper labels', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'f', type: 'function', expression: 'x^2', showLabel: false },
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 1, y: 0, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: 0, y: 1, showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'label_budget_sample',
+        expect: { maxVisibleLabels: 1 }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
+});
+
+test('prompt-local smoke expectations reject long visible labels in dense diagrams', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0, label: '교점' },
+            { op: 'create', id: 'B', type: 'point', x: 1, y: 0, label: 'B' }
+        ]
+    };
+    const prompt = {
+        id: 'short_label_sample',
+        expect: { maxVisibleLabels: 2, maxLabelTextLength: 1 }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /visible labels must be 1 character/);
+    assert.match(errors.join('\n'), /교점/);
+});
+
+test('prompt-local smoke expectations reject missing tangent x values and dashed lines', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'f', type: 'function', expression: 'x^3 - 3*x', showLabel: false },
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: 1, y: 0, showLabel: false },
+            { op: 'create', id: 'l', type: 'line', point1Id: 'A', point2Id: 'B' },
+            { op: 'create', id: 't0', type: 'tangentFunction', functionId: 'f', x: 0, showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'stress_specific_sample',
+        expect: { requiredTangentXs: [-1, 0, 1], minDashedLines: 1 }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /tangentFunction at x=-1/);
+    assert.match(errors.join('\n'), /tangentFunction at x=1/);
+    assert.match(errors.join('\n'), /dashed line/);
+});
+
 test('smoke semantics rejects pixel-style point coordinates outside the default view', () => {
     const payload = {
         operations: [

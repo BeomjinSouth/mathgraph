@@ -1,5 +1,77 @@
 # Progress Log
 
+## 2026-05-27
+
+### Stress visual validation and label-overlap correction
+
+#### Work completed
+
+- Re-audited the 10 saved stress screenshots from `tmp/live-openai-stress-drawing-smoke-fixed/` against the rendered result, not just schema/semantic pass flags.
+- Identified the common root cause: GraphA auto-generates labels for point/function/circle/arc/sector/polygon objects unless `showLabel:false` is set, so the previous checker undercounted labels when the model omitted an explicit `label` field.
+- Tightened the stress prompts to hide helper labels and keep dense diagrams to short essential labels.
+- Added prompt-local checks for:
+  - maximum runtime-visible label count,
+  - maximum visible label text length,
+  - dashed asymptote lines,
+  - required tangent x-values,
+  - non-collapsed sector span.
+- Added a canvas-level label-placement fallback that tracks labels drawn in the current frame and tries alternate offsets before drawing a new label.
+- Updated the contact sheet and report generation to show the visible-label count for each output.
+- Ran real external OpenAI Responses API calls using the user-provided key only through the process environment.
+- Stored final evidence under `tmp/live-openai-stress-drawing-smoke-label-fixed2/`.
+
+#### Saved-output audit
+
+| Prompt | Previous judgement | Main issue | Final judgement |
+| --- | --- | --- | --- |
+| `multi_function_cubic_quadratic_line` | Partly wrong | Long point/function labels overlapped near the origin and curve intersections. | Good after short-label budget; 4 visible labels. |
+| `trig_wave_family` | Partly wrong | Function labels overlapped the wave family near the origin. | Good after hiding function labels; 3 visible labels. |
+| `rational_asymptote_window` | Good | Structure was already correct; label count is now checked and dashed asymptotes are enforced. | Good; 2 visible labels. |
+| `absolute_parabola_shaded_region` | Partly wrong | Labels were busy and the filled lens is only a polygon approximation. | Acceptable with short labels; curved fill remains a polygon approximation. |
+| `cubic_tangent_bundle` | Partly wrong | Function/contact labels crowded the tangent intersection area. | Good after short-label budget and required tangent x-values. |
+| `circle_sector_chord_tangent_bundle` | Partly wrong | Runtime default labels appeared on circle/arc/sector and crowded point A. | Good after hiding non-point labels and requiring sector span. |
+| `triangle_centers_and_altitude` | Mostly good | Helper labels could become crowded around H/midpoints. | Good after hiding helper labels; 4 visible labels. |
+| `nested_rectangular_prisms` | Wrong | 16 vertex labels plus prism labels made the nested solid unreadable. | Good after requiring 0 visible labels. |
+| `pyramid_inside_prism` | Partly wrong | Nine vertex labels cluttered the inner pyramid. | Good after limiting labels to 3. |
+| `compound_nested_solid_frame` | Wrong | 19 vertex labels made the compound nested solid hard to read. | Good after requiring 0 visible labels. |
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --check js\core\Canvas.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 23 tests.
+- Ran `node tools\run-live-openai-random-drawing-smoke.mjs` with `LIVE_AI_PROMPT_SET=stress`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-stress-drawing-smoke-label-fixed2`, `LIVE_AI_MAX_OUTPUT_TOKENS=14000`, and `LIVE_AI_MAX_ATTEMPTS=4`; passed.
+- The final live run selected `gpt-5.4-mini` and returned real response IDs:
+  - `resp_0f401083e4143e9e016a1691e69d1081989780342ed8e9e43e`
+  - `resp_0b476440582300dc016a1691f968c481999b55346b2bb19864`
+  - `resp_0538e6a9f9308fd0016a1692034824819bb5848c7b0fd08e69`
+  - `resp_0a9462f41feb06a2016a16920fc9f88198b85c955842553bd6`
+  - `resp_0029533c25e40774016a169231d68c8198915c3f3531982f2b`
+  - `resp_0d92a6344733e53a016a16924fa65081999a9f3d722c33cd02`
+  - `resp_075ae763a85eceb1016a169277b71c819a8f82b7ecdce0e009`
+  - `resp_0adb04340d898bd0016a1692a47964819b92e2c880ee725cac`
+  - `resp_062cb5456d12a4f8016a1692bcdd4c819ab2a729a1e739bf5f`
+  - `resp_03706ef79ab99795016a1692d6414c81988864c78d3ff0e19f`
+- Final live run failures: 0.
+- Browser render console errors: 0.
+- Visible-label counts by prompt order: 4, 3, 2, 4, 3, 4, 4, 0, 3, 0.
+- Ran `npm.cmd test`; passed with 69 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Output report: `tmp/live-openai-stress-drawing-smoke-label-fixed2/live-openai-random-report.md`.
+- Contact sheet: `tmp/live-openai-stress-drawing-smoke-label-fixed2/contact-sheet.png`.
+
+#### Findings
+
+- Schema/reference/render success is not enough for AI-generated math diagrams; visual usability needs prompt-local semantic gates for label density and important geometry invariants.
+- Label overlap was not only a prompt problem. It came from a renderer default: many object families produce runtime labels automatically unless `showLabel:false` is set.
+- The canvas fallback reduces ordinary label collisions, but dense AI-generated diagrams still need semantic limits so the model does not ask the renderer to place too many labels in the first place.
+- `polygon` remains an approximation for regions bounded by function curves.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-26
 
 ### Stress live OpenAI drawing set

@@ -25,6 +25,7 @@ export class Canvas {
         this.gridColor = '#e5e5e5';
         this.gridMajorColor = '#cccccc';
         this.axisColor = '#333333';
+        this.labelBounds = [];
 
         // 크기 초기화
         this.resize();
@@ -155,8 +156,16 @@ export class Canvas {
      * 캔버스 지우기
      */
     clear() {
+        this.resetLabelLayout();
         this.ctx.fillStyle = this.backgroundColor;
         this.ctx.fillRect(0, 0, this.width, this.height);
+    }
+
+    /**
+     * 한 프레임 안에서 이미 그린 라벨의 화면 영역을 초기화합니다.
+     */
+    resetLabelLayout() {
+        this.labelBounds = [];
     }
 
     /**
@@ -588,12 +597,40 @@ export class Canvas {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'bottom';
 
-        const x = screen.x + offsetX;
-        const y = screen.y + offsetY;
+        const metrics = ctx.measureText(text);
+        const padding = backgroundColor ? 3 : 1;
+        const candidates = this.getLabelOffsetCandidates(offsetX, offsetY, metrics.width, fontSize);
+        let chosen = null;
+        let bestScore = Number.POSITIVE_INFINITY;
+
+        for (const candidate of candidates) {
+            const x = screen.x + candidate.offsetX;
+            const y = screen.y + candidate.offsetY;
+            const box = {
+                x: x - padding,
+                y: y - fontSize - padding,
+                w: metrics.width + padding * 2,
+                h: fontSize + padding * 2
+            };
+            const score = this.labelConflictScore(box);
+            if (score < bestScore) {
+                bestScore = score;
+                chosen = { x, y, box };
+            }
+            if (score === 0) break;
+        }
+
+        const x = chosen?.x ?? screen.x + offsetX;
+        const y = chosen?.y ?? screen.y + offsetY;
+        const labelBox = chosen?.box ?? {
+            x: x - padding,
+            y: y - fontSize - padding,
+            w: metrics.width + padding * 2,
+            h: fontSize + padding * 2
+        };
+        this.labelBounds.push(labelBox);
 
         if (backgroundColor) {
-            const metrics = ctx.measureText(text);
-            const padding = 3;
             ctx.fillStyle = backgroundColor;
             ctx.fillRect(
                 x - padding,
@@ -605,6 +642,51 @@ export class Canvas {
 
         ctx.fillStyle = color;
         ctx.fillText(text, x, y);
+    }
+
+    getLabelOffsetCandidates(offsetX, offsetY, textWidth, fontSize) {
+        const gap = 8;
+        const left = -textWidth - gap;
+        const below = fontSize + gap;
+        const above = -fontSize - gap;
+        const center = -textWidth / 2;
+        const candidates = [
+            { offsetX, offsetY },
+            { offsetX, offsetY: offsetY + below },
+            { offsetX: left, offsetY },
+            { offsetX: left, offsetY: offsetY + below },
+            { offsetX, offsetY: offsetY + above },
+            { offsetX: left, offsetY: offsetY + above },
+            { offsetX: center, offsetY: offsetY + below },
+            { offsetX: center, offsetY: offsetY + above }
+        ];
+
+        const seen = new Set();
+        return candidates.filter(candidate => {
+            const key = `${Math.round(candidate.offsetX * 10)}:${Math.round(candidate.offsetY * 10)}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
+    labelConflictScore(box) {
+        let score = 0;
+        for (const existing of this.labelBounds) {
+            const overlapWidth = Math.min(box.x + box.w, existing.x + existing.w) - Math.max(box.x, existing.x);
+            const overlapHeight = Math.min(box.y + box.h, existing.y + existing.h) - Math.max(box.y, existing.y);
+            if (overlapWidth > 0 && overlapHeight > 0) {
+                score += overlapWidth * overlapHeight;
+            }
+        }
+
+        const outside =
+            Math.max(0, -box.x) +
+            Math.max(0, -box.y) +
+            Math.max(0, box.x + box.w - this.width) +
+            Math.max(0, box.y + box.h - this.height);
+
+        return score + outside * 1000;
     }
 
     /**
