@@ -2,6 +2,70 @@
 
 ## Status
 
+- Task: Additional stress OpenAI drawing set with diverse graphs and nested solids
+- State: Done
+- Last updated: 2026-05-28
+
+## Plan
+
+1. Add a new 10-prompt `stress_extra` live smoke set that does not duplicate the previous stress prompts.
+2. Cover varied function graphs, complex plane figures, and nested first-class solids while keeping label budgets explicit.
+3. Run the external OpenAI Responses API path and render all 10 outputs.
+4. Inspect screenshots, record prompt/output evidence, and update progress docs.
+5. Run verification, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Add `LIVE_AI_PROMPT_SET=stress_extra` instead of replacing `stress`.
+- Reason: The first stress set remains useful as a regression baseline for label-density and nested-solid fixes.
+- Decision: Keep label-count and short-label expectations in every dense prompt.
+- Reason: The previous visual failure mode was mostly caused by runtime-visible label clutter, so the new prompts should start with that guardrail.
+- Decision: Require direct point objects for the two-circle lens endpoints in this prompt set.
+- Reason: Duplicate generic circle-circle `intersection` objects do not identify the requested upper/lower lens endpoints clearly enough for semantic validation.
+- Decision: Validate nested solids against the first outer solid's convex projection hull.
+- Reason: A simple x/y bounding box can accept inner vertices that are visually outside a slanted prism or pyramid projection.
+
+## Blockers
+
+- Blocker: A fresh external rerun was not performed in this continuation because `OPENAI_API_KEY` is not set in the current shell. The pasted key was not copied into commands, files, or reports.
+
+## Verification
+
+- Checks run:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --test tests\live-openai-random-smoke.test.js`
+  - `npm.cmd test`
+  - `git diff --check`
+- Result:
+  - Syntax check passed.
+  - Focused live-smoke tests passed with 26 tests.
+  - Full test suite passed with 72 tests.
+  - `git diff --check` passed with line-ending warnings only.
+  - Saved live OpenAI evidence for `stress_extra` remains under `tmp/live-openai-stress-extra-drawing-smoke/` and `tmp/live-openai-stress-extra-drawing-smoke-fixed/`.
+
+## Handoff
+
+- What changed:
+  - Added `LIVE_AI_PROMPT_SET=stress_extra` with 10 new complex function/geometry/solid prompts.
+  - Added prompt-local validators for direct lens endpoints and nested-solid containment.
+  - Tightened containment from axis-aligned bounds to a convex projection hull.
+  - Added the prompt/result audit at `docs/stress-extra-openai-drawing-audit.md`.
+  - Updated `docs/ai-reference.md` with dense prompt guidance.
+- What remains:
+  - Rerun `LIVE_AI_PROMPT_SET=stress_extra` with `OPENAI_API_KEY` supplied through the process environment to refresh the live report after the final validator tightening.
+
+---
+
+## Status
+
 - Task: Stress OpenAI drawing visual validation and label-overlap correction
 - State: Done
 - Last updated: 2026-05-27

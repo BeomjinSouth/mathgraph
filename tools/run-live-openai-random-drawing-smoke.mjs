@@ -183,10 +183,94 @@ const stressSmokePrompts = [
     }
 ];
 
+const stressExtraSmokePrompts = [
+    {
+        id: 'exp_log_two_curve_window',
+        title: 'Exponential and logarithm curves',
+        tags: 'graph function exponential logarithm intersection',
+        promptKo: '좌표평면에 exp(0.4*x)-1과 ln(x+5)-1 두 함수 그래프를 함께 그려줘. 두 그래프가 가까워지는 대표 지점 2개를 point로 표시하되, 함수 라벨은 showLabel:false로 숨기고 보이는 라벨은 A,B처럼 1글자 점 라벨 2개 이하만 남겨줘. expression에는 y=를 넣지 마.',
+        showAxes: true,
+        expect: { minTypes: { function: 2, point: 2 }, maxVisibleLabels: 2, maxLabelTextLength: 1 }
+    },
+    {
+        id: 'quartic_double_well_tangents',
+        title: 'Quartic double-well with tangents',
+        tags: 'graph function quartic tangent tangentFunction',
+        promptKo: '좌표평면에 0.2*x^4 - x^2 형태의 사차함수 그래프를 그리고 x=-1과 x=1에서의 접선을 tangentFunction 두 개로 표시해줘. 접점과 원점 근처 기준점만 point로 표시하고, 함수/접선 라벨은 showLabel:false로 숨겨줘. 보이는 라벨은 A,B,C처럼 1글자 3개 이하만 써줘.',
+        showAxes: true,
+        expect: { minTypes: { function: 1, tangentFunction: 2, point: 3 }, requiredTangentXs: [-1, 1], maxVisibleLabels: 3, maxLabelTextLength: 1 }
+    },
+    {
+        id: 'rational_slant_asymptote',
+        title: 'Rational function with vertical and slant asymptotes',
+        tags: 'graph function rational asymptote line',
+        promptKo: '좌표평면에 유리함수 (x^2 - 1)/(x - 2)를 그리고, 점선 수직점근선 x=2와 점선 사선점근선 y=x+2를 line 객체로 함께 표시해줘. 점근선을 만드는 보조점은 visible:false 또는 showLabel:false로 숨기고, 화면에 보이는 라벨은 점근선 이름 2개 이하만 남겨줘.',
+        showAxes: true,
+        expect: { minTypes: { function: 1, line: 2, point: 4 }, minDashedLines: 2, maxVisibleLabels: 2, maxLabelTextLength: 6 }
+    },
+    {
+        id: 'damped_wave_with_envelopes',
+        title: 'Damped wave with two envelope curves',
+        tags: 'graph function trigonometry rational envelope',
+        promptKo: '좌표평면에 sin(2*x)/(1+0.15*x^2)와 위쪽 포락선 1/(1+0.15*x^2), 아래쪽 포락선 -1/(1+0.15*x^2)를 동시에 그려줘. 함수 라벨은 모두 showLabel:false로 숨기고, 불필요한 point는 만들지 마.',
+        showAxes: true,
+        expect: { minTypes: { function: 3 }, maxVisibleLabels: 0 }
+    },
+    {
+        id: 'two_circle_lens_region',
+        title: 'Two-circle lens with chord markers',
+        tags: 'circle polygon segment lens plane',
+        promptKo: '중심 O(-2,0), P(2,0), 반지름 3인 두 원이 겹치는 렌즈 모양 도형을 그려줘. 두 원, 중심을 잇는 segment, 위쪽 교점 A(0,2.24), 아래쪽 교점 B(0,-2.24)를 intersection 객체가 아니라 직접 point로 만들고, 렌즈 부분은 A와 B 및 보조점들을 이용한 polygon으로 연하게 칠해줘. 원과 polygon 및 보조점 라벨은 showLabel:false로 숨기고 화면에는 O,P,A,B 네 점 라벨만 보이게 해줘.',
+        showAxes: false,
+        expect: { minTypes: { circle: 2, segment: 1, polygon: 1, point: 6 }, requireDirectLensPoints: true, maxVisibleLabels: 4, maxLabelTextLength: 1 }
+    },
+    {
+        id: 'hexagon_diagonal_angle_web',
+        title: 'Hexagon with diagonals and angle markers',
+        tags: 'plane polygon circle segment angle hexagon',
+        promptKo: '정육각형 ABCDEF를 원 위에 놓인 것처럼 그리고 polygon, 외접원, 긴 대각선 AD, BE, CF, 그리고 중심 O에서 보이는 각 표시 3개를 함께 만들어줘. 각 표시는 angleDimension으로 만들되 showValue:false로 하고, 외접원/대각선/각 라벨은 숨겨줘. 보이는 라벨은 A,B,C,D,E,F 여섯 점만 허용해줘.',
+        showAxes: false,
+        expect: { minTypes: { polygon: 1, circle: 1, segment: 3, angleDimension: 3, point: 7 }, maxVisibleLabels: 6, maxLabelTextLength: 1 }
+    },
+    {
+        id: 'two_transversals_angle_grid',
+        title: 'Parallel lines cut by two transversals',
+        tags: 'plane line parallel angle construction',
+        promptKo: '서로 평행한 두 직선 l,m을 그리고 서로 다른 기울기의 횡단선 t,u 두 개가 둘 다 l,m을 가로지르게 해줘. 네 교점 근처에 angleDimension 4개를 배치하되 showValue:false로 하고, 모든 point/line/angleDimension 라벨은 showLabel:false 또는 showValue:false로 숨겨서 라벨이 보이지 않게 해줘.',
+        showAxes: false,
+        expect: { minTypes: { line: 4, point: 8, angleDimension: 4 }, maxVisibleLabels: 0 }
+    },
+    {
+        id: 'box_with_pyramid_and_inner_prism',
+        title: 'Box containing a pyramid and smaller prism',
+        tags: 'solid prism pyramid nested rectangular',
+        promptKo: '큰 직육면체 prism 안에 작은 사각뿔 pyramid와 더 작은 직육면체 prism이 함께 들어 있는 모습을 그려줘. 모든 입체는 first-class prism/pyramid 객체로 만들고, 손그림 segment 묶음으로 대체하지 마. 안쪽 pyramid와 작은 prism의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 해줘. 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨줘.',
+        showAxes: false,
+        expect: { minTypes: { prism: 2, pyramid: 1, point: 17 }, innerWithinFirstPrism: true, maxVisibleLabels: 0 }
+    },
+    {
+        id: 'double_pyramid_inside_box',
+        title: 'Two pyramids inside a transparent box',
+        tags: 'solid prism pyramid nested double',
+        promptKo: '투명한 직육면체 prism 안에 사각뿔 두 개가 위아래로 마주 보는 모양을 그려줘. 바깥 상자는 prism, 안쪽 두 입체는 각각 pyramid 객체로 만들고, 두 pyramid의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 해줘. 모든 꼭짓점은 point로 만들되 라벨은 모두 showLabel:false로 숨겨줘.',
+        showAxes: false,
+        expect: { minTypes: { prism: 1, pyramid: 2, point: 14 }, innerWithinFirstPrism: true, maxVisibleLabels: 0 }
+    },
+    {
+        id: 'triangular_prism_inside_square_pyramid',
+        title: 'Triangular prism inside a square pyramid',
+        tags: 'solid prism pyramid nested triangular square',
+        promptKo: '큰 사각뿔 pyramid 내부에 작은 삼각기둥 prism이 들어 있는 복합 입체를 그려줘. 사각뿔과 삼각기둥은 first-class pyramid/prism 객체를 사용하고, 작은 삼각기둥의 모든 꼭짓점은 화면상 큰 사각뿔의 투영 영역 안에 놓이게 해줘. 숨은선 처리는 런타임에 맡기고, 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨줘.',
+        showAxes: false,
+        expect: { minTypes: { pyramid: 1, prism: 1, point: 11 }, innerWithinFirstPyramid: true, maxVisibleLabels: 0 }
+    }
+];
+
 const promptSets = {
     default: smokePrompts,
     extended: extendedSmokePrompts,
-    stress: stressSmokePrompts
+    stress: stressSmokePrompts,
+    stress_extra: stressExtraSmokePrompts
 };
 
 const mimeTypes = new Map([
@@ -569,6 +653,139 @@ function validatePromptExpectations(ctx, prompt, errors) {
             errors.push(`${prompt.id}: expected a visible sector span of at least ${formatNumber(expectations.minSectorSpan)} radians; collapsed or tiny sector(s): ${ids}.`);
         }
     }
+
+    if (expectations.requireDirectLensPoints) {
+        validateDirectTwoCircleLensPoints(ctx, prompt, errors);
+    }
+
+    if (expectations.innerWithinFirstPrism) {
+        validateInnerPointsWithinFirstSolid(ctx, prompt, 'prism', errors);
+    }
+
+    if (expectations.innerWithinFirstPyramid) {
+        validateInnerPointsWithinFirstSolid(ctx, prompt, 'pyramid', errors);
+    }
+}
+
+function validateDirectTwoCircleLensPoints(ctx, prompt, errors) {
+    const pointAId = findNamedPointId(ctx, 'A');
+    const pointBId = findNamedPointId(ctx, 'B');
+    const pointA = pointAId ? ctx.byId.get(pointAId) : null;
+    const pointB = pointBId ? ctx.byId.get(pointBId) : null;
+
+    if (!pointA || !pointB) {
+        errors.push(`${prompt.id}: expected directly created lens intersection points labeled A and B.`);
+        return;
+    }
+
+    if (pointA.type !== 'point' || pointB.type !== 'point') {
+        errors.push(`${prompt.id}: lens points A and B must be direct point objects, not duplicate circle-circle intersection objects.`);
+        return;
+    }
+
+    const a = resolvePoint(ctx, pointA.id, new Set());
+    const b = resolvePoint(ctx, pointB.id, new Set());
+    if (!a || !b || distance(a, b) < 1 || a.y * b.y >= 0) {
+        errors.push(`${prompt.id}: lens points A and B should be distinct upper/lower points on opposite sides of the center segment.`);
+    }
+
+    const lensPolygon = ctx.byType('polygon').find(polygon =>
+        Array.isArray(polygon.vertexIds) &&
+        polygon.vertexIds.includes(pointA.id) &&
+        polygon.vertexIds.includes(pointB.id)
+    );
+    if (!lensPolygon) {
+        errors.push(`${prompt.id}: expected a lens polygon that uses both A and B as vertices.`);
+    }
+}
+
+function validateInnerPointsWithinFirstSolid(ctx, prompt, solidType, errors) {
+    const outer = ctx.byType(solidType)[0];
+    if (!outer) return;
+
+    const outerVertexIds = new Set(solidType === 'prism'
+        ? [...(outer.baseVertexIds || []), ...(outer.topVertexIds || [])]
+        : [outer.apexId, ...(outer.baseVertexIds || [])].filter(Boolean));
+    const outerPoints = [...outerVertexIds]
+        .map(id => resolvePoint(ctx, id, new Set()))
+        .filter(Boolean);
+    if (outerPoints.length < 3) return;
+
+    const hull = convexHull(outerPoints);
+    const bounds = pointBounds(outerPoints);
+    const margin = 0.25;
+    const offenders = ctx.byType('point')
+        .filter(point => !outerVertexIds.has(point.id))
+        .filter(point => {
+            const outsideBounds = point.x < bounds.minX - margin ||
+                point.x > bounds.maxX + margin ||
+                point.y < bounds.minY - margin ||
+                point.y > bounds.maxY + margin;
+            if (outsideBounds) return true;
+            return hull.length >= 3 && !pointInsideConvexHull(point, hull, margin);
+        });
+
+    if (offenders.length > 0) {
+        const ids = offenders.slice(0, 6).map(point => point.id || '(no id)').join(', ');
+        errors.push(`${prompt.id}: inner solid point(s) must stay inside the first ${solidType} projection bounds; outside point(s): ${ids}.`);
+    }
+}
+
+function pointBounds(points) {
+    return {
+        minX: Math.min(...points.map(point => point.x)),
+        maxX: Math.max(...points.map(point => point.x)),
+        minY: Math.min(...points.map(point => point.y)),
+        maxY: Math.max(...points.map(point => point.y))
+    };
+}
+
+function convexHull(points) {
+    const unique = [];
+    const seen = new Set();
+    for (const point of points) {
+        const key = `${point.x.toFixed(6)},${point.y.toFixed(6)}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(point);
+        }
+    }
+    if (unique.length <= 2) return unique;
+
+    const sorted = [...unique].sort((a, b) => a.x - b.x || a.y - b.y);
+    const lower = [];
+    for (const point of sorted) {
+        while (lower.length >= 2 && orientation(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) {
+            lower.pop();
+        }
+        lower.push(point);
+    }
+
+    const upper = [];
+    for (let i = sorted.length - 1; i >= 0; i--) {
+        const point = sorted[i];
+        while (upper.length >= 2 && orientation(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) {
+            upper.pop();
+        }
+        upper.push(point);
+    }
+
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
+}
+
+function pointInsideConvexHull(point, hull, margin) {
+    for (let i = 0; i < hull.length; i++) {
+        const a = hull[i];
+        const b = hull[(i + 1) % hull.length];
+        const edgeLength = Math.max(distance(a, b), 1e-9);
+        const signedDistance = orientation(a, b, point) / edgeLength;
+        if (signedDistance < -margin) return false;
+    }
+    return true;
+}
+
+function orientation(a, b, point) {
+    return (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x);
 }
 
 function validateTriangleIncircleContacts(ctx, errors) {

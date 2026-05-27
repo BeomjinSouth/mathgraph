@@ -1,5 +1,52 @@
 # Progress Log
 
+## 2026-05-28
+
+### Additional stress OpenAI drawing audit and containment validation
+
+#### Work completed
+
+- Added a `stress_extra` prompt set to `tools/run-live-openai-random-drawing-smoke.mjs` with 10 additional complex drawing cases:
+  - exponential/log function window,
+  - quartic double-well graph with two tangents,
+  - rational graph with vertical and slant asymptotes,
+  - damped wave with envelope curves,
+  - two-circle lens region,
+  - hexagon diagonal/angle web,
+  - two parallel lines cut by two transversals,
+  - prism containing a pyramid and smaller prism,
+  - double pyramid inside a prism,
+  - triangular prism inside a square pyramid.
+- Audited the saved live prompt/result evidence and added `docs/stress-extra-openai-drawing-audit.md`.
+- Added prompt-local smoke validators for:
+  - direct upper/lower lens endpoint points instead of duplicate generic circle-circle intersections,
+  - inner solid vertices staying inside the first outer prism/pyramid projection.
+- Strengthened nested-solid containment from axis-aligned bounds to a convex-hull projection check.
+- Updated `docs/ai-reference.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Findings
+
+- Schema/reference/render success was still too weak for branch-specific geometry and nested-solid intent.
+- The two-circle lens case needs either direct endpoint points or a future first-class circle-circle intersection branch selector.
+- Nested solids should be checked as 2D projection diagrams; a bounding box is too permissive for slanted prisms and pyramids.
+- The hexagon case showed that validators can be over-strict when they demand explicit segment edges that are already owned by a first-class `polygon`.
+- Dense drawings still require explicit label budgets and `showLabel:false` for helper objects.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 26 tests.
+- Ran `npm.cmd test`; passed with 72 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- A fresh external OpenAI rerun was not performed in this continuation because `OPENAI_API_KEY` is not set in the current shell. The pasted key was not copied into commands, files, or reports.
+- Existing saved live evidence remains under:
+  - `tmp/live-openai-stress-extra-drawing-smoke/`
+  - `tmp/live-openai-stress-extra-drawing-smoke-fixed/`
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-27
 
 ### Stress visual validation and label-overlap correction

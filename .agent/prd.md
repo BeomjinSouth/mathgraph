@@ -2,6 +2,53 @@
 
 ## Summary
 
+- Task: Additional stress OpenAI drawing set with prompt/result audit
+- Owner: Codex
+- Date: 2026-05-28
+- Related files:
+  - `tools/run-live-openai-random-drawing-smoke.mjs`
+  - `tests/live-openai-random-smoke.test.js`
+  - `docs/stress-extra-openai-drawing-audit.md`
+  - `docs/ai-reference.md`
+
+## Problem
+
+- The previous stress set proved that complex graphs and nested solids can render, but it mostly covered one batch of prompts.
+- The next quality risk is broader prompt diversity: exponential/log graphs, quartic tangents, lens regions, angle webs, and multiple nested-solid compositions.
+- Some saved live outputs were valid and visible but still semantically fragile: duplicate circle-intersection lens points, inner solid vertices outside the outer solid projection, and over-strict segment expectations for polygon boundaries.
+
+## Goals
+
+- Add a second 10-prompt live smoke set named `stress_extra`.
+- Compare saved live OpenAI results with their prompts and record root causes in a durable audit note.
+- Add prompt-local semantic gates for the newly observed failure modes.
+- Improve nested-solid containment checking from a bounding box to a projection hull.
+- Document additional prompt context needed for dense graphs, lens regions, and nested solids.
+
+## Non-Goals
+
+- Do not add new runtime drawing primitives in this pass.
+- Do not store API keys in files, reports, or shell commands.
+- Do not replace the existing direct GraphA text-command path with scene graph mode in this pass.
+
+## Acceptance Criteria
+
+- [x] `stress_extra` contains 10 additional prompts across functions, plane geometry, and nested solids.
+- [x] Prompt/result comparison and root-cause analysis are documented.
+- [x] Direct lens-point and nested-solid containment regressions are covered by tests.
+- [x] Nested-solid containment uses the outer solid projection hull rather than only an axis-aligned bounding box.
+- [x] Focused smoke tests and the full test suite pass.
+
+## Risks and Open Questions
+
+- A fresh external OpenAI rerun still requires `OPENAI_API_KEY` in the process environment. The pasted key was not injected into command history or repo files.
+- Curved lens fills and function-bounded regions remain polygon approximations until a first-class curved-fill primitive exists.
+- True 3D containment is still represented as a 2D screen-projection quality gate.
+
+---
+
+## Summary
+
 - Task: Scene graph based image/PDF reconstruction foundation
 - Owner: Codex
 - Date: 2026-05-25

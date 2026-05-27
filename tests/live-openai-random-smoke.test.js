@@ -396,6 +396,81 @@ test('prompt-local smoke expectations reject missing tangent x values and dashed
     assert.match(errors.join('\n'), /dashed line/);
 });
 
+test('prompt-local smoke expectations reject duplicate circle-intersection lens points', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: -2, y: 0, label: 'O' },
+            { op: 'create', id: 'P', type: 'point', x: 2, y: 0, label: 'P' },
+            { op: 'create', id: 'R1', type: 'point', x: -2, y: 3, showLabel: false },
+            { op: 'create', id: 'R2', type: 'point', x: 2, y: 3, showLabel: false },
+            { op: 'create', id: 'c1', type: 'circle', centerId: 'O', pointOnCircleId: 'R1', showLabel: false },
+            { op: 'create', id: 'c2', type: 'circle', centerId: 'P', pointOnCircleId: 'R2', showLabel: false },
+            { op: 'create', id: 'A', type: 'intersection', object1Id: 'c1', object2Id: 'c2', label: 'A' },
+            { op: 'create', id: 'B', type: 'intersection', object1Id: 'c1', object2Id: 'c2', label: 'B' },
+            { op: 'create', id: 'lens', type: 'polygon', vertexIds: ['A', 'R1', 'R2', 'B'], showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'two_circle_lens_region',
+        expect: { requireDirectLensPoints: true }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /must be direct point objects/);
+});
+
+test('prompt-local smoke expectations reject inner solid points outside the outer prism', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -2, y: -1, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: 2, y: -1, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: 2, y: 1, showLabel: false },
+            { op: 'create', id: 'D', type: 'point', x: -2, y: 1, showLabel: false },
+            { op: 'create', id: 'Ap', type: 'point', x: -1, y: 0, showLabel: false },
+            { op: 'create', id: 'Bp', type: 'point', x: 3, y: 0, showLabel: false },
+            { op: 'create', id: 'Cp', type: 'point', x: 3, y: 2, showLabel: false },
+            { op: 'create', id: 'Dp', type: 'point', x: -1, y: 2, showLabel: false },
+            { op: 'create', id: 'outer', type: 'prism', baseVertexIds: ['A', 'B', 'C', 'D'], topVertexIds: ['Ap', 'Bp', 'Cp', 'Dp'], showLabel: false },
+            { op: 'create', id: 'inner1', type: 'point', x: 4, y: 0, showLabel: false },
+            { op: 'create', id: 'inner2', type: 'point', x: 4.5, y: 0, showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'nested_bounds_sample',
+        expect: { innerWithinFirstPrism: true }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /inside the first prism projection bounds/);
+});
+
+test('prompt-local smoke expectations reject inner solid points outside a slanted prism projection hull', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: 4, y: 0, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: 4, y: 1, showLabel: false },
+            { op: 'create', id: 'D', type: 'point', x: 0, y: 1, showLabel: false },
+            { op: 'create', id: 'Ap', type: 'point', x: 1, y: 1, showLabel: false },
+            { op: 'create', id: 'Bp', type: 'point', x: 5, y: 1, showLabel: false },
+            { op: 'create', id: 'Cp', type: 'point', x: 5, y: 2, showLabel: false },
+            { op: 'create', id: 'Dp', type: 'point', x: 1, y: 2, showLabel: false },
+            { op: 'create', id: 'outer', type: 'prism', baseVertexIds: ['A', 'B', 'C', 'D'], topVertexIds: ['Ap', 'Bp', 'Cp', 'Dp'], showLabel: false },
+            { op: 'create', id: 'inner_near_corner', type: 'point', x: 0.2, y: 1.8, showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'nested_hull_sample',
+        expect: { innerWithinFirstPrism: true }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /inside the first prism projection bounds/);
+});
+
 test('smoke semantics rejects pixel-style point coordinates outside the default view', () => {
     const payload = {
         operations: [

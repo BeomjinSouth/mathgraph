@@ -4,6 +4,40 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The new stress prompts must stay inside the current GraphA `operations[]` contract and use the existing object families accurately.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The live drawing path uses OpenAI Responses API structured output and app-owned validation.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The saved evidence is only useful when the GraphA payload also renders correctly in the real canvas.
+
+## Current Task Notes
+
+- Added a second 10-case `stress_extra` prompt set covering:
+  - exponential/log graphs,
+  - quartic tangents,
+  - rational asymptotes,
+  - damped waves with envelopes,
+  - two-circle lens regions,
+  - hexagon angle/diagonal webs,
+  - parallel-line/transversal angle grids,
+  - nested prism/pyramid compositions.
+- Root failures from saved runs:
+  - two-circle lens prompts need direct upper/lower endpoint points when exact branches matter;
+  - nested solid prompts need projection containment, not only object-family presence;
+  - polygon boundaries should not be double-counted as required explicit edge segments;
+  - dense prompts still need visible-label budgets.
+- Current improvement:
+  - `stress_extra` prompt-local expectations now include direct lens endpoints and nested-solid hull containment.
+  - Future live reruns should supply `OPENAI_API_KEY` through the process environment, not by pasting the key into command text or repository files.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The root fix needs the project-local GraphA manual to constrain which scene graph nodes can become real runtime objects.
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:

@@ -491,6 +491,16 @@ Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared st
 }
 ```
 
+### 6.13 Dense Prompt Guidance
+
+For complex live OpenAI drawing prompts, include the following context when it matches the request:
+
+- Function expressions must be right-hand-side only, with no `y=`.
+- Hide helper labels with `showLabel:false`; dense graph families and nested solids should use a small explicit visible-label budget.
+- For two-circle lens regions, use direct upper/lower point objects when A and B must be distinct visible lens endpoints. Do not rely on duplicate generic `intersection` objects unless the branch is unimportant.
+- For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. Put every inner-solid vertex inside the outer solid's screen-projection region.
+- For polygon-owned boundaries, do not require duplicate segment edges unless the user explicitly asks for separate selectable edge segments.
+
 ## 7. Example Payloads
 
 ### 7.1 Triangle Construction
