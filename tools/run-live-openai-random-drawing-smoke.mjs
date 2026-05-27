@@ -204,7 +204,7 @@ const stressExtraSmokePrompts = [
         id: 'quartic_double_well_tangents',
         title: 'Quartic double-well with tangents',
         tags: 'graph function quartic tangent tangentFunction',
-        promptKo: '좌표평면에 0.2*x^4 - x^2 형태의 사차함수 그래프를 그리고 x=-1과 x=1에서의 접선을 tangentFunction 두 개로 표시해줘. 접점과 원점 근처 기준점만 point로 표시하고, 함수/접선 라벨은 showLabel:false로 숨겨줘. 보이는 라벨은 A,B,C처럼 1글자 3개 이하만 써줘.',
+        promptKo: '좌표평면에 0.2*x^4 - x^2 형태의 사차함수 그래프를 그리고 x=-1과 x=1에서의 접선을 tangentFunction 두 개로 표시해줘. tangentFunction 객체에는 functionId와 숫자 필드 x를 반드시 넣어야 하며, 첫 접선은 "x":-1, 둘째 접선은 "x":1이어야 해. 접점과 원점 근처 기준점만 point로 표시하고, 함수/접선 라벨은 showLabel:false로 숨겨줘. 보이는 라벨은 A,B,C처럼 1글자 3개 이하만 써줘.',
         showAxes: true,
         expect: { minTypes: { function: 1, tangentFunction: 2, point: 3 }, requiredTangentXs: [-1, 1], maxVisibleLabels: 3, maxLabelTextLength: 1 }
     },
@@ -212,9 +212,18 @@ const stressExtraSmokePrompts = [
         id: 'rational_slant_asymptote',
         title: 'Rational function with vertical and slant asymptotes',
         tags: 'graph function rational asymptote line',
-        promptKo: '좌표평면에 유리함수 (x^2 - 1)/(x - 2)를 그리고, 점선 수직점근선 x=2와 점선 사선점근선 y=x+2를 line 객체로 함께 표시해줘. 점근선을 만드는 보조점은 visible:false 또는 showLabel:false로 숨기고, 화면에 보이는 라벨은 점근선 이름 2개 이하만 남겨줘.',
+        promptKo: '좌표평면에 유리함수 (x^2 - 1)/(x - 2)를 그리고, 점선 수직점근선 x=2와 점선 사선점근선 y=x+2를 line 객체로 함께 표시해줘. 수직점근선은 숨긴 두 점 (2,-6), (2,6)을 잇는 line이어야 하고, 사선점근선은 숨긴 두 점 (-4,-2), (4,6)을 잇는 line이어야 해. 두 점근선은 모두 dashed:true이고, 점근선을 만드는 보조점은 visible:false 또는 showLabel:false로 숨겨줘. 화면에 보이는 라벨은 점근선 이름 2개 이하만 남겨줘.',
         showAxes: true,
-        expect: { minTypes: { function: 1, line: 2, point: 4 }, minDashedLines: 2, maxVisibleLabels: 2, maxLabelTextLength: 6 }
+        expect: {
+            minTypes: { function: 1, line: 2, point: 4 },
+            minDashedLines: 2,
+            requiredLinePatterns: [
+                { kind: 'vertical', x: 2, dashed: true },
+                { kind: 'slopeIntercept', slope: 1, intercept: 2, dashed: true }
+            ],
+            maxVisibleLabels: 2,
+            maxLabelTextLength: 6
+        }
     },
     {
         id: 'damped_wave_with_envelopes',
@@ -228,7 +237,7 @@ const stressExtraSmokePrompts = [
         id: 'two_circle_lens_region',
         title: 'Two-circle lens with chord markers',
         tags: 'circle polygon segment lens plane',
-        promptKo: '중심 O(-2,0), P(2,0), 반지름 3인 두 원이 겹치는 렌즈 모양 도형을 그려줘. 첫 번째 원은 centerId O와 반지름점 (1,0), 두 번째 원은 centerId P와 반지름점 (5,0)을 써서 두 원의 반지름이 모두 정확히 3이 되게 해줘. 중심을 잇는 segment, 위쪽 교점 A(0,2.24), 아래쪽 교점 B(0,-2.24)를 intersection 객체가 아니라 직접 point로 만들고, 렌즈 부분은 A와 B 및 보조점들을 이용한 polygon으로 연하게 칠해줘. polygon을 만들기 위한 보조점과 반지름 보조점은 visible:false로 숨겨 화면에 점으로 찍히지 않게 하고, 화면에는 O,P,A,B 네 점만 보이게 해줘.',
+        promptKo: '중심 O(-2,0), P(2,0), 반지름 3인 두 원이 겹치는 렌즈 모양 도형을 그려줘. 첫 번째 원은 centerId O와 반지름점 (1,0), 두 번째 원은 centerId P와 반지름점 (5,0)을 써서 두 원의 반지름이 모두 정확히 3이 되게 해줘. 중심을 잇는 segment, 위쪽 교점 A(0,2.24), 아래쪽 교점 B(0,-2.24)를 intersection 객체가 아니라 직접 point로 만들어줘. 렌즈 채움 polygon은 자기교차가 없어야 하며 꼭짓점 순서를 A -> (0.60,1.50) -> (1,0) -> (0.60,-1.50) -> B -> (-0.60,-1.50) -> (-1,0) -> (-0.60,1.50) -> A처럼 렌즈 경계를 한 바퀴 도는 순서로 둬. polygon을 만들기 위한 보조점과 반지름 보조점은 visible:false로 숨겨 화면에 점으로 찍히지 않게 하고, 화면에는 O,P,A,B 네 점만 보이게 해줘.',
         showAxes: false,
         expect: {
             minTypes: { circle: 2, segment: 1, polygon: 1, point: 6 },
@@ -240,6 +249,8 @@ const stressExtraSmokePrompts = [
             ],
             requireDirectLensPoints: true,
             lensCircleRadius: 3,
+            requireSimpleLensPolygon: true,
+            lensPolygonBounds: { xMin: -1.05, xMax: 1.05, yMin: -2.38, yMax: 2.38 },
             maxVisiblePointCount: 4,
             maxVisibleLabels: 4,
             maxLabelTextLength: 1
@@ -265,25 +276,25 @@ const stressExtraSmokePrompts = [
         id: 'box_with_pyramid_and_inner_prism',
         title: 'Box containing a pyramid and smaller prism',
         tags: 'solid prism pyramid nested rectangular',
-        promptKo: '큰 직육면체 prism 안에 작은 사각뿔 pyramid와 더 작은 직육면체 prism이 함께 들어 있는 모습을 그려줘. 모든 입체는 first-class prism/pyramid 객체로 만들고, 손그림 segment 묶음으로 대체하지 마. 안쪽 pyramid와 작은 prism의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 하고, 두 내부 입체는 서로 겹쳐 보이지 않도록 화면상 중심이 충분히 떨어지게 배치해줘. 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨줘.',
+        promptKo: '큰 직육면체 prism 안에 작은 사각뿔 pyramid와 더 작은 직육면체 prism이 함께 들어 있는 모습을 그려줘. 모든 입체는 first-class prism/pyramid 객체로 만들고, 손그림 segment 묶음으로 대체하지 마. prism의 topVertexIds는 baseVertexIds와 같은 순서의 평행 이동 복사본이어야 해서 대응 모서리가 뒤틀리거나 교차하면 안 돼. 안쪽 pyramid와 작은 prism의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 하고, 두 내부 입체는 서로 겹쳐 보이지 않도록 화면상 중심이 충분히 떨어지게 배치해줘. 모든 꼭짓점 point는 visible:false 및 showLabel:false로 숨기고, prism/pyramid 라벨도 showLabel:false로 숨겨줘.',
         showAxes: false,
-        expect: { minTypes: { prism: 2, pyramid: 1, point: 17 }, innerWithinFirstPrism: true, innerSolidMinCenterDistance: 1.5, validPyramidApexes: true, maxVisibleLabels: 0 }
+        expect: { minTypes: { prism: 2, pyramid: 1, point: 17 }, innerWithinFirstPrism: true, innerSolidMinCenterDistance: 1.5, validPrismProjections: true, requiredPyramidBaseVertexCounts: [{ count: 4, min: 1 }], validPyramidApexes: true, maxVisiblePointCount: 0, maxVisibleLabels: 0 }
     },
     {
         id: 'double_pyramid_inside_box',
         title: 'Two pyramids inside a transparent box',
         tags: 'solid prism pyramid nested double',
-        promptKo: '투명한 직육면체 prism 안에 사각뿔 두 개가 위아래로 마주 보는 모양을 그려줘. 바깥 상자는 prism, 안쪽 두 입체는 각각 pyramid 객체로 만들고, 각 pyramid의 apexId는 baseVertexIds에 포함되면 안 된다. 두 pyramid의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 해줘. 모든 꼭짓점은 point로 만들되 라벨은 모두 showLabel:false로 숨겨줘.',
+        promptKo: '투명한 직육면체 prism 안에 사각뿔 두 개가 위아래로 마주 보는 모양을 그려줘. 바깥 상자는 prism, 안쪽 두 입체는 각각 pyramid 객체로 만들고, 두 pyramid 모두 baseVertexIds가 4개인 사각뿔이어야 해. prism의 topVertexIds는 baseVertexIds와 같은 순서의 평행 이동 복사본이어야 해. 각 pyramid의 apexId는 baseVertexIds에 포함되면 안 된다. 두 pyramid의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 해줘. 모든 꼭짓점 point는 visible:false 및 showLabel:false로 숨겨줘.',
         showAxes: false,
-        expect: { minTypes: { prism: 1, pyramid: 2, point: 14 }, innerWithinFirstPrism: true, validPyramidApexes: true, maxVisibleLabels: 0 }
+        expect: { minTypes: { prism: 1, pyramid: 2, point: 14 }, innerWithinFirstPrism: true, validPrismProjections: true, requiredPyramidBaseVertexCounts: [{ count: 4, min: 2 }], validPyramidApexes: true, maxVisiblePointCount: 0, maxVisibleLabels: 0 }
     },
     {
         id: 'triangular_prism_inside_square_pyramid',
         title: 'Triangular prism inside a square pyramid',
         tags: 'solid prism pyramid nested triangular square',
-        promptKo: '큰 사각뿔 pyramid 내부에 작은 삼각기둥 prism이 들어 있는 복합 입체를 그려줘. 사각뿔과 삼각기둥은 first-class pyramid/prism 객체를 사용하고, 작은 삼각기둥 prism은 baseVertexIds 3개와 topVertexIds 3개만 갖는 진짜 삼각기둥이어야 해. 작은 삼각기둥의 모든 꼭짓점은 화면상 큰 사각뿔의 투영 영역 안에 놓이게 해줘. 숨은선 처리는 런타임에 맡기고, 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨줘.',
+        promptKo: '큰 사각뿔 pyramid 내부에 작은 삼각기둥 prism이 들어 있는 복합 입체를 그려줘. 사각뿔과 삼각기둥은 first-class pyramid/prism 객체를 사용하고, 작은 삼각기둥 prism은 baseVertexIds 3개와 topVertexIds 3개만 갖는 진짜 삼각기둥이어야 해. prism의 topVertexIds는 baseVertexIds와 같은 순서의 평행 이동 복사본이어야 해서 대응 모서리가 뒤틀리면 안 돼. 작은 삼각기둥의 모든 꼭짓점은 화면상 큰 사각뿔의 투영 영역 안에 놓이게 해줘. 숨은선 처리는 런타임에 맡기고, 모든 꼭짓점 point는 visible:false 및 showLabel:false로 숨기며 prism/pyramid 라벨도 showLabel:false로 숨겨줘.',
         showAxes: false,
-        expect: { minTypes: { pyramid: 1, prism: 1, point: 11 }, innerWithinFirstPyramid: true, requiredPrismVertexCounts: [3], validPyramidApexes: true, maxVisibleLabels: 0 }
+        expect: { minTypes: { pyramid: 1, prism: 1, point: 11 }, innerWithinFirstPyramid: true, requiredPrismVertexCounts: [3], validPrismProjections: true, requiredPyramidBaseVertexCounts: [{ count: 4, min: 1 }], validPyramidApexes: true, maxVisiblePointCount: 0, maxVisibleLabels: 0 }
     }
 ];
 
@@ -732,6 +743,10 @@ function validatePromptExpectations(ctx, prompt, errors) {
         }
     }
 
+    if (Array.isArray(expectations.requiredLinePatterns)) {
+        validateRequiredLinePatterns(ctx, prompt, expectations.requiredLinePatterns, errors);
+    }
+
     if (Array.isArray(expectations.requiredTangentXs)) {
         const tangentXs = ctx.byType('tangentFunction')
             .map(tangent => Number(tangent.x))
@@ -758,6 +773,14 @@ function validatePromptExpectations(ctx, prompt, errors) {
 
     if (Number.isFinite(expectations.lensCircleRadius)) {
         validateLensCircleGeometry(ctx, prompt, expectations.lensCircleRadius, errors);
+    }
+
+    if (expectations.requireSimpleLensPolygon) {
+        validateSimpleLensPolygon(ctx, prompt, errors);
+    }
+
+    if (expectations.lensPolygonBounds) {
+        validateLensPolygonBounds(ctx, prompt, expectations.lensPolygonBounds, errors);
     }
 
     if (expectations.requireRenderableAngles) {
@@ -789,6 +812,14 @@ function validatePromptExpectations(ctx, prompt, errors) {
 
     if (Array.isArray(expectations.requiredPrismVertexCounts)) {
         validateRequiredPrismVertexCounts(ctx, prompt, expectations.requiredPrismVertexCounts, errors);
+    }
+
+    if (expectations.validPrismProjections) {
+        validatePrismProjections(ctx, prompt, errors);
+    }
+
+    if (Array.isArray(expectations.requiredPyramidBaseVertexCounts)) {
+        validateRequiredPyramidBaseVertexCounts(ctx, prompt, expectations.requiredPyramidBaseVertexCounts, errors);
     }
 
     if (expectations.validPyramidApexes) {
@@ -869,6 +900,93 @@ function validateLensCircleGeometry(ctx, prompt, expectedRadius, errors) {
     if (radii.every(Number.isFinite) && Math.abs(radii[0] - radii[1]) > 0.12) {
         errors.push(`${prompt.id}: lens circles must have equal radii; actual radii were ${formatNumber(radii[0])} and ${formatNumber(radii[1])}.`);
     }
+}
+
+function validateSimpleLensPolygon(ctx, prompt, errors) {
+    const pointAId = findNamedPointId(ctx, 'A');
+    const pointBId = findNamedPointId(ctx, 'B');
+    const lensPolygon = ctx.byType('polygon').find(polygon =>
+        Array.isArray(polygon.vertexIds) &&
+        polygon.vertexIds.includes(pointAId) &&
+        polygon.vertexIds.includes(pointBId)
+    );
+    if (!lensPolygon) return;
+
+    const vertices = lensPolygon.vertexIds.map(id => resolvePoint(ctx, id, new Set()));
+    if (vertices.some(point => !point)) {
+        errors.push(`${prompt.id}: lens polygon vertices must resolve to points before visual parity can be checked.`);
+        return;
+    }
+
+    if (polygonHasSelfIntersection(vertices)) {
+        errors.push(`${prompt.id}: lens polygon vertex order self-intersects; order vertices around the lens boundary instead of crossing between arcs.`);
+    }
+}
+
+function validateLensPolygonBounds(ctx, prompt, bounds, errors) {
+    const pointAId = findNamedPointId(ctx, 'A');
+    const pointBId = findNamedPointId(ctx, 'B');
+    const lensPolygon = ctx.byType('polygon').find(polygon =>
+        Array.isArray(polygon.vertexIds) &&
+        polygon.vertexIds.includes(pointAId) &&
+        polygon.vertexIds.includes(pointBId)
+    );
+    if (!lensPolygon) return;
+
+    const offenders = lensPolygon.vertexIds
+        .map(id => ({ id, point: resolvePoint(ctx, id, new Set()) }))
+        .filter(item => item.point)
+        .filter(({ point }) => point.x < bounds.xMin || point.x > bounds.xMax ||
+            point.y < bounds.yMin || point.y > bounds.yMax);
+    if (offenders.length > 0) {
+        const ids = offenders.slice(0, 6)
+            .map(({ id, point }) => `${id || '(no id)'}(${formatNumber(point.x)},${formatNumber(point.y)})`)
+            .join(', ');
+        errors.push(`${prompt.id}: lens polygon helper vertices must stay within the requested lens bounds; outside vertex/vertices: ${ids}.`);
+    }
+}
+
+function validateRequiredLinePatterns(ctx, prompt, patterns, errors) {
+    const lines = ctx.byType('line');
+    for (const pattern of patterns) {
+        const match = lines.find(line => lineMatchesPattern(ctx, line, pattern));
+        if (!match) {
+            errors.push(`${prompt.id}: expected a ${describeLinePattern(pattern)} line, but no matching line object was found.`);
+        }
+    }
+}
+
+function lineMatchesPattern(ctx, line, pattern) {
+    if (pattern.dashed === true && line.dashed !== true) return false;
+    const endpoints = linearEndpoints(ctx, line, new Set());
+    if (!endpoints) return false;
+    const [a, b] = endpoints;
+    if (distance(a, b) < 0.2) return false;
+
+    if (pattern.kind === 'vertical') {
+        return Math.abs(a.x - pattern.x) <= 0.08 && Math.abs(b.x - pattern.x) <= 0.08;
+    }
+
+    if (pattern.kind === 'slopeIntercept') {
+        const dx = b.x - a.x;
+        if (Math.abs(dx) < 0.08) return false;
+        const slope = (b.y - a.y) / dx;
+        const interceptA = a.y - slope * a.x;
+        const interceptB = b.y - slope * b.x;
+        const intercept = (interceptA + interceptB) / 2;
+        return Math.abs(slope - pattern.slope) <= 0.08 &&
+            Math.abs(intercept - pattern.intercept) <= 0.15;
+    }
+
+    return false;
+}
+
+function describeLinePattern(pattern) {
+    if (pattern.kind === 'vertical') return `vertical x=${formatNumber(pattern.x)}${pattern.dashed ? ' dashed' : ''}`;
+    if (pattern.kind === 'slopeIntercept') {
+        return `slope ${formatNumber(pattern.slope)}, intercept ${formatNumber(pattern.intercept)}${pattern.dashed ? ' dashed' : ''}`;
+    }
+    return pattern.kind || 'unknown-pattern';
 }
 
 function validateRenderableAngles(ctx, prompt, errors) {
@@ -972,6 +1090,45 @@ function validateRequiredPrismVertexCounts(ctx, prompt, requiredCounts, errors) 
     }
 }
 
+function validatePrismProjections(ctx, prompt, errors) {
+    const badPrisms = ctx.byType('prism').filter(prism => {
+        const baseIds = Array.isArray(prism.baseVertexIds) ? prism.baseVertexIds : [];
+        const topIds = Array.isArray(prism.topVertexIds) ? prism.topVertexIds : [];
+        if (baseIds.length < 3 || baseIds.length !== topIds.length) return true;
+        const basePoints = baseIds.map(id => resolvePoint(ctx, id, new Set()));
+        const topPoints = topIds.map(id => resolvePoint(ctx, id, new Set()));
+        if (basePoints.some(point => !point) || topPoints.some(point => !point)) return true;
+        if (polygonHasSelfIntersection(basePoints) || polygonHasSelfIntersection(topPoints)) return true;
+
+        const offsets = basePoints.map((point, index) => subtract(topPoints[index], point));
+        const averageOffset = averagePoint(offsets);
+        const maxDeviation = Math.max(...offsets.map(offset => distance(offset, averageOffset)));
+        return maxDeviation > 0.85;
+    });
+
+    if (badPrisms.length > 0) {
+        const ids = badPrisms.slice(0, 6).map(prism => prism.id || '(no id)').join(', ');
+        errors.push(`${prompt.id}: prism top vertices must follow the base vertices in the same translated order without crossed or twisted projection edges; bad prism(s): ${ids}.`);
+    }
+}
+
+function validateRequiredPyramidBaseVertexCounts(ctx, prompt, rules, errors) {
+    const baseCounts = ctx.byType('pyramid').map(pyramid => ({
+        id: pyramid.id || '(no id)',
+        count: Array.isArray(pyramid.baseVertexIds) ? pyramid.baseVertexIds.length : 0
+    }));
+
+    for (const rule of rules) {
+        const requiredCount = typeof rule === 'number' ? rule : rule.count;
+        const requiredMinimum = typeof rule === 'number' ? 1 : rule.min || 1;
+        const actualMinimum = baseCounts.filter(item => item.count === requiredCount).length;
+        if (actualMinimum < requiredMinimum) {
+            const actual = baseCounts.map(item => `${item.id}:${item.count}`).join(', ') || '(none)';
+            errors.push(`${prompt.id}: expected at least ${requiredMinimum} pyramid object(s) with ${requiredCount} base vertices; actual pyramid base counts: ${actual}.`);
+        }
+    }
+}
+
 function validatePyramidApexes(ctx, prompt, errors) {
     const badPyramids = ctx.byType('pyramid').filter(pyramid => {
         if (!pyramid.apexId || !Array.isArray(pyramid.baseVertexIds)) return true;
@@ -1061,6 +1218,43 @@ function pointInsideConvexHull(point, hull, margin) {
         if (signedDistance < -margin) return false;
     }
     return true;
+}
+
+function polygonHasSelfIntersection(vertices) {
+    for (let i = 0; i < vertices.length; i += 1) {
+        const a = vertices[i];
+        const b = vertices[(i + 1) % vertices.length];
+        for (let j = i + 1; j < vertices.length; j += 1) {
+            if (Math.abs(i - j) <= 1) continue;
+            if (i === 0 && j === vertices.length - 1) continue;
+            const c = vertices[j];
+            const d = vertices[(j + 1) % vertices.length];
+            if (segmentsIntersect(a, b, c, d)) return true;
+        }
+    }
+    return false;
+}
+
+function segmentsIntersect(a, b, c, d) {
+    const o1 = orientation(a, b, c);
+    const o2 = orientation(a, b, d);
+    const o3 = orientation(c, d, a);
+    const o4 = orientation(c, d, b);
+    const tolerance = 1e-8;
+
+    if (Math.abs(o1) <= tolerance && pointOnBoundingBox(c, a, b, tolerance)) return true;
+    if (Math.abs(o2) <= tolerance && pointOnBoundingBox(d, a, b, tolerance)) return true;
+    if (Math.abs(o3) <= tolerance && pointOnBoundingBox(a, c, d, tolerance)) return true;
+    if (Math.abs(o4) <= tolerance && pointOnBoundingBox(b, c, d, tolerance)) return true;
+
+    return (o1 > 0) !== (o2 > 0) && (o3 > 0) !== (o4 > 0);
+}
+
+function pointOnBoundingBox(point, a, b, tolerance) {
+    return point.x >= Math.min(a.x, b.x) - tolerance &&
+        point.x <= Math.max(a.x, b.x) + tolerance &&
+        point.y >= Math.min(a.y, b.y) - tolerance &&
+        point.y <= Math.max(a.y, b.y) + tolerance;
 }
 
 function orientation(a, b, point) {

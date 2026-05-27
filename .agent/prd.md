@@ -23,6 +23,9 @@
 - The hexagon prompt allows a default filled `polygon`, producing a shaded hexagon even when the user asked for a construction-style outline.
 - Nested solids can pass containment checks while still looking cramped or ambiguous because internal solids overlap each other visually.
 - A pyramid can pass broad schema/reference checks while reusing the apex as a base vertex.
+- A lens diagram can pass with unequal circle radii or a self-crossing polygon fill.
+- A prism can pass by type while the base/top vertex order is visually twisted.
+- An asymptote prompt can pass with two dashed lines even when the vertical line equation is wrong.
 
 ## Goals
 
@@ -31,12 +34,13 @@
 - Add prompt-local checks for unfilled construction polygons.
 - Add prompt-local checks that inner nested solids are visually separated enough to read as distinct solids.
 - Add saved-result revalidation so older "all pass" live runs can be rechecked against newer visual-intent gates without another API call.
+- Add prompt-local checks for line equations, lens circle geometry, lens polygon order, pyramid base counts, and prism projection order.
 - Push visual guardrails into the runtime OpenAI reference prompt and the MathGraph drawing skill context.
 - Update the audit trail with the recursive visual loop decisions.
 
 ## Non-Goals
 
-- Do not store or replay a pasted API key in shell commands or repository files.
+- Do not store API keys in repository files, reports, or committed documentation.
 - Do not add new runtime primitives in this pass.
 - Do not claim true 3D containment; nested solids remain 2D projection diagrams.
 
@@ -47,6 +51,11 @@
 - [x] The nested prism+pyramid case requires the two inner solids to be visually separable.
 - [x] Saved `fixed2` results are revalidated and known visual mismatches are rejected.
 - [x] A local visual target contact sheet is rendered for human comparison.
+- [x] The smoke validator rejects wrong rational asymptote line equations.
+- [x] The smoke validator rejects unequal-radius or self-crossing lens outputs.
+- [x] The smoke validator rejects triangular pyramids when square pyramids are requested.
+- [x] The smoke validator rejects twisted prism base/top vertex ordering.
+- [x] Final live external rerun passes and is visually reviewed.
 - [x] Focused tests and full tests pass.
 - [x] Fresh live rendering is rerun if `OPENAI_API_KEY` is available; otherwise the blocked reason is recorded.
 

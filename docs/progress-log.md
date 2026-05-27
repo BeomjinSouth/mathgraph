@@ -11,11 +11,14 @@
 - Tightened the `stress_extra` prompt expectations for:
   - actual exponential/log intersection coordinate windows,
   - hidden lens helper points,
+  - equal-radius lens circles and non-self-crossing/bounded lens polygons,
+  - exact rational asymptote line equations,
   - renderable `angleDimension` helper rays,
   - unfilled construction-only polygons,
   - projected separation between multiple inner solids,
-  - valid pyramid apex/base geometry,
-  - true 3/3 triangular-prism vertex counts.
+  - valid pyramid apex/base geometry and square-pyramid base counts,
+  - true 3/3 triangular-prism vertex counts,
+  - readable prism base/top projection order.
 - Added visual guardrails to `js/ai/AIService.js`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, `.agents/skills/mathgraph-drawing/SKILL.md`, and `docs/ai-reference.md`.
 - Added regression tests for the new visual-intent failure modes.
 - Rendered a local target-reference contact sheet at `tmp/stress-extra-visual-target/reference-contact-sheet.png` for human comparison. This reference render is not a live OpenAI result.
@@ -31,18 +34,22 @@
   - `two_transversals_angle_grid`: non-renderable angle marker,
   - `box_with_pyramid_and_inner_prism`: overlapping inner solids,
   - `double_pyramid_inside_box`: degenerate pyramid apex/base reuse.
-- `OPENAI_API_KEY` is not set in the current shell, so the fresh external recursive rerun remains blocked. The key was not written into commands, files, or reports.
+- Recursive live reruns then found and fixed additional mismatches:
+  - `two_circle_lens_region`: unequal circle radii, then self-crossing/out-of-bounds lens fill,
+  - `quartic_double_well_tangents`: missing `x` on `tangentFunction`,
+  - `rational_slant_asymptote`: two dashed lines existed but the vertical `x=2` line equation was wrong,
+  - `double_pyramid_inside_box`: triangular pyramids appeared where square pyramids were requested,
+  - `box_with_pyramid_and_inner_prism`: a prism could use twisted base/top vertex order.
+- The final accepted live output is `tmp/live-openai-stress-extra-drawing-smoke-parity6/`.
 
 #### Verification
 
 - Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
-- Ran `node --check js\ai\AIService.js`; passed.
-- Ran feature-manual JSON parse check; passed.
-- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 33 tests.
-- Ran `node --test tests\ai-flow.test.js`; passed with 28 tests.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 39 tests.
 - Ran saved-result revalidation with `LIVE_AI_REVALIDATE_RESULTS=tmp/live-openai-stress-extra-drawing-smoke-fixed2/live-openai-random-results.json`; expected failure result confirmed 6 rejected outputs and wrote `tmp/live-openai-stress-extra-drawing-smoke-fixed2/live-openai-random-revalidation.json`.
 - Rendered the local visual target reference; all 10 payloads passed the strengthened local validators and browser-rendered with non-white pixels.
-- Ran `npm.cmd test`; passed with 80 tests.
+- Ran recursive external OpenAI live outputs through `tmp/live-openai-stress-extra-drawing-smoke-parity1/` to `tmp/live-openai-stress-extra-drawing-smoke-parity6/`; final `parity6` run selected `gpt-5.4-mini`, rendered all 10 outputs, and reported 0 failures / 0 browser console errors.
+- Ran `npm.cmd test`; passed with 85 tests.
 - Ran `git diff --check`; passed with line-ending warnings only.
 
 #### Deployment / Vercel

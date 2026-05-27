@@ -34,30 +34,30 @@
 - Reason: The recursive loop needs to reject previously saved "all pass" API results after the visual-intent bar becomes stricter, without requiring an API key for every audit pass.
 - Decision: Push visual guardrails into the runtime OpenAI reference prompt and MathGraph drawing skill.
 - Reason: Fixes must influence future generation prompts, not only the local smoke test harness.
+- Decision: Treat line equations, lens radius/order, pyramid base counts, and prism base/top ordering as visual-intent invariants.
+- Reason: The recursive live reruns showed that correct object families can still produce the wrong visible figure.
 
 ## Blockers
 
-- Blocker: `OPENAI_API_KEY` is not set in the current shell, so a fresh external recursive live rerun cannot be performed unless the key is provided through the process environment.
+- Blocker: None currently.
 
 ## Verification
 
 - Completed so far:
   - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
-  - `node --check js\ai\AIService.js`
-  - `node -e "JSON.parse(require('fs').readFileSync('.agents/skills/mathgraph-drawing/references/feature-manual.json','utf8')); console.log('feature-manual JSON ok')"`
   - `node --test tests\live-openai-random-smoke.test.js`
-  - `node --test tests\ai-flow.test.js`
   - saved-result revalidation with `LIVE_AI_REVALIDATE_RESULTS=tmp/live-openai-stress-extra-drawing-smoke-fixed2/live-openai-random-results.json`; expected failure result: 6 of 10 saved outputs rejected by the new visual-intent gates.
-  - local target reference render: `tmp/stress-extra-visual-target/reference-contact-sheet.png`
-  - `npm.cmd test`
-  - `git diff --check`
+  - recursive live external reruns through `tmp/live-openai-stress-extra-drawing-smoke-parity1/` through `tmp/live-openai-stress-extra-drawing-smoke-parity6/`
+  - final accepted live run: `tmp/live-openai-stress-extra-drawing-smoke-parity6/` with 10/10 semantic/render pass, 0 browser console errors, and visual review accepted.
+  - `npm.cmd test` passed with 85 tests.
+  - `git diff --check` passed with line-ending warnings only.
 
 ## Handoff
 
 - Current status:
   - Previous `fixed2` live output is no longer considered visually accepted; the new validator rejects the six known mismatches.
-  - A fresh external API rerun is blocked in this shell because `OPENAI_API_KEY` is not set. Do not paste the key into commands or files; provide it through process environment for the next live recursive pass.
-  - Code, prompt context, tests, and audit docs are updated and verified locally.
+  - Recursive live reruns found and fixed additional failures: unequal lens radius, missing tangent `x`, wrong rational vertical asymptote, triangular pyramids where square pyramids were requested, self-crossing lens fill, and twisted prism projections.
+  - Code, prompt context, tests, and audit docs are updated and verified.
 
 ---
 

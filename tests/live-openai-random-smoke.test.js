@@ -396,6 +396,32 @@ test('prompt-local smoke expectations reject missing tangent x values and dashed
     assert.match(errors.join('\n'), /dashed line/);
 });
 
+test('prompt-local smoke expectations reject wrong asymptote line geometry', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -1, y: 1, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: 1, y: 3, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: -4, y: -2, showLabel: false },
+            { op: 'create', id: 'D', type: 'point', x: 4, y: 6, showLabel: false },
+            { op: 'create', id: 'bad_vertical', type: 'line', point1Id: 'A', point2Id: 'B', dashed: true, showLabel: false },
+            { op: 'create', id: 'slant', type: 'line', point1Id: 'C', point2Id: 'D', dashed: true, showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'rational_slant_asymptote',
+        expect: {
+            requiredLinePatterns: [
+                { kind: 'vertical', x: 2, dashed: true },
+                { kind: 'slopeIntercept', slope: 1, intercept: 2, dashed: true }
+            ]
+        }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /vertical x=2 dashed/);
+});
+
 test('prompt-local smoke expectations reject duplicate circle-intersection lens points', () => {
     const payload = {
         operations: [
@@ -489,6 +515,60 @@ test('prompt-local smoke expectations reject unequal-radius lens circles', () =>
 
     assert.match(errors.join('\n'), /both lens circles must have radius 3/);
     assert.match(errors.join('\n'), /equal radii/);
+});
+
+test('prompt-local smoke expectations reject self-crossing lens polygons', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: -2, y: 0, label: 'O' },
+            { op: 'create', id: 'P', type: 'point', x: 2, y: 0, label: 'P' },
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 2.24, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 0, y: -2.24, label: 'B' },
+            { op: 'create', id: 'r1', type: 'point', x: 1, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'r2', type: 'point', x: 5, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'c1', type: 'circle', centerId: 'O', pointOnCircleId: 'r1', showLabel: false },
+            { op: 'create', id: 'c2', type: 'circle', centerId: 'P', pointOnCircleId: 'r2', showLabel: false },
+            { op: 'create', id: 'h1', type: 'point', x: 0.56, y: 1.57, visible: false, showLabel: false },
+            { op: 'create', id: 'h2', type: 'point', x: 1, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'h3', type: 'point', x: 0.56, y: -1.57, visible: false, showLabel: false },
+            { op: 'create', id: 'h4', type: 'point', x: -0.56, y: 1.57, visible: false, showLabel: false },
+            { op: 'create', id: 'h5', type: 'point', x: -1, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'h6', type: 'point', x: -0.56, y: -1.57, visible: false, showLabel: false },
+            { op: 'create', id: 'lens', type: 'polygon', vertexIds: ['A', 'h1', 'h2', 'h3', 'B', 'h4', 'h5', 'h6'], showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'two_circle_lens_region',
+        expect: { requireSimpleLensPolygon: true }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /self-intersects/);
+});
+
+test('prompt-local smoke expectations reject lens polygon vertices outside the lens bounds', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 2.24, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 0, y: -2.24, label: 'B' },
+            { op: 'create', id: 'h1', type: 'point', x: 0.6, y: 2.7, visible: false, showLabel: false },
+            { op: 'create', id: 'h2', type: 'point', x: 1, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'h3', type: 'point', x: 0.6, y: -1.5, visible: false, showLabel: false },
+            { op: 'create', id: 'h4', type: 'point', x: -0.6, y: -1.5, visible: false, showLabel: false },
+            { op: 'create', id: 'h5', type: 'point', x: -1, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'h6', type: 'point', x: -0.6, y: 1.5, visible: false, showLabel: false },
+            { op: 'create', id: 'lens', type: 'polygon', vertexIds: ['A', 'h1', 'h2', 'h3', 'B', 'h4', 'h5', 'h6'], showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'two_circle_lens_region',
+        expect: { lensPolygonBounds: { xMin: -1.05, xMax: 1.05, yMin: -2.38, yMax: 2.38 } }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /lens polygon helper vertices/);
 });
 
 test('prompt-local smoke expectations reject inner solid points outside the outer prism', () => {
@@ -659,6 +739,55 @@ test('prompt-local smoke expectations reject non-triangular prism when triangula
     const errors = validateSmokeSemantics(payload, prompt);
 
     assert.match(errors.join('\n'), /expected at least one prism with 3 base vertices/);
+});
+
+test('prompt-local smoke expectations reject twisted prism vertex ordering', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: 2, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: 2, y: 1, visible: false, showLabel: false },
+            { op: 'create', id: 'D', type: 'point', x: 0, y: 1, visible: false, showLabel: false },
+            { op: 'create', id: 'A2', type: 'point', x: 0.5, y: 0.5, visible: false, showLabel: false },
+            { op: 'create', id: 'B2', type: 'point', x: 2.5, y: 0.5, visible: false, showLabel: false },
+            { op: 'create', id: 'C2', type: 'point', x: 2.5, y: 1.5, visible: false, showLabel: false },
+            { op: 'create', id: 'D2', type: 'point', x: 0.5, y: 1.5, visible: false, showLabel: false },
+            { op: 'create', id: 'twisted', type: 'prism', baseVertexIds: ['A', 'B', 'C', 'D'], topVertexIds: ['A2', 'C2', 'B2', 'D2'], showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'valid_prism_projection_sample',
+        expect: { validPrismProjections: true }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /same translated order/);
+});
+
+test('prompt-local smoke expectations reject triangular pyramids when square pyramids are required', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -1, y: 0, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: 1, y: 0, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: 0, y: 1, showLabel: false },
+            { op: 'create', id: 'D', type: 'point', x: 0, y: 2, showLabel: false },
+            { op: 'create', id: 'tri_pyramid_1', type: 'pyramid', apexId: 'D', baseVertexIds: ['A', 'B', 'C'], showLabel: false },
+            { op: 'create', id: 'E', type: 'point', x: -1, y: -2, showLabel: false },
+            { op: 'create', id: 'F', type: 'point', x: 1, y: -2, showLabel: false },
+            { op: 'create', id: 'G', type: 'point', x: 0, y: -1, showLabel: false },
+            { op: 'create', id: 'H', type: 'point', x: 0, y: -3, showLabel: false },
+            { op: 'create', id: 'tri_pyramid_2', type: 'pyramid', apexId: 'H', baseVertexIds: ['E', 'F', 'G'], showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'double_pyramid_inside_box',
+        expect: { requiredPyramidBaseVertexCounts: [{ count: 4, min: 2 }] }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /2 pyramid object\(s\) with 4 base vertices/);
 });
 
 test('smoke semantics rejects pixel-style point coordinates outside the default view', () => {

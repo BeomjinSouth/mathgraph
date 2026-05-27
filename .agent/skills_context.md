@@ -27,9 +27,14 @@
   - add prompt-local renderability constraints for angleDimension endpoints,
   - require unfilled polygon construction when fill is not requested,
   - require minimum projected separation between inner solid centers,
-  - require pyramid apex/base separation and triangular prism vertex counts,
+  - require line-equation checks for rational asymptotes,
+  - require lens circle radius, lens polygon bounds, and non-self-crossing polygon order,
+  - require pyramid apex/base separation, square-pyramid base counts, triangular prism vertex counts, and readable prism base/top ordering,
   - revalidate saved live results with `LIVE_AI_REVALIDATE_RESULTS`,
   - inject visual guardrails into `AIService`'s reference prompt and the JSON feature manual.
+- Final recursive evidence:
+  - `tmp/live-openai-stress-extra-drawing-smoke-parity6/` is the accepted live OpenAI rerun.
+  - It passed validation, browser rendering, and manual visual review against the intended drawings.
 
 ---
 

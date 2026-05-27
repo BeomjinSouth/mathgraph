@@ -4,7 +4,7 @@ Last updated: 2026-05-28
 
 ## Scope
 
-This note compares the `stress_extra` live OpenAI drawing prompts with the rendered GraphA results saved under `tmp/live-openai-stress-extra-drawing-smoke-fixed2/`.
+This note compares the `stress_extra` live OpenAI drawing prompts with the rendered GraphA results. The final recursively improved live run is saved under `tmp/live-openai-stress-extra-drawing-smoke-parity6/`.
 
 The API key is not recorded here. Live reports only state that the key was supplied through `OPENAI_API_KEY`.
 
@@ -28,20 +28,28 @@ Result: 10 saved outputs checked, 6 rejected by the newer visual-intent gates.
 
 The target-reference render, produced without an API call, is under `tmp/stress-extra-visual-target/reference-contact-sheet.png`. It is not a live OpenAI result; it is the local visual target used to judge whether future live reruns match the intended prompt.
 
+After the saved-result revalidation pass, the live OpenAI path was rerun repeatedly. Each rerun was visually reviewed against the prompt target, and new mismatches were promoted into validators before the next rerun.
+
+- `parity1`: passed automated checks, but visual review caught an unequal-radius lens circle and visible lens helper shape issues.
+- `parity2`: rejected missing `x` fields on `tangentFunction`; report review also exposed a wrong rational vertical asymptote and triangular pyramids where square pyramids were requested.
+- `parity3`: passed automated checks, but visual review caught a self-crossing lens fill and a twisted inner prism projection.
+- `parity5`: rejected the self-crossing lens polygon after that validator was added.
+- `parity6`: passed schema/reference/intent/runtime/semantic checks, browser rendering, and visual review. This is the accepted live evidence set.
+
 ## Prompt / Result Comparison
 
 | ID | Prompt target | Observed result | Root cause / judgement | Fix or context update |
 | --- | --- | --- | --- | --- |
 | `exp_log_two_curve_window` | Draw `exp(0.4*x)-1` and `ln(x+5)-1`, with only two short point labels. | Two function objects rendered, but A/B were same-x comparison samples instead of the two requested intersections. | The phrase "representative near points" was mathematically ambiguous. | Prompt now asks for actual intersections near fixed coordinate windows; validator checks those windows. |
-| `quartic_double_well_tangents` | Draw a quartic and tangentFunction objects at x=-1 and x=1. | The final output used a real function plus two `tangentFunction` objects and three short point labels. | Earlier graph checks could pass even when required tangent x-values were missing. | Keep `requiredTangentXs` as a prompt-local semantic check. |
-| `rational_slant_asymptote` | Draw a rational graph with vertical and slant dashed asymptote lines. | Function and two dashed line objects rendered correctly. | Without an explicit dashed-line gate, a model can draw asymptotes as ordinary lines. | Keep `minDashedLines` and short visible labels for asymptote prompts. |
+| `quartic_double_well_tangents` | Draw a quartic and tangentFunction objects at x=-1 and x=1. | One recursive rerun produced `tangentFunction` objects without `x`; final output used `x:-1` and `x:1`. | Required object type was not enough; required tangent parameter values must be checked. | Prompt now states the exact `x` fields and validator keeps `requiredTangentXs`. |
+| `rational_slant_asymptote` | Draw a rational graph with vertical and slant dashed asymptote lines. | A rerun produced two dashed slant lines, one labeled `x=2`, so the visual vertical asymptote was wrong. | `minDashedLines` proved too weak because it did not check line equations. | Added required line-pattern checks for vertical `x=2` and slope/intercept `y=x+2`. |
 | `damped_wave_with_envelopes` | Draw a damped sine wave and two envelope curves with no labels. | Three function objects rendered with no visible labels. | No new structural issue. | Keep function labels hidden for dense graph families. |
-| `two_circle_lens_region` | Draw two overlapping circles, direct upper/lower lens points, and a shaded lens polygon. | Direct A/B points existed, but polygon helper points were visible. | `showLabel:false` hides labels, not points. | Added a visible point-count gate and prompt text requiring helper points to use `visible:false`. |
+| `two_circle_lens_region` | Draw two equal-radius overlapping circles, direct upper/lower lens points, and a shaded lens polygon. | Recursive reruns exposed three separate issues: helper points visible as dots, one circle with radius 1 instead of 3, and a self-crossing lens fill. | The prompt named the object families but did not force circle radius, helper visibility, or polygon boundary order. | Added visible-point count, equal-radius circle, coordinate-window, simple-polygon, and lens-bounds checks. |
 | `hexagon_diagonal_angle_web` | Draw a regular hexagon with polygon, circumcircle, three long diagonals, and three center angle markers. | The structure rendered, but the hexagon polygon was shaded by default. | `Polygon` defaults to `fillOpacity:0.12` when omitted. | Prompt and validator now require `fillOpacity:0` for construction-only polygons. |
 | `two_transversals_angle_grid` | Draw two parallel lines, two transversals, four intersections, and hidden angle markers. | Four angle objects existed, but one was visually missing because a helper point matched the vertex. | Counting `angleDimension` objects does not guarantee a visible arc. | Added renderable-angle checks and a distinct-vertex count. |
-| `box_with_pyramid_and_inner_prism` | Draw a large prism containing a pyramid and smaller prism. | Inner solids were inside the outer prism but overlapped visually. | Containment alone does not measure readability of multiple inner solids. | Added projected center-separation validation for multiple inner solids. |
-| `double_pyramid_inside_box` | Draw two pyramids inside a transparent prism. | One pyramid was geometrically degenerate because its apex also appeared in `baseVertexIds`. | Schema validation did not check pyramid-specific apex/base geometry. | Added `validPyramidApexes` validation. |
-| `triangular_prism_inside_square_pyramid` | Draw a triangular prism inside a square pyramid. | The saved output passed, and the new gate also requires the inner prism to be a true 3/3 triangular prism. | A generic prism can be rectangular unless the vertex count is checked. | Added `requiredPrismVertexCounts:[3]`. |
+| `box_with_pyramid_and_inner_prism` | Draw a large prism containing a pyramid and smaller prism. | Inner solids were inside the outer prism but could overlap or use twisted prism vertex order. | Containment alone does not measure readability, and a `prism` type can still have mismatched base/top ordering. | Added projected center separation, hidden vertex points, square-pyramid base count, and valid prism-projection checks. |
+| `double_pyramid_inside_box` | Draw two square pyramids inside a transparent prism. | A rerun used triangular pyramids even though the prompt asked for square pyramids. | Pyramid object existence did not check base vertex count. | Added `requiredPyramidBaseVertexCounts` and `validPyramidApexes`. |
+| `triangular_prism_inside_square_pyramid` | Draw a triangular prism inside a square pyramid. | The final output uses a 3/3 triangular prism inside a 4-base pyramid with hidden helper points. | A generic prism can be rectangular or twisted unless vertex count and projection order are checked. | Added `requiredPrismVertexCounts:[3]`, square-pyramid base count, valid prism projection, and hidden point checks. |
 
 ## Root Causes
 
@@ -58,8 +66,8 @@ The target-reference render, produced without an API call, is under `tmp/stress-
 - Added prompt-local checks for direct lens points and nested solid containment.
 - Strengthened nested solid containment from an axis-aligned bounding box to a convex-hull projection check.
 - Added revalidation mode for saved live result files with `LIVE_AI_REVALIDATE_RESULTS`.
-- Added prompt-local checks for coordinate windows, visible helper points, renderable angles, unfilled construction polygons, pyramid apex validity, inner-solid separation, and triangular-prism vertex counts.
-- Added regression tests for duplicate lens intersection points, visible helper points, renderable angles, filled construction polygons, degenerate pyramids, and inner-solid overlap.
+- Added prompt-local checks for coordinate windows, visible helper points, equal-radius lens circles, simple lens polygons, lens bounds, required line equations, renderable angles, unfilled construction polygons, pyramid apex validity, pyramid base counts, prism projection consistency, inner-solid separation, and triangular-prism vertex counts.
+- Added regression tests for duplicate lens intersection points, visible helper points, unequal-radius lens circles, self-crossing/out-of-bounds lens polygons, wrong asymptote lines, renderable angles, filled construction polygons, degenerate pyramids, triangular-vs-square pyramids, twisted prisms, and inner-solid overlap.
 - Added visual guardrails to the runtime OpenAI reference prompt, JSON feature manual, and MathGraph drawing skill.
 - Kept label budgets and short-label constraints in every dense prompt.
 
