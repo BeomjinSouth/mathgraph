@@ -4,6 +4,39 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The recursive loop must judge GraphA objects by whether the rendered geometry matches the intended Korean drawing request.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The OpenAI path remains strict Structured Outputs plus app-owned validation and retry feedback.
+- Skill: Playwright
+- Why it matters:
+  - Visual parity must be checked against actual canvas screenshots, not only JSON operations.
+
+## Current Task Notes
+
+- New visual-review failures after the latest `stress_extra` live run:
+  - `exp_log_two_curve_window`: two point labels passed, but point A was a same-x comparison sample rather than the left intersection.
+  - `two_circle_lens_region`: direct A/B endpoints existed, but helper points remained visible as extra dots.
+  - `two_transversals_angle_grid`: angleDimension count passed, but not all markers were visually renderable.
+  - `hexagon_diagonal_angle_web`: polygon default fill created a shaded region even though the requested figure was a construction-style hexagon.
+  - nested internal solids: containment passed, but two inner solids can still be too overlapped to read separately.
+  - `double_pyramid_inside_box`: a pyramid can reuse `apexId` inside `baseVertexIds` unless apex validity is checked.
+- Root correction:
+  - require coordinate windows when a function prompt asks for actual intersections,
+  - limit visible helper point count and require `visible:false` for region-shaping helper points,
+  - add prompt-local renderability constraints for angleDimension endpoints,
+  - require unfilled polygon construction when fill is not requested,
+  - require minimum projected separation between inner solid centers,
+  - require pyramid apex/base separation and triangular prism vertex counts,
+  - revalidate saved live results with `LIVE_AI_REVALIDATE_RESULTS`,
+  - inject visual guardrails into `AIService`'s reference prompt and the JSON feature manual.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The new stress prompts must stay inside the current GraphA `operations[]` contract and use the existing object families accurately.
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:

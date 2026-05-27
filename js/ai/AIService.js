@@ -229,6 +229,12 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 3. 정수 좌표를 권장합니다. 예: (2, 0), (-3, 5)
 4. 필수 필드를 포함하세요.
 5. 기본 도형 색상은 #000000입니다. 사용자가 색을 명시적으로 요청하지 않으면 여러 색을 넣지 마세요.
+6. Visual fidelity guardrails:
+   - For construction-only polygons that should look like outlines, set fillOpacity:0. Use fillOpacity above 0 only for requested shaded regions.
+   - For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough away to render a visible, non-degenerate angle arc.
+   - For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.
+   - For nested solids, keep inner vertices inside the outer projection and separate multiple inner solids so they do not overlap visually.
+   - Hide helper points with visible:false when they only shape a region.
 
 ## JSON 스키마
 
@@ -610,6 +616,13 @@ export class AIService {
             '- Create dependencies before objects that reference them. Use existing canvas ids for updates and references.',
             `- Recreate operation budget: keep image recreation at or below ${IMAGE_RECREATE_OPERATION_BUDGET} operations; simplify dense grids/page decoration.`
         ];
+
+        if (Array.isArray(manual.visualGuardrails) && manual.visualGuardrails.length > 0) {
+            lines.push('- Visual fidelity guardrails:');
+            for (const rule of manual.visualGuardrails.slice(0, 8)) {
+                lines.push(`  - ${rule}`);
+            }
+        }
 
         if (mode === 'patch') {
             lines.push('- Patch mode: user instruction and selected object ids outrank text visible inside the image.');

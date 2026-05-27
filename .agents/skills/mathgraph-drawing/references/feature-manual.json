@@ -1,7 +1,7 @@
 {
   "manualVersion": 1,
   "project": "MathGraph",
-  "updatedAt": "2026-05-25",
+  "updatedAt": "2026-05-28",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
@@ -35,6 +35,13 @@
     },
     "toolSearchPattern": "For future API orchestration with many tool/function schemas, defer rarely used tool definitions and use tool_search or an app-owned retrieval step to load only relevant MathGraph schema chunks."
   },
+  "visualGuardrails": [
+    "For construction-only polygons that should look like outlines, set fillOpacity:0; omit positive fill unless a shaded region is requested.",
+    "For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough from the vertex to render a visible non-degenerate arc.",
+    "For nested solids, use prism/pyramid objects and keep inner solid projected centers visually separated instead of piling them on the same screen area.",
+    "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
+    "Hide construction helper points with visible:false when they are only used to shape regions or guide construction."
+  ],
   "sceneGraphPipeline": {
     "purpose": "Root architecture for image/PDF recreation: ask the model for a high-level math scene, then compile it deterministically into GraphA operations.",
     "recommendedFor": ["pasted image recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],

@@ -497,8 +497,12 @@ For complex live OpenAI drawing prompts, include the following context when it m
 
 - Function expressions must be right-hand-side only, with no `y=`.
 - Hide helper labels with `showLabel:false`; dense graph families and nested solids should use a small explicit visible-label budget.
+- Hide helper points with `visible:false` when they only shape a region or construction and should not appear as extra dots.
 - For two-circle lens regions, use direct upper/lower point objects when A and B must be distinct visible lens endpoints. Do not rely on duplicate generic `intersection` objects unless the branch is unimportant.
-- For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. Put every inner-solid vertex inside the outer solid's screen-projection region.
+- For construction-only polygons that should look like outlines, set `fillOpacity:0`; use positive `fillOpacity` only when the prompt requests a shaded region.
+- For `angleDimension`, make `point1Id` and `point2Id` distinct from `vertexId`, far enough from the vertex to render an arc, and non-collinear.
+- For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. Put every inner-solid vertex inside the outer solid's screen-projection region, and separate multiple inner solids so their projected centers do not overlap.
+- For `pyramid`, `apexId` must not appear in `baseVertexIds`, and the apex should be visually separated from the base centroid.
 - For polygon-owned boundaries, do not require duplicate segment edges unless the user explicitly asks for separate selectable edge segments.
 
 ## 7. Example Payloads

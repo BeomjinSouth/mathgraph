@@ -2,6 +2,58 @@
 
 ## Summary
 
+- Task: Recursive visual parity loop for stress-extra OpenAI drawings
+- Owner: Codex
+- Date: 2026-05-28
+- Related files:
+  - `tools/run-live-openai-random-drawing-smoke.mjs`
+  - `js/ai/AIService.js`
+  - `tests/live-openai-random-smoke.test.js`
+  - `tests/ai-flow.test.js`
+  - `docs/stress-extra-openai-drawing-audit.md`
+  - `docs/ai-reference.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The latest `stress_extra` run passed schema, reference, semantic, and render checks, but visual review still found gaps.
+- The strongest remaining mismatch is that some `angleDimension` objects exist in JSON but do not render as visible angles because a helper point can coincide with the vertex.
+- The exponential/log prompt can pass with two nearby sample points even when the visual target needs the two actual intersections.
+- The two-circle lens prompt can pass with helper points hidden only by label, leaving extra visible dots.
+- The hexagon prompt allows a default filled `polygon`, producing a shaded hexagon even when the user asked for a construction-style outline.
+- Nested solids can pass containment checks while still looking cramped or ambiguous because internal solids overlap each other visually.
+- A pyramid can pass broad schema/reference checks while reusing the apex as a base vertex.
+
+## Goals
+
+- Treat "visually matches the requested figure" as the acceptance bar, not only `validation.valid`.
+- Add prompt-local checks for renderable angle dimensions.
+- Add prompt-local checks for unfilled construction polygons.
+- Add prompt-local checks that inner nested solids are visually separated enough to read as distinct solids.
+- Add saved-result revalidation so older "all pass" live runs can be rechecked against newer visual-intent gates without another API call.
+- Push visual guardrails into the runtime OpenAI reference prompt and the MathGraph drawing skill context.
+- Update the audit trail with the recursive visual loop decisions.
+
+## Non-Goals
+
+- Do not store or replay a pasted API key in shell commands or repository files.
+- Do not add new runtime primitives in this pass.
+- Do not claim true 3D containment; nested solids remain 2D projection diagrams.
+
+## Acceptance Criteria
+
+- [x] The smoke validator rejects angle dimensions with a helper point coincident with the vertex.
+- [x] The hexagon prompt requires an outline polygon rather than an unintended filled region.
+- [x] The nested prism+pyramid case requires the two inner solids to be visually separable.
+- [x] Saved `fixed2` results are revalidated and known visual mismatches are rejected.
+- [x] A local visual target contact sheet is rendered for human comparison.
+- [x] Focused tests and full tests pass.
+- [x] Fresh live rendering is rerun if `OPENAI_API_KEY` is available; otherwise the blocked reason is recorded.
+
+---
+
+## Summary
+
 - Task: Additional stress OpenAI drawing set with prompt/result audit
 - Owner: Codex
 - Date: 2026-05-28

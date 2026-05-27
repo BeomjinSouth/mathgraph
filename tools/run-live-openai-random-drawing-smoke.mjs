@@ -188,9 +188,17 @@ const stressExtraSmokePrompts = [
         id: 'exp_log_two_curve_window',
         title: 'Exponential and logarithm curves',
         tags: 'graph function exponential logarithm intersection',
-        promptKo: '좌표평면에 exp(0.4*x)-1과 ln(x+5)-1 두 함수 그래프를 함께 그려줘. 두 그래프가 가까워지는 대표 지점 2개를 point로 표시하되, 함수 라벨은 showLabel:false로 숨기고 보이는 라벨은 A,B처럼 1글자 점 라벨 2개 이하만 남겨줘. expression에는 y=를 넣지 마.',
+        promptKo: '좌표평면에 exp(0.4*x)-1과 ln(x+5)-1 두 함수 그래프를 함께 그려줘. "가까운 샘플점"이 아니라 실제 두 교점을 point로 표시해줘. 왼쪽 교점은 A(-3.75,-0.78) 근처, 오른쪽 교점은 B(1.58,0.88) 근처에 두고, 함수 라벨은 showLabel:false로 숨겨줘. 보이는 라벨은 A,B 2개만 남기고 expression에는 y=를 넣지 마.',
         showAxes: true,
-        expect: { minTypes: { function: 2, point: 2 }, maxVisibleLabels: 2, maxLabelTextLength: 1 }
+        expect: {
+            minTypes: { function: 2, point: 2 },
+            requiredPointWindows: [
+                { name: 'A', xMin: -4.05, xMax: -3.45, yMin: -1.05, yMax: -0.5 },
+                { name: 'B', xMin: 1.25, xMax: 1.9, yMin: 0.6, yMax: 1.15 }
+            ],
+            maxVisibleLabels: 2,
+            maxLabelTextLength: 1
+        }
     },
     {
         id: 'quartic_double_well_tangents',
@@ -220,49 +228,62 @@ const stressExtraSmokePrompts = [
         id: 'two_circle_lens_region',
         title: 'Two-circle lens with chord markers',
         tags: 'circle polygon segment lens plane',
-        promptKo: '중심 O(-2,0), P(2,0), 반지름 3인 두 원이 겹치는 렌즈 모양 도형을 그려줘. 두 원, 중심을 잇는 segment, 위쪽 교점 A(0,2.24), 아래쪽 교점 B(0,-2.24)를 intersection 객체가 아니라 직접 point로 만들고, 렌즈 부분은 A와 B 및 보조점들을 이용한 polygon으로 연하게 칠해줘. 원과 polygon 및 보조점 라벨은 showLabel:false로 숨기고 화면에는 O,P,A,B 네 점 라벨만 보이게 해줘.',
+        promptKo: '중심 O(-2,0), P(2,0), 반지름 3인 두 원이 겹치는 렌즈 모양 도형을 그려줘. 첫 번째 원은 centerId O와 반지름점 (1,0), 두 번째 원은 centerId P와 반지름점 (5,0)을 써서 두 원의 반지름이 모두 정확히 3이 되게 해줘. 중심을 잇는 segment, 위쪽 교점 A(0,2.24), 아래쪽 교점 B(0,-2.24)를 intersection 객체가 아니라 직접 point로 만들고, 렌즈 부분은 A와 B 및 보조점들을 이용한 polygon으로 연하게 칠해줘. polygon을 만들기 위한 보조점과 반지름 보조점은 visible:false로 숨겨 화면에 점으로 찍히지 않게 하고, 화면에는 O,P,A,B 네 점만 보이게 해줘.',
         showAxes: false,
-        expect: { minTypes: { circle: 2, segment: 1, polygon: 1, point: 6 }, requireDirectLensPoints: true, maxVisibleLabels: 4, maxLabelTextLength: 1 }
+        expect: {
+            minTypes: { circle: 2, segment: 1, polygon: 1, point: 6 },
+            requiredPointWindows: [
+                { name: 'O', xMin: -2.1, xMax: -1.9, yMin: -0.1, yMax: 0.1 },
+                { name: 'P', xMin: 1.9, xMax: 2.1, yMin: -0.1, yMax: 0.1 },
+                { name: 'A', xMin: -0.15, xMax: 0.15, yMin: 2.05, yMax: 2.4 },
+                { name: 'B', xMin: -0.15, xMax: 0.15, yMin: -2.4, yMax: -2.05 }
+            ],
+            requireDirectLensPoints: true,
+            lensCircleRadius: 3,
+            maxVisiblePointCount: 4,
+            maxVisibleLabels: 4,
+            maxLabelTextLength: 1
+        }
     },
     {
         id: 'hexagon_diagonal_angle_web',
         title: 'Hexagon with diagonals and angle markers',
         tags: 'plane polygon circle segment angle hexagon',
-        promptKo: '정육각형 ABCDEF를 원 위에 놓인 것처럼 그리고 polygon, 외접원, 긴 대각선 AD, BE, CF, 그리고 중심 O에서 보이는 각 표시 3개를 함께 만들어줘. 각 표시는 angleDimension으로 만들되 showValue:false로 하고, 외접원/대각선/각 라벨은 숨겨줘. 보이는 라벨은 A,B,C,D,E,F 여섯 점만 허용해줘.',
+        promptKo: '정육각형 ABCDEF를 원 위에 놓인 것처럼 그리고 polygon, 외접원, 긴 대각선 AD, BE, CF, 그리고 중심 O에서 보이는 각 표시 3개를 함께 만들어줘. hexagon polygon은 채움 영역이 아니라 외곽선이어야 하므로 fillOpacity:0으로 만들어줘. 각 표시는 angleDimension으로 만들되 showValue:false로 하고, 외접원/대각선/각 라벨은 숨겨줘. 보이는 라벨은 A,B,C,D,E,F 여섯 점만 허용해줘.',
         showAxes: false,
-        expect: { minTypes: { polygon: 1, circle: 1, segment: 3, angleDimension: 3, point: 7 }, maxVisibleLabels: 6, maxLabelTextLength: 1 }
+        expect: { minTypes: { polygon: 1, circle: 1, segment: 3, angleDimension: 3, point: 7 }, maxVisibleLabels: 6, maxLabelTextLength: 1, maxPolygonFillOpacity: 0, requireRenderableAngles: true }
     },
     {
         id: 'two_transversals_angle_grid',
         title: 'Parallel lines cut by two transversals',
         tags: 'plane line parallel angle construction',
-        promptKo: '서로 평행한 두 직선 l,m을 그리고 서로 다른 기울기의 횡단선 t,u 두 개가 둘 다 l,m을 가로지르게 해줘. 네 교점 근처에 angleDimension 4개를 배치하되 showValue:false로 하고, 모든 point/line/angleDimension 라벨은 showLabel:false 또는 showValue:false로 숨겨서 라벨이 보이지 않게 해줘.',
+        promptKo: '서로 평행한 두 직선 l,m을 그리고 서로 다른 기울기의 횡단선 t,u 두 개가 둘 다 l,m을 가로지르게 해줘. 네 교점 각각에 angleDimension 1개씩 총 4개를 배치해줘. 각 angleDimension의 point1Id와 point2Id는 꼭짓점과 같은 점이면 안 되고, 꼭짓점에서 0.7 이상 떨어진 보조점이어야 실제 각 호가 보인다. showValue:false로 하고, 모든 point/line/angleDimension 라벨은 showLabel:false 또는 showValue:false로 숨겨서 라벨이 보이지 않게 해줘.',
         showAxes: false,
-        expect: { minTypes: { line: 4, point: 8, angleDimension: 4 }, maxVisibleLabels: 0 }
+        expect: { minTypes: { line: 4, point: 8, angleDimension: 4 }, maxVisibleLabels: 0, requireRenderableAngles: true, minDistinctAngleVertices: 4 }
     },
     {
         id: 'box_with_pyramid_and_inner_prism',
         title: 'Box containing a pyramid and smaller prism',
         tags: 'solid prism pyramid nested rectangular',
-        promptKo: '큰 직육면체 prism 안에 작은 사각뿔 pyramid와 더 작은 직육면체 prism이 함께 들어 있는 모습을 그려줘. 모든 입체는 first-class prism/pyramid 객체로 만들고, 손그림 segment 묶음으로 대체하지 마. 안쪽 pyramid와 작은 prism의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 해줘. 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨줘.',
+        promptKo: '큰 직육면체 prism 안에 작은 사각뿔 pyramid와 더 작은 직육면체 prism이 함께 들어 있는 모습을 그려줘. 모든 입체는 first-class prism/pyramid 객체로 만들고, 손그림 segment 묶음으로 대체하지 마. 안쪽 pyramid와 작은 prism의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 하고, 두 내부 입체는 서로 겹쳐 보이지 않도록 화면상 중심이 충분히 떨어지게 배치해줘. 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨줘.',
         showAxes: false,
-        expect: { minTypes: { prism: 2, pyramid: 1, point: 17 }, innerWithinFirstPrism: true, maxVisibleLabels: 0 }
+        expect: { minTypes: { prism: 2, pyramid: 1, point: 17 }, innerWithinFirstPrism: true, innerSolidMinCenterDistance: 1.5, validPyramidApexes: true, maxVisibleLabels: 0 }
     },
     {
         id: 'double_pyramid_inside_box',
         title: 'Two pyramids inside a transparent box',
         tags: 'solid prism pyramid nested double',
-        promptKo: '투명한 직육면체 prism 안에 사각뿔 두 개가 위아래로 마주 보는 모양을 그려줘. 바깥 상자는 prism, 안쪽 두 입체는 각각 pyramid 객체로 만들고, 두 pyramid의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 해줘. 모든 꼭짓점은 point로 만들되 라벨은 모두 showLabel:false로 숨겨줘.',
+        promptKo: '투명한 직육면체 prism 안에 사각뿔 두 개가 위아래로 마주 보는 모양을 그려줘. 바깥 상자는 prism, 안쪽 두 입체는 각각 pyramid 객체로 만들고, 각 pyramid의 apexId는 baseVertexIds에 포함되면 안 된다. 두 pyramid의 모든 꼭짓점은 화면상 바깥 prism의 투영 영역 안에 놓이게 해줘. 모든 꼭짓점은 point로 만들되 라벨은 모두 showLabel:false로 숨겨줘.',
         showAxes: false,
-        expect: { minTypes: { prism: 1, pyramid: 2, point: 14 }, innerWithinFirstPrism: true, maxVisibleLabels: 0 }
+        expect: { minTypes: { prism: 1, pyramid: 2, point: 14 }, innerWithinFirstPrism: true, validPyramidApexes: true, maxVisibleLabels: 0 }
     },
     {
         id: 'triangular_prism_inside_square_pyramid',
         title: 'Triangular prism inside a square pyramid',
         tags: 'solid prism pyramid nested triangular square',
-        promptKo: '큰 사각뿔 pyramid 내부에 작은 삼각기둥 prism이 들어 있는 복합 입체를 그려줘. 사각뿔과 삼각기둥은 first-class pyramid/prism 객체를 사용하고, 작은 삼각기둥의 모든 꼭짓점은 화면상 큰 사각뿔의 투영 영역 안에 놓이게 해줘. 숨은선 처리는 런타임에 맡기고, 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨줘.',
+        promptKo: '큰 사각뿔 pyramid 내부에 작은 삼각기둥 prism이 들어 있는 복합 입체를 그려줘. 사각뿔과 삼각기둥은 first-class pyramid/prism 객체를 사용하고, 작은 삼각기둥 prism은 baseVertexIds 3개와 topVertexIds 3개만 갖는 진짜 삼각기둥이어야 해. 작은 삼각기둥의 모든 꼭짓점은 화면상 큰 사각뿔의 투영 영역 안에 놓이게 해줘. 숨은선 처리는 런타임에 맡기고, 모든 point/prism/pyramid 라벨은 showLabel:false로 숨겨줘.',
         showAxes: false,
-        expect: { minTypes: { pyramid: 1, prism: 1, point: 11 }, innerWithinFirstPyramid: true, maxVisibleLabels: 0 }
+        expect: { minTypes: { pyramid: 1, prism: 1, point: 11 }, innerWithinFirstPyramid: true, requiredPrismVertexCounts: [3], validPyramidApexes: true, maxVisibleLabels: 0 }
     }
 ];
 
@@ -291,6 +312,66 @@ function getPromptSet() {
         throw new Error(`Unknown LIVE_AI_PROMPT_SET="${name}". Valid sets: ${Object.keys(promptSets).join(', ')}.`);
     }
     return { name, prompts };
+}
+
+function findPromptById(id) {
+    for (const [setName, prompts] of Object.entries(promptSets)) {
+        const prompt = prompts.find(candidate => candidate.id === id);
+        if (prompt) return { ...prompt, promptSetName: setName };
+    }
+    return null;
+}
+
+function payloadFromSavedResult(result) {
+    if (result?.response?.payload?.operations) return result.response.payload;
+    if (result?.payload?.operations) return result.payload;
+    if (Array.isArray(result?.operations)) return { operations: result.operations };
+    return { operations: [] };
+}
+
+async function revalidateSavedResults(validator, resultsPath) {
+    const resolvedPath = path.resolve(resultsPath);
+    const saved = JSON.parse(await readFile(resolvedPath, 'utf8'));
+    const savedResults = Array.isArray(saved) ? saved : saved.results;
+    if (!Array.isArray(savedResults)) {
+        throw new Error(`Saved results file does not contain a results array: ${resolvedPath}`);
+    }
+
+    const reports = savedResults.map(result => {
+        const savedPrompt = result.prompt || {};
+        const prompt = findPromptById(savedPrompt.id) || savedPrompt;
+        const validation = validatePayload(payloadFromSavedResult(result), validator, prompt);
+        return {
+            id: savedPrompt.id || prompt.id || '(unknown)',
+            promptSet: prompt.promptSetName || saved.meta?.promptSet || '(saved)',
+            operationCount: validation.operationCount,
+            valid: validation.valid,
+            errors: validation.errors
+        };
+    });
+    const failures = reports.filter(item => !item.valid);
+    const summary = {
+        source: asMarkdownPath(resolvedPath),
+        checkedAt: new Date().toISOString(),
+        count: reports.length,
+        failureCount: failures.length,
+        failures: failures.map(item => ({
+            id: item.id,
+            errors: item.errors
+        })),
+        reports
+    };
+    const reportPath = path.join(path.dirname(resolvedPath), 'live-openai-random-revalidation.json');
+    await writeFile(reportPath, JSON.stringify(summary, null, 2), 'utf8');
+    console.log(JSON.stringify({
+        ...summary,
+        reportPath: asMarkdownPath(reportPath),
+        reports: undefined
+    }, null, 2));
+
+    if (failures.length > 0) {
+        process.exitCode = 1;
+    }
 }
 
 async function openAIRequest(apiKey, url, options = {}) {
@@ -379,10 +460,15 @@ function developerPrompt(referencePrompt = '') {
         'For triangle or polygon sides, use finite segment objects for the sides. Use line only when an infinite construction line is explicitly requested.',
         'For rightAngleMarker, the fields are vertexId, line1Id, and line2Id. Never use segment1Id or segment2Id for rightAngleMarker; those fields are only for equalLengthMarker.',
         'For angleDimension, create one marker per shown angle. Use the actual intersection point as vertexId and choose point1Id/point2Id on the two rays that form that angle.',
+        'For angleDimension, point1Id and point2Id must be distinct from vertexId, at least 0.55 math units away from the vertex, and not collinear with each other.',
         'For multiple angleDimension markers at the same vertex, use staggered arcRadius values and set showValue:false or customText to avoid overlapping automatic degree labels.',
+        'For construction-only polygons that should look like outlines, set fillOpacity:0. Use a positive fillOpacity only when the user requests a shaded region.',
         'For histograms, draw bars on the requested class-interval boundaries, such as [0,1], [1,2], not centered half-offset ranges such as [0.5,1.5] unless explicitly requested.',
         'For prism or solid prompts, prefer the first-class prism/pyramid object so hidden-edge dashed rendering is determined consistently by the runtime.',
+        'For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.',
+        'For nested solids, keep every inner vertex inside the outer projection and separate multiple inner solids so their screen-projection centers do not overlap.',
         'For dense graphs or solids, label only the essential points requested by the prompt. Set showLabel:false on helper points, functions, circles, arcs, sectors, prisms, and pyramids when labels would clutter the drawing.',
+        'For helper points that only shape a filled or outlined region, set visible:false so they do not appear as extra dots.',
         'For chart-like or unsupported details, approximate with points, segments, polygons, numberLine, prism, or pyramid only.',
         referencePrompt
     ].filter(Boolean).join('\n');
@@ -627,6 +713,18 @@ function validatePromptExpectations(ctx, prompt, errors) {
         }
     }
 
+    if (Number.isFinite(expectations.maxVisiblePointCount)) {
+        const visiblePoints = ctx.byType('point').filter(point => point.visible !== false);
+        if (visiblePoints.length > expectations.maxVisiblePointCount) {
+            const examples = visiblePoints.slice(0, 8).map(point => point.id || '(no id)').join(', ');
+            errors.push(`${prompt.id}: expected at most ${expectations.maxVisiblePointCount} visible point object(s), but found ${visiblePoints.length}; set helper points to visible:false. Visible point(s): ${examples}.`);
+        }
+    }
+
+    if (Array.isArray(expectations.requiredPointWindows)) {
+        validateRequiredPointWindows(ctx, prompt, expectations.requiredPointWindows, errors);
+    }
+
     if (Number.isFinite(expectations.minDashedLines)) {
         const dashedLines = ctx.byType('line').filter(line => line.dashed === true);
         if (dashedLines.length < expectations.minDashedLines) {
@@ -658,12 +756,59 @@ function validatePromptExpectations(ctx, prompt, errors) {
         validateDirectTwoCircleLensPoints(ctx, prompt, errors);
     }
 
+    if (Number.isFinite(expectations.lensCircleRadius)) {
+        validateLensCircleGeometry(ctx, prompt, expectations.lensCircleRadius, errors);
+    }
+
+    if (expectations.requireRenderableAngles) {
+        validateRenderableAngles(ctx, prompt, errors);
+    }
+
+    if (Number.isFinite(expectations.minDistinctAngleVertices)) {
+        const distinctVertices = new Set(ctx.byType('angleDimension').map(angle => angle.vertexId).filter(Boolean));
+        if (distinctVertices.size < expectations.minDistinctAngleVertices) {
+            errors.push(`${prompt.id}: expected angle markers at ${expectations.minDistinctAngleVertices} distinct vertices, but found ${distinctVertices.size}.`);
+        }
+    }
+
+    if (Number.isFinite(expectations.maxPolygonFillOpacity)) {
+        validatePolygonFillOpacity(ctx, prompt, expectations.maxPolygonFillOpacity, errors);
+    }
+
     if (expectations.innerWithinFirstPrism) {
         validateInnerPointsWithinFirstSolid(ctx, prompt, 'prism', errors);
     }
 
     if (expectations.innerWithinFirstPyramid) {
         validateInnerPointsWithinFirstSolid(ctx, prompt, 'pyramid', errors);
+    }
+
+    if (Number.isFinite(expectations.innerSolidMinCenterDistance)) {
+        validateInnerSolidSeparation(ctx, prompt, expectations.innerSolidMinCenterDistance, errors);
+    }
+
+    if (Array.isArray(expectations.requiredPrismVertexCounts)) {
+        validateRequiredPrismVertexCounts(ctx, prompt, expectations.requiredPrismVertexCounts, errors);
+    }
+
+    if (expectations.validPyramidApexes) {
+        validatePyramidApexes(ctx, prompt, errors);
+    }
+}
+
+function validateRequiredPointWindows(ctx, prompt, windows, errors) {
+    for (const window of windows) {
+        const pointId = findNamedPointId(ctx, window.name);
+        const point = pointId ? resolvePoint(ctx, pointId, new Set()) : null;
+        if (!point) {
+            errors.push(`${prompt.id}: expected point ${window.name} in the requested coordinate window, but it was missing or unresolved.`);
+            continue;
+        }
+        const inWindow = point.x >= window.xMin && point.x <= window.xMax &&
+            point.y >= window.yMin && point.y <= window.yMax;
+        if (!inWindow) {
+            errors.push(`${prompt.id}: point ${window.name} should be inside x=[${formatNumber(window.xMin)}, ${formatNumber(window.xMax)}], y=[${formatNumber(window.yMin)}, ${formatNumber(window.yMax)}], but was (${formatNumber(point.x)}, ${formatNumber(point.y)}).`);
+        }
     }
 }
 
@@ -699,6 +844,67 @@ function validateDirectTwoCircleLensPoints(ctx, prompt, errors) {
     }
 }
 
+function validateLensCircleGeometry(ctx, prompt, expectedRadius, errors) {
+    const centerIds = ['O', 'P'].map(name => findNamedPointId(ctx, name));
+    if (!centerIds.every(Boolean)) {
+        errors.push(`${prompt.id}: expected lens circle centers labeled O and P.`);
+        return;
+    }
+
+    const circles = centerIds.map(centerId => ctx.byType('circle').find(circle => circle.centerId === centerId));
+    if (!circles.every(Boolean)) {
+        errors.push(`${prompt.id}: expected one circle centered at O and one circle centered at P.`);
+        return;
+    }
+
+    const radii = circles.map(circle => circleRadius(ctx, circle));
+    const badRadii = radii
+        .map((radius, index) => ({ radius, id: circles[index].id || '(no id)' }))
+        .filter(item => !Number.isFinite(item.radius) || Math.abs(item.radius - expectedRadius) > 0.12);
+    if (badRadii.length > 0) {
+        const actual = radii.map(radius => formatNumber(radius)).join(', ');
+        errors.push(`${prompt.id}: both lens circles must have radius ${formatNumber(expectedRadius)}; actual radii were [${actual}].`);
+    }
+
+    if (radii.every(Number.isFinite) && Math.abs(radii[0] - radii[1]) > 0.12) {
+        errors.push(`${prompt.id}: lens circles must have equal radii; actual radii were ${formatNumber(radii[0])} and ${formatNumber(radii[1])}.`);
+    }
+}
+
+function validateRenderableAngles(ctx, prompt, errors) {
+    const badAngles = ctx.byType('angleDimension').filter(angle => {
+        const vertex = resolvePoint(ctx, angle.vertexId, new Set());
+        const point1 = resolvePoint(ctx, angle.point1Id, new Set());
+        const point2 = resolvePoint(ctx, angle.point2Id, new Set());
+        if (!vertex || !point1 || !point2) return true;
+        const ray1 = distance(vertex, point1);
+        const ray2 = distance(vertex, point2);
+        if (ray1 < 0.55 || ray2 < 0.55) return true;
+        const cosine = dot(
+            normalizeVector(subtract(point1, vertex)),
+            normalizeVector(subtract(point2, vertex))
+        );
+        return Math.abs(cosine) > 0.985;
+    });
+
+    if (badAngles.length > 0) {
+        const ids = badAngles.slice(0, 6).map(angle => angle.id || '(no id)').join(', ');
+        errors.push(`${prompt.id}: angleDimension helper points must be far enough from the vertex and form a visible non-degenerate angle; bad angle(s): ${ids}.`);
+    }
+}
+
+function validatePolygonFillOpacity(ctx, prompt, maxFillOpacity, errors) {
+    const filled = ctx.byType('polygon').filter(polygon => {
+        const fillOpacity = Number.isFinite(Number(polygon.fillOpacity)) ? Number(polygon.fillOpacity) : 0.12;
+        return fillOpacity > maxFillOpacity + 0.001;
+    });
+
+    if (filled.length > 0) {
+        const ids = filled.slice(0, 6).map(polygon => `${polygon.id || '(no id)'}:${formatNumber(Number.isFinite(Number(polygon.fillOpacity)) ? Number(polygon.fillOpacity) : 0.12)}`).join(', ');
+        errors.push(`${prompt.id}: construction polygon(s) should use fillOpacity <= ${formatNumber(maxFillOpacity)}; filled polygon(s): ${ids}.`);
+    }
+}
+
 function validateInnerPointsWithinFirstSolid(ctx, prompt, solidType, errors) {
     const outer = ctx.byType(solidType)[0];
     if (!outer) return;
@@ -729,6 +935,79 @@ function validateInnerPointsWithinFirstSolid(ctx, prompt, solidType, errors) {
         const ids = offenders.slice(0, 6).map(point => point.id || '(no id)').join(', ');
         errors.push(`${prompt.id}: inner solid point(s) must stay inside the first ${solidType} projection bounds; outside point(s): ${ids}.`);
     }
+}
+
+function validateInnerSolidSeparation(ctx, prompt, minDistance, errors) {
+    const outerPrism = ctx.byType('prism')[0];
+    const outerPyramid = ctx.byType('pyramid')[0];
+    const outerIds = new Set([(outerPrism || outerPyramid)?.id].filter(Boolean));
+    const innerSolids = [...ctx.byType('prism'), ...ctx.byType('pyramid')]
+        .filter(solid => !outerIds.has(solid.id))
+        .map(solid => ({ solid, center: solidProjectionCenter(ctx, solid) }))
+        .filter(item => item.center);
+
+    for (let i = 0; i < innerSolids.length; i += 1) {
+        for (let j = i + 1; j < innerSolids.length; j += 1) {
+            const actual = distance(innerSolids[i].center, innerSolids[j].center);
+            if (actual < minDistance) {
+                errors.push(`${prompt.id}: inner solids should be visually separated by at least ${formatNumber(minDistance)} units; ${innerSolids[i].solid.id || '(no id)'} and ${innerSolids[j].solid.id || '(no id)'} are ${formatNumber(actual)} apart.`);
+            }
+        }
+    }
+}
+
+function validateRequiredPrismVertexCounts(ctx, prompt, requiredCounts, errors) {
+    const prismCounts = ctx.byType('prism').map(prism => ({
+        id: prism.id || '(no id)',
+        base: Array.isArray(prism.baseVertexIds) ? prism.baseVertexIds.length : 0,
+        top: Array.isArray(prism.topVertexIds) ? prism.topVertexIds.length : 0
+    }));
+
+    for (const requiredCount of requiredCounts) {
+        const found = prismCounts.some(count => count.base === requiredCount && count.top === requiredCount);
+        if (!found) {
+            const actual = prismCounts.map(count => `${count.id}:${count.base}/${count.top}`).join(', ') || '(none)';
+            errors.push(`${prompt.id}: expected at least one prism with ${requiredCount} base vertices and ${requiredCount} top vertices; actual prism vertex counts: ${actual}.`);
+        }
+    }
+}
+
+function validatePyramidApexes(ctx, prompt, errors) {
+    const badPyramids = ctx.byType('pyramid').filter(pyramid => {
+        if (!pyramid.apexId || !Array.isArray(pyramid.baseVertexIds)) return true;
+        if (pyramid.baseVertexIds.includes(pyramid.apexId)) return true;
+        const apex = resolvePoint(ctx, pyramid.apexId, new Set());
+        const basePoints = pyramid.baseVertexIds.map(id => resolvePoint(ctx, id, new Set())).filter(Boolean);
+        if (!apex || basePoints.length < 3) return true;
+        return distance(apex, averagePoint(basePoints)) < 0.45;
+    });
+
+    if (badPyramids.length > 0) {
+        const ids = badPyramids.slice(0, 6).map(pyramid => pyramid.id || '(no id)').join(', ');
+        errors.push(`${prompt.id}: pyramid apexId must be a distinct, visible apex outside the base vertex list; bad pyramid(s): ${ids}.`);
+    }
+}
+
+function solidProjectionCenter(ctx, solid) {
+    const vertexIds = solid.type === 'prism'
+        ? [...(solid.baseVertexIds || []), ...(solid.topVertexIds || [])]
+        : [solid.apexId, ...(solid.baseVertexIds || [])].filter(Boolean);
+    const points = vertexIds.map(id => resolvePoint(ctx, id, new Set())).filter(Boolean);
+    return points.length > 0 ? averagePoint(points) : null;
+}
+
+function circleRadius(ctx, circle) {
+    const center = resolvePoint(ctx, circle?.centerId, new Set());
+    const radiusPoint = resolvePoint(ctx, circle?.pointOnCircleId, new Set());
+    if (!center || !radiusPoint) return NaN;
+    return distance(center, radiusPoint);
+}
+
+function averagePoint(points) {
+    return {
+        x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+        y: points.reduce((sum, point) => sum + point.y, 0) / points.length
+    };
 }
 
 function pointBounds(points) {
@@ -1568,11 +1847,17 @@ function report(meta, results) {
 }
 
 async function main() {
+    await mkdir(outputDir, { recursive: true });
+    const validator = new SchemaValidator();
+
+    if (process.env.LIVE_AI_REVALIDATE_RESULTS) {
+        await revalidateSavedResults(validator, process.env.LIVE_AI_REVALIDATE_RESULTS);
+        return;
+    }
+
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OPENAI_API_KEY is required.');
 
-    await mkdir(outputDir, { recursive: true });
-    const validator = new SchemaValidator();
     const model = await chooseModel(apiKey);
     const promptSet = getPromptSet();
     const limit = Number(process.env.LIVE_AI_SAMPLE_LIMIT || promptSet.prompts.length);

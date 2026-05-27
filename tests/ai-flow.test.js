@@ -49,6 +49,10 @@ const TEST_REFERENCE_MANUAL = {
             gap: 'Curved solid primitives are not first-class objects.',
             currentApproximation: 'Approximate cylinders with composed supported primitives.'
         }
+    ],
+    visualGuardrails: [
+        'For construction-only polygons that should look like outlines, set fillOpacity:0.',
+        'For angleDimension, helper points must be distinct from the vertex.'
     ]
 };
 
@@ -415,6 +419,8 @@ test('AIService builds compact prompt references from the JSON feature manual', 
     assert.match(referencePrompt, /sector: required circleId, startPointId, endPointId/);
     assert.match(referencePrompt, /Curved solid primitives are not first-class objects/);
     assert.match(referencePrompt, new RegExp(String(IMAGE_RECREATE_OPERATION_BUDGET)));
+    assert.match(referencePrompt, /Visual fidelity guardrails/);
+    assert.match(referencePrompt, /fillOpacity:0/);
 
     const imagePrompt = service.buildImageAnalysisPrompt(
         '원기둥과 원의 부채꼴',
@@ -439,6 +445,8 @@ test('AIService can build prompt references from the real JSON manual', () => {
     assert.match(referencePrompt, /polygon/);
     assert.match(referencePrompt, /numberLine/);
     assert.match(referencePrompt, /Statistical chart primitives/);
+    assert.match(referencePrompt, /Visual fidelity guardrails/);
+    assert.match(referencePrompt, /angleDimension/);
 });
 
 test('SchemaValidator rejects selected-object patch responses that ignore the selected id', () => {

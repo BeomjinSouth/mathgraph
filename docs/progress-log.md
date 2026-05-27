@@ -2,6 +2,53 @@
 
 ## 2026-05-28
 
+### Recursive visual parity loop for stress-extra drawings
+
+#### Work completed
+
+- Rejudged the saved `tmp/live-openai-stress-extra-drawing-smoke-fixed2/` screenshots by visual intent rather than the previous all-pass validation status.
+- Added `LIVE_AI_REVALIDATE_RESULTS` support to `tools/run-live-openai-random-drawing-smoke.mjs` so saved live result files can be checked against the current prompt-local expectations without another API call.
+- Tightened the `stress_extra` prompt expectations for:
+  - actual exponential/log intersection coordinate windows,
+  - hidden lens helper points,
+  - renderable `angleDimension` helper rays,
+  - unfilled construction-only polygons,
+  - projected separation between multiple inner solids,
+  - valid pyramid apex/base geometry,
+  - true 3/3 triangular-prism vertex counts.
+- Added visual guardrails to `js/ai/AIService.js`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, `.agents/skills/mathgraph-drawing/SKILL.md`, and `docs/ai-reference.md`.
+- Added regression tests for the new visual-intent failure modes.
+- Rendered a local target-reference contact sheet at `tmp/stress-extra-visual-target/reference-contact-sheet.png` for human comparison. This reference render is not a live OpenAI result.
+- Updated `docs/stress-extra-openai-drawing-audit.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Findings
+
+- The previous `fixed2` live run is not visually accepted under the stricter bar.
+- Saved-result revalidation checked 10 outputs and rejected 6:
+  - `exp_log_two_curve_window`: wrong left intersection point,
+  - `two_circle_lens_region`: visible helper points,
+  - `hexagon_diagonal_angle_web`: unintended polygon fill,
+  - `two_transversals_angle_grid`: non-renderable angle marker,
+  - `box_with_pyramid_and_inner_prism`: overlapping inner solids,
+  - `double_pyramid_inside_box`: degenerate pyramid apex/base reuse.
+- `OPENAI_API_KEY` is not set in the current shell, so the fresh external recursive rerun remains blocked. The key was not written into commands, files, or reports.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran feature-manual JSON parse check; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 33 tests.
+- Ran `node --test tests\ai-flow.test.js`; passed with 28 tests.
+- Ran saved-result revalidation with `LIVE_AI_REVALIDATE_RESULTS=tmp/live-openai-stress-extra-drawing-smoke-fixed2/live-openai-random-results.json`; expected failure result confirmed 6 rejected outputs and wrote `tmp/live-openai-stress-extra-drawing-smoke-fixed2/live-openai-random-revalidation.json`.
+- Rendered the local visual target reference; all 10 payloads passed the strengthened local validators and browser-rendered with non-white pixels.
+- Ran `npm.cmd test`; passed with 80 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Additional stress OpenAI drawing audit and containment validation
 
 #### Work completed

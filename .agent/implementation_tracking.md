@@ -2,6 +2,67 @@
 
 ## Status
 
+- Task: Recursive visual parity loop for stress-extra OpenAI drawings
+- State: Done
+- Last updated: 2026-05-28
+
+## Plan
+
+1. Rejudge the latest `stress_extra` screenshots against the intended visual target.
+2. Identify root causes where JSON object counts pass but the rendered figure still differs.
+3. Tighten prompt-local validators and prompt wording for those causes.
+4. Re-run focused tests, render/live verification when possible, and visually review again.
+5. Update audit/progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Treat renderable angle markers as a separate requirement from angleDimension object count.
+- Reason: The latest parallel/transversal sample had four angleDimension objects, but a marker can be visually missing when a helper point equals the vertex.
+- Decision: Make construction polygons explicitly unfilled when the prompt asks for an outline-style figure.
+- Reason: Polygon defaults fill at low opacity, which makes a hexagon look like a shaded region unless `fillOpacity:0` is required.
+- Decision: Require inner nested solids to be separated in projection when two different inner solids are requested.
+- Reason: Containment alone can accept a visually tangled pile of vertices inside the outer prism.
+- Decision: Add saved-result revalidation with `LIVE_AI_REVALIDATE_RESULTS`.
+- Reason: The recursive loop needs to reject previously saved "all pass" API results after the visual-intent bar becomes stricter, without requiring an API key for every audit pass.
+- Decision: Push visual guardrails into the runtime OpenAI reference prompt and MathGraph drawing skill.
+- Reason: Fixes must influence future generation prompts, not only the local smoke test harness.
+
+## Blockers
+
+- Blocker: `OPENAI_API_KEY` is not set in the current shell, so a fresh external recursive live rerun cannot be performed unless the key is provided through the process environment.
+
+## Verification
+
+- Completed so far:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --check js\ai\AIService.js`
+  - `node -e "JSON.parse(require('fs').readFileSync('.agents/skills/mathgraph-drawing/references/feature-manual.json','utf8')); console.log('feature-manual JSON ok')"`
+  - `node --test tests\live-openai-random-smoke.test.js`
+  - `node --test tests\ai-flow.test.js`
+  - saved-result revalidation with `LIVE_AI_REVALIDATE_RESULTS=tmp/live-openai-stress-extra-drawing-smoke-fixed2/live-openai-random-results.json`; expected failure result: 6 of 10 saved outputs rejected by the new visual-intent gates.
+  - local target reference render: `tmp/stress-extra-visual-target/reference-contact-sheet.png`
+  - `npm.cmd test`
+  - `git diff --check`
+
+## Handoff
+
+- Current status:
+  - Previous `fixed2` live output is no longer considered visually accepted; the new validator rejects the six known mismatches.
+  - A fresh external API rerun is blocked in this shell because `OPENAI_API_KEY` is not set. Do not paste the key into commands or files; provide it through process environment for the next live recursive pass.
+  - Code, prompt context, tests, and audit docs are updated and verified locally.
+
+---
+
+## Status
+
 - Task: Additional stress OpenAI drawing set with diverse graphs and nested solids
 - State: Done
 - Last updated: 2026-05-28
