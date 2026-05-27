@@ -4,7 +4,7 @@ Last updated: 2026-05-28
 
 ## Scope
 
-This note compares the `stress_extra` live OpenAI drawing prompts with the rendered GraphA results saved under `tmp/live-openai-stress-extra-drawing-smoke/` and `tmp/live-openai-stress-extra-drawing-smoke-fixed/`.
+This note compares the `stress_extra` live OpenAI drawing prompts with the rendered GraphA results saved under `tmp/live-openai-stress-extra-drawing-smoke-fixed2/`.
 
 The API key is not recorded here. Live reports only state that the key was supplied through `OPENAI_API_KEY`.
 

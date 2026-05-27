@@ -35,13 +35,26 @@
 #### Verification
 
 - Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
-- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 26 tests.
-- Ran `npm.cmd test`; passed with 72 tests.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed.
+- Ran `node tools\run-live-openai-random-drawing-smoke.mjs` with `LIVE_AI_PROMPT_SET=stress_extra`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-stress-extra-drawing-smoke-fixed2`, `LIVE_AI_MAX_OUTPUT_TOKENS=14000`, and `LIVE_AI_MAX_ATTEMPTS=4`; passed.
+- The final live run selected `gpt-5.4-mini` and returned real response IDs:
+  - `resp_0ebd1ab13c51b0f0016a171e5f89b4819a9fe2eb221fa0dd47`
+  - `resp_0fba69a823e7ef56016a171e73c08c819a96f0c1dfec8a4187`
+  - `resp_0c47a172267085dc016a171e7d4ca0819992f679975c6102de`
+  - `resp_027ea2c9e559de3d016a171e88cc80819b84dee6a78f175981`
+  - `resp_0c0bedfd2ac7b86b016a171e8deab8819b9b810876f8ee6643`
+  - `resp_0c9c32c9a71ade13016a171ee36500819992ba28cc0d6b8303`
+  - `resp_03a1b0766a750740016a171f207ab88198b0e2b80f632bef9d`
+  - `resp_0f2becc1854b2b98016a171f3eba9c819899cc473882f78748`
+  - `resp_042fa4ce6cc150f7016a171f615a84819ba95f196f3bc1041c`
+  - `resp_04ac0aad26255582016a171f9189ec8199b6cd6baf38e260dd`
+- Final live run failures: 0.
+- Browser render console errors: 0.
+- Visible-label counts by prompt order: 2, 3, 2, 0, 4, 6, 0, 0, 0, 0.
+- Ran `npm.cmd test`; passed.
 - Ran `git diff --check`; passed with line-ending warnings only.
-- A fresh external OpenAI rerun was not performed in this continuation because `OPENAI_API_KEY` is not set in the current shell. The pasted key was not copied into commands, files, or reports.
-- Existing saved live evidence remains under:
-  - `tmp/live-openai-stress-extra-drawing-smoke/`
-  - `tmp/live-openai-stress-extra-drawing-smoke-fixed/`
+- Output report: `tmp/live-openai-stress-extra-drawing-smoke-fixed2/live-openai-random-report.md`.
+- Contact sheet: `tmp/live-openai-stress-extra-drawing-smoke-fixed2/contact-sheet.png`.
 
 #### Deployment / Vercel
 

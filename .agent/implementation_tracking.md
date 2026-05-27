@@ -35,21 +35,23 @@
 
 ## Blockers
 
-- Blocker: A fresh external rerun was not performed in this continuation because `OPENAI_API_KEY` is not set in the current shell. The pasted key was not copied into commands, files, or reports.
+- Blocker: None currently.
 
 ## Verification
 
 - Checks run:
   - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
   - `node --test tests\live-openai-random-smoke.test.js`
+  - live external OpenAI stress-extra run with `LIVE_AI_PROMPT_SET=stress_extra`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-stress-extra-drawing-smoke-fixed2`, `LIVE_AI_MAX_OUTPUT_TOKENS=14000`, and `LIVE_AI_MAX_ATTEMPTS=4`
   - `npm.cmd test`
   - `git diff --check`
 - Result:
   - Syntax check passed.
-  - Focused live-smoke tests passed with 26 tests.
-  - Full test suite passed with 72 tests.
+  - Focused live-smoke tests passed.
+  - Final live stress-extra run used `gpt-5.4-mini`, rendered all 10 outputs, and reported 0 failures / 0 browser console errors.
+  - Full test suite passed.
   - `git diff --check` passed with line-ending warnings only.
-  - Saved live OpenAI evidence for `stress_extra` remains under `tmp/live-openai-stress-extra-drawing-smoke/` and `tmp/live-openai-stress-extra-drawing-smoke-fixed/`.
+  - Saved live OpenAI evidence for `stress_extra` is under `tmp/live-openai-stress-extra-drawing-smoke-fixed2/`.
 
 ## Handoff
 
@@ -60,7 +62,7 @@
   - Added the prompt/result audit at `docs/stress-extra-openai-drawing-audit.md`.
   - Updated `docs/ai-reference.md` with dense prompt guidance.
 - What remains:
-  - Rerun `LIVE_AI_PROMPT_SET=stress_extra` with `OPENAI_API_KEY` supplied through the process environment to refresh the live report after the final validator tightening.
+  - None currently.
 
 ---
 
