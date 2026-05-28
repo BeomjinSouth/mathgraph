@@ -403,7 +403,7 @@
       "optionalFields": ["label", "color", "lineWidth", "dashed"],
       "template": { "op": "create", "id": "prism_1", "type": "prism", "baseVertexIds": ["A", "B", "C"], "topVertexIds": ["A1", "B1", "C1"] },
       "validationRules": ["baseVertexIds must contain at least 3 point IDs.", "topVertexIds length must match baseVertexIds length."],
-      "notes": ["Uses oblique projection and hidden-edge dashed rendering. Create all base and top points first."]
+      "notes": ["Uses oblique projection and hidden-edge dashed rendering. Create all base and top points first.", "For textbook-style prisms, baseVertexIds is the near/front face and topVertexIds is the shifted rear face, so front/base edges stay solid while hidden rear/top edges are dashed."]
     },
     {
       "type": "pyramid",

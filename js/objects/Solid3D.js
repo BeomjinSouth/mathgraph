@@ -6,6 +6,7 @@
  * - 투영(Oblique): X = x + α*z, Y = y + β*z
  * - 시선 방향: viewDir = normalize(-α, -β, 1)
  * - 모서리 가시성: 인접 면 중 하나라도 앞면이면 실선, 모두 뒷면이면 점선
+ * - 각기둥은 교과서식 ABCD-A'B'C'D' 표기에 맞춰 base 면을 앞면으로 해석
  */
 
 import { GeoObject, ObjectType } from './GeoObject.js';
@@ -64,10 +65,16 @@ const ALPHA = 0.5;
 const BETA = 0.35;
 
 /**
- * 시선 방향 (투영 파라미터 기반)
+ * 기본 시선 방향 (투영 파라미터 기반)
  * 카메라가 바라보는 방향 = normalize(-α, -β, 1)
  */
 const VIEW_DIR = new Vec3(-ALPHA, -BETA, 1).normalize();
+
+/**
+ * 각기둥 전용 시선 방향
+ * baseVertexIds를 앞면, topVertexIds를 뒤쪽으로 읽는 교과서식 투영 관례를 따른다.
+ */
+const PRISM_VIEW_DIR = new Vec3(ALPHA, BETA, -1).normalize();
 
 /**
  * 삼각형 면의 법선 벡터 계산
@@ -298,12 +305,13 @@ export class Prism extends GeoObject {
         const triangles = fixedTris.map(t => ({ a: t[0], b: t[1], c: t[2] }));
 
         // === 5. 각 면의 앞/뒤 판정 ===
+        // 각기둥은 base 면을 앞면으로 읽어야 ABCD-A'B'C'D'에서 앞 모서리가 실선으로 남는다.
         const triFacing = triangles.map(t => {
             const a = verts[t.a];
             const b = verts[t.b];
             const c = verts[t.c];
             const nrm = b.sub(a).cross(c.sub(a)).normalize();
-            const front = nrm.dot(VIEW_DIR) > 0;
+            const front = nrm.dot(PRISM_VIEW_DIR) > 0;
             return { ...t, front };
         });
 

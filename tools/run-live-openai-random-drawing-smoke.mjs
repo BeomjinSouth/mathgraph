@@ -885,6 +885,7 @@ function developerPrompt(referencePrompt = '') {
         'For construction-only polygons that should look like outlines, set fillOpacity:0. Use a positive fillOpacity only when the user requests a shaded region.',
         'For histograms, draw bars on the requested class-interval boundaries, such as [0,1], [1,2], not centered half-offset ranges such as [0.5,1.5] unless explicitly requested.',
         'For prism or solid prompts, prefer the first-class prism/pyramid object so hidden-edge dashed rendering is determined consistently by the runtime.',
+        'For prism objects, use baseVertexIds for the near/front face and topVertexIds for the shifted rear face so visible front edges stay solid and hidden rear edges become dashed.',
         'For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.',
         'For nested solids, keep every inner vertex inside the outer projection and separate multiple inner solids so their screen-projection centers do not overlap.',
         'For dense graphs or solids, label only the essential points requested by the prompt. Set showLabel:false on helper points, functions, circles, arcs, sectors, prisms, and pyramids when labels would clutter the drawing.',

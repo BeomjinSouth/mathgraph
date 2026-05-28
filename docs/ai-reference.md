@@ -503,6 +503,8 @@ Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared st
 }
 ```
 
+For `prism`, treat `baseVertexIds` as the near/front face and `topVertexIds` as the shifted rear face. The runtime keeps front/base edges solid and dashes hidden rear/top edges.
+
 ```json
 {
   "op": "create",
@@ -525,7 +527,7 @@ For complex live OpenAI drawing prompts, include the following context when it m
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, include exact coordinates for the intended visible points and the exact equations for reference lines.
 - For concentric circles or fixed-radius tangency diagrams, state the shared center id and numeric radii. Current GraphA has no first-class `annularSector`; use a normal `sector` plus an inner circle outline unless a future primitive is added.
 - For curved regions bounded by functions, use a polygon through explicit boundary/sample points and hide helper points; do not claim exact curved fill unless a first-class region primitive exists.
-- For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. Put every inner-solid vertex inside the outer solid's screen-projection region, and separate multiple inner solids so their projected centers do not overlap.
+- For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. For prisms, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds`; put every inner-solid vertex inside the outer solid's screen-projection region, and separate multiple inner solids so their projected centers do not overlap.
 - For `pyramid`, `apexId` must not appear in `baseVertexIds`, and the apex should be visually separated from the base centroid.
 - For polygon-owned boundaries, do not require duplicate segment edges unless the user explicitly asks for separate selectable edge segments.
 - The live smoke runner can render deterministic target sheets without an API call by setting `LIVE_AI_RENDER_REFERENCE_TARGETS=1`. Use this to compare intended visuals against live OpenAI outputs.

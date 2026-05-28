@@ -4,6 +4,32 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The fix keeps solid geometry inside first-class `prism` and `pyramid` objects instead of hand-authored dashed/solid segment bundles.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The user-visible acceptance bar is whether rendered front edges are solid and rear edges are dashed on the actual canvas.
+
+## Current Task Notes
+
+- User concern:
+  - Draw several solid figures such as rectangular prisms and pyramids, then verify hidden/back edges are dashed and visible/front edges are solid.
+- Initial local audit:
+  - A multi-solid browser render was saved at `tmp/solid3d-edge-audit-before/solid3d-edge-audit-before.png`.
+  - `pyramid` behavior reads correctly in the sampled forms: rear base/lateral edges are dashed.
+  - `prism` currently treats the shifted top face as viewer-facing, which can dash front/base edges in ordinary `ABCD-A'B'C'D'` textbook-style prism drawings.
+- Root correction:
+  - Keep the first-class solid object path.
+  - Treat `prism.baseVertexIds` as the near/front face and `prism.topVertexIds` as the shifted/rear face for dashed hidden-edge classification.
+  - Add render-call tests so this cannot regress silently.
+- Secret handling:
+  - The pasted OpenAI key must not be stored or echoed. Live OpenAI runs require `OPENAI_API_KEY` to be supplied through the environment.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The new prompt batch must use only supported GraphA objects while making the intended geometry explicit enough for visual parity checks.
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:

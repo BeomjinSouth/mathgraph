@@ -2,6 +2,41 @@
 
 ## 2026-05-28
 
+### Solid 3D visible/hidden edge audit and prism correction
+
+#### Work completed
+
+- Rendered multiple local solid forms before and after the change: rectangular prisms with different rear-face shifts, a triangular prism, square pyramids, and a pentagonal pyramid.
+- Found that `prism` was treating the shifted top face as viewer-facing, so ordinary textbook-style `ABCD-A'B'C'D'` rectangular prisms could show front/base edges as dashed.
+- Updated `js/objects/Solid3D.js` so `prism.baseVertexIds` is the near/front face and `prism.topVertexIds` is the shifted rear face for hidden-edge classification.
+- Kept existing `pyramid` behavior, which already dashed rear base/lateral edges in the sampled forms.
+- Added render-call regression coverage in `tests/solid3d-hidden-edges.test.js` to confirm front/base prism edges render solid and rear/top hidden edges render dashed.
+- Updated `docs/ai-reference.md`, `js/ai/AIService.js`, `tools/run-live-openai-random-drawing-smoke.mjs`, `.agents/skills/mathgraph-drawing/SKILL.md`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Findings
+
+- The issue was not line dash rendering itself; `canvas.drawSegment` correctly honored dashed options.
+- The root cause was the prism visibility convention: face-front detection used the same view direction as pyramids, which made the shifted top face front-facing for prism notation.
+- The user-pasted OpenAI API key was not used, stored, or echoed. Live external OpenAI drawing remains blocked until a key is supplied safely through `OPENAI_API_KEY`.
+
+#### Verification
+
+- Ran `node --check js\objects\Solid3D.js`; passed.
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Parsed `.agents/skills/mathgraph-drawing/references/feature-manual.json` and `retrieval-index.json`; passed.
+- Ran `node --test tests\solid3d-hidden-edges.test.js`; passed with 3 tests.
+- Browser audit before fix: `tmp/solid3d-edge-audit-before/solid3d-edge-audit-before.png`.
+- Browser audit after fix: `tmp/solid3d-edge-audit-after/solid3d-edge-audit-after.png`, 53 objects, 18,688 non-white pixels, 0 console errors.
+- Rendered `LIVE_AI_PROMPT_SET=stress_novel` reference targets into `tmp/solid3d-reference-after`; passed with 10 rendered targets, 0 failures, and 0 browser console errors.
+- Ran `npm.cmd test`; passed with 97 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran a secret-pattern scan for actual `sk-*` key values outside `tmp`, `node_modules`, and `.git`; no matches.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Novel stress OpenAI drawing set and reference targets
 
 #### Work completed

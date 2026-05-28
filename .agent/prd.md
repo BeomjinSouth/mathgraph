@@ -2,6 +2,44 @@
 
 ## Summary
 
+- Task: Solid 3D visible/hidden edge audit and prism correction
+- Owner: Codex
+- Date: 2026-05-28
+- Related files:
+  - `js/objects/Solid3D.js`
+  - `tests/solid3d-hidden-edges.test.js`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The user asked to draw several rectangular-prism/prism and pyramid forms and confirm that back edges render dashed while front edges render solid.
+- A browser audit of multiple current solids showed that `pyramid` mostly follows the expected textbook convention, but `prism` treats the shifted top face as the viewer-facing face.
+- In common `ABCD-A'B'C'D'` style prism drawings, the base/front face should remain solid while the shifted/rear face contributes the hidden dashed edges.
+
+## Goals
+
+- Keep first-class `prism`/`pyramid` objects responsible for hidden-edge dashed/solid rendering.
+- Change `prism` visibility so the base face is treated as the near/front face and the shifted top face as the rear face.
+- Add regression coverage that checks render-time dashed flags for front and rear prism edges, not only internal `_hiddenEdges` indices.
+- Capture a browser-rendered multi-solid audit image after the fix.
+
+## Non-Goals
+
+- Do not add curved solid primitives such as cylinders, cones, or spheres.
+- Do not use or store the pasted OpenAI API key; live external OpenAI calls require `OPENAI_API_KEY` in the environment.
+- Do not replace first-class solids with hand-drawn segment bundles.
+
+## Acceptance Criteria
+
+- [x] Rectangular prism front/base edges render solid in the audit case.
+- [x] Rectangular prism rear/top hidden edges render dashed in the audit case.
+- [x] Existing pyramid hidden-edge behavior remains covered.
+- [x] Focused Solid3D tests, full tests, browser screenshot validation, and whitespace check pass.
+
+---
+
+## Summary
+
 - Task: Novel OpenAI drawing stress set and reference visual targets
 - Owner: Codex
 - Date: 2026-05-28
