@@ -286,6 +286,14 @@ export class PatchApplier {
                 );
                 break;
 
+            case 'lensRegion':
+                object = this.objectManager.createLensRegion(
+                    resolvedOp.circle1Id,
+                    resolvedOp.circle2Id,
+                    commonParams
+                );
+                break;
+
             case 'polygon':
                 object = this.objectManager.createPolygon(
                     resolvedOp.vertexIds,
@@ -415,6 +423,7 @@ export class PatchApplier {
         const refFields = [
             'point1Id', 'point2Id', 'point3Id', 'centerId', 'pointOnCircleId',
             'originId', 'directionPointId', 'lineId', 'circleId', 'segmentId',
+            'circle1Id', 'circle2Id',
             'object1Id', 'object2Id', 'baseLineId', 'throughPointId',
             'startPointId', 'endPointId', 'functionId', 'vertexId',
             'line1Id', 'line2Id', 'segment1Id', 'segment2Id',

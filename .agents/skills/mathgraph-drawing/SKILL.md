@@ -19,7 +19,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 ## Reference Selection
 
 - Plane figures: load core contract, point/line/polygon objects, construction objects, marker/dimension objects, and examples tagged `plane`.
-- Circles and curved regions: load circle, circleThreePoints, pointOnCircle, tangentCircle, arc, sector, circularSegment, and examples tagged `circle`.
+- Circles and curved regions: load circle, circleThreePoints, pointOnCircle, tangentCircle, arc, sector, circularSegment, lensRegion, and examples tagged `circle`.
 - Solids: load prism/pyramid, base/top/apex point patterns, and examples tagged `solid`.
 - Graphs/functions: load function, tangentFunction, intersection, line/segment, numberLine, and examples tagged `graph`.
 - Statistical or chart-like requests: load polygon, numberLine, line/segment, and examples tagged `chart_approximation`; mention that chart primitives are not first-class yet.
@@ -34,6 +34,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For selected-object patch requests, prefer `update`/`delete` operations on existing selected IDs. Do not create unrelated objects when the user says only this part/selected object should change.
 - For image recreation, stay within the current operation budget and ignore dense page text, decorative grids, and unsupported textbook furniture unless requested.
 - Use `polygon` for triangles, quadrilaterals, shaded regions, bars, and other filled plane regions.
+- Use `lensRegion` for the exact filled overlap of two intersecting circles instead of approximating the lens with a polygon.
 - If a polygon is only a construction boundary or outline, set `fillOpacity:0`; use positive fill opacity only for requested shaded regions.
 - Use `prism` and `pyramid` for current solid support. Approximate cylinders, cones, spheres, nets, box plots, histograms, and scatter plots with current primitives and state the limitation when needed.
 - For `pyramid`, keep `apexId` out of `baseVertexIds` and place the apex far enough from the base centroid to read as a real apex.

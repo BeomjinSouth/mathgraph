@@ -1055,6 +1055,39 @@ body {
     color: rgba(255, 255, 255, 0.95);
 }
 
+.fill-controls {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 14px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.fill-controls input[type="color"] {
+    width: 36px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: transparent;
+}
+
+.fill-controls input[type="range"] {
+    grid-column: 2 / span 1;
+    min-width: 0;
+}
+
+.fill-controls #fillOpacityValue {
+    justify-self: end;
+    font-variant-numeric: tabular-nums;
+}
+
 /* Current Tool Display */
 .current-tool-display {
     display: flex;

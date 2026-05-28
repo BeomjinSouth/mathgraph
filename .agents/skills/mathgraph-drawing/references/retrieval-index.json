@@ -22,7 +22,7 @@
       "exampleTags": ["plane", "polygon", "construction"]
     },
     {
-      "ifPromptMentions": ["원", "호", "부채꼴", "활꼴", "접선", "외접원"],
+      "ifPromptMentions": ["원", "호", "부채꼴", "활꼴", "렌즈", "교집합", "접선", "외접원"],
       "loadChunks": ["contract-core", "objects-circle-core", "objects-markers-dimensions"],
       "exampleTags": ["circle", "sector", "tangent"]
     },
@@ -76,7 +76,7 @@
     {
       "id": "objects-circle-core",
       "file": "feature-manual.json",
-      "objectTypes": ["circle", "circleThreePoints", "pointOnCircle", "circleCenterPoint", "tangentCircle", "arc", "sector", "circularSegment"]
+      "objectTypes": ["circle", "circleThreePoints", "pointOnCircle", "circleCenterPoint", "tangentCircle", "arc", "sector", "circularSegment", "lensRegion"]
     },
     {
       "id": "objects-construction",
@@ -128,7 +128,7 @@
     {
       "id": "circle_sector_segment_annotation",
       "tags": ["circle", "sector", "arc", "dimension"],
-      "objectTypes": ["point", "circle", "arc", "sector", "circularSegment", "angleDimension"]
+      "objectTypes": ["point", "circle", "arc", "sector", "circularSegment", "lensRegion", "angleDimension"]
     },
     {
       "id": "solid_triangular_prism_with_lengths",

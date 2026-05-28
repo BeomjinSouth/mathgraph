@@ -4,6 +4,30 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - `lensRegion` must become a valid GraphA primitive and scene-graph target so generated diagrams stop relying on polygon approximations for two-circle overlaps.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The acceptance bar is visual parity: the lens must render as two circular arcs with no internal chord, and the fill tool must visibly change objects on the real canvas.
+
+## Current Task Notes
+
+- User concern:
+  - A previous lens-like fifth output looked wrong because the intended curved overlap was represented with lower-level approximations.
+  - The user also asked whether paint-program-style color filling can be provided.
+- Root correction:
+  - Add a first-class `lensRegion(circle1Id, circle2Id)` object for exact two-circle intersections.
+  - Keep arbitrary function-bounded regions as future work unless they can be compiled into existing primitives.
+  - Add vector fill tooling for closed objects: `circle`, `polygon`, `sector`, `circularSegment`, and `lensRegion`.
+- Visual acceptance:
+  - Two-circle lens shows only the two curved outer boundaries of the overlap and a filled interior.
+  - Fill tool changes color/opacity without converting geometry to pixels.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The recursive loop must judge GraphA objects by whether the rendered geometry matches the intended Korean drawing request.
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:

@@ -20,9 +20,12 @@ test('SceneGraphCompiler compiles circle sector scenes into valid GraphA operati
             { id: 'O', kind: 'point', label: 'O', x: 0, y: 0 },
             { id: 'A', kind: 'point', label: 'A', x: 3, y: 0 },
             { id: 'B', kind: 'point', label: 'B', x: 0, y: 3 },
+            { id: 'C', kind: 'point', label: 'C', x: -3, y: 0 },
             { id: 'circle_O', kind: 'circle', center: 'O', through: 'A' },
+            { id: 'circle_B', kind: 'circle', center: 'B', through: 'C' },
             { id: 'arc_AB', kind: 'arc', circle: 'circle_O', start: 'A', end: 'B', mode: 'minor' },
-            { id: 'sector_AOB', kind: 'sector', circle: 'circle_O', start: 'A', end: 'B', fillOpacity: 0.18 }
+            { id: 'sector_AOB', kind: 'sector', circle: 'circle_O', start: 'A', end: 'B', fillOpacity: 0.18 },
+            { id: 'lens_overlap', kind: 'circleIntersectionRegion', circles: ['circle_O', 'circle_B'], fillOpacity: 0.2 }
         ],
         relations: [
             { id: 'angle_AOB', kind: 'angleDimension', vertex: 'O', point1: 'A', point2: 'B' }
@@ -33,7 +36,11 @@ test('SceneGraphCompiler compiles circle sector scenes into valid GraphA operati
 
     assert.deepEqual(
         compiled.operations.map(op => op.type),
-        ['point', 'point', 'point', 'circle', 'arc', 'sector', 'angleDimension']
+        ['point', 'point', 'point', 'point', 'circle', 'circle', 'arc', 'sector', 'lensRegion', 'angleDimension']
+    );
+    assert.deepEqual(
+        compiled.operations.find(op => op.id === 'lens_overlap'),
+        { op: 'create', id: 'lens_overlap', type: 'lensRegion', circle1Id: 'circle_O', circle2Id: 'circle_B', fillOpacity: 0.2 }
     );
     assert.equal(compiled.warnings.length, 0);
     validateOperations(compiled.operations);

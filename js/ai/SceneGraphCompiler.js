@@ -37,6 +37,9 @@ const NODE_KIND_ALIASES = new Map(Object.entries({
     arc: 'arc',
     sector: 'sector',
     circularsegment: 'circularSegment',
+    lens: 'lensRegion',
+    lensregion: 'lensRegion',
+    circleintersectionregion: 'lensRegion',
     polygon: 'polygon',
     triangle: 'polygon',
     quadrilateral: 'polygon',
@@ -93,6 +96,7 @@ export const SCENE_GRAPH_SUPPORTED_NODE_KINDS = [
     'arc',
     'sector',
     'circularSegment',
+    'lensRegion',
     'polygon',
     'function',
     'numberLine',
@@ -284,6 +288,9 @@ export class SceneGraphCompiler {
             case 'sector':
             case 'circularSegment':
                 this.addCircleRegion(node, kind);
+                break;
+            case 'lensRegion':
+                this.addLensRegion(node);
                 break;
             case 'polygon':
                 this.addPolygon(node);
@@ -541,6 +548,27 @@ export class SceneGraphCompiler {
             startPointId,
             endPointId,
             ...(node.mode === 'major' || node.mode === 'minor' ? { mode: node.mode } : {}),
+            ...commonFields(node)
+        });
+        this.createdIds.add(id);
+    }
+
+    addLensRegion(node) {
+        const id = this.nodeId(node, 'lensRegion');
+        const circleRefs = refsFrom(firstValue(node, ['circleIds', 'circles']));
+        const circle1Id = ref(firstValue(node, ['circle1Id', 'circle1', 'firstCircle', 'leftCircle'])) || circleRefs[0];
+        const circle2Id = ref(firstValue(node, ['circle2Id', 'circle2', 'secondCircle', 'rightCircle'])) || circleRefs[1];
+        if (!circle1Id || !circle2Id) {
+            this.warn(`lensRegion "${id}" skipped because two circle references are required.`);
+            return;
+        }
+
+        this.addOperation({
+            op: 'create',
+            id,
+            type: 'lensRegion',
+            circle1Id,
+            circle2Id,
             ...commonFields(node)
         });
         this.createdIds.add(id);

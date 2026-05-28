@@ -75,6 +75,16 @@ export class HistoryManager {
         });
     }
 
+    recordBatch(actions) {
+        const normalized = Array.isArray(actions) ? actions.filter(Boolean) : [];
+        if (normalized.length === 0) return;
+
+        this.record({
+            type: 'batch',
+            actions: normalized
+        });
+    }
+
     startDrag(objects) {
         this.pendingAction = {
             type: 'drag',
@@ -161,6 +171,9 @@ export class HistoryManager {
             case 'propertyChange':
                 this.undoPropertyChange(action);
                 break;
+            case 'batch':
+                this.undoBatch(action);
+                break;
             case 'drag':
                 this.undoDrag(action);
                 break;
@@ -190,6 +203,9 @@ export class HistoryManager {
                 break;
             case 'propertyChange':
                 this.redoPropertyChange(action);
+                break;
+            case 'batch':
+                this.redoBatch(action);
                 break;
             case 'drag':
                 this.redoDrag(action);
@@ -249,6 +265,22 @@ export class HistoryManager {
         if (obj) {
             this.setPropertyValue(obj, action.property, action.newValue);
             this.objectManager.updateObject(action.objectId);
+        }
+    }
+
+    undoBatch(action) {
+        for (const childAction of [...action.actions].reverse()) {
+            if (childAction.type === 'propertyChange') {
+                this.undoPropertyChange(childAction);
+            }
+        }
+    }
+
+    redoBatch(action) {
+        for (const childAction of action.actions) {
+            if (childAction.type === 'propertyChange') {
+                this.redoPropertyChange(childAction);
+            }
         }
     }
 

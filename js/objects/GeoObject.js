@@ -31,6 +31,7 @@ export const ObjectType = {
     ARC: 'arc',
     SECTOR: 'sector',
     CIRCULAR_SEGMENT: 'circularSegment',
+    LENS_REGION: 'lensRegion',
     POLYGON: 'polygon',
 
     PARALLEL: 'parallel',
@@ -113,7 +114,8 @@ export function generateLabel(type) {
     }
     if (type === ObjectType.CIRCLE || type === ObjectType.CIRCLE_THREE_POINTS ||
         type === ObjectType.ARC || type === ObjectType.SECTOR ||
-        type === ObjectType.CIRCULAR_SEGMENT || type === ObjectType.POLYGON) {
+        type === ObjectType.CIRCULAR_SEGMENT || type === ObjectType.LENS_REGION ||
+        type === ObjectType.POLYGON) {
         return labelGenerators.circle();
     }
     if (type === ObjectType.FUNCTION) {
@@ -293,6 +295,7 @@ export class GeoObject {
             [ObjectType.RAY]: 'line',
             [ObjectType.CIRCLE]: 'circle',
             [ObjectType.CIRCLE_THREE_POINTS]: 'circle',
+            [ObjectType.LENS_REGION]: 'circle',
             [ObjectType.POLYGON]: 'polygon',
             [ObjectType.FUNCTION]: 'function',
             [ObjectType.VECTOR]: 'vector',

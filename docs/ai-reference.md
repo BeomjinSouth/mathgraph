@@ -85,7 +85,7 @@ Preferred pipeline for recreate-mode image/PDF work:
 2. Compile that scene graph into GraphA operations with app-owned deterministic code.
 3. Validate the compiled operations with `SchemaValidator`, reference checks, semantic validators, and rendered canvas checks.
 
-The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `circle`, `arc`, `sector`, `polygon`, `function`, `numberLine`, `prism`, and `pyramid`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
+The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `circle`, `arc`, `sector`, `lensRegion`, `polygon`, `function`, `numberLine`, `prism`, and `pyramid`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
 
 Unsupported scene nodes such as `cylinder`, `cone`, `sphere`, native `histogram`, native `scatterPlot`, and independent `textLabel` are returned as warnings instead of invalid GraphA. That is intentional: exact textbook parity for those features requires new first-class runtime primitives.
 
@@ -153,6 +153,7 @@ These object types are currently supported by the AI validator and runtime patch
 - `arc`
 - `sector`
 - `circularSegment`
+- `lensRegion`
 - `polygon`
 - `prism`
 - `pyramid`
@@ -163,7 +164,8 @@ Important:
 - Use `tangentCircle` and `tangentFunction`, not a generic `tangent` type.
 - `rightAngleMarker`, `equalLengthMarker`, `angleDimension`, and `lengthDimension` are supported in the current runtime.
 - `arc`, `sector`, and `circularSegment` are supported in the current runtime.
-- Use `polygon` for triangles, quadrilaterals, and filled plane regions that are defined by existing point IDs.
+- Use `lensRegion` for the exact filled overlap of two intersecting circles.
+- Use `polygon` for triangles, quadrilaterals, and straight-edged filled plane regions that are defined by existing point IDs.
 - `prism` and `pyramid` are supported in the current runtime.
 - `numberLine` is supported in the validated AI patch flow with numeric `start`, `end`, `step`, and `y` fields.
 
@@ -172,6 +174,7 @@ Important:
 The application UI also exposes view controls that are part of the runtime but are not yet part of the validated AI JSON schema.
 
 - settings and view toggles such as grid, x-axis, y-axis, hidden-object visibility, and style controls
+- vector fill tool for applying fill color/opacity to circles, polygons, sectors, circular segments, and lens regions
 
 Treat those as UI/runtime features unless the schema validator is expanded to accept them.
 
@@ -189,7 +192,7 @@ Most object types accept the following optional properties:
 | `fontSize` | number | Label size |
 | `labelOffset` | object | Label offset such as `{ "x": 0.2, "y": 0.1 }` |
 | `dashed` | boolean | Dashed stroke toggle |
-| `fillColor` | string | Fill color for area objects. Default fill examples use `#000000` with opacity. |
+| `fillColor` | string | Fill color for area-capable objects such as circles, polygons, sectors, circular segments, and lens regions. |
 | `fillOpacity` | number | Fill opacity between `0` and `1` |
 
 These common style fields are applied during both `create` and `update` operations when the target runtime object supports them. For token-efficient AI calls, omit color fields unless a color is requested; the runtime default is black.
@@ -332,6 +335,24 @@ Reference fields should point to existing object IDs unless the referenced objec
 ```
 
 ### 6.6 Polygon
+
+### 6.6a Lens Region
+
+```json
+{
+  "op": "create",
+  "id": "lens_c1_c2",
+  "type": "lensRegion",
+  "circle1Id": "c1",
+  "circle2Id": "c2",
+  "fillColor": "#000000",
+  "fillOpacity": 0.24
+}
+```
+
+Required fields: `circle1Id` and `circle2Id`.
+
+Use `lensRegion` when the intended drawing is the filled overlap of two intersecting circles. It follows the two circular-arc boundaries directly and avoids the internal chord lines or self-crossing point order that can appear when the same shape is approximated with polygons or paired circular segments.
 
 ```json
 {
@@ -498,7 +519,7 @@ For complex live OpenAI drawing prompts, include the following context when it m
 - Function expressions must be right-hand-side only, with no `y=`.
 - Hide helper labels with `showLabel:false`; dense graph families and nested solids should use a small explicit visible-label budget.
 - Hide helper points with `visible:false` when they only shape a region or construction and should not appear as extra dots.
-- For two-circle lens regions, use direct upper/lower point objects when A and B must be distinct visible lens endpoints. Do not rely on duplicate generic `intersection` objects unless the branch is unimportant.
+- For two-circle lens regions, use `lensRegion` for the filled overlap. Add direct upper/lower point objects only when A and B must be distinct visible lens endpoints.
 - For construction-only polygons that should look like outlines, set `fillOpacity:0`; use positive `fillOpacity` only when the prompt requests a shaded region.
 - For `angleDimension`, make `point1Id` and `point2Id` distinct from `vertexId`, far enough from the vertex to render an arc, and non-collinear.
 - For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. Put every inner-solid vertex inside the outer solid's screen-projection region, and separate multiple inner solids so their projected centers do not overlap.

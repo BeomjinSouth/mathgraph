@@ -40,7 +40,7 @@ export class SchemaValidator {
             'vector', 'rightAngleMarker', 'equalLengthMarker',
             'angleDimension', 'lengthDimension',
             'arc', 'sector', 'circularSegment',
-            'polygon', 'prism', 'pyramid', 'numberLine'
+            'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine'
         ];
 
         this.validOperations = ['create', 'update', 'delete'];
@@ -72,6 +72,7 @@ export class SchemaValidator {
             arc: ['circleId', 'startPointId', 'endPointId'],
             sector: ['circleId', 'startPointId', 'endPointId'],
             circularSegment: ['circleId', 'startPointId', 'endPointId'],
+            lensRegion: ['circle1Id', 'circle2Id'],
             polygon: ['vertexIds'],
             prism: ['baseVertexIds', 'topVertexIds'],
             pyramid: ['baseVertexIds', 'apexId'],
@@ -253,6 +254,7 @@ export class SchemaValidator {
             const refFields = [
                 'point1Id', 'point2Id', 'point3Id', 'centerId', 'pointOnCircleId',
                 'originId', 'directionPointId', 'lineId', 'circleId', 'segmentId',
+                'circle1Id', 'circle2Id',
                 'object1Id', 'object2Id', 'baseLineId', 'throughPointId',
                 'startPointId', 'endPointId', 'functionId', 'vertexId',
                 'line1Id', 'line2Id', 'segment1Id', 'segment2Id',

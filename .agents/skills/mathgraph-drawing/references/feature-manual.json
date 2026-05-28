@@ -37,6 +37,7 @@
   },
   "visualGuardrails": [
     "For construction-only polygons that should look like outlines, set fillOpacity:0; omit positive fill unless a shaded region is requested.",
+    "For two-circle lens overlaps, use lensRegion with circle1Id and circle2Id instead of polygon approximations.",
     "For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough from the vertex to render a visible non-degenerate arc.",
     "For nested solids, use prism/pyramid objects and keep inner solid projected centers visually separated instead of piling them on the same screen area.",
     "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
@@ -47,7 +48,7 @@
     "recommendedFor": ["pasted image recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
     "sceneRootShape": {
       "sceneType": "diagram",
-      "nodes": "Array of math entities such as point, segment, circle, arc, sector, polygon, function, numberLine, prism, pyramid.",
+      "nodes": "Array of math entities such as point, segment, circle, arc, sector, lensRegion, polygon, function, numberLine, prism, pyramid.",
       "relations": "Array of constraints or annotations such as intersection, midpoint, parallel, perpendicular, rightAngle, equalLength, angleDimension, lengthDimension, tangentFunction.",
       "unsupported": "Array of unsupported first-class requests such as cylinder, cone, sphere, native histogram, scatterPlot, boxPlot, table, or textLabel.",
       "notes": "Optional source evidence, uncertainty, or crop notes."
@@ -110,6 +111,7 @@
       "arc",
       "sector",
       "circularSegment",
+      "lensRegion",
       "polygon",
       "prism",
       "pyramid",
@@ -126,7 +128,7 @@
       { "name": "pointSize", "type": "number", "scope": "create/update", "note": "Point radius/size." },
       { "name": "fontSize", "type": "number", "scope": "create/update", "note": "Label size." },
       { "name": "dashed", "type": "boolean", "scope": "create/update", "note": "Dashed stroke toggle." },
-      { "name": "fillColor", "type": "hex color string", "scope": "create/update", "note": "Area fill color for polygon, sector, circularSegment. Default fill is #000000 with opacity." },
+      { "name": "fillColor", "type": "hex color string", "scope": "create/update", "note": "Area fill color for circle, polygon, sector, circularSegment, and lensRegion. Default fill is #000000 with opacity." },
       { "name": "fillOpacity", "type": "number 0..1", "scope": "create/update", "note": "Area opacity." },
       { "name": "showLabel", "type": "boolean", "scope": "create/update", "note": "Label visibility." },
       { "name": "locked", "type": "boolean", "scope": "create/update", "note": "Prevents direct dragging when supported." },
@@ -370,6 +372,16 @@
       "notes": ["Use for area between a chord and an arc."]
     },
     {
+      "type": "lensRegion",
+      "koreanName": "two-circle lens region",
+      "tags": ["circle", "area", "lens"],
+      "requiredFields": ["circle1Id", "circle2Id"],
+      "optionalFields": ["fillColor", "fillOpacity", "label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "lens_c1_c2", "type": "lensRegion", "circle1Id": "c1", "circle2Id": "c2", "fillColor": "#000000", "fillOpacity": 0.24 },
+      "validationRules": ["The two circles must intersect in two points to produce a visible filled lens."],
+      "notes": ["Use this for the exact overlap of two circles. It renders two circular-arc boundaries without internal chord lines."]
+    },
+    {
       "type": "polygon",
       "koreanName": "다각형/채운 영역",
       "tags": ["plane", "polygon", "area"],
@@ -426,6 +438,7 @@
     { "tool": "sector", "koreanName": "부채꼴", "shortcut": null, "aiCreateType": "sector" },
     { "tool": "circularSegment", "koreanName": "활꼴", "shortcut": null, "aiCreateType": "circularSegment" },
     { "tool": "polygon", "koreanName": "다각형", "shortcut": "P", "aiCreateType": "polygon" },
+    { "tool": "fill", "koreanName": "벡터 채우기", "shortcut": null, "aiCreateType": null },
     { "tool": "prism", "koreanName": "각기둥", "shortcut": null, "aiCreateType": "prism" },
     { "tool": "pyramid", "koreanName": "각뿔", "shortcut": null, "aiCreateType": "pyramid" },
     { "tool": "parallel", "koreanName": "평행선", "shortcut": null, "aiCreateType": "parallel" },
@@ -478,7 +491,7 @@
     "keyboard": ["Ctrl+Z undo", "Ctrl+Y redo", "Delete/Backspace delete selected", "Esc cancel/clear selection", "Ctrl+A select all", "Ctrl+C copy", "Ctrl+V paste", "Space+drag pan"],
     "selection": ["single select", "shift multi-select", "box select", "hidden-object visibility mode"],
     "properties": ["label", "color", "lineWidth", "point coordinates", "function expression", "function domain through UI", "label reset", "object visibility", "copy/paste/delete"],
-    "history": ["create", "delete", "propertyChange", "drag", "rollback on AI patch failure"]
+    "history": ["create", "delete", "propertyChange", "batch", "drag", "rollback on AI patch failure"]
   },
   "settingsAndView": {
     "viewToggles": ["grid", "x-axis", "y-axis", "show hidden objects"],
@@ -497,7 +510,7 @@
   "exportAndPersistence": {
     "exportFormats": ["PNG", "SVG"],
     "exportOptions": ["scale 1x/2x/3x for PNG", "include background", "include grid", "include axes"],
-    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "functions", "arc", "sector", "circularSegment", "polygon", "numberLine", "grid", "axes", "fallback embedded PNG"],
+    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "functions", "arc", "sector", "circularSegment", "lensRegion", "polygon", "numberLine", "grid", "axes", "fallback embedded PNG"],
     "localSave": "Saves canvas offset, scale, and ObjectManager JSON to localStorage key graphA_save.",
     "localLoad": "Loads saved object graph and clears history baseline."
   },

@@ -33,7 +33,7 @@ const GRAPH_OPERATION_TYPES = [
     'vector', 'rightAngleMarker', 'equalLengthMarker',
     'angleDimension', 'lengthDimension',
     'arc', 'sector', 'circularSegment',
-    'polygon', 'prism', 'pyramid', 'numberLine'
+    'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine'
 ];
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
@@ -77,6 +77,8 @@ const operationProperties = {
     directionPointId: NULLABLE_STRING,
     lineId: NULLABLE_STRING,
     circleId: NULLABLE_STRING,
+    circle1Id: NULLABLE_STRING,
+    circle2Id: NULLABLE_STRING,
     segmentId: NULLABLE_STRING,
     object1Id: NULLABLE_STRING,
     object2Id: NULLABLE_STRING,
@@ -230,6 +232,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 4. 필수 필드를 포함하세요.
 5. 기본 도형 색상은 #000000입니다. 사용자가 색을 명시적으로 요청하지 않으면 여러 색을 넣지 마세요.
 6. Visual fidelity guardrails:
+   - For two-circle lens overlaps, use lensRegion with circle1Id and circle2Id. Do not approximate this with a polygon unless lensRegion is unavailable.
    - For construction-only polygons that should look like outlines, set fillOpacity:0. Use fillOpacity above 0 only for requested shaded regions.
    - For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough away to render a visible, non-degenerate angle arc.
    - For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.
@@ -272,6 +275,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - angleDimension: vertexId, point1Id, point2Id (optional arcRadius, showValue, markerCount, customText, labelOffset)
 - lengthDimension: segmentId
 - polygon: vertexIds (array of at least 3 point IDs)
+- lensRegion: circle1Id, circle2Id (filled intersection of two circles)
 - arc, sector, circularSegment: circleId, startPointId, endPointId, mode ("minor" 또는 "major")
 - prism: baseVertexIds (배열), topVertexIds (배열) - 각기둥
 - pyramid: baseVertexIds (배열), apexId - 각뿔
@@ -666,7 +670,7 @@ export class AIService {
         };
 
         const addPlane = () => add('point', 'segment', 'line', 'ray', 'polygon');
-        const addCircle = () => add('point', 'circle', 'circleThreePoints', 'pointOnCircle', 'circleCenterPoint', 'arc', 'sector', 'circularSegment', 'tangentCircle');
+        const addCircle = () => add('point', 'circle', 'circleThreePoints', 'pointOnCircle', 'circleCenterPoint', 'arc', 'sector', 'circularSegment', 'lensRegion', 'tangentCircle');
         const addConstruction = () => add('intersection', 'midpoint', 'parallel', 'perpendicular', 'perpendicularBisector', 'angleBisector', 'rightAngleMarker', 'equalLengthMarker', 'angleDimension', 'lengthDimension');
         const addSolid = () => {
             add('point', 'segment', 'polygon', 'prism', 'pyramid');
@@ -685,8 +689,8 @@ export class AIService {
             addConstruction();
         }
 
-        if (/circle|arc|sector|tangent|radius|diameter/.test(text) ||
-            /원|호|부채꼴|활꼴|접선|반지름|지름|현/.test(text)) {
+        if (/circle|arc|sector|lens|overlap|intersection region|tangent|radius|diameter/.test(text) ||
+            /원|호|부채꼴|활꼴|렌즈|교집합|접선|반지름|지름|현/.test(text)) {
             addCircle();
             addConstruction();
         }

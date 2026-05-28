@@ -3,9 +3,20 @@
  * 중심-점 원, 세 점 원
  */
 
-import { GeoObject, ObjectType } from './GeoObject.js';
+import { DEFAULT_OBJECT_COLOR, GeoObject, ObjectType } from './GeoObject.js';
 import { Vec2, Geometry } from '../utils/Geometry.js';
 import { MathUtils } from '../utils/MathUtils.js';
+
+function hexToRgba(hex, opacity) {
+    if (typeof hex !== 'string' || !/^#[0-9a-f]{6}$/i.test(hex)) {
+        return hex || `rgba(0, 0, 0, ${opacity})`;
+    }
+
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
 
 /**
  * 중심-점 원 (Circle by Center and Point)
@@ -17,6 +28,8 @@ export class Circle extends GeoObject {
         this.pointOnCircleId = pointOnCircleId;
         this.addDependency(centerId);
         this.addDependency(pointOnCircleId);
+        this.fillColor = params.fillColor || DEFAULT_OBJECT_COLOR;
+        this.fillOpacity = params.fillOpacity ?? 0;
 
         this._center = new Vec2(0, 0);
         this._radius = 0;
@@ -51,6 +64,7 @@ export class Circle extends GeoObject {
             color: this.color,
             width: this.lineWidth,
             dashed: this.dashed,
+            fillColor: this.fillOpacity > 0 ? hexToRgba(this.fillColor, this.fillOpacity) : null,
             highlighted: this.highlighted,
             selected: this.selected
         });
@@ -183,6 +197,8 @@ export class Circle extends GeoObject {
             ...super.toJSON(),
             centerId: this.centerId,
             pointOnCircleId: this.pointOnCircleId,
+            fillColor: this.fillColor,
+            fillOpacity: this.fillOpacity,
             labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y }
         };
     }
@@ -200,6 +216,8 @@ export class CircleThreePoints extends GeoObject {
         this.addDependency(point1Id);
         this.addDependency(point2Id);
         this.addDependency(point3Id);
+        this.fillColor = params.fillColor || DEFAULT_OBJECT_COLOR;
+        this.fillOpacity = params.fillOpacity ?? 0;
 
         this._center = new Vec2(0, 0);
         this._radius = 0;
@@ -240,6 +258,7 @@ export class CircleThreePoints extends GeoObject {
             color: this.color,
             width: this.lineWidth,
             dashed: this.dashed,
+            fillColor: this.fillOpacity > 0 ? hexToRgba(this.fillColor, this.fillOpacity) : null,
             highlighted: this.highlighted,
             selected: this.selected
         });
@@ -280,7 +299,9 @@ export class CircleThreePoints extends GeoObject {
             ...super.toJSON(),
             point1Id: this.point1Id,
             point2Id: this.point2Id,
-            point3Id: this.point3Id
+            point3Id: this.point3Id,
+            fillColor: this.fillColor,
+            fillOpacity: this.fillOpacity
         };
     }
 }

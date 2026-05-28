@@ -68,6 +68,7 @@ function createPatchHarness() {
     const history = [];
     let pointCount = 0;
     let polygonCount = 0;
+    let lensCount = 0;
 
     const objectManager = {
         selectedObjects: new Set(),
@@ -123,6 +124,27 @@ function createPatchHarness() {
                         id: this.id,
                         type: this.type,
                         vertexIds: this.vertexIds,
+                        fillColor: this.fillColor,
+                        fillOpacity: this.fillOpacity
+                    };
+                }
+            };
+            objects.set(obj.id, obj);
+            return obj;
+        },
+        createLensRegion(circle1Id, circle2Id, params = {}) {
+            const obj = {
+                id: `lens_${++lensCount}`,
+                type: 'lensRegion',
+                circle1Id,
+                circle2Id,
+                ...params,
+                toJSON() {
+                    return {
+                        id: this.id,
+                        type: this.type,
+                        circle1Id: this.circle1Id,
+                        circle2Id: this.circle2Id,
                         fillColor: this.fillColor,
                         fillOpacity: this.fillOpacity
                     };
@@ -760,6 +782,27 @@ test('SchemaValidator accepts polygons with three or more vertices', () => {
     assert.equal(validation.valid, true);
 });
 
+test('SchemaValidator accepts lens regions between two circles', () => {
+    const validator = new SchemaValidator();
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O1', type: 'point', x: -1, y: 0 },
+            { op: 'create', id: 'A1', type: 'point', x: 1, y: 0 },
+            { op: 'create', id: 'O2', type: 'point', x: 1, y: 0 },
+            { op: 'create', id: 'A2', type: 'point', x: -1, y: 0 },
+            { op: 'create', id: 'c1', type: 'circle', centerId: 'O1', pointOnCircleId: 'A1' },
+            { op: 'create', id: 'c2', type: 'circle', centerId: 'O2', pointOnCircleId: 'A2' },
+            { op: 'create', id: 'lens', type: 'lensRegion', circle1Id: 'c1', circle2Id: 'c2', fillOpacity: 0.24 }
+        ]
+    };
+
+    const validation = validator.parseAndValidate(payload);
+    const references = validator.validateReferences(payload, new Set());
+
+    assert.equal(validation.valid, true, validation.errors.join('\n'));
+    assert.equal(references.valid, true, references.errors.join('\n'));
+});
+
 test('SchemaValidator rejects polygons with too few vertices', () => {
     const validator = new SchemaValidator();
     const validation = validator.parseAndValidate({
@@ -862,4 +905,35 @@ test('PatchApplier creates polygons and resolves temporary vertex ids', () => {
     assert.equal(polygon.fillColor, '#22c55e');
     assert.equal(polygon.fillOpacity, 0.2);
     assert.deepEqual(history.map(item => item[0]), ['create', 'create', 'create', 'create']);
+});
+
+test('PatchApplier creates lens regions and resolves temporary circle ids', () => {
+    const { objectManager, historyManager, objects, history } = createPatchHarness();
+    const applier = new PatchApplier(objectManager, historyManager);
+
+    objects.set('real_c1', { id: 'real_c1', type: 'circle', toJSON: () => ({ id: 'real_c1', type: 'circle' }) });
+    objects.set('real_c2', { id: 'real_c2', type: 'circle', toJSON: () => ({ id: 'real_c2', type: 'circle' }) });
+
+    const result = applier.apply({
+        operations: [
+            {
+                op: 'create',
+                id: 'lens_tmp',
+                type: 'lensRegion',
+                circle1Id: 'real_c1',
+                circle2Id: 'real_c2',
+                fillColor: '#0ea5e9',
+                fillOpacity: 0.28
+            }
+        ]
+    });
+
+    assert.equal(result.success, true);
+    const lens = objects.get('lens_1');
+    assert.ok(lens);
+    assert.equal(lens.circle1Id, 'real_c1');
+    assert.equal(lens.circle2Id, 'real_c2');
+    assert.equal(lens.fillColor, '#0ea5e9');
+    assert.equal(lens.fillOpacity, 0.28);
+    assert.deepEqual(history.map(item => item[0]), ['create']);
 });

@@ -14,6 +14,7 @@ import { RightAngleMarker, EqualLengthMarker } from '../objects/Marker.js';
 import { Arc, Sector, CircularSegment } from '../objects/Arc.js'; // Mk.2
 import { AngleDimension, LengthDimension } from '../objects/Dimension.js'; // Mk.2
 import { Polygon } from '../objects/Polygon.js'; // Mk.5
+import { LensRegion } from '../objects/LensRegion.js';
 import { Prism, Pyramid } from '../objects/Solid3D.js'; // Mk.3
 import { NumberLine } from '../objects/NumberLine.js'; // Mk.4
 
@@ -532,6 +533,11 @@ export class ObjectManager {
                 obj = new CircularSegment(data.circleId, data.startPointId, data.endPointId, data.mode || 'minor', data);
                 break;
 
+            case ObjectType.LENS_REGION:
+            case 'lensRegion':
+                obj = new LensRegion(data.circle1Id, data.circle2Id, data);
+                break;
+
             case ObjectType.POLYGON:
             case 'polygon':
                 obj = new Polygon(data.vertexIds, data);
@@ -701,6 +707,10 @@ export class ObjectManager {
 
     createCircularSegment(circleId, startPointId, endPointId, mode = 'minor', params = {}) {
         return this.addObject(new CircularSegment(circleId, startPointId, endPointId, mode, params));
+    }
+
+    createLensRegion(circle1Id, circle2Id, params = {}) {
+        return this.addObject(new LensRegion(circle1Id, circle2Id, params));
     }
 
     createPolygon(vertexIds, params = {}) {

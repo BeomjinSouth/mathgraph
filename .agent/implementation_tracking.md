@@ -2,6 +2,68 @@
 
 ## Status
 
+- Task: First-class lens regions and vector fill tool
+- State: Done
+- Last updated: 2026-05-28
+
+## Plan
+
+1. Record the behavior change and visual acceptance criteria in planning docs.
+2. Add `lensRegion` as a runtime object, GraphA type, schema type, and scene-graph compiler target.
+3. Add a toolbar fill tool that updates fill color/opacity on closed vector objects with undo support.
+4. Extend tests and browser smoke rendering to confirm the drawn result matches the intended curved lens/fill behavior.
+5. Update docs/progress, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Add `lensRegion` rather than representing the overlap as a polygon.
+- Reason: The requested visual target has two circular-arc boundaries, and polygon point order/self-crossing was the root source of previous mismatch.
+- Decision: Add a vector fill tool instead of bitmap flood fill.
+- Reason: MathGraph stores editable geometry objects; vector fill preserves serialization, undo, SVG export, and AI patch compatibility.
+- Decision: Let the fill tool fill circle interiors while preserving normal circle hit testing.
+- Reason: Users expect a paint-bucket click inside a circle to fill it, but normal selection should still prefer the circle boundary.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Planned:
+  - focused unit tests for `lensRegion`, schema/patch creation, scene graph compilation, and fill tool behavior.
+  - full `npm.cmd test`.
+  - browser-rendered visual smoke artifact for lens region and filled objects.
+- Completed:
+  - `node --test tests\lens-region.test.js`
+  - `node --test tests\fill-tool.test.js`
+  - `node --test tests\scene-graph-compiler.test.js`
+  - `node --test tests\ai-flow.test.js`
+  - JSON parse check for `feature-manual.json` and `retrieval-index.json`
+  - Browser visual smoke through a temporary local server; output `tmp/lens-fill-visual-smoke/lens-fill-smoke-clean.png`, 0 console errors, `lensValid:true`, `lensPathPoints:129`, fill tool wrote `#22c55e` at opacity `0.55`, undo action type `batch`.
+  - `node --check js\main.js`
+  - `node --check js\ai\SceneGraphCompiler.js`
+  - `node --check js\ai\PatchApplier.js`
+  - `npm.cmd test` passed with 91 tests.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- Current status:
+  - `lensRegion` is implemented as a first-class curved overlap object and wired into GraphA schema, patch application, scene graph compilation, SVG export, AI references, and tests.
+  - The toolbar includes a vector fill tool with color/opacity controls and single-step undo batching.
+
+---
+
+## Status
+
 - Task: Recursive visual parity loop for stress-extra OpenAI drawings
 - State: Done
 - Last updated: 2026-05-28

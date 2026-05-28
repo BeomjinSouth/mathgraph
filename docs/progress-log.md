@@ -2,6 +2,38 @@
 
 ## 2026-05-28
 
+### First-class lens region and vector fill tool
+
+#### Work completed
+
+- Added `lensRegion` as a first-class object for the exact filled overlap of two intersecting circles.
+- Wired `lensRegion` into ObjectManager JSON restore, GraphA schema validation, AI patch application, scene graph compilation, SVG export, AI reference docs, and the MathGraph drawing skill manual.
+- Added a vector fill tool with toolbar controls for fill color and opacity.
+- Added circle fill rendering so the fill tool can fill circle interiors while normal circle selection still hits the boundary.
+- Added batch history actions so one fill click can undo both color and opacity changes together.
+
+#### Findings
+
+- The earlier lens mismatch came from using polygon/circular-segment workarounds for a curved region.
+- A true lens object needs the two source circle ids as context; the app can then recompute the two intersections and choose the inside arc from each circle.
+- Paint-bucket behavior should stay vector-based in MathGraph. Raster flood fill would not preserve editable geometry, AI patchability, SVG export, or undo semantics.
+
+#### Verification
+
+- Ran `node --test tests\lens-region.test.js`; passed.
+- Ran `node --test tests\fill-tool.test.js`; passed.
+- Ran `node --test tests\scene-graph-compiler.test.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed.
+- Parsed `.agents/skills/mathgraph-drawing/references/feature-manual.json` and `retrieval-index.json`; passed.
+- Ran browser visual smoke through a temporary local server; screenshot `tmp/lens-fill-visual-smoke/lens-fill-smoke-clean.png`, 0 console errors, `lensValid:true`, `lensPathPoints:129`, fill applied as `#22c55e` at opacity `0.55`, undo action type `batch`.
+- Ran `node --check js\main.js`, `node --check js\ai\SceneGraphCompiler.js`, and `node --check js\ai\PatchApplier.js`; passed.
+- Ran `npm.cmd test`; passed with 91 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Recursive visual parity loop for stress-extra drawings
 
 #### Work completed

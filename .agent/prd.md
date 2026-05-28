@@ -2,6 +2,55 @@
 
 ## Summary
 
+- Task: First-class lens regions and vector fill tool
+- Owner: Codex
+- Date: 2026-05-28
+- Related files:
+  - `js/objects/LensRegion.js`
+  - `js/core/ObjectManager.js`
+  - `js/ai/SceneGraphCompiler.js`
+  - `js/ai/AIService.js`
+  - `js/ai/SchemaValidator.js`
+  - `js/ai/PatchApplier.js`
+  - `js/tools/FillTool.js`
+  - `docs/ai-reference.md`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Two-circle lens fills currently require a polygon approximation or two circular segments.
+- Polygon approximations can self-cross, miss the true curved boundary, or require hidden helper points that still affect visual parity.
+- Two circular segments can approximate the filled overlap, but each segment draws its chord, creating internal straight lines that are not part of the intended lens.
+- Users also need a direct "paint bucket" workflow to click an existing closed vector object and change its fill color/opacity.
+
+## Goals
+
+- Add a first-class `lensRegion` object whose boundary is the two visible circular arcs of the intersection of two circles.
+- Let GraphA operations and scene graph compilation create lens regions deterministically from two circle ids.
+- Add a fill tool that applies the current fill color and opacity to supported closed objects with undo history.
+- Update AI/schema/manual docs so future generated diagrams choose `lensRegion` instead of polygon workarounds for two-circle overlaps.
+- Verify with focused tests and a browser-rendered visual smoke artifact.
+
+## Non-Goals
+
+- Do not use or store pasted API keys.
+- Do not introduce raster flood fill into the canvas bitmap; this pass targets vector objects only.
+- Do not add first-class general implicit-region solving for arbitrary function-bounded areas.
+
+## Acceptance Criteria
+
+- [x] `lensRegion` renders a filled two-circle overlap without an internal chord.
+- [x] `lensRegion` serializes/deserializes, validates through GraphA schema, and can be created by `PatchApplier`.
+- [x] Scene graph nodes such as `lensRegion` or `circleIntersectionRegion` compile into GraphA operations.
+- [x] The toolbar includes a fill tool with fill color/opacity controls.
+- [x] Clicking a supported closed object applies fill style and can be undone.
+- [x] Focused tests, full tests, and browser visual smoke checks pass or blocked reasons are recorded.
+
+---
+
+## Summary
+
 - Task: Recursive visual parity loop for stress-extra OpenAI drawings
 - Owner: Codex
 - Date: 2026-05-28

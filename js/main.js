@@ -33,6 +33,7 @@ import { ArcTool, SectorTool, CircularSegmentTool } from './tools/ArcTool.js'; /
 import { AngleDimensionTool, LengthDimensionTool } from './tools/DimensionTool.js'; // Mk.2
 import { PolygonTool } from './tools/PolygonTool.js'; // Mk.2
 import { NumberLineTool } from './tools/NumberLineTool.js'; // Mk.4
+import { FillTool } from './tools/FillTool.js';
 
 // 유틸리티
 import { Vec2 } from './utils/Geometry.js';
@@ -76,6 +77,8 @@ class GraphAApp {
 
         // Mk.4: 숨김 객체 보기 상태 초기화
         this.showHiddenObjects = false;
+        this.currentFillColor = '#000000';
+        this.currentFillOpacity = 0.24;
 
         this.setupTools();
         this.setupUI();
@@ -129,6 +132,7 @@ class GraphAApp {
 
         // Mk.2: 다각형 도구
         this.toolManager.registerTool('polygon', new PolygonTool());
+        this.toolManager.registerTool('fill', new FillTool());
 
         // Mk.4: 수직선 도구
         this.toolManager.registerTool('numberLine', new NumberLineTool());
@@ -208,6 +212,7 @@ class GraphAApp {
 
         // 초기 서브메뉴 표시
         document.querySelector('.submenu-content[data-category="select"]')?.classList.add('active');
+        this.setupFillControls();
 
         // 되돌리기/다시하기
         document.getElementById('undoBtn')?.addEventListener('click', () => {
@@ -540,7 +545,7 @@ class GraphAApp {
             tangentCircle: '원의 접선', tangentFunction: '함수 접선',
             circle: '원', circleThreePoints: '세 점 원',
             arc: '호', sector: '부채꼴', circularSegment: '활꼴',
-            polygon: '다각형', prism: '각기둥', pyramid: '각뿔',
+            polygon: '다각형', fill: '채우기', prism: '각기둥', pyramid: '각뿔',
             angleDimension: '각도', lengthDimension: '길이',
             rightAngle: '직각', equalLength: '같은 길이',
             function: '함수'
@@ -555,6 +560,31 @@ class GraphAApp {
     /**
      * 이벤트 리스너 설정
      */
+    setupFillControls() {
+        const colorInput = document.getElementById('fillColorInput');
+        const opacityInput = document.getElementById('fillOpacityInput');
+        const opacityValue = document.getElementById('fillOpacityValue');
+
+        if (colorInput) {
+            this.currentFillColor = colorInput.value || this.currentFillColor;
+            colorInput.addEventListener('input', (event) => {
+                this.currentFillColor = event.target.value || '#000000';
+            });
+        }
+
+        if (opacityInput) {
+            const syncOpacity = () => {
+                const next = Number.parseFloat(opacityInput.value);
+                this.currentFillOpacity = Number.isFinite(next) ? next : 0.24;
+                if (opacityValue) {
+                    opacityValue.textContent = `${Math.round(this.currentFillOpacity * 100)}%`;
+                }
+            };
+            syncOpacity();
+            opacityInput.addEventListener('input', syncOpacity);
+        }
+    }
+
     setupEventListeners() {
         // 객체 추가/삭제 시 사이드바 업데이트
         this.objectManager.on('objectAdded', (obj) => {
@@ -1411,7 +1441,7 @@ class GraphAApp {
         const labels = {
             point: '점', segment: '선분', line: '직선', ray: '반직선', vector: '벡터',
             circle: '원', arc: '호', sector: '부채꼴', circularSegment: '활꼴',
-            polygon: '다각형', prism: '각기둥', pyramid: '각뿔',
+            polygon: '다각형', lensRegion: '렌즈 영역', prism: '각기둥', pyramid: '각뿔',
             angleDimension: '각도', lengthDimension: '길이',
             function: '함수'
         };
@@ -1429,6 +1459,7 @@ class GraphAApp {
             arc: 'line_curve',
             sector: 'pie_chart',
             circularSegment: 'incomplete_circle',
+            lensRegion: 'lens',
             polygon: 'pentagon',
             prism: 'deployed_code',
             pyramid: 'change_history',
@@ -1906,8 +1937,10 @@ class GraphAApp {
 
         const screenCenter = this.canvas.toScreen(center);
         const screenRadius = this.canvas.toScreenLength(radius);
+        const fill = obj.fillOpacity > 0 ? (obj.fillColor || obj.color) : 'none';
+        const fillOpacity = obj.fillOpacity > 0 ? obj.fillOpacity : null;
         return `<circle cx="${screenCenter.x.toFixed(2)}" cy="${screenCenter.y.toFixed(2)}" ` +
-            `r="${screenRadius.toFixed(2)}" ${this.buildSVGStrokeAttributes(obj)} />`;
+            `r="${screenRadius.toFixed(2)}" ${this.buildSVGStrokeAttributes(obj, { fill, fillOpacity })} />`;
     }
 
     sampleArcScreenPoints(obj, samples = 64) {
@@ -1976,6 +2009,14 @@ class GraphAApp {
 
         return `<polygon points="${points}" ` +
             `${this.buildSVGStrokeAttributes(obj, { fill: obj.fillColor || obj.color, fillOpacity: obj.fillOpacity ?? 0.12 })} />`;
+    }
+
+    buildSVGLensRegionMarkup(obj) {
+        if (!obj.valid || !Array.isArray(obj.pathPoints) || obj.pathPoints.length < 3) return '';
+
+        const points = obj.pathPoints.map(point => this.canvas.toScreen(point));
+        return `<path d="${this.buildSVGPath(points, true)}" ` +
+            `${this.buildSVGStrokeAttributes(obj, { fill: obj.fillColor || obj.color, fillOpacity: obj.fillOpacity ?? 0.24 })} />`;
     }
 
     buildSVGFunctionMarkup(obj) {
@@ -2119,6 +2160,8 @@ class GraphAApp {
                 return this.buildSVGSectorMarkup(obj);
             case 'circularSegment':
                 return this.buildSVGCircularSegmentMarkup(obj);
+            case 'lensRegion':
+                return this.buildSVGLensRegionMarkup(obj);
             case 'polygon':
                 return this.buildSVGPolygonMarkup(obj);
             case 'numberLine':
