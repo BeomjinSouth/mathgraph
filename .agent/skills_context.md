@@ -4,6 +4,35 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The broad audit must use valid GraphA `operations[]` with first-class `prism` and `pyramid` objects, not hand-authored segment approximations.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The user-visible acceptance bar is the actual canvas: every generated solid case must render without console errors, and the screenshot should show solid front edges and dashed hidden rear edges.
+
+## Current Task Notes
+
+- User concern:
+  - Try many varied solid figures again and make sure there are no errors in every case.
+- Expanded acceptance:
+  - Cover rectangular, triangular, pentagonal, and hexagonal prisms with several rear-face shifts.
+  - Cover triangular, square, pentagonal, and hexagonal pyramids with varied apex positions.
+  - Include nested/composite solid scenes and a prism with cross-section/diagonal support geometry.
+  - Assert prism base/front edges are never hidden after the convention fix.
+  - Assert each shifted prism still has hidden rear/top or depth edges so dashed hidden-line rendering is actually exercised.
+  - Save browser screenshots and a contact sheet under `tmp/solid3d-case-matrix/`.
+- Secret handling:
+  - The pasted OpenAI key must not be stored or echoed. This pass does not need live OpenAI calls.
+- Final evidence:
+  - `tools/render-solid3d-case-matrix.mjs` renders 24 local GraphA solid cases in Playwright.
+  - `tmp/solid3d-case-matrix/contact-sheet.png` shows all cases as PASS.
+  - `tmp/solid3d-case-matrix/solid3d-case-matrix-report.md` records hidden-edge classifications for every case.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The fix keeps solid geometry inside first-class `prism` and `pyramid` objects instead of hand-authored dashed/solid segment bundles.
 - Skill: Browser / Playwright
 - Why it matters:

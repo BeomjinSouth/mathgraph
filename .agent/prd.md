@@ -2,6 +2,47 @@
 
 ## Summary
 
+- Task: Solid 3D broad case matrix and zero-error audit
+- Owner: Codex
+- Date: 2026-05-29
+- Related files:
+  - `tools/render-solid3d-case-matrix.mjs`
+  - `tests/solid3d-hidden-edges.test.js`
+  - `js/objects/Solid3D.js`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The user asked to try "many different things again" and expects every solid-geometry case to avoid errors.
+- The previous fix corrected a representative rectangular-prism convention, but regression coverage still needs broader shape, vertex-count, and projection-direction coverage.
+- Schema-valid GraphA operations are not enough; the actual canvas must render without console errors and without front prism edges being dashed.
+
+## Goals
+
+- Add a repeatable browser-rendered matrix for many first-class `prism` and `pyramid` cases.
+- Cover rectangular, triangular, pentagonal, and hexagonal prisms; square, triangular, pentagonal, and hexagonal pyramids; nested solid compositions; and cross-section/diagonal support geometry.
+- Assert that prism `base`/front edges stay solid while shifted `top`/rear hidden edges can be dashed.
+- Assert that every case creates valid objects, renders non-empty canvas pixels, and produces no browser console errors.
+- Save a contact-sheet screenshot and machine-readable report under `tmp/` for visual review.
+
+## Non-Goals
+
+- Do not add unsupported curved solid primitives such as cylinders, cones, or spheres.
+- Do not use or store the pasted OpenAI API key; this pass is local GraphA/runtime verification.
+- Do not replace first-class solids with manual segment bundles.
+
+## Acceptance Criteria
+
+- [x] At least 20 varied solid cases render in a real browser canvas.
+- [x] Every case reports zero console errors and zero invalid runtime objects.
+- [x] Prism cases report no hidden `base` edges.
+- [x] Prism cases include at least one hidden rear/top or depth edge when a shifted rear face is present.
+- [x] Focused Solid3D tests, the browser matrix tool, full tests, whitespace check, and secret-pattern scan pass.
+
+---
+
+## Summary
+
 - Task: Solid 3D visible/hidden edge audit and prism correction
 - Owner: Codex
 - Date: 2026-05-28

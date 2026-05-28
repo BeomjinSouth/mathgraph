@@ -2,6 +2,66 @@
 
 ## Status
 
+- Task: Solid 3D broad case matrix and zero-error audit
+- State: Done
+- Last updated: 2026-05-29
+
+## Plan
+
+1. Record the broader case-matrix acceptance bar before implementation.
+2. Add table-driven Solid3D coverage for multiple prism rear-face shifts.
+3. Add a Playwright browser matrix tool that creates varied GraphA solid cases, renders each case, inspects runtime solids, and saves screenshots/reports.
+4. Run focused tests, browser matrix verification, full tests, whitespace check, and secret-pattern scan.
+5. Update progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Keep the audit local and deterministic.
+- Reason: The current request is about runtime geometry correctness, and the pasted API key should not be used directly from chat text.
+- Decision: Treat browser rendering plus internal solid hidden-edge state as the acceptance boundary.
+- Reason: Pixel output proves the canvas did not fail, while `_hiddenEdges` proves whether the runtime classified front and rear prism edges correctly.
+- Decision: Keep generated screenshots and reports under `tmp/`.
+- Reason: They are verification artifacts, not source files.
+
+## Blockers
+
+- Blocker: None for local GraphA/runtime verification.
+
+## Verification
+
+- Planned:
+  - `node --test tests\solid3d-hidden-edges.test.js`
+  - `node --check tools\render-solid3d-case-matrix.mjs`
+  - `node tools\render-solid3d-case-matrix.mjs`
+  - `npm.cmd test`
+  - `git diff --check`
+  - secret-pattern scan for actual `sk-*` key values outside ignored/generated folders
+- Completed:
+  - `node --check tools\render-solid3d-case-matrix.mjs` passed.
+  - `node --test tests\solid3d-hidden-edges.test.js` passed with 6 tests.
+  - `node tools\render-solid3d-case-matrix.mjs` rendered 24 cases with 0 failures, 0 case console errors, and 0 invalid objects; contact sheet saved at `tmp/solid3d-case-matrix/contact-sheet.png`.
+  - `npm.cmd test` passed with 100 tests.
+  - `git diff --check` passed with line-ending warnings only.
+  - Secret-pattern scan for actual `sk-*` key values outside `tmp`, `node_modules`, and `.git` found no matches.
+
+## Handoff
+
+- Current status:
+  - Broad Solid3D matrix coverage is implemented and verified.
+  - The generated report is `tmp/solid3d-case-matrix/solid3d-case-matrix-report.md`.
+
+---
+
+## Status
+
 - Task: Solid 3D visible/hidden edge audit and prism correction
 - State: Done
 - Last updated: 2026-05-28

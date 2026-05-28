@@ -1,5 +1,45 @@
 # Progress Log
 
+## 2026-05-29
+
+### Solid 3D broad case matrix and zero-error audit
+
+#### Work completed
+
+- Added `tools/render-solid3d-case-matrix.mjs`, a Playwright browser verification tool that creates varied local GraphA solid cases, renders each case in the real MathGraph canvas, inspects runtime solid objects, and saves screenshots/reports.
+- The matrix currently covers 24 cases:
+  - rectangular prisms in all four rear-face shift quadrants,
+  - wide, tall, and skinny rectangular prisms,
+  - triangular, pentagonal, and hexagonal prisms,
+  - triangular, square, pentagonal, and hexagonal pyramids with varied apex positions,
+  - a prism with diagonal/cross-section support geometry,
+  - nested and separated multi-solid compositions.
+- Extended `tests/solid3d-hidden-edges.test.js` so quick unit coverage checks all four rectangular-prism shift quadrants, polygonal prisms, and varied pyramids.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md` with the broader zero-error audit scope and evidence.
+
+#### Findings
+
+- The expanded matrix found no new Solid3D runtime errors after the previous prism convention fix.
+- Every prism in the matrix kept `base`/front edges out of `_hiddenEdges`; hidden classifications were on rear/top or depth edges.
+- Every browser-rendered case produced non-empty canvas output, no case console errors, and no invalid runtime objects.
+- The pasted OpenAI API key was not used, stored, or echoed; this task was fully local runtime verification.
+
+#### Verification
+
+- Ran `node --check tools\render-solid3d-case-matrix.mjs`; passed.
+- Ran `node --test tests\solid3d-hidden-edges.test.js`; passed with 6 tests.
+- Ran `node tools\render-solid3d-case-matrix.mjs`; passed with 24 cases, 0 failures, 0 case console errors, and 0 invalid objects.
+- Browser evidence:
+  - Contact sheet: `tmp/solid3d-case-matrix/contact-sheet.png`.
+  - Report: `tmp/solid3d-case-matrix/solid3d-case-matrix-report.md`.
+- Ran `npm.cmd test`; passed with 100 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran a secret-pattern scan for actual `sk-*` key values outside `tmp`, `node_modules`, and `.git`; no matches.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-28
 
 ### Solid 3D visible/hidden edge audit and prism correction
