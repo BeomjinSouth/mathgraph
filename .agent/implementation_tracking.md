@@ -2,6 +2,70 @@
 
 ## Status
 
+- Task: Novel OpenAI drawing stress set and reference visual targets
+- State: Done with live OpenAI blocked
+- Last updated: 2026-05-28
+
+## Plan
+
+1. Add a non-overlapping `stress_novel` prompt set with 10 new drawing targets.
+2. Add deterministic reference payloads and a no-API reference render mode so intended targets can be shown and compared.
+3. Add semantic validators/tests for new visual-intent invariants.
+4. Run local syntax, focused tests, and reference rendering; run live OpenAI only if `OPENAI_API_KEY` is safely present.
+5. Update audit/progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Use `OPENAI_API_KEY` only from process/user/machine environment, not from pasted chat text.
+- Reason: The API key is a secret and should not appear in shell history, committed files, or generated reports.
+- Decision: Add a reference-render mode to the existing live smoke runner.
+- Reason: The user needs to see the intended visual target, and previous recursive loops benefited from comparing live output against a stable local target sheet.
+- Decision: Keep the new prompts inside currently supported GraphA objects.
+- Reason: The user asked for diagrams that can be iteratively improved to visual parity; unsupported primitives should be documented as future candidates instead of silently approximated as exact.
+- Decision: Treat exact annular-sector fill as unsupported in this pass.
+- Reason: The reference target can show an outer sector plus inner circle outline, but a true ring-sector cutout needs a future first-class primitive to avoid a misleading approximation.
+
+## Blockers
+
+- Blocker: `OPENAI_API_KEY` is missing from the current process, user, and machine environment, so live external OpenAI calls were not run. A live attempt stopped with `OPENAI_API_KEY is required.`
+
+## Verification
+
+- Planned:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --test tests\live-openai-random-smoke.test.js`
+  - reference target render with `LIVE_AI_PROMPT_SET=stress_novel` and `LIVE_AI_RENDER_REFERENCE_TARGETS=1`
+  - live external OpenAI run only if `OPENAI_API_KEY` is available through the environment
+  - `git diff --check`
+- Completed:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --test tests\live-openai-random-smoke.test.js` passed with 44 tests.
+  - JSON parse check for `feature-manual.json` and `retrieval-index.json`.
+  - Local reference target render with `LIVE_AI_PROMPT_SET=stress_novel`, `LIVE_AI_RENDER_REFERENCE_TARGETS=1`, and `LIVE_AI_OUTPUT_DIR=tmp/live-openai-stress-novel-reference-targets`; passed with 10 rendered targets, 0 failures, 0 browser console errors.
+  - Live external run attempted with `LIVE_AI_PROMPT_SET=stress_novel`; blocked before API call because `OPENAI_API_KEY` is missing.
+  - `npm.cmd test` passed with 96 tests.
+  - `git diff --check` passed with line-ending warnings only.
+  - Secret-pattern scan for `sk-proj-`, inline `OPENAI_API_KEY` values, and `Bearer sk-` outside `tmp`, `node_modules`, and `.git` found no matches.
+
+## Handoff
+
+- Current status:
+  - `stress_novel` is implemented with 10 prompts, reference targets, semantic validators, and audit docs.
+  - The visible evidence is `tmp/live-openai-stress-novel-reference-targets/contact-sheet.png`.
+  - Live OpenAI generation remains pending until the API key is supplied through `OPENAI_API_KEY`.
+
+---
+
+## Status
+
 - Task: First-class lens regions and vector fill tool
 - State: Done
 - Last updated: 2026-05-28

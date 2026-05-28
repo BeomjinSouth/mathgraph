@@ -2,6 +2,52 @@
 
 ## 2026-05-28
 
+### Novel stress OpenAI drawing set and reference targets
+
+#### Work completed
+
+- Added a third 10-prompt live smoke set named `stress_novel` to `tools/run-live-openai-random-drawing-smoke.mjs`.
+- The new set avoids earlier prompt families and covers:
+  - logistic curve with asymptotes and midpoint tangent,
+  - parabola focus/directrix/latus rectum,
+  - absolute-value plateau with capped region,
+  - triangular feasible region from three inequalities,
+  - concentric circles with outer quarter-sector fill,
+  - two tangents from an external point to a circle,
+  - triangle Euler line with circumcircle,
+  - pentagon/pentagram diagonals,
+  - rectangular prism with internal diagonal and cross-section,
+  - triangular pyramid inside a triangular prism.
+- Added deterministic `referencePayload` targets and `LIVE_AI_RENDER_REFERENCE_TARGETS=1` mode so intended visual targets can be rendered without an API call.
+- Added prompt-local semantic validators for exact function expressions, required named segments, fixed circle radii, concentric circle radii, and collinear named construction points.
+- Updated `docs/stress-novel-openai-drawing-audit.md`, `docs/ai-reference.md`, `.agents/skills/mathgraph-drawing/SKILL.md`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Findings
+
+- The current shell, user environment, and machine environment do not have `OPENAI_API_KEY`, so the live external OpenAI generation step is blocked unless the key is supplied safely through the environment.
+- The user-pasted key was not written to repository files or command strings.
+- The first local reference render exposed two self-check issues before final acceptance:
+  - `absolute_plateau_cap_region` expected too many support points for its actual target.
+  - `concentric_quarter_sector_wedge` wording could imply an exact ring-sector cutout, but MathGraph has no first-class `annularSector`.
+- The prompt and docs now explicitly treat the concentric-sector case as "outer sector fill plus inner circle outline"; exact annular sectors remain a future feature candidate.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 44 tests.
+- Parsed `.agents/skills/mathgraph-drawing/references/feature-manual.json` and `retrieval-index.json`; passed.
+- Ran local reference target rendering with `LIVE_AI_PROMPT_SET=stress_novel`, `LIVE_AI_RENDER_REFERENCE_TARGETS=1`, and `LIVE_AI_OUTPUT_DIR=tmp/live-openai-stress-novel-reference-targets`; passed with 10 rendered targets, 0 failures, and 0 browser console errors.
+- Attempted the live external run with `LIVE_AI_PROMPT_SET=stress_novel`; blocked before API call with `OPENAI_API_KEY is required.`
+- Ran `npm.cmd test`; passed with 96 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran a secret-pattern scan for `sk-proj-`, inline `OPENAI_API_KEY` values, and `Bearer sk-` outside `tmp`, `node_modules`, and `.git`; no matches.
+- Reference contact sheet: `tmp/live-openai-stress-novel-reference-targets/contact-sheet.png`.
+- Reference report: `tmp/live-openai-stress-novel-reference-targets/reference-target-report.md`.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### First-class lens region and vector fill tool
 
 #### Work completed

@@ -790,6 +790,95 @@ test('prompt-local smoke expectations reject triangular pyramids when square pyr
     assert.match(errors.join('\n'), /2 pyramid object\(s\) with 4 base vertices/);
 });
 
+test('prompt-local smoke expectations reject missing exact function expressions', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'f', type: 'function', expression: '4/(1+e^(-x))', showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'logistic_midpoint_asymptotes',
+        expect: { requiredFunctionExpressions: ['4/(1+exp(-x))'] }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /expected a function expression matching/);
+});
+
+test('prompt-local smoke expectations accept required segments between named points', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'P', type: 'point', x: 5, y: 0, label: 'P' },
+            { op: 'create', id: 'T1', type: 'point', x: 1.8, y: 2.4, label: 'T1' },
+            { op: 'create', id: 'PT1', type: 'segment', point1Id: 'P', point2Id: 'T1' }
+        ]
+    };
+    const prompt = {
+        id: 'external_point_two_tangents',
+        expect: { requiredSegmentsBetween: [['P', 'T1']] }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
+});
+
+test('prompt-local smoke expectations reject wrong fixed-radius circles', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+            { op: 'create', id: 'R', type: 'point', x: 2.5, y: 0, showLabel: false },
+            { op: 'create', id: 'c', type: 'circle', centerId: 'O', pointOnCircleId: 'R', showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'external_point_two_tangents',
+        expect: { requiredCircleRadii: [{ center: 'O', radius: 3 }] }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /radius 3/);
+});
+
+test('prompt-local smoke expectations reject non-concentric circles', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+            { op: 'create', id: 'Q', type: 'point', x: 0.3, y: 0, showLabel: false },
+            { op: 'create', id: 'R1', type: 'point', x: 2, y: 0, showLabel: false },
+            { op: 'create', id: 'R2', type: 'point', x: 4.3, y: 0, showLabel: false },
+            { op: 'create', id: 'c1', type: 'circle', centerId: 'O', pointOnCircleId: 'R1', showLabel: false },
+            { op: 'create', id: 'c2', type: 'circle', centerId: 'Q', pointOnCircleId: 'R2', showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'concentric_quarter_sector_wedge',
+        expect: { requireConcentricCircles: { center: 'O', radii: [2, 4] } }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /at least 2 circles centered at O/);
+});
+
+test('prompt-local smoke expectations reject non-collinear named construction points', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: 0, y: 1, label: 'O' },
+            { op: 'create', id: 'G', type: 'point', x: 0.33, y: 1.67, label: 'G' },
+            { op: 'create', id: 'H', type: 'point', x: 1, y: 2, label: 'H' }
+        ]
+    };
+    const prompt = {
+        id: 'triangle_euler_line',
+        expect: { requiredCollinearPointLabels: [['O', 'G', 'H']] }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /collinear/);
+});
+
 test('smoke semantics rejects pixel-style point coordinates outside the default view', () => {
     const payload = {
         operations: [

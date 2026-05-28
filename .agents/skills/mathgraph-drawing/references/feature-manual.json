@@ -39,6 +39,10 @@
     "For construction-only polygons that should look like outlines, set fillOpacity:0; omit positive fill unless a shaded region is requested.",
     "For two-circle lens overlaps, use lensRegion with circle1Id and circle2Id instead of polygon approximations.",
     "For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough from the vertex to render a visible non-degenerate arc.",
+    "For focus/directrix, tangent-from-point, feasible-region, and named construction-point prompts, create the named points at the exact requested coordinates and create reference lines from support points on the exact equation.",
+    "For concentric circles and fixed-radius tangency diagrams, reuse the same center id and place radius points at the requested numeric distance.",
+    "For annular-sector-like requests, current GraphA has no first-class annularSector. Use a normal sector plus inner circle outline only when approximation is acceptable.",
+    "For function-bounded curved fills, approximate with a polygon through explicit boundary/sample points and hide helper vertices unless a future first-class region exists.",
     "For nested solids, use prism/pyramid objects and keep inner solid projected centers visually separated instead of piling them on the same screen area.",
     "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
     "Hide construction helper points with visible:false when they are only used to shape regions or guide construction."
@@ -539,6 +543,10 @@
     {
       "gap": "Multiple intersections cannot be disambiguated by anchor in the current AI schema.",
       "currentApproximation": "Use unambiguous object pairs or create explanatory support points/lines. Avoid promising both roots from one intersection operation."
+    },
+    {
+      "gap": "Annular sectors and exact function-bounded curved regions are not first-class objects.",
+      "currentApproximation": "Use sectors, circles, polygons, and hidden helper points only when approximation is acceptable. State that exact ring-sector cutouts or exact fill-between-functions need future primitives."
     },
     {
       "gap": "Generic text labels independent of objects are not first-class objects.",

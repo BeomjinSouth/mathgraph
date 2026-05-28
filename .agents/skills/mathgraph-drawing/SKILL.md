@@ -36,6 +36,10 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Use `polygon` for triangles, quadrilaterals, shaded regions, bars, and other filled plane regions.
 - Use `lensRegion` for the exact filled overlap of two intersecting circles instead of approximating the lens with a polygon.
 - If a polygon is only a construction boundary or outline, set `fillOpacity:0`; use positive fill opacity only for requested shaded regions.
+- For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, provide exact coordinates for the intended visible points and exact support-line equations.
+- For concentric-circle or fixed-radius prompts, reuse the same center id and create radius points at the requested distance.
+- There is no first-class `annularSector` yet; when a prompt accepts approximation, use a normal sector plus an inner circle outline rather than claiming a true ring-sector cutout.
+- For function-bounded curved regions, use a polygon through explicit boundary/sample points and hide helper vertices with `visible:false`; exact curved fills need future primitives.
 - Use `prism` and `pyramid` for current solid support. Approximate cylinders, cones, spheres, nets, box plots, histograms, and scatter plots with current primitives and state the limitation when needed.
 - For `pyramid`, keep `apexId` out of `baseVertexIds` and place the apex far enough from the base centroid to read as a real apex.
 - For nested solid requests, keep inner vertices inside the outer projection and separate multiple inner solids in the screen projection so they do not visually overlap.

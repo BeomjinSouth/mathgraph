@@ -522,9 +522,13 @@ For complex live OpenAI drawing prompts, include the following context when it m
 - For two-circle lens regions, use `lensRegion` for the filled overlap. Add direct upper/lower point objects only when A and B must be distinct visible lens endpoints.
 - For construction-only polygons that should look like outlines, set `fillOpacity:0`; use positive `fillOpacity` only when the prompt requests a shaded region.
 - For `angleDimension`, make `point1Id` and `point2Id` distinct from `vertexId`, far enough from the vertex to render an arc, and non-collinear.
+- For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, include exact coordinates for the intended visible points and the exact equations for reference lines.
+- For concentric circles or fixed-radius tangency diagrams, state the shared center id and numeric radii. Current GraphA has no first-class `annularSector`; use a normal `sector` plus an inner circle outline unless a future primitive is added.
+- For curved regions bounded by functions, use a polygon through explicit boundary/sample points and hide helper points; do not claim exact curved fill unless a first-class region primitive exists.
 - For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. Put every inner-solid vertex inside the outer solid's screen-projection region, and separate multiple inner solids so their projected centers do not overlap.
 - For `pyramid`, `apexId` must not appear in `baseVertexIds`, and the apex should be visually separated from the base centroid.
 - For polygon-owned boundaries, do not require duplicate segment edges unless the user explicitly asks for separate selectable edge segments.
+- The live smoke runner can render deterministic target sheets without an API call by setting `LIVE_AI_RENDER_REFERENCE_TARGETS=1`. Use this to compare intended visuals against live OpenAI outputs.
 
 ## 7. Example Payloads
 

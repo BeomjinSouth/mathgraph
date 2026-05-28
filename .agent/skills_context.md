@@ -4,6 +4,50 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The new prompt batch must use only supported GraphA objects while making the intended geometry explicit enough for visual parity checks.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The live path uses OpenAI Responses API structured output, but secrets must be supplied only through environment variables.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The acceptance bar is a rendered contact sheet that can be compared against the requested target, not only JSON validation.
+
+## Current Task Notes
+
+- New requested batch should not duplicate prior prompt families:
+  - avoid earlier exp/log intersection, quartic tangents, rational slant asymptote, damped wave envelopes, two-circle lens, hexagon web, transversal grid, and previous prism/pyramid nestings;
+  - avoid default/extended cases such as triangle incircle, simple sector, basic quadratic-line intersection, histogram, and lone triangular prism.
+- Candidate new targets:
+  - logistic graph with horizontal asymptotes and midpoint tangent,
+  - parabola with focus/directrix/latus rectum,
+  - absolute-value plateau graph,
+  - feasible region from three boundary inequalities,
+  - concentric-circle sector wedge,
+  - external point tangent pair to a circle,
+  - Euler-line triangle construction,
+  - pentagon/pentagram construction,
+  - prism with internal diagonal and cross-section,
+  - triangular pyramid nested in a triangular prism.
+- Root context to provide in prompts:
+  - exact coordinates for named construction points,
+  - `showLabel:false` and `visible:false` for helper geometry,
+  - exact line equations for dashed reference lines,
+  - exact circle centers/radii when tangency or concentricity matters,
+  - explicit prism/pyramid vertex counts and base/top ordering,
+  - projected containment for nested solids.
+- Current blocker:
+  - `OPENAI_API_KEY` is not available in the environment. Live calls must wait for a safe environment variable; local reference rendering can still proceed.
+- Implemented context update:
+  - `stress_novel` now has deterministic local reference payloads and can render a target contact sheet with `LIVE_AI_RENDER_REFERENCE_TARGETS=1`.
+  - Additional validators cover exact function expressions, named segment endpoints, fixed circle radii, concentric circle radii, and collinear named points.
+  - Exact annular-sector cutouts remain unsupported; prompts should request an outer sector plus inner circle outline unless a future `annularSector` primitive is added.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - `lensRegion` must become a valid GraphA primitive and scene-graph target so generated diagrams stop relying on polygon approximations for two-circle overlaps.
 - Skill: Browser / Playwright
 - Why it matters:

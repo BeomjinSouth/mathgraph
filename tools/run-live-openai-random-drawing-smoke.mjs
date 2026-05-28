@@ -298,11 +298,348 @@ const stressExtraSmokePrompts = [
     }
 ];
 
+const stressNovelSmokePrompts = [
+    {
+        id: 'logistic_midpoint_asymptotes',
+        title: 'Logistic curve with asymptotes and midpoint tangent',
+        tags: 'graph function logistic asymptote tangent',
+        promptKo: '좌표평면에 logistic 함수 4/(1+exp(-x))를 그리고, 점선 수평점근선 y=0과 y=4를 line 객체로 표시해줘. 함수의 중심점 M(0,2)를 point로 표시하고 x=0에서의 접선은 tangentFunction으로 그려줘. 함수와 점근선 라벨은 showLabel:false로 숨기고, 화면에는 M 라벨만 보이게 해줘.',
+        showAxes: true,
+        expect: {
+            minTypes: { function: 1, line: 2, point: 5, tangentFunction: 1 },
+            requiredFunctionExpressions: ['4/(1+exp(-x))'],
+            requiredLinePatterns: [
+                { kind: 'slopeIntercept', slope: 0, intercept: 0, dashed: true },
+                { kind: 'slopeIntercept', slope: 0, intercept: 4, dashed: true }
+            ],
+            requiredTangentXs: [0],
+            requiredPointWindows: [
+                { name: 'M', xMin: -0.1, xMax: 0.1, yMin: 1.9, yMax: 2.1 }
+            ],
+            maxVisibleLabels: 1,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'f', type: 'function', expression: '4/(1+exp(-x))', showLabel: false },
+                { op: 'create', id: 'A0', type: 'point', x: -7, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'B0', type: 'point', x: 7, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'A4', type: 'point', x: -7, y: 4, visible: false, showLabel: false },
+                { op: 'create', id: 'B4', type: 'point', x: 7, y: 4, visible: false, showLabel: false },
+                { op: 'create', id: 'asym0', type: 'line', point1Id: 'A0', point2Id: 'B0', dashed: true, showLabel: false },
+                { op: 'create', id: 'asym4', type: 'line', point1Id: 'A4', point2Id: 'B4', dashed: true, showLabel: false },
+                { op: 'create', id: 'M', type: 'point', x: 0, y: 2, label: 'M' },
+                { op: 'create', id: 'tan_M', type: 'tangentFunction', functionId: 'f', x: 0, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'parabola_focus_directrix_latus',
+        title: 'Parabola focus, directrix, and latus rectum',
+        tags: 'graph function parabola focus directrix segment',
+        promptKo: '좌표평면에 포물선 0.25*x^2를 그리고, 초점 F(0,1), 꼭짓점 V(0,0), 준선 y=-1을 점선 line으로 표시해줘. 초점을 지나는 현인 latus rectum의 양 끝 L(-2,1), R(2,1)을 point로 만들고 선분 LR을 그려줘. 함수와 준선 라벨은 숨기고 F,V,L,R 네 라벨만 보이게 해줘.',
+        showAxes: true,
+        expect: {
+            minTypes: { function: 1, line: 1, point: 6, segment: 1 },
+            requiredFunctionExpressions: ['0.25*x^2'],
+            requiredLinePatterns: [
+                { kind: 'slopeIntercept', slope: 0, intercept: -1, dashed: true }
+            ],
+            requiredPointWindows: [
+                { name: 'F', xMin: -0.1, xMax: 0.1, yMin: 0.9, yMax: 1.1 },
+                { name: 'V', xMin: -0.1, xMax: 0.1, yMin: -0.1, yMax: 0.1 },
+                { name: 'L', xMin: -2.1, xMax: -1.9, yMin: 0.9, yMax: 1.1 },
+                { name: 'R', xMin: 1.9, xMax: 2.1, yMin: 0.9, yMax: 1.1 }
+            ],
+            requiredSegmentsBetween: [['L', 'R']],
+            maxVisibleLabels: 4,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'f', type: 'function', expression: '0.25*x^2', showLabel: false },
+                { op: 'create', id: 'D1', type: 'point', x: -6, y: -1, visible: false, showLabel: false },
+                { op: 'create', id: 'D2', type: 'point', x: 6, y: -1, visible: false, showLabel: false },
+                { op: 'create', id: 'directrix', type: 'line', point1Id: 'D1', point2Id: 'D2', dashed: true, showLabel: false },
+                { op: 'create', id: 'F', type: 'point', x: 0, y: 1, label: 'F' },
+                { op: 'create', id: 'V', type: 'point', x: 0, y: 0, label: 'V' },
+                { op: 'create', id: 'L', type: 'point', x: -2, y: 1, label: 'L' },
+                { op: 'create', id: 'R', type: 'point', x: 2, y: 1, label: 'R' },
+                { op: 'create', id: 'LR', type: 'segment', point1Id: 'L', point2Id: 'R' }
+            ]
+        }
+    },
+    {
+        id: 'absolute_plateau_cap_region',
+        title: 'Absolute-value plateau with capped region',
+        tags: 'graph function absolute line polygon region',
+        promptKo: '좌표평면에 함수 abs(x-2)+abs(x+2)를 그리고, 평평한 바닥 구간의 양 끝 L(-2,4), R(2,4)를 표시해줘. 수평선 y=6을 line으로 그리고 A(-3,6), B(3,6)을 잡아 A-B-R-L 순서의 사다리꼴 영역을 연하게 칠해줘. 함수와 수평선 라벨은 숨기고 A,B,L,R 네 라벨만 보이게 해줘.',
+        showAxes: true,
+        expect: {
+            minTypes: { function: 1, line: 1, polygon: 1, point: 4 },
+            requiredFunctionExpressions: ['abs(x-2)+abs(x+2)'],
+            requiredLinePatterns: [
+                { kind: 'slopeIntercept', slope: 0, intercept: 6 }
+            ],
+            requiredPointWindows: [
+                { name: 'L', xMin: -2.1, xMax: -1.9, yMin: 3.9, yMax: 4.1 },
+                { name: 'R', xMin: 1.9, xMax: 2.1, yMin: 3.9, yMax: 4.1 },
+                { name: 'A', xMin: -3.1, xMax: -2.9, yMin: 5.9, yMax: 6.1 },
+                { name: 'B', xMin: 2.9, xMax: 3.1, yMin: 5.9, yMax: 6.1 }
+            ],
+            maxVisibleLabels: 4,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'f', type: 'function', expression: 'abs(x-2)+abs(x+2)', showLabel: false },
+                { op: 'create', id: 'A', type: 'point', x: -3, y: 6, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 3, y: 6, label: 'B' },
+                { op: 'create', id: 'L', type: 'point', x: -2, y: 4, label: 'L' },
+                { op: 'create', id: 'R', type: 'point', x: 2, y: 4, label: 'R' },
+                { op: 'create', id: 'h6', type: 'line', point1Id: 'A', point2Id: 'B', showLabel: false },
+                { op: 'create', id: 'cap', type: 'polygon', vertexIds: ['A', 'B', 'R', 'L'], fillOpacity: 0.16, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'three_inequality_feasible_region',
+        title: 'Triangular feasible region from three boundary lines',
+        tags: 'graph line polygon feasible region inequality',
+        promptKo: '좌표평면에 부등식 x>=0, y>=0, x+y<=6의 가능영역을 그려줘. 경계선 x=0, y=0, x+y=6을 line 객체로 만들고, 꼭짓점 O(0,0), A(6,0), B(0,6)을 point로 표시한 뒤 삼각형 OAB를 연하게 칠해줘. 보이는 라벨은 O,A,B 세 점만 남겨줘.',
+        showAxes: true,
+        expect: {
+            minTypes: { line: 3, polygon: 1, point: 6 },
+            requiredLinePatterns: [
+                { kind: 'vertical', x: 0 },
+                { kind: 'slopeIntercept', slope: 0, intercept: 0 },
+                { kind: 'slopeIntercept', slope: -1, intercept: 6 }
+            ],
+            requiredPointWindows: [
+                { name: 'O', xMin: -0.1, xMax: 0.1, yMin: -0.1, yMax: 0.1 },
+                { name: 'A', xMin: 5.9, xMax: 6.1, yMin: -0.1, yMax: 0.1 },
+                { name: 'B', xMin: -0.1, xMax: 0.1, yMin: 5.9, yMax: 6.1 }
+            ],
+            maxVisibleLabels: 3,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+                { op: 'create', id: 'A', type: 'point', x: 6, y: 0, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 0, y: 6, label: 'B' },
+                { op: 'create', id: 'Y1', type: 'point', x: 0, y: -1, visible: false, showLabel: false },
+                { op: 'create', id: 'X1', type: 'point', x: -1, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'C', type: 'point', x: 3, y: 3, visible: false, showLabel: false },
+                { op: 'create', id: 'x0', type: 'line', point1Id: 'O', point2Id: 'Y1', showLabel: false },
+                { op: 'create', id: 'y0', type: 'line', point1Id: 'O', point2Id: 'X1', showLabel: false },
+                { op: 'create', id: 'sum6', type: 'line', point1Id: 'A', point2Id: 'B', showLabel: false },
+                { op: 'create', id: 'region', type: 'polygon', vertexIds: ['O', 'A', 'B'], fillOpacity: 0.18, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'concentric_quarter_sector_wedge',
+        title: 'Concentric circles with quarter-sector wedge',
+        tags: 'circle sector concentric segment area',
+        promptKo: '중심 O가 같은 반지름 2와 4의 두 원을 그리고, 1사분면에서 두 반지름 OA, OB가 만드는 90도 방향을 표시해줘. 바깥 원의 A(4,0), B(0,4)를 사용해 outer sector를 연하게 칠하고, 안쪽 원은 반지름점 R(2,0)으로 윤곽만 보이게 해줘. 현재 MathGraph에는 가운데가 비는 annularSector가 없으므로 고리 부채꼴처럼 뚫린 채움이라고 표현하지 말고, 바깥 부채꼴 채움과 안쪽 동심원 윤곽이 함께 보이게 해줘. O,A,B 라벨만 보이고 보조점 라벨은 숨겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { circle: 2, sector: 1, segment: 2, point: 4 },
+            requireConcentricCircles: { center: 'O', radii: [2, 4] },
+            minSectorSpan: 1.2,
+            maxVisibleLabels: 3,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+                { op: 'create', id: 'A', type: 'point', x: 4, y: 0, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 0, y: 4, label: 'B' },
+                { op: 'create', id: 'R', type: 'point', x: 2, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'inner', type: 'circle', centerId: 'O', pointOnCircleId: 'R', showLabel: false },
+                { op: 'create', id: 'outer', type: 'circle', centerId: 'O', pointOnCircleId: 'A', showLabel: false },
+                { op: 'create', id: 'OA', type: 'segment', point1Id: 'O', point2Id: 'A' },
+                { op: 'create', id: 'OB', type: 'segment', point1Id: 'O', point2Id: 'B' },
+                { op: 'create', id: 'sector_AOB', type: 'sector', circleId: 'outer', startPointId: 'A', endPointId: 'B', mode: 'minor', fillOpacity: 0.18, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'external_point_two_tangents',
+        title: 'Two tangents from an external point to a circle',
+        tags: 'circle tangent segment right_angle',
+        promptKo: '중심 O, 반지름 3인 원과 외부점 P(5,0)를 그리고, P에서 원에 그은 두 접선 PT1, PT2를 표시해줘. 접점은 T1(1.8,2.4), T2(1.8,-2.4)로 직접 point를 만들고, 반지름 OT1, OT2와 접선 PT1, PT2는 segment로 그려줘. 각 접점에서 반지름과 접선이 직각임을 rightAngleMarker 두 개로 보여줘. 보이는 라벨은 O,P,T1,T2만 남겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { circle: 1, tangentCircle: 2, segment: 4, rightAngleMarker: 2, point: 5 },
+            requiredCircleRadii: [{ center: 'O', radius: 3 }],
+            requiredPointWindows: [
+                { name: 'P', xMin: 4.9, xMax: 5.1, yMin: -0.1, yMax: 0.1 },
+                { name: 'T1', xMin: 1.65, xMax: 1.95, yMin: 2.25, yMax: 2.55 },
+                { name: 'T2', xMin: 1.65, xMax: 1.95, yMin: -2.55, yMax: -2.25 }
+            ],
+            requiredSegmentsBetween: [['P', 'T1'], ['P', 'T2'], ['O', 'T1'], ['O', 'T2']],
+            maxVisibleLabels: 4,
+            maxLabelTextLength: 2
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+                { op: 'create', id: 'R', type: 'point', x: 3, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'c', type: 'circle', centerId: 'O', pointOnCircleId: 'R', showLabel: false },
+                { op: 'create', id: 'P', type: 'point', x: 5, y: 0, label: 'P' },
+                { op: 'create', id: 'T1', type: 'point', x: 1.8, y: 2.4, label: 'T1' },
+                { op: 'create', id: 'T2', type: 'point', x: 1.8, y: -2.4, label: 'T2' },
+                { op: 'create', id: 'OT1', type: 'segment', point1Id: 'O', point2Id: 'T1' },
+                { op: 'create', id: 'OT2', type: 'segment', point1Id: 'O', point2Id: 'T2' },
+                { op: 'create', id: 'PT1', type: 'segment', point1Id: 'P', point2Id: 'T1' },
+                { op: 'create', id: 'PT2', type: 'segment', point1Id: 'P', point2Id: 'T2' },
+                { op: 'create', id: 'tan_T1', type: 'tangentCircle', circleId: 'c', tangentPointId: 'T1', showLabel: false },
+                { op: 'create', id: 'tan_T2', type: 'tangentCircle', circleId: 'c', tangentPointId: 'T2', showLabel: false },
+                { op: 'create', id: 'right_T1', type: 'rightAngleMarker', vertexId: 'T1', line1Id: 'OT1', line2Id: 'PT1' },
+                { op: 'create', id: 'right_T2', type: 'rightAngleMarker', vertexId: 'T2', line1Id: 'OT2', line2Id: 'PT2' }
+            ]
+        }
+    },
+    {
+        id: 'triangle_euler_line',
+        title: 'Triangle Euler line with circumcenter, centroid, and orthocenter',
+        tags: 'plane triangle circle construction line',
+        promptKo: '삼각형 ABC를 A(-4,0), B(4,0), C(1,5)로 그리고 외접원을 circleThreePoints로 표시해줘. 오일러선 위의 세 점 O(0,1), G(0.33,1.67), H(1,3)를 직접 point로 만들고 O-G-H가 한 직선에 놓이도록 dashed line을 그려줘. 삼각형 polygon은 외곽선만 보이게 fillOpacity:0으로 만들고, 보이는 라벨은 A,B,C,O,G,H만 남겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { polygon: 1, segment: 3, circleThreePoints: 1, line: 1, point: 6 },
+            requiredPointWindows: [
+                { name: 'O', xMin: -0.1, xMax: 0.1, yMin: 0.9, yMax: 1.1 },
+                { name: 'G', xMin: 0.2, xMax: 0.45, yMin: 1.55, yMax: 1.8 },
+                { name: 'H', xMin: 0.9, xMax: 1.1, yMin: 2.9, yMax: 3.1 }
+            ],
+            requiredCollinearPointLabels: [['O', 'G', 'H']],
+            maxPolygonFillOpacity: 0,
+            maxVisibleLabels: 6,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'A', type: 'point', x: -4, y: 0, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 4, y: 0, label: 'B' },
+                { op: 'create', id: 'C', type: 'point', x: 1, y: 5, label: 'C' },
+                { op: 'create', id: 'tri', type: 'polygon', vertexIds: ['A', 'B', 'C'], fillOpacity: 0, showLabel: false },
+                { op: 'create', id: 'AB', type: 'segment', point1Id: 'A', point2Id: 'B' },
+                { op: 'create', id: 'BC', type: 'segment', point1Id: 'B', point2Id: 'C' },
+                { op: 'create', id: 'CA', type: 'segment', point1Id: 'C', point2Id: 'A' },
+                { op: 'create', id: 'circ', type: 'circleThreePoints', point1Id: 'A', point2Id: 'B', point3Id: 'C', showLabel: false },
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 1, label: 'O' },
+                { op: 'create', id: 'G', type: 'point', x: 0.33, y: 1.67, label: 'G' },
+                { op: 'create', id: 'H', type: 'point', x: 1, y: 3, label: 'H' },
+                { op: 'create', id: 'euler', type: 'line', point1Id: 'O', point2Id: 'H', dashed: true, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'pentagon_pentagram_diagonals',
+        title: 'Regular pentagon and pentagram diagonals',
+        tags: 'plane polygon circle segment pentagon star',
+        promptKo: '정오각형 ABCDE를 외접원 위에 놓인 것처럼 그리고, 내부의 별 모양 대각선 AC, CE, EB, BD, DA를 segment로 그려줘. 정오각형 polygon은 외곽선만 보이도록 fillOpacity:0으로 만들고, 외접원과 대각선 라벨은 숨겨줘. 보이는 라벨은 A,B,C,D,E 다섯 꼭짓점만 남겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { polygon: 1, circle: 1, segment: 5, point: 6 },
+            requiredSegmentsBetween: [['A', 'C'], ['C', 'E'], ['E', 'B'], ['B', 'D'], ['D', 'A']],
+            maxPolygonFillOpacity: 0,
+            maxVisibleLabels: 5,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'A', type: 'point', x: 0, y: 4, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 3.8, y: 1.24, label: 'B' },
+                { op: 'create', id: 'C', type: 'point', x: 2.35, y: -3.24, label: 'C' },
+                { op: 'create', id: 'D', type: 'point', x: -2.35, y: -3.24, label: 'D' },
+                { op: 'create', id: 'E', type: 'point', x: -3.8, y: 1.24, label: 'E' },
+                { op: 'create', id: 'circ', type: 'circle', centerId: 'O', pointOnCircleId: 'A', showLabel: false },
+                { op: 'create', id: 'pentagon', type: 'polygon', vertexIds: ['A', 'B', 'C', 'D', 'E'], fillOpacity: 0, showLabel: false },
+                { op: 'create', id: 'AC', type: 'segment', point1Id: 'A', point2Id: 'C' },
+                { op: 'create', id: 'CE', type: 'segment', point1Id: 'C', point2Id: 'E' },
+                { op: 'create', id: 'EB', type: 'segment', point1Id: 'E', point2Id: 'B' },
+                { op: 'create', id: 'BD', type: 'segment', point1Id: 'B', point2Id: 'D' },
+                { op: 'create', id: 'DA', type: 'segment', point1Id: 'D', point2Id: 'A' }
+            ]
+        }
+    },
+    {
+        id: 'prism_diagonal_cross_section',
+        title: 'Rectangular prism with internal diagonal and cross-section',
+        tags: 'solid prism polygon cross_section diagonal',
+        promptKo: '직육면체 prism을 그리고, 내부 대각선 하나와 가운데 사각 단면을 함께 표시해줘. 바깥 입체는 first-class prism 객체여야 하고, 단면은 내부 점 P,Q,R,S 네 개를 잇는 polygon으로 연하게 칠해줘. 내부 점들은 바깥 prism의 화면상 투영 안에 있어야 하며, 모든 point/prism/polygon 라벨은 숨겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { prism: 1, segment: 1, polygon: 1, point: 12 },
+            innerWithinFirstPrism: true,
+            validPrismProjections: true,
+            maxVisibleLabels: 0
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'A', type: 'point', x: -4, y: -2, visible: false, showLabel: false },
+                { op: 'create', id: 'B', type: 'point', x: 2, y: -2, visible: false, showLabel: false },
+                { op: 'create', id: 'C', type: 'point', x: 2, y: 1, visible: false, showLabel: false },
+                { op: 'create', id: 'D', type: 'point', x: -4, y: 1, visible: false, showLabel: false },
+                { op: 'create', id: 'A1', type: 'point', x: -2, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'B1', type: 'point', x: 4, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'C1', type: 'point', x: 4, y: 3, visible: false, showLabel: false },
+                { op: 'create', id: 'D1', type: 'point', x: -2, y: 3, visible: false, showLabel: false },
+                { op: 'create', id: 'box', type: 'prism', baseVertexIds: ['A', 'B', 'C', 'D'], topVertexIds: ['A1', 'B1', 'C1', 'D1'], showLabel: false },
+                { op: 'create', id: 'diag', type: 'segment', point1Id: 'A', point2Id: 'C1', dashed: true },
+                { op: 'create', id: 'P', type: 'point', x: -3, y: -1, visible: false, showLabel: false },
+                { op: 'create', id: 'Q', type: 'point', x: 1, y: -1, visible: false, showLabel: false },
+                { op: 'create', id: 'R', type: 'point', x: 3, y: 2, visible: false, showLabel: false },
+                { op: 'create', id: 'S', type: 'point', x: -1, y: 2, visible: false, showLabel: false },
+                { op: 'create', id: 'section', type: 'polygon', vertexIds: ['P', 'Q', 'R', 'S'], fillOpacity: 0.18, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'triangular_pyramid_inside_triangular_prism',
+        title: 'Triangular pyramid inside a triangular prism',
+        tags: 'solid prism pyramid nested triangular',
+        promptKo: '큰 삼각기둥 prism 안에 작은 삼각뿔 pyramid가 들어 있는 모습을 그려줘. 바깥 입체는 baseVertexIds 3개와 topVertexIds 3개를 가진 삼각기둥이어야 하고, 안쪽 pyramid는 baseVertexIds 3개와 별도 apexId를 가진 삼각뿔이어야 해. prism의 topVertexIds는 baseVertexIds와 같은 순서의 평행 이동 복사본이어야 하며, 안쪽 삼각뿔의 모든 꼭짓점은 바깥 prism의 투영 안에 있어야 해. 모든 라벨은 숨겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { prism: 1, pyramid: 1, point: 10 },
+            requiredPrismVertexCounts: [3],
+            requiredPyramidBaseVertexCounts: [{ count: 3, min: 1 }],
+            innerWithinFirstPrism: true,
+            validPrismProjections: true,
+            validPyramidApexes: true,
+            maxVisibleLabels: 0
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'A', type: 'point', x: -4, y: -2, visible: false, showLabel: false },
+                { op: 'create', id: 'B', type: 'point', x: 3, y: -2, visible: false, showLabel: false },
+                { op: 'create', id: 'C', type: 'point', x: -1, y: 2, visible: false, showLabel: false },
+                { op: 'create', id: 'A1', type: 'point', x: -2, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'B1', type: 'point', x: 5, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'C1', type: 'point', x: 1, y: 4, visible: false, showLabel: false },
+                { op: 'create', id: 'outer_tri_prism', type: 'prism', baseVertexIds: ['A', 'B', 'C'], topVertexIds: ['A1', 'B1', 'C1'], showLabel: false },
+                { op: 'create', id: 'P', type: 'point', x: -1.8, y: -0.9, visible: false, showLabel: false },
+                { op: 'create', id: 'Q', type: 'point', x: 1, y: -0.9, visible: false, showLabel: false },
+                { op: 'create', id: 'R', type: 'point', x: -0.6, y: 0.7, visible: false, showLabel: false },
+                { op: 'create', id: 'V', type: 'point', x: 0, y: 1.8, visible: false, showLabel: false },
+                { op: 'create', id: 'inner_tri_pyramid', type: 'pyramid', baseVertexIds: ['P', 'Q', 'R'], apexId: 'V', showLabel: false }
+            ]
+        }
+    }
+];
+
 const promptSets = {
     default: smokePrompts,
     extended: extendedSmokePrompts,
     stress: stressSmokePrompts,
-    stress_extra: stressExtraSmokePrompts
+    stress_extra: stressExtraSmokePrompts,
+    stress_novel: stressNovelSmokePrompts
 };
 
 const mimeTypes = new Map([
@@ -331,6 +668,11 @@ function findPromptById(id) {
         if (prompt) return { ...prompt, promptSetName: setName };
     }
     return null;
+}
+
+function reportPrompt(prompt) {
+    const { referencePayload, ...safePrompt } = prompt || {};
+    return safePrompt;
 }
 
 function payloadFromSavedResult(result) {
@@ -382,6 +724,68 @@ async function revalidateSavedResults(validator, resultsPath) {
 
     if (failures.length > 0) {
         process.exitCode = 1;
+    }
+}
+
+async function renderReferenceTargets(validator) {
+    const promptSet = getPromptSet();
+    const limit = Number(process.env.LIVE_AI_SAMPLE_LIMIT || promptSet.prompts.length);
+    const selectedPrompts = promptSet.prompts.slice(0, limit);
+    const results = selectedPrompts.map(prompt => {
+        if (!prompt.referencePayload?.operations) {
+            throw new Error(`${prompt.id} does not define referencePayload.operations for local target rendering.`);
+        }
+        const payload = stripNullFields(prompt.referencePayload);
+        return {
+            prompt: reportPrompt(prompt),
+            request: {
+                endpoint: 'local-reference-target',
+                model: 'local-reference-target',
+                attempt: 0,
+                userPrompt: prompt.promptKo,
+                developerPrompt: '(not used for local reference targets)'
+            },
+            response: {
+                id: null,
+                model: 'local-reference-target',
+                rawText: JSON.stringify(payload),
+                payload
+            },
+            validation: validatePayload(payload, validator, prompt)
+        };
+    });
+
+    const renderMeta = await render(results, 'Local Reference MathGraph Targets');
+    const meta = {
+        generatedAt: new Date().toISOString(),
+        endpoint: 'local-reference-target',
+        model: 'local-reference-target',
+        promptSet: promptSet.name,
+        promptCount: results.length,
+        contactSheetPath: renderMeta.contactSheetPath,
+        consoleErrorCount: renderMeta.consoleErrors.length,
+        consoleErrors: renderMeta.consoleErrors
+    };
+    const resultPath = path.join(outputDir, 'reference-target-results.json');
+    const reportPath = path.join(outputDir, 'reference-target-report.md');
+    await writeFile(resultPath, JSON.stringify({ meta, results }, null, 2), 'utf8');
+    await writeFile(reportPath, referenceTargetReport(meta, results), 'utf8');
+
+    const failures = results.filter(result =>
+        !result.validation.valid ||
+        !result.render?.rendered
+    );
+
+    console.log(JSON.stringify({
+        meta,
+        resultPath: asMarkdownPath(resultPath),
+        reportPath: asMarkdownPath(reportPath),
+        screenshotDir: asMarkdownPath(screenshotDir),
+        failures: failures.map(result => result.prompt.id)
+    }, null, 2));
+
+    if (failures.length > 0 || renderMeta.consoleErrors.length > 0) {
+        process.exit(1);
     }
 }
 
@@ -468,6 +872,11 @@ function developerPrompt(referencePrompt = '') {
         'For sector/arc requests, create distinct start and end points on the circle so the shaded sector has visible area.',
         'For tangent-to-circle requests, prefer tangentCircle with circleId and tangentPointId.',
         'For tangent-to-function requests, prefer tangentFunction with functionId and x.',
+        'When a prompt gives exact construction coordinates for focus/directrix/tangent points/region vertices, create those point objects directly instead of substituting nearby sample points.',
+        'For dashed reference equations such as y=4, y=-1, x=0, or x+y=6, create line objects from two explicit support points on the requested equation.',
+        'For concentric-circle or fixed-radius prompts, use the same center point id and create radius points at the exact requested distance.',
+        'For exact annular-sector fills, note that MathGraph currently has no first-class annularSector; approximate only with supported circles, sectors, segments, and polygons when the prompt allows it.',
+        'For function-bounded curved regions, use a polygon through explicit named boundary/sample points and keep helper vertices hidden; do not claim the fill is exact unless a first-class region object exists.',
         'For triangle or polygon sides, use finite segment objects for the sides. Use line only when an infinite construction line is explicitly requested.',
         'For rightAngleMarker, the fields are vertexId, line1Id, and line2Id. Never use segment1Id or segment2Id for rightAngleMarker; those fields are only for equalLengthMarker.',
         'For angleDimension, create one marker per shown angle. Use the actual intersection point as vertexId and choose point1Id/point2Id on the two rays that form that angle.',
@@ -736,6 +1145,14 @@ function validatePromptExpectations(ctx, prompt, errors) {
         validateRequiredPointWindows(ctx, prompt, expectations.requiredPointWindows, errors);
     }
 
+    if (Array.isArray(expectations.requiredFunctionExpressions)) {
+        validateRequiredFunctionExpressions(ctx, prompt, expectations.requiredFunctionExpressions, errors);
+    }
+
+    if (Array.isArray(expectations.requiredSegmentsBetween)) {
+        validateRequiredSegmentsBetween(ctx, prompt, expectations.requiredSegmentsBetween, errors);
+    }
+
     if (Number.isFinite(expectations.minDashedLines)) {
         const dashedLines = ctx.byType('line').filter(line => line.dashed === true);
         if (dashedLines.length < expectations.minDashedLines) {
@@ -745,6 +1162,18 @@ function validatePromptExpectations(ctx, prompt, errors) {
 
     if (Array.isArray(expectations.requiredLinePatterns)) {
         validateRequiredLinePatterns(ctx, prompt, expectations.requiredLinePatterns, errors);
+    }
+
+    if (Array.isArray(expectations.requiredCircleRadii)) {
+        validateRequiredCircleRadii(ctx, prompt, expectations.requiredCircleRadii, errors);
+    }
+
+    if (expectations.requireConcentricCircles) {
+        validateConcentricCircles(ctx, prompt, expectations.requireConcentricCircles, errors);
+    }
+
+    if (Array.isArray(expectations.requiredCollinearPointLabels)) {
+        validateRequiredCollinearPointLabels(ctx, prompt, expectations.requiredCollinearPointLabels, errors);
     }
 
     if (Array.isArray(expectations.requiredTangentXs)) {
@@ -843,6 +1272,41 @@ function validateRequiredPointWindows(ctx, prompt, windows, errors) {
     }
 }
 
+function validateRequiredFunctionExpressions(ctx, prompt, expressions, errors) {
+    const normalizedActual = ctx.byType('function')
+        .map(func => normalizeExpression(func.expression))
+        .filter(Boolean);
+
+    for (const expression of expressions) {
+        const expected = normalizeExpression(expression);
+        if (!normalizedActual.includes(expected)) {
+            errors.push(`${prompt.id}: expected a function expression matching "${expression}", but found [${ctx.byType('function').map(func => func.expression || '(missing)').join(', ')}].`);
+        }
+    }
+}
+
+function normalizeExpression(expression) {
+    return String(expression || '')
+        .replace(/\s+/g, '')
+        .replace(/\*\*/g, '^')
+        .toLowerCase();
+}
+
+function validateRequiredSegmentsBetween(ctx, prompt, segmentRules, errors) {
+    for (const rule of segmentRules) {
+        const [name1, name2] = rule;
+        const id1 = findNamedPointId(ctx, name1);
+        const id2 = findNamedPointId(ctx, name2);
+        if (!id1 || !id2) {
+            errors.push(`${prompt.id}: expected segment endpoints ${name1} and ${name2}, but at least one point was missing.`);
+            continue;
+        }
+        if (!findSegmentBetween(ctx, id1, id2)) {
+            errors.push(`${prompt.id}: expected a segment between ${name1} and ${name2}.`);
+        }
+    }
+}
+
 function validateDirectTwoCircleLensPoints(ctx, prompt, errors) {
     const pointAId = findNamedPointId(ctx, 'A');
     const pointBId = findNamedPointId(ctx, 'B');
@@ -872,6 +1336,69 @@ function validateDirectTwoCircleLensPoints(ctx, prompt, errors) {
     );
     if (!lensPolygon) {
         errors.push(`${prompt.id}: expected a lens polygon that uses both A and B as vertices.`);
+    }
+}
+
+function validateRequiredCircleRadii(ctx, prompt, rules, errors) {
+    for (const rule of rules) {
+        const centerId = rule.center ? findNamedPointId(ctx, rule.center) : null;
+        const circles = ctx.byType('circle').filter(circle => !centerId || circle.centerId === centerId);
+        const matches = circles.filter(circle => {
+            const radius = circleRadius(ctx, circle);
+            return Number.isFinite(radius) && Math.abs(radius - rule.radius) <= (rule.tolerance || 0.12);
+        });
+        const requiredMinimum = rule.min || 1;
+        if (matches.length < requiredMinimum) {
+            const actual = circles.map(circle => `${circle.id || '(no id)'}:${formatNumber(circleRadius(ctx, circle))}`).join(', ') || '(none)';
+            const centerNote = rule.center ? ` centered at ${rule.center}` : '';
+            errors.push(`${prompt.id}: expected at least ${requiredMinimum} circle(s)${centerNote} with radius ${formatNumber(rule.radius)}; actual radii: ${actual}.`);
+        }
+    }
+}
+
+function validateConcentricCircles(ctx, prompt, rule, errors) {
+    const centerId = findNamedPointId(ctx, rule.center || 'O');
+    if (!centerId) {
+        errors.push(`${prompt.id}: expected concentric circle center ${rule.center || 'O'}, but it was missing.`);
+        return;
+    }
+
+    const circles = ctx.byType('circle').filter(circle => circle.centerId === centerId);
+    if (circles.length < (rule.min || 2)) {
+        errors.push(`${prompt.id}: expected at least ${rule.min || 2} circles centered at ${rule.center || 'O'}, but found ${circles.length}.`);
+        return;
+    }
+
+    if (Array.isArray(rule.radii)) {
+        const radii = circles.map(circle => circleRadius(ctx, circle));
+        for (const expectedRadius of rule.radii) {
+            if (!radii.some(radius => Number.isFinite(radius) && Math.abs(radius - expectedRadius) <= (rule.tolerance || 0.12))) {
+                errors.push(`${prompt.id}: expected a concentric circle radius ${formatNumber(expectedRadius)}; actual radii were [${radii.map(formatNumber).join(', ')}].`);
+            }
+        }
+    }
+}
+
+function validateRequiredCollinearPointLabels(ctx, prompt, groups, errors) {
+    for (const group of groups) {
+        const points = group
+            .map(name => ({ name, id: findNamedPointId(ctx, name) }))
+            .map(item => ({ ...item, point: item.id ? resolvePoint(ctx, item.id, new Set()) : null }));
+        const missing = points.filter(item => !item.point);
+        if (missing.length > 0) {
+            errors.push(`${prompt.id}: expected collinear point(s) ${group.join(', ')}, but missing/unresolved: ${missing.map(item => item.name).join(', ')}.`);
+            continue;
+        }
+        const [first, second, ...rest] = points.map(item => item.point);
+        const baseLength = distance(first, second);
+        if (baseLength < 0.05) {
+            errors.push(`${prompt.id}: collinear reference points ${group.join(', ')} must be distinct.`);
+            continue;
+        }
+        const offLine = rest.filter(point => Math.abs(cross(subtract(second, first), subtract(point, first))) / baseLength > 0.08);
+        if (offLine.length > 0) {
+            errors.push(`${prompt.id}: expected points ${group.join(', ')} to be collinear.`);
+        }
     }
 }
 
@@ -1794,7 +2321,7 @@ async function callPrompt(apiKey, model, prompt, validator) {
             errors = [`OpenAI response could not be parsed as complete GraphA JSON: ${error.message}`];
             previousPayload = null;
             lastResult = {
-                prompt,
+                prompt: reportPrompt(prompt),
                 request: {
                     endpoint,
                     model,
@@ -1823,7 +2350,7 @@ async function callPrompt(apiKey, model, prompt, validator) {
         }
         const validation = validatePayload(parsed.payload, validator, prompt);
         lastResult = {
-            prompt,
+            prompt: reportPrompt(prompt),
             request: {
                 endpoint,
                 model,
@@ -1904,7 +2431,7 @@ async function chromiumExecutable() {
     return null;
 }
 
-async function render(results) {
+async function render(results, title = 'Live OpenAI Random MathGraph Smoke') {
     await mkdir(screenshotDir, { recursive: true });
     const { server, url } = await startStaticServer();
     const executablePath = await chromiumExecutable();
@@ -1918,7 +2445,7 @@ async function render(results) {
         await page.goto(url, { waitUntil: 'load' });
         await page.waitForFunction(() => window.app?.objectManager && window.app?.processAIJSON);
         await page.addStyleTag({
-            content: '.canvas-controls, #chat-panel { display: none !important; }'
+            content: '.canvas-controls, .coord-display, #chat-panel { display: none !important; }'
         });
         for (const result of results) {
             const renderResult = await page.evaluate((current) => {
@@ -1990,7 +2517,7 @@ async function render(results) {
                 </style>
             </head>
             <body>
-                <h1>Live OpenAI Random MathGraph Smoke</h1>
+                <h1>${escapeHtml(title)}</h1>
                 <div class="grid">${cards.join('\n')}</div>
             </body>
             </html>
@@ -2004,6 +2531,15 @@ async function render(results) {
         await browser.close();
         await new Promise(resolve => server.close(resolve));
     }
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function report(meta, results) {
@@ -2040,12 +2576,46 @@ function report(meta, results) {
     return lines.join('\n');
 }
 
+function referenceTargetReport(meta, results) {
+    const lines = [
+        '# Local Reference MathGraph Targets',
+        '',
+        `- generatedAt: ${meta.generatedAt}`,
+        `- promptSet: ${meta.promptSet}`,
+        `- contactSheet: ${meta.contactSheetPath}`,
+        '',
+        'This report records deterministic local GraphA reference targets for visual comparison. It does not record OpenAI API calls.',
+        ''
+    ];
+    for (const result of results) {
+        lines.push(`## ${result.prompt.id}`);
+        lines.push('');
+        lines.push(`- title: ${result.prompt.title}`);
+        lines.push(`- validation: schema=${result.validation.schemaValid}, references=${result.validation.referencesValid}, intent=${result.validation.intentValid}, runtime=${result.validation.runtimeReadable}, semantic=${result.validation.semanticValid}`);
+        lines.push(`- visibleLabels: ${countRuntimeVisibleLabels(result.response.payload)}`);
+        lines.push(`- render: rendered=${result.render?.rendered}, objects=${result.render?.objectCount}, nonWhitePixels=${result.render?.nonWhitePixels}`);
+        lines.push(`- screenshot: ${result.render?.screenshotPath}`);
+        if (result.validation.errors.length > 0) {
+            lines.push(`- validationErrors: ${result.validation.errors.join(' | ')}`);
+        }
+        lines.push('');
+        lines.push('### Prompt', '', '```text', result.prompt.promptKo, '```', '');
+        lines.push('### Reference Operations', '', '```json', JSON.stringify(result.response.payload, null, 2), '```', '');
+    }
+    return lines.join('\n');
+}
+
 async function main() {
     await mkdir(outputDir, { recursive: true });
     const validator = new SchemaValidator();
 
     if (process.env.LIVE_AI_REVALIDATE_RESULTS) {
         await revalidateSavedResults(validator, process.env.LIVE_AI_REVALIDATE_RESULTS);
+        return;
+    }
+
+    if (process.env.LIVE_AI_RENDER_REFERENCE_TARGETS) {
+        await renderReferenceTargets(validator);
         return;
     }
 

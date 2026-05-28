@@ -2,6 +2,51 @@
 
 ## Summary
 
+- Task: Novel OpenAI drawing stress set and reference visual targets
+- Owner: Codex
+- Date: 2026-05-28
+- Related files:
+  - `tools/run-live-openai-random-drawing-smoke.mjs`
+  - `tests/live-openai-random-smoke.test.js`
+  - `docs/stress-novel-openai-drawing-audit.md`
+  - `docs/ai-reference.md`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The user requested another 10 OpenAI-generated MathGraph drawings that do not overlap the earlier `default`, `extended`, `stress`, or `stress_extra` prompt sets.
+- The live API key is not currently available through `OPENAI_API_KEY`; using a pasted key directly in shell commands or files would expose a secret.
+- Previous batches showed that schema, reference, and non-empty render checks can still miss visual-intent mismatches.
+- Future runs need a way to show the intended target images even when the external API cannot be safely called in the current process.
+
+## Goals
+
+- Add a third 10-prompt stress set named `stress_novel` with new function graphs, plane figures, and nested solids.
+- Add local reference payloads and a reference-render mode so the intended visual targets can be shown without an API call.
+- Add prompt-local semantic gates for the new prompt families: exact function expressions, directrix/asymptote lines, circle radii/concentricity, named tangent segments, collinear construction points, and nested-solid projection constraints.
+- Update prompt context and documentation with the extra geometry context that future drawing requests should include.
+- Run the live OpenAI loop if `OPENAI_API_KEY` becomes available; otherwise record the blocked reason and still verify local reference targets.
+
+## Non-Goals
+
+- Do not store or echo pasted API keys.
+- Do not add exact primitives for annular sectors, function-bounded curved fills, ellipses, cylinders, cones, or spheres in this pass.
+- Do not claim a local reference render is a live OpenAI result.
+
+## Acceptance Criteria
+
+- [x] `LIVE_AI_PROMPT_SET=stress_novel` selects 10 non-overlapping prompts.
+- [x] `LIVE_AI_RENDER_REFERENCE_TARGETS=1` renders the intended target contact sheet without `OPENAI_API_KEY`.
+- [x] New semantic validators reject the most likely visual mismatches for the new prompt families.
+- [x] Prompt/result or prompt/target comparison and root-cause analysis are documented.
+- [x] Focused smoke tests and useful local verification pass.
+- [x] A live external rerun is performed only if `OPENAI_API_KEY` is safely available through the environment; otherwise the blocked reason is recorded.
+
+---
+
+## Summary
+
 - Task: First-class lens regions and vector fill tool
 - Owner: Codex
 - Date: 2026-05-28
