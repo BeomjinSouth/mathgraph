@@ -33,11 +33,11 @@
 
 ## Acceptance Criteria
 
-- [ ] Clicking inside a triangle made from separate segment objects creates a filled vector region.
-- [ ] The inferred segment-loop region serializes/deserializes and follows moved boundary points.
-- [ ] Clicking inside a two-circle overlap auto-creates a filled lens region instead of filling a whole circle.
-- [ ] Existing fills for direct polygon and circle targets still work.
-- [ ] Focused tests and useful project verification pass, and progress docs are updated.
+- [x] Clicking inside a triangle made from separate segment objects creates a filled vector region.
+- [x] The inferred segment-loop region serializes/deserializes and follows moved boundary points.
+- [x] Clicking inside a two-circle overlap auto-creates a filled lens region instead of filling a whole circle.
+- [x] Existing fills for direct polygon and circle targets still work.
+- [x] Focused tests and useful project verification pass, and progress docs are updated.
 
 ---
 

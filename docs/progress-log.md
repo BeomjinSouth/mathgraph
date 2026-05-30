@@ -2,6 +2,38 @@
 
 ## 2026-05-30
 
+### Click-to-fill inferred vector regions
+
+#### Work completed
+
+- Added `ClosedRegion` as a persisted runtime object for filled regions inferred from existing closed segment loops.
+- Wired `ClosedRegion` into object type metadata, save/load restoration, dependency updates, render ordering, and SVG export.
+- Extended the fill tool so a click inside a loose segment loop creates and fills a vector region automatically.
+- Extended the fill tool so a click inside a two-circle overlap creates and fills a `lensRegion` before falling back to whole-circle fill.
+- Preserved existing direct fill behavior for polygons, circles, sectors, circular segments, and existing lens regions.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
+
+#### Findings
+
+- The previous fill implementation was already vector-based, but only for existing closed objects.
+- The new behavior still avoids raster flood fill; created regions remain editable/persistent MathGraph objects.
+- General function-bounded/implicit region solving remains out of scope for this pass and should become a dedicated first-class primitive/solver task.
+
+#### Verification
+
+- Ran `node --check js\tools\FillTool.js`; passed.
+- Ran `node --check js\objects\ClosedRegion.js`; passed.
+- Ran `node --check js\core\ObjectManager.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --test tests\fill-tool.test.js tests\lens-region.test.js`; passed with 6 tests.
+- Ran `npm.cmd test`; passed with 113 tests.
+- Ran browser visual smoke through a temporary local server; screenshot `tmp/click-fill-visual-smoke/click-fill-smoke.png`, 0 console errors, `closedRegionValid:true`, `lensRegionValid:true`, fill colors `#f97316` and `#22c55e`.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Generation-side AI diagram quality enhancer
 
 #### Work completed

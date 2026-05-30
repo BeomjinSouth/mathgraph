@@ -3,7 +3,7 @@
 ## Status
 
 - Task: Click-to-fill inferred vector regions
-- State: In progress
+- State: Done
 - Last updated: 2026-05-30
 
 ## Plan
@@ -17,10 +17,10 @@
 ## Progress Log
 
 - [x] Step 1
-- [ ] Step 2
-- [ ] Step 3
-- [ ] Step 4
-- [ ] Step 5
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
 
 ## Decisions
 
@@ -35,10 +35,22 @@
 
 ## Verification
 
-- Planned:
+- Completed:
+  - `node --check js\tools\FillTool.js`
+  - `node --check js\objects\ClosedRegion.js`
+  - `node --check js\core\ObjectManager.js`
+  - `node --check js\main.js`
   - `node --test tests\fill-tool.test.js tests\lens-region.test.js`
-  - `npm.cmd test` if focused checks pass
+  - Browser visual smoke at `tmp/click-fill-visual-smoke/click-fill-smoke.png`; created a filled segment-loop region and an auto lens region with 0 console errors.
+  - `npm.cmd test`; passed with 113 tests.
   - `git diff --check`
+
+## Handoff
+
+- Current status:
+  - The fill tool now creates a vector `closedRegion` when the user clicks inside a visible segment loop.
+  - The fill tool now creates a `lensRegion` automatically when the user clicks inside the overlap of two intersecting circles.
+  - Arbitrary function-bounded regions remain a future primitive/solver task rather than being approximated silently.
 
 ---
 

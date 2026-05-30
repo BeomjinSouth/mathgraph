@@ -188,6 +188,7 @@ The application UI also exposes view controls that are part of the runtime but a
 
 - settings and view toggles such as grid, x-axis, y-axis, hidden-object visibility, and style controls
 - vector fill tool for applying fill color/opacity to circles, polygons, sectors, circular segments, and lens regions
+- click-to-fill inference that creates a runtime-only `closedRegion` from a visible segment loop, or creates a `lensRegion` from a two-circle overlap, before applying fill
 
 Treat those as UI/runtime features unless the schema validator is expanded to accept them.
 

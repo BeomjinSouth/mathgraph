@@ -15,6 +15,7 @@ import { Arc, Sector, CircularSegment } from '../objects/Arc.js'; // Mk.2
 import { AngleDimension, LengthDimension } from '../objects/Dimension.js'; // Mk.2
 import { Polygon } from '../objects/Polygon.js'; // Mk.5
 import { LensRegion } from '../objects/LensRegion.js';
+import { ClosedRegion } from '../objects/ClosedRegion.js';
 import { Prism, Pyramid } from '../objects/Solid3D.js'; // Mk.3
 import { NumberLine } from '../objects/NumberLine.js'; // Mk.4
 
@@ -538,6 +539,11 @@ export class ObjectManager {
                 obj = new LensRegion(data.circle1Id, data.circle2Id, data);
                 break;
 
+            case ObjectType.CLOSED_REGION:
+            case 'closedRegion':
+                obj = new ClosedRegion(data.vertexIds, data.boundaryObjectIds || [], data);
+                break;
+
             case ObjectType.POLYGON:
             case 'polygon':
                 obj = new Polygon(data.vertexIds, data);
@@ -711,6 +717,10 @@ export class ObjectManager {
 
     createLensRegion(circle1Id, circle2Id, params = {}) {
         return this.addObject(new LensRegion(circle1Id, circle2Id, params));
+    }
+
+    createClosedRegion(vertexIds, boundaryObjectIds = [], params = {}) {
+        return this.addObject(new ClosedRegion(vertexIds, boundaryObjectIds, params));
     }
 
     createPolygon(vertexIds, params = {}) {

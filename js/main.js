@@ -1198,10 +1198,12 @@ class GraphAApp {
      */
     getRenderOrderedObjects() {
         const pointLikeTypes = new Set(['point', 'pointOnObject', 'intersection', 'midpoint']);
+        const backgroundRegionTypes = new Set(['closedRegion']);
         const objects = this.objectManager.getAllObjects();
 
         return [
-            ...objects.filter(obj => !pointLikeTypes.has(obj.type)),
+            ...objects.filter(obj => backgroundRegionTypes.has(obj.type)),
+            ...objects.filter(obj => !backgroundRegionTypes.has(obj.type) && !pointLikeTypes.has(obj.type)),
             ...objects.filter(obj => pointLikeTypes.has(obj.type))
         ];
     }
@@ -2011,6 +2013,18 @@ class GraphAApp {
             `${this.buildSVGStrokeAttributes(obj, { fill: obj.fillColor || obj.color, fillOpacity: obj.fillOpacity ?? 0.12 })} />`;
     }
 
+    buildSVGClosedRegionMarkup(obj) {
+        if (!obj.valid || !Array.isArray(obj.vertices) || obj.vertices.length < 3) return '';
+
+        const points = obj.vertices
+            .map(vertex => this.canvas.toScreen(vertex))
+            .map(point => `${point.x.toFixed(2)},${point.y.toFixed(2)}`)
+            .join(' ');
+
+        return `<polygon points="${points}" ` +
+            `${this.buildSVGStrokeAttributes(obj, { fill: obj.fillColor || obj.color, fillOpacity: obj.fillOpacity ?? 0.24 })} />`;
+    }
+
     buildSVGLensRegionMarkup(obj) {
         if (!obj.valid || !Array.isArray(obj.pathPoints) || obj.pathPoints.length < 3) return '';
 
@@ -2162,6 +2176,8 @@ class GraphAApp {
                 return this.buildSVGCircularSegmentMarkup(obj);
             case 'lensRegion':
                 return this.buildSVGLensRegionMarkup(obj);
+            case 'closedRegion':
+                return this.buildSVGClosedRegionMarkup(obj);
             case 'polygon':
                 return this.buildSVGPolygonMarkup(obj);
             case 'numberLine':

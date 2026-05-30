@@ -32,6 +32,7 @@ export const ObjectType = {
     SECTOR: 'sector',
     CIRCULAR_SEGMENT: 'circularSegment',
     LENS_REGION: 'lensRegion',
+    CLOSED_REGION: 'closedRegion',
     POLYGON: 'polygon',
 
     PARALLEL: 'parallel',
@@ -115,7 +116,7 @@ export function generateLabel(type) {
     if (type === ObjectType.CIRCLE || type === ObjectType.CIRCLE_THREE_POINTS ||
         type === ObjectType.ARC || type === ObjectType.SECTOR ||
         type === ObjectType.CIRCULAR_SEGMENT || type === ObjectType.LENS_REGION ||
-        type === ObjectType.POLYGON) {
+        type === ObjectType.CLOSED_REGION || type === ObjectType.POLYGON) {
         return labelGenerators.circle();
     }
     if (type === ObjectType.FUNCTION) {
@@ -296,6 +297,7 @@ export class GeoObject {
             [ObjectType.CIRCLE]: 'circle',
             [ObjectType.CIRCLE_THREE_POINTS]: 'circle',
             [ObjectType.LENS_REGION]: 'circle',
+            [ObjectType.CLOSED_REGION]: 'polygon',
             [ObjectType.POLYGON]: 'polygon',
             [ObjectType.FUNCTION]: 'function',
             [ObjectType.VECTOR]: 'vector',
@@ -319,6 +321,8 @@ export class GeoObject {
             [ObjectType.RAY]: '반직선',
             [ObjectType.CIRCLE]: '원',
             [ObjectType.CIRCLE_THREE_POINTS]: '세점원',
+            [ObjectType.LENS_REGION]: '렌즈 영역',
+            [ObjectType.CLOSED_REGION]: '닫힌 영역',
             [ObjectType.POLYGON]: '다각형',
             [ObjectType.PARALLEL]: '평행선',
             [ObjectType.PERPENDICULAR]: '수선',
