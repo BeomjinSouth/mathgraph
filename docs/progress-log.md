@@ -2,6 +2,37 @@
 
 ## 2026-05-30
 
+### Fresh CSAT-style drawing prompt set
+
+#### Work completed
+
+- Added `fresh_csat` as a new selectable prompt set in `tools/run-live-openai-random-drawing-smoke.mjs`.
+- Added 10 fresh reference targets covering rational functions, cubic extrema, crossed chords, altitude similarity, interval/ray number lines, piecewise area graphs, box-plot approximation, unit-circle projection, pairwise Venn lenses, and pyramid cross-sections.
+- Rendered the fresh local reference contact sheet under `tmp/live-openai-fresh-csat-reference-final2-20260530`.
+- Opened the fresh contact sheet and the box-plot screenshot for visual comparison.
+- Adjusted the box-plot approximation prompt/payload after visual review so labels use shorter `L,Q1,M,Q3,U` names in the default viewport.
+- Added `docs/fresh-csat-drawing-audit.md` with prompt/reference comparisons, evidence paths, live-run blocker, and remaining approximation gaps.
+
+#### Findings
+
+- All 10 fresh local reference targets passed schema/reference/intent/runtime/semantic validation and browser rendering.
+- The visible reference set is useful for additional CSAT/mock-exam categories beyond the previous `stress_novel` set.
+- The chart-like outputs remain approximations because native box-plot primitives and exact open/closed endpoint styling are not first-class yet.
+- Fresh live OpenAI generation is blocked until `OPENAI_API_KEY` is present in the process environment. The pasted key was not copied into command text or repository files.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `LIVE_AI_PROMPT_SET=fresh_csat` with `LIVE_AI_RENDER_REFERENCE_TARGETS=1`; passed with 10 targets, 0 failures, and 0 browser console errors.
+- Attempted `LIVE_AI_PROMPT_SET=fresh_csat` live mode without `OPENAI_API_KEY`; blocked before network call with `OPENAI_API_KEY is required.`
+- Ran `npm.cmd test`; passed with 113 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran narrowed secret scans for actual long `sk-...` tokens and inline `OPENAI_API_KEY=sk-...` assignments outside `node_modules`, `tmp`, and `.git`; no matches.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### CSAT drawing audit final verification replay
 
 #### Work completed

@@ -2,6 +2,63 @@
 
 ## Status
 
+- Task: Fresh CSAT-style live OpenAI drawing set
+- State: Done with live OpenAI rerun blocked
+- Last updated: 2026-05-30
+
+## Plan
+
+1. Add a new non-overlapping prompt set with reference targets and prompt-local expectations.
+2. Render local reference targets for the new set.
+3. Run live OpenAI generation for the new set with the key only in process scope when `OPENAI_API_KEY` is present.
+4. Open the contact sheet and individual PNGs, compare prompt vs output, and record findings.
+5. Run focused/full verification, update progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1 planning started
+- [x] Step 1 implementation
+- [x] Step 2
+- [ ] Step 3 blocked by missing process environment key
+- [x] Step 4
+- [x] Step 5 local verification and docs
+
+## Decisions
+
+- Decision: Use a new prompt set instead of reusing `stress_novel`.
+- Reason: The user explicitly clarified that the task is to generate new drawings.
+- Decision: Keep the supplied key process-scoped for the one live run.
+- Reason: The project must not persist or report secrets.
+
+## Blockers
+
+- Blocker: Fresh live OpenAI rerun is blocked because the current process has no `OPENAI_API_KEY`. The pasted key was not copied into a shell command or file to avoid leaving a secret in logs.
+
+## Verification
+
+- Completed:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - local reference rendering for `LIVE_AI_PROMPT_SET=fresh_csat`; passed with 10 targets, 0 failures, and 0 browser console errors.
+  - live OpenAI attempt for `LIVE_AI_PROMPT_SET=fresh_csat`; blocked before network call with `OPENAI_API_KEY is required.`
+  - Opened the contact sheet and the box-plot screenshot for visual comparison.
+
+Planned before final handoff:
+  - `npm.cmd test`
+  - `git diff --check`
+  - narrowed secret-pattern scan for actual long `sk-...` tokens
+
+## Handoff
+
+- Current status:
+  - `fresh_csat` is selectable from `LIVE_AI_PROMPT_SET`.
+  - Local reference evidence is under `tmp/live-openai-fresh-csat-reference-final2-20260530/`.
+  - Prompt/result comparison is documented in `docs/fresh-csat-drawing-audit.md`.
+  - A fresh paid live run still needs `OPENAI_API_KEY` supplied through the environment, not pasted into source or command text.
+
+---
+
+## Status
+
 - Task: Click-to-fill inferred vector regions
 - State: Done
 - Last updated: 2026-05-30

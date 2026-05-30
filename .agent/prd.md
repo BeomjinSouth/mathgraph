@@ -2,6 +2,46 @@
 
 ## Summary
 
+- Task: Fresh CSAT-style live OpenAI drawing set
+- Owner: Codex
+- Date: 2026-05-30
+- Related files:
+  - `tools/run-live-openai-random-drawing-smoke.mjs`
+  - `docs/fresh-csat-drawing-audit.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The user asked to generate new examples, not only re-audit the previously saved `stress_novel` outputs.
+- Prior checks proved that rendered output alone is not enough; the new batch still needs prompt/result visual review and prompt-local validation.
+- The OpenAI API key must remain process-scoped and must not be written to source, reports, screenshots, or persistent environment settings.
+
+## Goals
+
+- Add a fresh, non-overlapping prompt set for CSAT/mock-exam-style graphs and diagrams.
+- Render deterministic local reference targets for that fresh set.
+- Run a live OpenAI generation pass against the fresh set when `OPENAI_API_KEY` is safely present in the process environment.
+- Compare the rendered PNGs one by one against the prompt/reference intent.
+- Record verification, findings, and any root-cause follow-up in durable docs.
+
+## Non-Goals
+
+- Do not reuse `stress_novel` as the main evidence for this pass.
+- Do not add first-class unsupported primitives in this pass.
+- Do not store or echo the supplied API key.
+
+## Acceptance Criteria
+
+- [x] A new prompt set exists and is selectable independently from earlier prompt sets.
+- [x] Local reference targets render successfully.
+- [ ] Live OpenAI outputs render through the real MathGraph browser canvas. Blocked until `OPENAI_API_KEY` is available as an environment variable.
+- [x] Each local reference result is judged against the prompt, not only against render presence.
+- [x] Verification and docs are updated.
+
+---
+
+## Summary
+
 - Task: Click-to-fill inferred vector regions
 - Owner: Codex
 - Date: 2026-05-30

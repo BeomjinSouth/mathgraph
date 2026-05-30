@@ -4,6 +4,28 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The fresh CSAT-style prompt set needs valid GraphA operations, prompt-local expectations, and visual reference targets for exam-style diagrams.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The acceptance bar is the rendered canvas contact sheet, not just JSON schema validity.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - Live API calls must use process-scoped `OPENAI_API_KEY` and strict Structured Outputs without persisting secrets.
+
+## Current Task Notes
+
+- Added `fresh_csat` as a selectable prompt set in `tools/run-live-openai-random-drawing-smoke.mjs`.
+- Local reference rendering passed for 10 fresh targets with 0 validation failures and 0 browser console errors.
+- The fresh live OpenAI call is blocked until `OPENAI_API_KEY` exists in the process environment; do not paste the key into command text or repo files.
+- Visual review found the box-plot approximation needed shorter labels and viewport-friendly coordinates, so the reference prompt/payload now uses `L,Q1,M,Q3,U` on a `-5..5` number line.
+- Remaining approximation gaps: native box plots, exact open/closed number-line endpoint styling, and exact three-circle common-region fills.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The request is about turning a clicked enclosed geometry area into editable MathGraph vector objects.
 - Skill: Browser / Playwright
 - Why it matters:

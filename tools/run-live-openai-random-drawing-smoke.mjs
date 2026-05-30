@@ -653,12 +653,349 @@ const stressNovelSmokePrompts = [
     }
 ];
 
+const freshCsatSmokePrompts = [
+    {
+        id: 'hyperbola_asymptotes_points',
+        title: 'Rectangular hyperbola with asymptotes and marked points',
+        tags: 'graph function rational asymptote point',
+        promptKo: '좌표평면에 유리함수 2/x를 그리고, 점선 점근선 x=0과 y=0을 line 객체로 표시해줘. 그래프 위의 점 A(1,2), B(2,1), C(-1,-2), D(-2,-1)를 point로 표시하고, 함수와 점근선 라벨은 숨긴 뒤 A,B,C,D 라벨만 보이게 해줘.',
+        showAxes: true,
+        expect: {
+            minTypes: { function: 1, line: 2, point: 8 },
+            requiredFunctionExpressions: ['2/x'],
+            requiredLinePatterns: [
+                { kind: 'vertical', x: 0, dashed: true },
+                { kind: 'slopeIntercept', slope: 0, intercept: 0, dashed: true }
+            ],
+            requiredPointWindows: [
+                { name: 'A', xMin: 0.9, xMax: 1.1, yMin: 1.9, yMax: 2.1 },
+                { name: 'B', xMin: 1.9, xMax: 2.1, yMin: 0.9, yMax: 1.1 },
+                { name: 'C', xMin: -1.1, xMax: -0.9, yMin: -2.1, yMax: -1.9 },
+                { name: 'D', xMin: -2.1, xMax: -1.9, yMin: -1.1, yMax: -0.9 }
+            ],
+            maxVisibleLabels: 4,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'f', type: 'function', expression: '2/x', showLabel: false },
+                { op: 'create', id: 'Y1', type: 'point', x: 0, y: -7, visible: false, showLabel: false },
+                { op: 'create', id: 'Y2', type: 'point', x: 0, y: 7, visible: false, showLabel: false },
+                { op: 'create', id: 'X1', type: 'point', x: -7, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'X2', type: 'point', x: 7, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'vAsym', type: 'line', point1Id: 'Y1', point2Id: 'Y2', dashed: true, showLabel: false },
+                { op: 'create', id: 'hAsym', type: 'line', point1Id: 'X1', point2Id: 'X2', dashed: true, showLabel: false },
+                { op: 'create', id: 'A', type: 'point', x: 1, y: 2, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 2, y: 1, label: 'B' },
+                { op: 'create', id: 'C', type: 'point', x: -1, y: -2, label: 'C' },
+                { op: 'create', id: 'D', type: 'point', x: -2, y: -1, label: 'D' }
+            ]
+        }
+    },
+    {
+        id: 'cubic_extrema_inflection_tangent',
+        title: 'Cubic extrema, inflection point, and tangent',
+        tags: 'graph function cubic tangent extrema',
+        promptKo: '좌표평면에 함수 x^3 - 3*x를 그리고, 극대점 A(-1,2), 극소점 B(1,-2), 변곡점 O(0,0)를 point로 표시해줘. x=0에서의 접선을 tangentFunction으로 그리고, A와 B를 잇는 선분도 표시해줘. 함수/접선/선분 라벨은 숨기고 A,B,O 라벨만 보이게 해줘.',
+        showAxes: true,
+        expect: {
+            minTypes: { function: 1, tangentFunction: 1, segment: 1, point: 3 },
+            requiredFunctionExpressions: ['x^3-3*x'],
+            requiredTangentXs: [0],
+            requiredPointWindows: [
+                { name: 'A', xMin: -1.1, xMax: -0.9, yMin: 1.9, yMax: 2.1 },
+                { name: 'B', xMin: 0.9, xMax: 1.1, yMin: -2.1, yMax: -1.9 },
+                { name: 'O', xMin: -0.1, xMax: 0.1, yMin: -0.1, yMax: 0.1 }
+            ],
+            requiredSegmentsBetween: [['A', 'B']],
+            maxVisibleLabels: 3,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'f', type: 'function', expression: 'x^3 - 3*x', showLabel: false },
+                { op: 'create', id: 'A', type: 'point', x: -1, y: 2, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 1, y: -2, label: 'B' },
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+                { op: 'create', id: 'AB', type: 'segment', point1Id: 'A', point2Id: 'B', showLabel: false },
+                { op: 'create', id: 'tanO', type: 'tangentFunction', functionId: 'f', x: 0, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'circle_crossed_chords_angle',
+        title: 'Circle with crossed chords and an interior angle',
+        tags: 'circle chord segment angle construction',
+        promptKo: '중심 O, 반지름 4인 원 안에 두 현 AB와 CD가 점 P에서 서로 만나도록 그려줘. A(-3,2.65), B(3,-2.65), C(-3,-2.65), D(3,2.65), P(0,0)를 직접 point로 만들고, 현 AB, CD를 segment로 표시해줘. 교각 APD를 angleDimension으로 크게 표시하되 showValue:false로 두고, 보이는 라벨은 A,B,C,D,P만 남겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { circle: 1, segment: 2, angleDimension: 1, point: 6 },
+            requiredCircleRadii: [{ center: 'O', radius: 4 }],
+            requiredPointWindows: [
+                { name: 'P', xMin: -0.1, xMax: 0.1, yMin: -0.1, yMax: 0.1 }
+            ],
+            requiredSegmentsBetween: [['A', 'B'], ['C', 'D']],
+            requireRenderableAngles: true,
+            minAngleArcRadius: 0.6,
+            maxVisibleLabels: 5,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'A', type: 'point', x: -3, y: 2.65, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 3, y: -2.65, label: 'B' },
+                { op: 'create', id: 'C', type: 'point', x: -3, y: -2.65, label: 'C' },
+                { op: 'create', id: 'D', type: 'point', x: 3, y: 2.65, label: 'D' },
+                { op: 'create', id: 'P', type: 'point', x: 0, y: 0, label: 'P' },
+                { op: 'create', id: 'circle', type: 'circle', centerId: 'O', pointOnCircleId: 'A', showLabel: false },
+                { op: 'create', id: 'AB', type: 'segment', point1Id: 'A', point2Id: 'B', showLabel: false },
+                { op: 'create', id: 'CD', type: 'segment', point1Id: 'C', point2Id: 'D', showLabel: false },
+                { op: 'create', id: 'angleAPD', type: 'angleDimension', vertexId: 'P', point1Id: 'A', point2Id: 'D', arcRadius: 0.7, showValue: false, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'right_triangle_altitude_similarity',
+        title: 'Right triangle altitude to hypotenuse',
+        tags: 'plane triangle altitude similarity polygon right_angle',
+        promptKo: '직각삼각형 ABC를 C(0,0), A(6,0), B(0,4)로 그리고, C에서 빗변 AB로 내린 높이의 발 H(1.85,2.77)를 표시해줘. 세 변과 높이 CH는 segment로 만들고, 삼각형 ABC polygon은 외곽선만 보이게 하며, 작은 삼각형 ACH와 BCH를 연하게 다른 polygon으로 칠해줘. C와 H의 직각 표시는 rightAngleMarker 또는 큰 angleDimension으로 보여주고, 보이는 라벨은 A,B,C,H만 남겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { polygon: 3, segment: 4, rightAngleMarker: 2, point: 4 },
+            requiredPointWindows: [
+                { name: 'H', xMin: 1.7, xMax: 2, yMin: 2.6, yMax: 2.95 }
+            ],
+            requiredSegmentsBetween: [['A', 'B'], ['B', 'C'], ['C', 'A'], ['C', 'H']],
+            maxVisibleLabels: 4,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'C', type: 'point', x: 0, y: 0, label: 'C' },
+                { op: 'create', id: 'A', type: 'point', x: 6, y: 0, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 0, y: 4, label: 'B' },
+                { op: 'create', id: 'H', type: 'point', x: 1.85, y: 2.77, label: 'H', labelOffset: { x: 10, y: -10 } },
+                { op: 'create', id: 'AB', type: 'segment', point1Id: 'A', point2Id: 'B' },
+                { op: 'create', id: 'BC', type: 'segment', point1Id: 'B', point2Id: 'C' },
+                { op: 'create', id: 'CA', type: 'segment', point1Id: 'C', point2Id: 'A' },
+                { op: 'create', id: 'CH', type: 'segment', point1Id: 'C', point2Id: 'H' },
+                { op: 'create', id: 'triABC', type: 'polygon', vertexIds: ['A', 'B', 'C'], fillOpacity: 0, showLabel: false },
+                { op: 'create', id: 'triACH', type: 'polygon', vertexIds: ['A', 'C', 'H'], fillOpacity: 0.1, showLabel: false },
+                { op: 'create', id: 'triBCH', type: 'polygon', vertexIds: ['B', 'C', 'H'], fillOpacity: 0.16, showLabel: false },
+                { op: 'create', id: 'rightC', type: 'rightAngleMarker', vertexId: 'C', line1Id: 'CA', line2Id: 'BC' },
+                { op: 'create', id: 'rightH', type: 'rightAngleMarker', vertexId: 'H', line1Id: 'CH', line2Id: 'AB' }
+            ]
+        }
+    },
+    {
+        id: 'number_line_interval_solution',
+        title: 'Number line interval solution set',
+        tags: 'number_line interval ray segment inequality',
+        promptKo: '수직선 -5부터 6까지를 그리고, 해집합 -3 < x <= 1 또는 x >= 3을 표시해줘. 열린 끝점 -3은 빈 원처럼 표현하기 어렵다면 점 크기를 작게 하고 라벨을 -3으로 두되, 닫힌 끝점 1과 3은 point로 표시해줘. 구간 (-3,1]은 segment로, [3,∞)은 ray로 표시하고, 보이는 라벨은 -3,1,3만 남겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { numberLine: 1, segment: 1, ray: 1, point: 4 },
+            requiredPointWindows: [
+                { name: '-3', xMin: -3.1, xMax: -2.9, yMin: -0.1, yMax: 0.1 },
+                { name: '1', xMin: 0.9, xMax: 1.1, yMin: -0.1, yMax: 0.1 },
+                { name: '3', xMin: 2.9, xMax: 3.1, yMin: -0.1, yMax: 0.1 }
+            ],
+            maxVisibleLabels: 3,
+            maxLabelTextLength: 2
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'nl', type: 'numberLine', start: -5, end: 6, step: 1, y: 0, showArrows: true },
+                { op: 'create', id: 'L', type: 'point', x: -3, y: 0, label: '-3', pointSize: 4 },
+                { op: 'create', id: 'R', type: 'point', x: 1, y: 0, label: '1' },
+                { op: 'create', id: 'S', type: 'point', x: 3, y: 0, label: '3' },
+                { op: 'create', id: 'T', type: 'point', x: 5.6, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'interval1', type: 'segment', point1Id: 'L', point2Id: 'R', lineWidth: 4, showLabel: false },
+                { op: 'create', id: 'interval2', type: 'ray', originId: 'S', directionPointId: 'T', lineWidth: 4, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'speed_time_area_graph',
+        title: 'Piecewise speed-time graph with shaded distance area',
+        tags: 'graph segment polygon area piecewise',
+        promptKo: '좌표평면에 속도-시간 그래프처럼 A(0,0), B(2,4), C(5,4), D(7,0)를 잇는 꺾은선 AB-BC-CD를 그려줘. 시간축과 그래프가 만드는 사다리꼴 영역 A-B-C-D를 polygon으로 연하게 칠하고, 보이는 라벨은 A,B,C,D만 남겨줘.',
+        showAxes: true,
+        expect: {
+            minTypes: { segment: 3, polygon: 1, point: 4 },
+            requiredPointWindows: [
+                { name: 'A', xMin: -0.1, xMax: 0.1, yMin: -0.1, yMax: 0.1 },
+                { name: 'B', xMin: 1.9, xMax: 2.1, yMin: 3.9, yMax: 4.1 },
+                { name: 'C', xMin: 4.9, xMax: 5.1, yMin: 3.9, yMax: 4.1 },
+                { name: 'D', xMin: 6.9, xMax: 7.1, yMin: -0.1, yMax: 0.1 }
+            ],
+            requiredSegmentsBetween: [['A', 'B'], ['B', 'C'], ['C', 'D']],
+            maxVisibleLabels: 4,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'A', type: 'point', x: 0, y: 0, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 2, y: 4, label: 'B' },
+                { op: 'create', id: 'C', type: 'point', x: 5, y: 4, label: 'C' },
+                { op: 'create', id: 'D', type: 'point', x: 7, y: 0, label: 'D' },
+                { op: 'create', id: 'AB', type: 'segment', point1Id: 'A', point2Id: 'B' },
+                { op: 'create', id: 'BC', type: 'segment', point1Id: 'B', point2Id: 'C' },
+                { op: 'create', id: 'CD', type: 'segment', point1Id: 'C', point2Id: 'D' },
+                { op: 'create', id: 'area', type: 'polygon', vertexIds: ['A', 'B', 'C', 'D'], fillOpacity: 0.16, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'boxplot_approximation_number_line',
+        title: 'Box plot approximation on a number line',
+        tags: 'statistics chart approximation number_line polygon segment',
+        promptKo: '현재 MathGraph에는 boxPlot 객체가 없으므로 numberLine, segment, polygon으로 상자그림을 근사해줘. 기본 화면에서 잘 보이도록 수직선은 -5부터 5까지로 두고, L(-4), Q1(-2), M(0), Q3(2), U(4)를 표시해. Q1-Q3 상자는 polygon으로 만들고, 중앙값은 세로 segment, 수염은 segment로 그려줘. 보이는 라벨은 L,Q1,M,Q3,U 다섯 개만 남겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { numberLine: 1, polygon: 1, segment: 3, point: 5 },
+            requiredPointWindows: [
+                { name: 'L', xMin: -4.1, xMax: -3.9, yMin: -0.1, yMax: 0.1 },
+                { name: 'Q1', xMin: -2.1, xMax: -1.9, yMin: -0.1, yMax: 0.1 },
+                { name: 'M', xMin: -0.1, xMax: 0.1, yMin: -0.1, yMax: 0.1 },
+                { name: 'Q3', xMin: 1.9, xMax: 2.1, yMin: -0.1, yMax: 0.1 },
+                { name: 'U', xMin: 3.9, xMax: 4.1, yMin: -0.1, yMax: 0.1 }
+            ],
+            maxVisibleLabels: 5,
+            maxLabelTextLength: 3
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'nl', type: 'numberLine', start: -5, end: 5, step: 1, y: 0, showArrows: true },
+                { op: 'create', id: 'min', type: 'point', x: -4, y: 0, label: 'L', labelOffset: { x: -20, y: 18 } },
+                { op: 'create', id: 'Q1', type: 'point', x: -2, y: 0, label: 'Q1', labelOffset: { x: -12, y: -20 } },
+                { op: 'create', id: 'M', type: 'point', x: 0, y: 0, label: 'M', labelOffset: { x: 0, y: 22 } },
+                { op: 'create', id: 'Q3', type: 'point', x: 2, y: 0, label: 'Q3', labelOffset: { x: 12, y: -20 } },
+                { op: 'create', id: 'max', type: 'point', x: 4, y: 0, label: 'U', labelOffset: { x: 20, y: 18 } },
+                { op: 'create', id: 'q1b', type: 'point', x: -2, y: 0.7, visible: false, showLabel: false },
+                { op: 'create', id: 'q3b', type: 'point', x: 2, y: 0.7, visible: false, showLabel: false },
+                { op: 'create', id: 'q3t', type: 'point', x: 2, y: 1.5, visible: false, showLabel: false },
+                { op: 'create', id: 'q1t', type: 'point', x: -2, y: 1.5, visible: false, showLabel: false },
+                { op: 'create', id: 'box', type: 'polygon', vertexIds: ['q1b', 'q3b', 'q3t', 'q1t'], fillOpacity: 0.12, showLabel: false },
+                { op: 'create', id: 'leftWhisker', type: 'segment', point1Id: 'min', point2Id: 'Q1', showLabel: false },
+                { op: 'create', id: 'rightWhisker', type: 'segment', point1Id: 'Q3', point2Id: 'max', showLabel: false },
+                { op: 'create', id: 'medianBottom', type: 'point', x: 0, y: 0.7, visible: false, showLabel: false },
+                { op: 'create', id: 'medianTop', type: 'point', x: 0, y: 1.5, visible: false, showLabel: false },
+                { op: 'create', id: 'median', type: 'segment', point1Id: 'medianBottom', point2Id: 'medianTop', showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'unit_circle_sine_projection',
+        title: 'Unit-circle style sine projection',
+        tags: 'circle trigonometry segment angle projection',
+        promptKo: '반지름 3인 원을 단위원 확대 그림처럼 그리고, 중심 O(0,0)에서 60도 방향의 점 P(1.5,2.6)를 잡아줘. P에서 x축으로 내린 발 H(1.5,0), y축으로 내린 높이점 V(0,2.6)를 만들고 OP, PH, PV, OH, OV를 segment로 표시해줘. 각 POH는 angleDimension으로 크게 표시하고 showValue:false로 둬. 보이는 라벨은 O,P,H,V만 남겨줘.',
+        showAxes: true,
+        expect: {
+            minTypes: { circle: 1, segment: 5, angleDimension: 1, point: 5 },
+            requiredCircleRadii: [{ center: 'O', radius: 3 }],
+            requiredPointWindows: [
+                { name: 'P', xMin: 1.35, xMax: 1.65, yMin: 2.45, yMax: 2.75 },
+                { name: 'H', xMin: 1.35, xMax: 1.65, yMin: -0.1, yMax: 0.1 },
+                { name: 'V', xMin: -0.1, xMax: 0.1, yMin: 2.45, yMax: 2.75 }
+            ],
+            requiredSegmentsBetween: [['O', 'P'], ['P', 'H'], ['P', 'V'], ['O', 'H'], ['O', 'V']],
+            requireRenderableAngles: true,
+            minAngleArcRadius: 0.6,
+            maxVisibleLabels: 4,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+                { op: 'create', id: 'R', type: 'point', x: 3, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'P', type: 'point', x: 1.5, y: 2.6, label: 'P' },
+                { op: 'create', id: 'H', type: 'point', x: 1.5, y: 0, label: 'H' },
+                { op: 'create', id: 'V', type: 'point', x: 0, y: 2.6, label: 'V' },
+                { op: 'create', id: 'circle', type: 'circle', centerId: 'O', pointOnCircleId: 'R', showLabel: false },
+                { op: 'create', id: 'OP', type: 'segment', point1Id: 'O', point2Id: 'P' },
+                { op: 'create', id: 'PH', type: 'segment', point1Id: 'P', point2Id: 'H', dashed: true },
+                { op: 'create', id: 'PV', type: 'segment', point1Id: 'P', point2Id: 'V', dashed: true },
+                { op: 'create', id: 'OH', type: 'segment', point1Id: 'O', point2Id: 'H' },
+                { op: 'create', id: 'OV', type: 'segment', point1Id: 'O', point2Id: 'V' },
+                { op: 'create', id: 'anglePOH', type: 'angleDimension', vertexId: 'O', point1Id: 'R', point2Id: 'P', arcRadius: 0.7, showValue: false, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'three_circle_pairwise_lenses',
+        title: 'Three-circle Venn-style pairwise overlaps',
+        tags: 'circle lensRegion venn overlap',
+        promptKo: '반지름 2.6인 세 원을 중심 O(-1.5,0), P(1.5,0), Q(0,2.1)에 두어 벤다이어그램처럼 겹치게 그려줘. 현재 정확한 세 원 공통영역 primitive는 없으므로, 세 쌍의 겹침은 lensRegion 세 개로 연하게 표시해줘. 세 원의 반지름점은 직접 만들고 숨기며, 보이는 라벨은 O,P,Q만 남겨줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { circle: 3, lensRegion: 3, point: 6 },
+            requiredCircleRadii: [
+                { center: 'O', radius: 2.6 },
+                { center: 'P', radius: 2.6 },
+                { center: 'Q', radius: 2.6 }
+            ],
+            maxVisibleLabels: 3,
+            maxLabelTextLength: 1
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'O', type: 'point', x: -1.5, y: 0, label: 'O' },
+                { op: 'create', id: 'P', type: 'point', x: 1.5, y: 0, label: 'P' },
+                { op: 'create', id: 'Q', type: 'point', x: 0, y: 2.1, label: 'Q' },
+                { op: 'create', id: 'OR', type: 'point', x: 1.1, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'PR', type: 'point', x: 4.1, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'QR', type: 'point', x: 2.6, y: 2.1, visible: false, showLabel: false },
+                { op: 'create', id: 'cO', type: 'circle', centerId: 'O', pointOnCircleId: 'OR', showLabel: false },
+                { op: 'create', id: 'cP', type: 'circle', centerId: 'P', pointOnCircleId: 'PR', showLabel: false },
+                { op: 'create', id: 'cQ', type: 'circle', centerId: 'Q', pointOnCircleId: 'QR', showLabel: false },
+                { op: 'create', id: 'lensOP', type: 'lensRegion', circle1Id: 'cO', circle2Id: 'cP', fillOpacity: 0.12, showLabel: false },
+                { op: 'create', id: 'lensOQ', type: 'lensRegion', circle1Id: 'cO', circle2Id: 'cQ', fillOpacity: 0.12, showLabel: false },
+                { op: 'create', id: 'lensPQ', type: 'lensRegion', circle1Id: 'cP', circle2Id: 'cQ', fillOpacity: 0.12, showLabel: false }
+            ]
+        }
+    },
+    {
+        id: 'square_pyramid_midsection',
+        title: 'Square pyramid with a mid-height cross-section',
+        tags: 'solid pyramid polygon cross_section',
+        promptKo: '사각뿔 pyramid를 그리고, 중간 높이에서 밑면과 평행한 사각 단면 P,Q,R,S를 polygon으로 연하게 칠해줘. 바깥 입체는 first-class pyramid 객체여야 하고, 단면 polygon은 사각뿔 내부에 충분히 크게 보여야 해. 꼭짓점과 단면점 라벨은 모두 숨기고, 꼭짓점 V에서 밑면 중심 H로 내려가는 높이 선분 하나만 점선처럼 표시해줘.',
+        showAxes: false,
+        expect: {
+            minTypes: { pyramid: 1, polygon: 1, segment: 1, point: 10 },
+            requiredPyramidBaseVertexCounts: [{ count: 4, min: 1 }],
+            validPyramidApexes: true,
+            maxVisiblePointCount: 0,
+            maxVisibleLabels: 0
+        },
+        referencePayload: {
+            operations: [
+                { op: 'create', id: 'A', type: 'point', x: -4, y: -2, visible: false, showLabel: false },
+                { op: 'create', id: 'B', type: 'point', x: 2, y: -2, visible: false, showLabel: false },
+                { op: 'create', id: 'C', type: 'point', x: 3, y: 1, visible: false, showLabel: false },
+                { op: 'create', id: 'D', type: 'point', x: -3, y: 1, visible: false, showLabel: false },
+                { op: 'create', id: 'V', type: 'point', x: 0, y: 4, visible: false, showLabel: false },
+                { op: 'create', id: 'pyramid', type: 'pyramid', baseVertexIds: ['A', 'B', 'C', 'D'], apexId: 'V', showLabel: false },
+                { op: 'create', id: 'P', type: 'point', x: -2.4, y: -0.8, visible: false, showLabel: false },
+                { op: 'create', id: 'Q', type: 'point', x: 0.9, y: -0.8, visible: false, showLabel: false },
+                { op: 'create', id: 'R', type: 'point', x: 1.4, y: 0.55, visible: false, showLabel: false },
+                { op: 'create', id: 'S', type: 'point', x: -1.9, y: 0.55, visible: false, showLabel: false },
+                { op: 'create', id: 'section', type: 'polygon', vertexIds: ['P', 'Q', 'R', 'S'], fillOpacity: 0.18, showLabel: false },
+                { op: 'create', id: 'H', type: 'point', x: -0.5, y: -0.45, visible: false, showLabel: false },
+                { op: 'create', id: 'height', type: 'segment', point1Id: 'V', point2Id: 'H', dashed: true, showLabel: false }
+            ]
+        }
+    }
+];
+
 const promptSets = {
     default: smokePrompts,
     extended: extendedSmokePrompts,
     stress: stressSmokePrompts,
     stress_extra: stressExtraSmokePrompts,
-    stress_novel: stressNovelSmokePrompts
+    stress_novel: stressNovelSmokePrompts,
+    fresh_csat: freshCsatSmokePrompts
 };
 
 const mimeTypes = new Map([
@@ -679,6 +1016,12 @@ function getPromptSet() {
         throw new Error(`Unknown LIVE_AI_PROMPT_SET="${name}". Valid sets: ${Object.keys(promptSets).join(', ')}.`);
     }
     return { name, prompts };
+}
+
+function selectPrompts(prompts) {
+    const offset = Number(process.env.LIVE_AI_SAMPLE_OFFSET || 0);
+    const limit = Number(process.env.LIVE_AI_SAMPLE_LIMIT || prompts.length);
+    return prompts.slice(offset, offset + limit);
 }
 
 function findPromptById(id) {
@@ -748,8 +1091,7 @@ async function revalidateSavedResults(validator, resultsPath) {
 
 async function renderReferenceTargets(validator) {
     const promptSet = getPromptSet();
-    const limit = Number(process.env.LIVE_AI_SAMPLE_LIMIT || promptSet.prompts.length);
-    const selectedPrompts = promptSet.prompts.slice(0, limit);
+    const selectedPrompts = selectPrompts(promptSet.prompts);
     const results = selectedPrompts.map(prompt => {
         if (!prompt.referencePayload?.operations) {
             throw new Error(`${prompt.id} does not define referencePayload.operations for local target rendering.`);
@@ -2922,8 +3264,7 @@ async function main() {
 
     const model = await chooseModel(apiKey);
     const promptSet = getPromptSet();
-    const limit = Number(process.env.LIVE_AI_SAMPLE_LIMIT || promptSet.prompts.length);
-    const selectedPrompts = promptSet.prompts.slice(0, limit);
+    const selectedPrompts = selectPrompts(promptSet.prompts);
     const results = [];
 
     for (const prompt of selectedPrompts) {
