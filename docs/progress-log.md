@@ -2,6 +2,35 @@
 
 ## 2026-05-30
 
+### CSAT drawing audit final verification replay
+
+#### Work completed
+
+- Re-read the live OpenAI CSAT-style drawing audit, implementation notes, and saved render artifacts.
+- Opened the saved live contact sheet and individual screenshots for all 10 `stress_novel` prompts.
+- Rechecked that the weak saved live outputs are now rejected by the strengthened visual-intent gates instead of being accepted as merely rendered.
+- Rendered a fresh local reference target sheet under `tmp/live-openai-csat-reference-rootfix-verify-20260530`.
+
+#### Findings
+
+- Direct visual passes: logistic midpoint/asymptotes, parabola focus/directrix/latus rectum, absolute-value cap region, feasible triangle, and pentagon/pentagram.
+- The saved live concentric-sector, tangent, Euler-line, prism cross-section, and nested-solid outputs are drawable but visually weak, and the current validator correctly rejects those saved outputs.
+- The current generation-side quality enhancer and prompt-local gates cover the observed root causes: label offsets, larger right-angle aids, broad cross-sections, and centered inner-solid projection.
+- No additional source-code change was needed in this replay.
+
+#### Verification
+
+- Ran saved-result revalidation for `tmp/live-openai-csat-drawing-smoke-20260530/live-openai-random-results.json`; expected failure count 5 confirmed.
+- Ran fresh local reference rendering for `LIVE_AI_PROMPT_SET=stress_novel`; passed with 10 targets, 0 failures, and 0 browser console errors.
+- Ran `node --test tests\live-openai-random-smoke.test.js tests\ai-flow.test.js`; passed with 85 tests.
+- Ran `npm.cmd test`; passed with 113 tests.
+- Ran `git diff --check`; passed.
+- Ran narrowed secret-pattern scans for actual long `sk-...` tokens outside `node_modules` and `.git`; no matches.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Click-to-fill inferred vector regions
 
 #### Work completed
