@@ -442,12 +442,15 @@ const stressNovelSmokePrompts = [
         id: 'concentric_quarter_sector_wedge',
         title: 'Concentric circles with quarter-sector wedge',
         tags: 'circle sector concentric segment area',
-        promptKo: '중심 O가 같은 반지름 2와 4의 두 원을 그리고, 1사분면에서 두 반지름 OA, OB가 만드는 90도 방향을 표시해줘. 바깥 원의 A(4,0), B(0,4)를 사용해 outer sector를 연하게 칠하고, 안쪽 원은 반지름점 R(2,0)으로 윤곽만 보이게 해줘. 현재 MathGraph에는 가운데가 비는 annularSector가 없으므로 고리 부채꼴처럼 뚫린 채움이라고 표현하지 말고, 바깥 부채꼴 채움과 안쪽 동심원 윤곽이 함께 보이게 해줘. O,A,B 라벨만 보이고 보조점 라벨은 숨겨줘.',
+        promptKo: '중심 O가 같은 반지름 2와 4의 두 원을 그리고, 1사분면에서 두 반지름 OA, OB가 만드는 90도 방향을 표시해줘. 바깥 원의 A(4,0), B(0,4)를 사용해 outer sector를 연하게 칠하고, 안쪽 원은 반지름점 R(2,0)으로 윤곽만 보이게 해줘. 90도 표시는 작은 rightAngleMarker만으로는 O점과 반지름에 묻힐 수 있으므로, arcRadius 0.7 이상의 angleDimension도 함께 만들고 showValue:false로 둬서 크게 보이게 해줘. 현재 MathGraph에는 가운데가 비는 annularSector가 없으므로 고리 부채꼴처럼 뚫린 채움이라고 표현하지 말고, 바깥 부채꼴 채움과 안쪽 동심원 윤곽이 함께 보이게 해줘. O,A,B 라벨만 보이고 보조점 라벨은 숨겨줘.',
         showAxes: false,
         expect: {
-            minTypes: { circle: 2, sector: 1, segment: 2, point: 4 },
+            minTypes: { circle: 2, sector: 1, segment: 2, rightAngleMarker: 1, angleDimension: 1, point: 4 },
             requireConcentricCircles: { center: 'O', radii: [2, 4] },
             minSectorSpan: 1.2,
+            requireRenderableRightAngleMarkers: true,
+            requireRenderableAngles: true,
+            minAngleArcRadius: 0.7,
             maxVisibleLabels: 3,
             maxLabelTextLength: 1
         },
@@ -461,7 +464,9 @@ const stressNovelSmokePrompts = [
                 { op: 'create', id: 'outer', type: 'circle', centerId: 'O', pointOnCircleId: 'A', showLabel: false },
                 { op: 'create', id: 'OA', type: 'segment', point1Id: 'O', point2Id: 'A' },
                 { op: 'create', id: 'OB', type: 'segment', point1Id: 'O', point2Id: 'B' },
-                { op: 'create', id: 'sector_AOB', type: 'sector', circleId: 'outer', startPointId: 'A', endPointId: 'B', mode: 'minor', fillOpacity: 0.18, showLabel: false }
+                { op: 'create', id: 'sector_AOB', type: 'sector', circleId: 'outer', startPointId: 'A', endPointId: 'B', mode: 'minor', fillOpacity: 0.18, showLabel: false },
+                { op: 'create', id: 'right_AOB', type: 'rightAngleMarker', vertexId: 'O', line1Id: 'OA', line2Id: 'OB' },
+                { op: 'create', id: 'angle_AOB', type: 'angleDimension', vertexId: 'O', point1Id: 'A', point2Id: 'B', arcRadius: 0.75, showValue: false, showLabel: false }
             ]
         }
     },
@@ -469,7 +474,7 @@ const stressNovelSmokePrompts = [
         id: 'external_point_two_tangents',
         title: 'Two tangents from an external point to a circle',
         tags: 'circle tangent segment right_angle',
-        promptKo: '중심 O, 반지름 3인 원과 외부점 P(5,0)를 그리고, P에서 원에 그은 두 접선 PT1, PT2를 표시해줘. 접점은 T1(1.8,2.4), T2(1.8,-2.4)로 직접 point를 만들고, 반지름 OT1, OT2와 접선 PT1, PT2는 segment로 그려줘. 각 접점에서 반지름과 접선이 직각임을 rightAngleMarker 두 개로 보여줘. 보이는 라벨은 O,P,T1,T2만 남겨줘.',
+        promptKo: '중심 O, 반지름 3인 원과 외부점 P(5,0)를 그리고, P에서 원에 그은 두 접선 PT1, PT2를 표시해줘. 접점은 T1(1.8,2.4), T2(1.8,-2.4)로 직접 point를 만들고, 반지름 OT1, OT2와 접선 PT1, PT2는 segment로 그려줘. 각 접점에서 반지름과 접선이 직각임을 rightAngleMarker 두 개로 보여줘. T1과 T2 라벨은 접선/직각표시와 겹치지 않게 각각 labelOffset을 넣어 바깥쪽으로 띄워줘. 보이는 라벨은 O,P,T1,T2만 남겨줘.',
         showAxes: false,
         expect: {
             minTypes: { circle: 1, tangentCircle: 2, segment: 4, rightAngleMarker: 2, point: 5 },
@@ -480,6 +485,11 @@ const stressNovelSmokePrompts = [
                 { name: 'T2', xMin: 1.65, xMax: 1.95, yMin: -2.55, yMax: -2.25 }
             ],
             requiredSegmentsBetween: [['P', 'T1'], ['P', 'T2'], ['O', 'T1'], ['O', 'T2']],
+            requireRenderableRightAngleMarkers: true,
+            requiredLabelOffsets: [
+                { name: 'T1', minMagnitude: 8 },
+                { name: 'T2', minMagnitude: 8 }
+            ],
             maxVisibleLabels: 4,
             maxLabelTextLength: 2
         },
@@ -489,8 +499,8 @@ const stressNovelSmokePrompts = [
                 { op: 'create', id: 'R', type: 'point', x: 3, y: 0, visible: false, showLabel: false },
                 { op: 'create', id: 'c', type: 'circle', centerId: 'O', pointOnCircleId: 'R', showLabel: false },
                 { op: 'create', id: 'P', type: 'point', x: 5, y: 0, label: 'P' },
-                { op: 'create', id: 'T1', type: 'point', x: 1.8, y: 2.4, label: 'T1' },
-                { op: 'create', id: 'T2', type: 'point', x: 1.8, y: -2.4, label: 'T2' },
+                { op: 'create', id: 'T1', type: 'point', x: 1.8, y: 2.4, label: 'T1', labelOffset: { x: 12, y: -10 } },
+                { op: 'create', id: 'T2', type: 'point', x: 1.8, y: -2.4, label: 'T2', labelOffset: { x: 12, y: 12 } },
                 { op: 'create', id: 'OT1', type: 'segment', point1Id: 'O', point2Id: 'T1' },
                 { op: 'create', id: 'OT2', type: 'segment', point1Id: 'O', point2Id: 'T2' },
                 { op: 'create', id: 'PT1', type: 'segment', point1Id: 'P', point2Id: 'T1' },
@@ -506,7 +516,7 @@ const stressNovelSmokePrompts = [
         id: 'triangle_euler_line',
         title: 'Triangle Euler line with circumcenter, centroid, and orthocenter',
         tags: 'plane triangle circle construction line',
-        promptKo: '삼각형 ABC를 A(-4,0), B(4,0), C(1,5)로 그리고 외접원을 circleThreePoints로 표시해줘. 오일러선 위의 세 점 O(0,1), G(0.33,1.67), H(1,3)를 직접 point로 만들고 O-G-H가 한 직선에 놓이도록 dashed line을 그려줘. 삼각형 polygon은 외곽선만 보이게 fillOpacity:0으로 만들고, 보이는 라벨은 A,B,C,O,G,H만 남겨줘.',
+        promptKo: '삼각형 ABC를 A(-4,0), B(4,0), C(1,5)로 그리고 외접원을 circleThreePoints로 표시해줘. 오일러선 위의 세 점 O(0,1), G(0.33,1.67), H(1,3)를 직접 point로 만들고 O-G-H가 한 직선에 놓이도록 dashed line을 그려줘. O,G,H는 서로 가까우므로 세 라벨 모두 labelOffset을 넣어 서로 다른 방향으로 띄워줘. 삼각형 polygon은 외곽선만 보이게 fillOpacity:0으로 만들고, 보이는 라벨은 A,B,C,O,G,H만 남겨줘.',
         showAxes: false,
         expect: {
             minTypes: { polygon: 1, segment: 3, circleThreePoints: 1, line: 1, point: 6 },
@@ -516,6 +526,11 @@ const stressNovelSmokePrompts = [
                 { name: 'H', xMin: 0.9, xMax: 1.1, yMin: 2.9, yMax: 3.1 }
             ],
             requiredCollinearPointLabels: [['O', 'G', 'H']],
+            requiredLabelOffsets: [
+                { name: 'O', minMagnitude: 8 },
+                { name: 'G', minMagnitude: 8 },
+                { name: 'H', minMagnitude: 8 }
+            ],
             maxPolygonFillOpacity: 0,
             maxVisibleLabels: 6,
             maxLabelTextLength: 1
@@ -530,9 +545,9 @@ const stressNovelSmokePrompts = [
                 { op: 'create', id: 'BC', type: 'segment', point1Id: 'B', point2Id: 'C' },
                 { op: 'create', id: 'CA', type: 'segment', point1Id: 'C', point2Id: 'A' },
                 { op: 'create', id: 'circ', type: 'circleThreePoints', point1Id: 'A', point2Id: 'B', point3Id: 'C', showLabel: false },
-                { op: 'create', id: 'O', type: 'point', x: 0, y: 1, label: 'O' },
-                { op: 'create', id: 'G', type: 'point', x: 0.33, y: 1.67, label: 'G' },
-                { op: 'create', id: 'H', type: 'point', x: 1, y: 3, label: 'H' },
+                { op: 'create', id: 'O', type: 'point', x: 0, y: 1, label: 'O', labelOffset: { x: -16, y: 4 } },
+                { op: 'create', id: 'G', type: 'point', x: 0.33, y: 1.67, label: 'G', labelOffset: { x: 12, y: -12 } },
+                { op: 'create', id: 'H', type: 'point', x: 1, y: 3, label: 'H', labelOffset: { x: 14, y: 8 } },
                 { op: 'create', id: 'euler', type: 'line', point1Id: 'O', point2Id: 'H', dashed: true, showLabel: false }
             ]
         }
@@ -572,12 +587,14 @@ const stressNovelSmokePrompts = [
         id: 'prism_diagonal_cross_section',
         title: 'Rectangular prism with internal diagonal and cross-section',
         tags: 'solid prism polygon cross_section diagonal',
-        promptKo: '직육면체 prism을 그리고, 내부 대각선 하나와 가운데 사각 단면을 함께 표시해줘. 바깥 입체는 first-class prism 객체여야 하고, 단면은 내부 점 P,Q,R,S 네 개를 잇는 polygon으로 연하게 칠해줘. 내부 점들은 바깥 prism의 화면상 투영 안에 있어야 하며, 모든 point/prism/polygon 라벨은 숨겨줘.',
+        promptKo: '직육면체 prism을 그리고, 내부 대각선 하나와 가운데 사각 단면을 함께 표시해줘. 바깥 입체는 first-class prism 객체여야 하고, 화면상 가로가 세로보다 넓게 보이는 직육면체 투영으로 만들어줘. 단면은 내부 점 P,Q,R,S 네 개를 잇는 polygon으로 연하게 칠하되, 바깥 prism 투영 폭의 절반 이상과 높이의 40% 이상을 차지하는 가운데 큰 사각 단면이어야 해. 내부 점들은 바깥 prism의 화면상 투영 안에 있어야 하며, 모든 point/prism/polygon 라벨은 숨겨줘.',
         showAxes: false,
         expect: {
             minTypes: { prism: 1, segment: 1, polygon: 1, point: 12 },
             innerWithinFirstPrism: true,
             validPrismProjections: true,
+            firstPrismProjection: { minWidth: 6, minHeight: 4.5, minAspectRatio: 1.2 },
+            crossSectionPolygonScale: { minVertexCount: 4, minAreaRatio: 0.18, minWidthRatio: 0.5, minHeightRatio: 0.4 },
             maxVisibleLabels: 0
         },
         referencePayload: {
@@ -604,7 +621,7 @@ const stressNovelSmokePrompts = [
         id: 'triangular_pyramid_inside_triangular_prism',
         title: 'Triangular pyramid inside a triangular prism',
         tags: 'solid prism pyramid nested triangular',
-        promptKo: '큰 삼각기둥 prism 안에 작은 삼각뿔 pyramid가 들어 있는 모습을 그려줘. 바깥 입체는 baseVertexIds 3개와 topVertexIds 3개를 가진 삼각기둥이어야 하고, 안쪽 pyramid는 baseVertexIds 3개와 별도 apexId를 가진 삼각뿔이어야 해. prism의 topVertexIds는 baseVertexIds와 같은 순서의 평행 이동 복사본이어야 하며, 안쪽 삼각뿔의 모든 꼭짓점은 바깥 prism의 투영 안에 있어야 해. 모든 라벨은 숨겨줘.',
+        promptKo: '큰 삼각기둥 prism 안에 작은 삼각뿔 pyramid가 들어 있는 모습을 그려줘. 바깥 입체는 baseVertexIds 3개와 topVertexIds 3개를 가진 삼각기둥이어야 하고, 화면상 폭이 충분한 큰 삼각기둥으로 그려줘. 안쪽 pyramid는 baseVertexIds 3개와 별도 apexId를 가진 삼각뿔이어야 하며, 바깥 투영의 가장자리에서 너무 붙지 않도록 안쪽 여백을 두고 중앙부에 배치해줘. prism의 topVertexIds는 baseVertexIds와 같은 순서의 평행 이동 복사본이어야 하며, 안쪽 삼각뿔의 모든 꼭짓점은 바깥 prism의 투영 안에 있어야 해. 모든 라벨은 숨겨줘.',
         showAxes: false,
         expect: {
             minTypes: { prism: 1, pyramid: 1, point: 10 },
@@ -613,6 +630,8 @@ const stressNovelSmokePrompts = [
             innerWithinFirstPrism: true,
             validPrismProjections: true,
             validPyramidApexes: true,
+            firstPrismProjection: { minWidth: 6, minHeight: 5, minAspectRatio: 0.9 },
+            innerSolidProjection: { type: 'pyramid', minWidthRatio: 0.25, minHeightRatio: 0.3, minMarginRatio: 0.16 },
             maxVisibleLabels: 0
         },
         referencePayload: {
@@ -879,6 +898,7 @@ function developerPrompt(referencePrompt = '') {
         'For function-bounded curved regions, use a polygon through explicit named boundary/sample points and keep helper vertices hidden; do not claim the fill is exact unless a first-class region object exists.',
         'For triangle or polygon sides, use finite segment objects for the sides. Use line only when an infinite construction line is explicitly requested.',
         'For rightAngleMarker, the fields are vertexId, line1Id, and line2Id. Never use segment1Id or segment2Id for rightAngleMarker; those fields are only for equalLengthMarker.',
+        'When a right-angle mark would be small or sit on a crowded vertex, also add an angleDimension with arcRadius at least 0.7 and showValue:false so the square marker is visibly separated.',
         'For angleDimension, create one marker per shown angle. Use the actual intersection point as vertexId and choose point1Id/point2Id on the two rays that form that angle.',
         'For angleDimension, point1Id and point2Id must be distinct from vertexId, at least 0.55 math units away from the vertex, and not collinear with each other.',
         'For multiple angleDimension markers at the same vertex, use staggered arcRadius values and set showValue:false or customText to avoid overlapping automatic degree labels.',
@@ -887,8 +907,10 @@ function developerPrompt(referencePrompt = '') {
         'For prism or solid prompts, prefer the first-class prism/pyramid object so hidden-edge dashed rendering is determined consistently by the runtime.',
         'For prism objects, use baseVertexIds for the near/front face and topVertexIds for the shifted rear face so visible front edges stay solid and hidden rear edges become dashed.',
         'For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.',
-        'For nested solids, keep every inner vertex inside the outer projection and separate multiple inner solids so their screen-projection centers do not overlap.',
-        'For dense graphs or solids, label only the essential points requested by the prompt. Set showLabel:false on helper points, functions, circles, arcs, sectors, prisms, and pyramids when labels would clutter the drawing.',
+        'For solid prompts, give the outer prism/pyramid enough screen projection width and height; avoid tiny cube-like boxes when a broad textbook solid or cross-section is requested.',
+        'For prism cross-sections, make the section polygon span a substantial middle portion of the outer projection, not a tiny square floating inside the box.',
+        'For nested solids, keep every inner vertex inside the outer projection, leave visible margins from the outer edges, and separate multiple inner solids so their screen-projection centers do not overlap.',
+        'For dense graphs or solids, label only the essential points requested by the prompt. Use labelOffset on required labels near tangency points, angle markers, collinear construction points, or crowded intersections. Set showLabel:false on helper points, functions, circles, arcs, sectors, prisms, and pyramids when labels would clutter the drawing.',
         'For helper points that only shape a filled or outlined region, set visible:false so they do not appear as extra dots.',
         'For chart-like or unsupported details, approximate with points, segments, polygons, numberLine, prism, or pyramid only.',
         referencePrompt
@@ -1142,6 +1164,14 @@ function validatePromptExpectations(ctx, prompt, errors) {
         }
     }
 
+    if (Array.isArray(expectations.requiredLabelOffsets)) {
+        validateRequiredLabelOffsets(ctx, prompt, expectations.requiredLabelOffsets, errors);
+    }
+
+    if (Number.isFinite(expectations.minVisibleLabelPointDistance)) {
+        validateVisibleLabelPointDistance(ctx, prompt, expectations.minVisibleLabelPointDistance, errors);
+    }
+
     if (Array.isArray(expectations.requiredPointWindows)) {
         validateRequiredPointWindows(ctx, prompt, expectations.requiredPointWindows, errors);
     }
@@ -1217,6 +1247,14 @@ function validatePromptExpectations(ctx, prompt, errors) {
         validateRenderableAngles(ctx, prompt, errors);
     }
 
+    if (expectations.requireRenderableRightAngleMarkers) {
+        validateRenderableRightAngleMarkers(ctx, prompt, expectations.requireRenderableRightAngleMarkers, errors);
+    }
+
+    if (Number.isFinite(expectations.minAngleArcRadius)) {
+        validateAngleDimensionArcRadius(ctx, prompt, expectations.minAngleArcRadius, errors);
+    }
+
     if (Number.isFinite(expectations.minDistinctAngleVertices)) {
         const distinctVertices = new Set(ctx.byType('angleDimension').map(angle => angle.vertexId).filter(Boolean));
         if (distinctVertices.size < expectations.minDistinctAngleVertices) {
@@ -1248,12 +1286,24 @@ function validatePromptExpectations(ctx, prompt, errors) {
         validatePrismProjections(ctx, prompt, errors);
     }
 
+    if (expectations.firstPrismProjection) {
+        validateFirstPrismProjection(ctx, prompt, expectations.firstPrismProjection, errors);
+    }
+
+    if (expectations.crossSectionPolygonScale) {
+        validateCrossSectionPolygonScale(ctx, prompt, expectations.crossSectionPolygonScale, errors);
+    }
+
     if (Array.isArray(expectations.requiredPyramidBaseVertexCounts)) {
         validateRequiredPyramidBaseVertexCounts(ctx, prompt, expectations.requiredPyramidBaseVertexCounts, errors);
     }
 
     if (expectations.validPyramidApexes) {
         validatePyramidApexes(ctx, prompt, errors);
+    }
+
+    if (expectations.innerSolidProjection) {
+        validateInnerSolidProjection(ctx, prompt, expectations.innerSolidProjection, errors);
     }
 }
 
@@ -1271,6 +1321,69 @@ function validateRequiredPointWindows(ctx, prompt, windows, errors) {
             errors.push(`${prompt.id}: point ${window.name} should be inside x=[${formatNumber(window.xMin)}, ${formatNumber(window.xMax)}], y=[${formatNumber(window.yMin)}, ${formatNumber(window.yMax)}], but was (${formatNumber(point.x)}, ${formatNumber(point.y)}).`);
         }
     }
+}
+
+function validateRequiredLabelOffsets(ctx, prompt, rules, errors) {
+    for (const rule of rules) {
+        const pointId = findNamedPointId(ctx, rule.name);
+        const operation = pointId ? ctx.byId.get(pointId) : null;
+        if (!operation) {
+            errors.push(`${prompt.id}: expected a visible label point ${rule.name} with labelOffset, but the point was missing.`);
+            continue;
+        }
+        if (!hasRuntimeVisibleLabel(operation)) {
+            errors.push(`${prompt.id}: expected label ${rule.name} to remain visible with labelOffset, but the label is hidden.`);
+            continue;
+        }
+        const offset = operation.labelOffset;
+        const x = Number(offset?.x);
+        const y = Number(offset?.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+            errors.push(`${prompt.id}: label ${rule.name} must set labelOffset to keep the required label away from nearby geometry.`);
+            continue;
+        }
+        const minMagnitude = Number.isFinite(rule.minMagnitude) ? rule.minMagnitude : 6;
+        const magnitude = Math.hypot(x, y);
+        if (magnitude < minMagnitude) {
+            errors.push(`${prompt.id}: label ${rule.name} labelOffset magnitude should be at least ${formatNumber(minMagnitude)} screen units, but was ${formatNumber(magnitude)}.`);
+        }
+    }
+}
+
+function validateVisibleLabelPointDistance(ctx, prompt, minDistance, errors) {
+    const labeledPoints = visiblePointLabelRecords(ctx);
+    const closePairs = [];
+    for (let i = 0; i < labeledPoints.length; i += 1) {
+        for (let j = i + 1; j < labeledPoints.length; j += 1) {
+            const actual = distance(labeledPoints[i].point, labeledPoints[j].point);
+            if (actual < minDistance) {
+                closePairs.push(`${labeledPoints[i].text}/${labeledPoints[j].text}:${formatNumber(actual)}`);
+            }
+        }
+    }
+    if (closePairs.length > 0) {
+        errors.push(`${prompt.id}: visible labeled points should be at least ${formatNumber(minDistance)} math units apart unless prompt-specific labelOffset rules are used; close pair(s): ${closePairs.slice(0, 6).join(', ')}.`);
+    }
+}
+
+function visiblePointLabelRecords(ctx) {
+    return ctx.creates
+        .filter(operation => isPointLikeOperation(operation) && hasRuntimeVisibleLabel(operation))
+        .map(operation => ({
+            operation,
+            text: runtimeVisibleLabelText(operation) || operation.label || operation.id || '(label)',
+            point: resolvePoint(ctx, operation.id, new Set())
+        }))
+        .filter(item => item.point);
+}
+
+function isPointLikeOperation(operation) {
+    return operation?.type === 'point' ||
+        operation?.type === 'pointOnLine' ||
+        operation?.type === 'pointOnCircle' ||
+        operation?.type === 'circleCenterPoint' ||
+        operation?.type === 'intersection' ||
+        operation?.type === 'midpoint';
 }
 
 function validateRequiredFunctionExpressions(ctx, prompt, expressions, errors) {
@@ -1539,6 +1652,44 @@ function validateRenderableAngles(ctx, prompt, errors) {
     }
 }
 
+function validateRenderableRightAngleMarkers(ctx, prompt, rule, errors) {
+    const options = typeof rule === 'object' && rule !== null ? rule : {};
+    const minRayLength = Number.isFinite(options.minRayLength) ? options.minRayLength : 0.55;
+    const maxAbsCosine = Number.isFinite(options.maxAbsCosine) ? options.maxAbsCosine : 0.25;
+    const badMarkers = ctx.byType('rightAngleMarker').filter(marker => {
+        const vertex = resolvePoint(ctx, marker.vertexId, new Set());
+        const line1 = ctx.byId.get(marker.line1Id);
+        const line2 = ctx.byId.get(marker.line2Id);
+        if (!vertex || !line1 || !line2) return true;
+        const direction1 = directionAtVertex(ctx, line1, vertex, marker.vertexId);
+        const direction2 = directionAtVertex(ctx, line2, vertex, marker.vertexId);
+        if (!direction1 || !direction2) return true;
+        const length1 = magnitude(direction1);
+        const length2 = magnitude(direction2);
+        if (length1 < minRayLength || length2 < minRayLength) return true;
+        const cosine = dot(direction1, direction2) / (length1 * length2);
+        return Math.abs(cosine) > maxAbsCosine;
+    });
+
+    if (badMarkers.length > 0) {
+        const ids = badMarkers.slice(0, 6).map(marker => marker.id || '(no id)').join(', ');
+        errors.push(`${prompt.id}: rightAngleMarker rays must be resolvable, long enough, and close to perpendicular; bad marker(s): ${ids}.`);
+    }
+}
+
+function validateAngleDimensionArcRadius(ctx, prompt, minArcRadius, errors) {
+    const badAngles = ctx.byType('angleDimension').filter(angle => {
+        const arcRadius = Number(angle.arcRadius);
+        return !Number.isFinite(arcRadius) || arcRadius < minArcRadius;
+    });
+    if (badAngles.length > 0) {
+        const ids = badAngles.slice(0, 6)
+            .map(angle => `${angle.id || '(no id)'}:${formatNumber(Number(angle.arcRadius))}`)
+            .join(', ');
+        errors.push(`${prompt.id}: angleDimension arcRadius should be at least ${formatNumber(minArcRadius)} for visible right-angle marking; small/missing angle(s): ${ids}.`);
+    }
+}
+
 function validatePolygonFillOpacity(ctx, prompt, maxFillOpacity, errors) {
     const filled = ctx.byType('polygon').filter(polygon => {
         const fillOpacity = Number.isFinite(Number(polygon.fillOpacity)) ? Number(polygon.fillOpacity) : 0.12;
@@ -1640,6 +1791,76 @@ function validatePrismProjections(ctx, prompt, errors) {
     }
 }
 
+function validateFirstPrismProjection(ctx, prompt, rule, errors) {
+    const prism = ctx.byType('prism')[0];
+    if (!prism) return;
+    const points = solidProjectionPoints(ctx, prism);
+    if (points.length < 3) {
+        errors.push(`${prompt.id}: first prism projection could not be resolved for visual size checks.`);
+        return;
+    }
+
+    const metrics = projectionMetrics(points);
+    const failures = [];
+    if (Number.isFinite(rule.minWidth) && metrics.width < rule.minWidth) {
+        failures.push(`width ${formatNumber(metrics.width)} < ${formatNumber(rule.minWidth)}`);
+    }
+    if (Number.isFinite(rule.minHeight) && metrics.height < rule.minHeight) {
+        failures.push(`height ${formatNumber(metrics.height)} < ${formatNumber(rule.minHeight)}`);
+    }
+    if (Number.isFinite(rule.minAspectRatio) && metrics.aspectRatio < rule.minAspectRatio) {
+        failures.push(`aspect ${formatNumber(metrics.aspectRatio)} < ${formatNumber(rule.minAspectRatio)}`);
+    }
+    if (Number.isFinite(rule.maxAspectRatio) && metrics.aspectRatio > rule.maxAspectRatio) {
+        failures.push(`aspect ${formatNumber(metrics.aspectRatio)} > ${formatNumber(rule.maxAspectRatio)}`);
+    }
+    if (failures.length > 0) {
+        errors.push(`${prompt.id}: first prism projection is too small or poorly proportioned for the requested textbook-style solid (${failures.join(', ')}).`);
+    }
+}
+
+function validateCrossSectionPolygonScale(ctx, prompt, rule, errors) {
+    const prism = ctx.byType('prism')[0];
+    if (!prism) return;
+    const outerMetrics = projectionMetrics(solidProjectionPoints(ctx, prism));
+    if (!Number.isFinite(outerMetrics.area) || outerMetrics.area <= 0) return;
+
+    const outerIds = new Set([...(prism.baseVertexIds || []), ...(prism.topVertexIds || [])]);
+    const candidates = ctx.byType('polygon')
+        .filter(polygon => Array.isArray(polygon.vertexIds))
+        .filter(polygon => !polygon.vertexIds.every(id => outerIds.has(id)))
+        .map(polygon => ({ polygon, points: polygon.vertexIds.map(id => resolvePoint(ctx, id, new Set())).filter(Boolean) }))
+        .filter(item => item.points.length >= (rule.minVertexCount || 3));
+
+    if (candidates.length === 0) {
+        errors.push(`${prompt.id}: expected an internal cross-section polygon with at least ${rule.minVertexCount || 3} vertices.`);
+        return;
+    }
+
+    const measured = candidates.map(item => {
+        const metrics = projectionMetrics(item.points);
+        return {
+            id: item.polygon.id || '(no id)',
+            vertexCount: item.points.length,
+            areaRatio: polygonArea(item.points) / outerMetrics.area,
+            widthRatio: metrics.width / outerMetrics.width,
+            heightRatio: metrics.height / outerMetrics.height
+        };
+    });
+
+    const passing = measured.some(item =>
+        (!Number.isFinite(rule.minAreaRatio) || item.areaRatio >= rule.minAreaRatio) &&
+        (!Number.isFinite(rule.minWidthRatio) || item.widthRatio >= rule.minWidthRatio) &&
+        (!Number.isFinite(rule.minHeightRatio) || item.heightRatio >= rule.minHeightRatio)
+    );
+    if (!passing) {
+        const examples = measured.slice(0, 4)
+            .map(item => `${item.id}:area=${formatNumber(item.areaRatio)},width=${formatNumber(item.widthRatio)},height=${formatNumber(item.heightRatio)}`)
+            .join(', ');
+        errors.push(`${prompt.id}: cross-section polygon is too small for the requested central section; expected area/width/height ratios at least ${formatNumber(rule.minAreaRatio || 0)}/${formatNumber(rule.minWidthRatio || 0)}/${formatNumber(rule.minHeightRatio || 0)}. Actual: ${examples}.`);
+    }
+}
+
 function validateRequiredPyramidBaseVertexCounts(ctx, prompt, rules, errors) {
     const baseCounts = ctx.byType('pyramid').map(pyramid => ({
         id: pyramid.id || '(no id)',
@@ -1673,12 +1894,64 @@ function validatePyramidApexes(ctx, prompt, errors) {
     }
 }
 
+function validateInnerSolidProjection(ctx, prompt, rule, errors) {
+    const outerPrism = ctx.byType('prism')[0];
+    if (!outerPrism) return;
+    const outerMetrics = projectionMetrics(solidProjectionPoints(ctx, outerPrism));
+    if (!Number.isFinite(outerMetrics.area) || outerMetrics.width <= 0 || outerMetrics.height <= 0) return;
+
+    const innerType = rule.type || 'pyramid';
+    const outerIds = new Set([outerPrism.id].filter(Boolean));
+    const candidates = ctx.byType(innerType)
+        .filter(solid => !outerIds.has(solid.id))
+        .map(solid => ({ solid, points: solidProjectionPoints(ctx, solid) }))
+        .filter(item => item.points.length >= 3);
+
+    if (candidates.length === 0) {
+        errors.push(`${prompt.id}: expected an inner ${innerType} projection to check size and margins.`);
+        return;
+    }
+
+    const measured = candidates.map(item => {
+        const metrics = projectionMetrics(item.points);
+        const margins = {
+            left: (metrics.bounds.minX - outerMetrics.bounds.minX) / outerMetrics.width,
+            right: (outerMetrics.bounds.maxX - metrics.bounds.maxX) / outerMetrics.width,
+            bottom: (metrics.bounds.minY - outerMetrics.bounds.minY) / outerMetrics.height,
+            top: (outerMetrics.bounds.maxY - metrics.bounds.maxY) / outerMetrics.height
+        };
+        return {
+            id: item.solid.id || '(no id)',
+            widthRatio: metrics.width / outerMetrics.width,
+            heightRatio: metrics.height / outerMetrics.height,
+            minMarginRatio: Math.min(margins.left, margins.right, margins.bottom, margins.top)
+        };
+    });
+
+    const passing = measured.some(item =>
+        (!Number.isFinite(rule.minWidthRatio) || item.widthRatio >= rule.minWidthRatio) &&
+        (!Number.isFinite(rule.minHeightRatio) || item.heightRatio >= rule.minHeightRatio) &&
+        (!Number.isFinite(rule.minMarginRatio) || item.minMarginRatio >= rule.minMarginRatio)
+    );
+
+    if (!passing) {
+        const examples = measured.slice(0, 4)
+            .map(item => `${item.id}:width=${formatNumber(item.widthRatio)},height=${formatNumber(item.heightRatio)},margin=${formatNumber(item.minMarginRatio)}`)
+            .join(', ');
+        errors.push(`${prompt.id}: inner ${innerType} projection is too cramped or too close to the outer solid edge; expected width/height/margin ratios at least ${formatNumber(rule.minWidthRatio || 0)}/${formatNumber(rule.minHeightRatio || 0)}/${formatNumber(rule.minMarginRatio || 0)}. Actual: ${examples}.`);
+    }
+}
+
 function solidProjectionCenter(ctx, solid) {
-    const vertexIds = solid.type === 'prism'
-        ? [...(solid.baseVertexIds || []), ...(solid.topVertexIds || [])]
-        : [solid.apexId, ...(solid.baseVertexIds || [])].filter(Boolean);
-    const points = vertexIds.map(id => resolvePoint(ctx, id, new Set())).filter(Boolean);
+    const points = solidProjectionPoints(ctx, solid);
     return points.length > 0 ? averagePoint(points) : null;
+}
+
+function solidProjectionPoints(ctx, solid) {
+    const vertexIds = solid?.type === 'prism'
+        ? [...(solid.baseVertexIds || []), ...(solid.topVertexIds || [])]
+        : [solid?.apexId, ...(solid?.baseVertexIds || [])].filter(Boolean);
+    return vertexIds.map(id => resolvePoint(ctx, id, new Set())).filter(Boolean);
 }
 
 function circleRadius(ctx, circle) {
@@ -1702,6 +1975,30 @@ function pointBounds(points) {
         minY: Math.min(...points.map(point => point.y)),
         maxY: Math.max(...points.map(point => point.y))
     };
+}
+
+function projectionMetrics(points) {
+    const bounds = pointBounds(points);
+    const width = bounds.maxX - bounds.minX;
+    const height = bounds.maxY - bounds.minY;
+    return {
+        bounds,
+        width,
+        height,
+        area: width * height,
+        aspectRatio: height > 0 ? width / height : Infinity
+    };
+}
+
+function polygonArea(points) {
+    if (!Array.isArray(points) || points.length < 3) return 0;
+    let sum = 0;
+    for (let i = 0; i < points.length; i += 1) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        sum += a.x * b.y - a.y * b.x;
+    }
+    return Math.abs(sum / 2);
 }
 
 function convexHull(points) {

@@ -2,6 +2,62 @@
 
 ## Status
 
+- Task: Root-cause fix for live OpenAI drawing visual false positives
+- State: Done
+- Last updated: 2026-05-30
+
+## Plan
+
+1. Measure the saved live outputs that passed validation but failed stricter visual judgement.
+2. Update the task docs with the root-cause scope and acceptance criteria.
+3. Add prompt-local validators for visible label layout, right-angle marker readability, prism projection proportions, cross-section scale, and inner solid margins.
+4. Add focused regression tests and revalidate the saved live result file without another API call.
+5. Render local reference targets, run full verification, update docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Fix the live smoke acceptance gate instead of only rewriting the audit note.
+- Reason: The root cause is that the validator accepted weak visuals; future runs need to reject and repair the same failure modes automatically.
+- Decision: Keep the new checks prompt-local and opt-in through `expect`.
+- Reason: Some diagrams legitimately need compact labels or small nested details, so global thresholds would create unrelated failures.
+- Decision: Revalidate the saved live output file before any new API rerun.
+- Reason: The user asked for root-cause prevention; proving the old false positives now fail is stronger and does not require exposing a key.
+
+## Blockers
+
+- Blocker: None for local validator and saved-result verification.
+
+## Verification
+
+- Completed:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --test tests\live-openai-random-smoke.test.js`; passed with 52 tests.
+  - `LIVE_AI_REVALIDATE_RESULTS=tmp/live-openai-csat-drawing-smoke-20260530/live-openai-random-results.json node tools\run-live-openai-random-drawing-smoke.mjs`; expected failure count 5 confirmed for the saved weak outputs.
+  - `LIVE_AI_PROMPT_SET=stress_novel LIVE_AI_RENDER_REFERENCE_TARGETS=1 LIVE_AI_OUTPUT_DIR=tmp/live-openai-csat-reference-rootfix-20260530 node tools\run-live-openai-random-drawing-smoke.mjs`; passed with 10 targets, 0 failures, and 0 browser console errors.
+  - JSON parse check for `.agents/skills/mathgraph-drawing/references/feature-manual.json` and `retrieval-index.json`; passed.
+  - `npm.cmd test`; passed with 108 tests.
+  - `git diff --check`; passed with line-ending warnings only.
+  - Secret-pattern scan for actual `sk-proj-...` values outside `.git` and `node_modules`; no matches.
+
+## Handoff
+
+- Current status:
+  - The saved live `prism_diagonal_cross_section` output had a prism projection of only 4.5 by 4.5 math units and a cross-section area ratio of about 0.08, so it is now rejected.
+  - The saved live `triangular_pyramid_inside_triangular_prism` output placed the inner pyramid near the outer prism's left/bottom projection margins and is now rejected.
+  - The saved live concentric, tangent, and Euler-line outputs are now rejected when the required angle aid or label offsets are missing.
+
+---
+
+## Status
+
 - Task: Live OpenAI CSAT-style drawing audit
 - State: Done
 - Last updated: 2026-05-30

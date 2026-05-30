@@ -2,6 +2,45 @@
 
 ## Summary
 
+- Task: Root-cause fix for live OpenAI drawing visual false positives
+- Owner: Codex
+- Date: 2026-05-30
+- Related files:
+  - `tools/run-live-openai-random-drawing-smoke.mjs`
+  - `tests/live-openai-random-smoke.test.js`
+  - `docs/live-openai-csat-drawing-audit.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The strict one-by-one visual audit found that several saved live outputs were structurally generated but still not print-ready.
+- The existing smoke validator caught schema errors, missing object families, invalid references, and broad semantic mismatches, but it did not model enough human-visible quality constraints.
+- Specific missed issues included crowded required labels, hard-to-see right-angle markings, a too-small prism cross-section, cube-like prism proportions, and an inner triangular pyramid cramped near the edge of its containing prism.
+
+## Goals
+
+- Convert the observed visual false positives into deterministic prompt-local validation failures.
+- Strengthen the `stress_novel` prompts so future repair attempts receive actionable feedback instead of accepting weak renders.
+- Revalidate the saved live output file without another API call and confirm the previously weak outputs are no longer accepted.
+- Keep the fix inside the current GraphA contract; do not add new drawing primitives.
+
+## Non-Goals
+
+- Do not rerun paid live OpenAI calls unless a safe `OPENAI_API_KEY` is provided through the environment.
+- Do not store or echo the API key.
+- Do not claim exact 3D containment beyond the current 2D projection-based quality checks.
+
+## Acceptance Criteria
+
+- [x] Saved `stress_novel` live results that had visual issues fail under the strengthened validators.
+- [x] Local reference targets for `stress_novel` still pass the new checks and render successfully.
+- [x] Focused smoke tests cover label offset/spacing, right-angle marker renderability, prism projection proportions, cross-section scale, and inner-solid layout.
+- [x] Full tests, whitespace check, and secret-pattern scan pass.
+
+---
+
+## Summary
+
 - Task: Live OpenAI CSAT-style drawing audit
 - Owner: Codex
 - Date: 2026-05-30

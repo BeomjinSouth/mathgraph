@@ -45,7 +45,11 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For `pyramid`, keep `apexId` out of `baseVertexIds` and place the apex far enough from the base centroid to read as a real apex.
 - For nested solid requests, keep inner vertices inside the outer projection and separate multiple inner solids in the screen projection so they do not visually overlap.
 - For `angleDimension`, choose helper points that are distinct from the vertex, far enough from the vertex, and non-collinear so the angle arc is visible.
+- When a right-angle mark would be small at a crowded vertex, add a larger `angleDimension` with `arcRadius` at least `0.7` and `showValue:false` instead of relying only on the default small `rightAngleMarker`.
+- Use `labelOffset` on required labels near tangency points, angle markers, collinear construction points, or crowded intersections so the label does not sit on top of the marker or line.
 - Set helper-only points to `visible:false` when they should not appear as extra dots.
+- For prism cross-sections, make the outer solid projection broad enough to read and make the section polygon span a substantial middle portion of the prism, not a tiny internal square.
+- For nested solids, leave visible projection margin between the inner solid and the outer prism/pyramid boundary; containment alone is not enough when the result looks cramped.
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.
 - Default object stroke and fill color is `#000000`; omit color fields unless a user explicitly requests color, and never introduce multiple colors on your own.
 - For image/PDF recreation, do not silently approximate unsupported first-class nodes such as cylinder, cone, sphere, native histogram/scatter/box plot, or standalone text. Emit a scene graph unsupported item or compiler warning unless the user explicitly accepts approximation.

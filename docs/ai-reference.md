@@ -519,15 +519,15 @@ For `prism`, treat `baseVertexIds` as the near/front face and `topVertexIds` as 
 For complex live OpenAI drawing prompts, include the following context when it matches the request:
 
 - Function expressions must be right-hand-side only, with no `y=`.
-- Hide helper labels with `showLabel:false`; dense graph families and nested solids should use a small explicit visible-label budget.
+- Hide helper labels with `showLabel:false`; dense graph families and nested solids should use a small explicit visible-label budget. Use `labelOffset` on required labels near tangency points, angle markers, collinear construction points, or crowded intersections.
 - Hide helper points with `visible:false` when they only shape a region or construction and should not appear as extra dots.
 - For two-circle lens regions, use `lensRegion` for the filled overlap. Add direct upper/lower point objects only when A and B must be distinct visible lens endpoints.
 - For construction-only polygons that should look like outlines, set `fillOpacity:0`; use positive `fillOpacity` only when the prompt requests a shaded region.
-- For `angleDimension`, make `point1Id` and `point2Id` distinct from `vertexId`, far enough from the vertex to render an arc, and non-collinear.
+- For `angleDimension`, make `point1Id` and `point2Id` distinct from `vertexId`, far enough from the vertex to render an arc, and non-collinear. If a right-angle mark would be too small at a crowded vertex, add a larger `angleDimension` with `arcRadius` at least `0.7` and `showValue:false`.
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, include exact coordinates for the intended visible points and the exact equations for reference lines.
 - For concentric circles or fixed-radius tangency diagrams, state the shared center id and numeric radii. Current GraphA has no first-class `annularSector`; use a normal `sector` plus an inner circle outline unless a future primitive is added.
 - For curved regions bounded by functions, use a polygon through explicit boundary/sample points and hide helper points; do not claim exact curved fill unless a first-class region primitive exists.
-- For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. For prisms, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds`; put every inner-solid vertex inside the outer solid's screen-projection region, and separate multiple inner solids so their projected centers do not overlap.
+- For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. For prisms, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds`; make the outer projection broad enough to read, keep cross-section polygons substantial when requested, put every inner-solid vertex inside the outer solid's screen-projection region, and leave visible margins so inner solids do not look cramped against the boundary.
 - For `pyramid`, `apexId` must not appear in `baseVertexIds`, and the apex should be visually separated from the base centroid.
 - For polygon-owned boundaries, do not require duplicate segment edges unless the user explicitly asks for separate selectable edge segments.
 - The live smoke runner can render deterministic target sheets without an API call by setting `LIVE_AI_RENDER_REFERENCE_TARGETS=1`. Use this to compare intended visuals against live OpenAI outputs.

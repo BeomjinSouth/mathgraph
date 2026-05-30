@@ -879,6 +879,209 @@ test('prompt-local smoke expectations reject non-collinear named construction po
     assert.match(errors.join('\n'), /collinear/);
 });
 
+test('prompt-local smoke expectations reject missing required label offsets', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+            { op: 'create', id: 'T2', type: 'point', x: 1.8, y: -2.4, label: 'T2' }
+        ]
+    };
+    const prompt = {
+        id: 'external_point_two_tangents',
+        expect: { requiredLabelOffsets: [{ name: 'T2', minMagnitude: 8 }] }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /label T2 must set labelOffset/);
+});
+
+test('prompt-local smoke expectations accept required label offsets', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'T2', type: 'point', x: 1.8, y: -2.4, label: 'T2', labelOffset: { x: 10, y: 8 } }
+        ]
+    };
+    const prompt = {
+        id: 'external_point_two_tangents',
+        expect: { requiredLabelOffsets: [{ name: 'T2', minMagnitude: 8 }] }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
+});
+
+test('prompt-local smoke expectations reject tiny or missing angleDimension right-angle aids', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+            { op: 'create', id: 'A', type: 'point', x: 4, y: 0, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 0, y: 4, label: 'B' },
+            { op: 'create', id: 'OA', type: 'segment', point1Id: 'O', point2Id: 'A', showLabel: false },
+            { op: 'create', id: 'OB', type: 'segment', point1Id: 'O', point2Id: 'B', showLabel: false },
+            { op: 'create', id: 'right_AOB', type: 'rightAngleMarker', vertexId: 'O', line1Id: 'OA', line2Id: 'OB' },
+            { op: 'create', id: 'angle_AOB', type: 'angleDimension', vertexId: 'O', point1Id: 'A', point2Id: 'B', arcRadius: 0.25, showValue: false }
+        ]
+    };
+    const prompt = {
+        id: 'concentric_quarter_sector_wedge',
+        expect: {
+            requireRenderableRightAngleMarkers: true,
+            requireRenderableAngles: true,
+            minAngleArcRadius: 0.7
+        }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /arcRadius should be at least 0\.7/);
+});
+
+test('prompt-local smoke expectations accept renderable right-angle aids', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+            { op: 'create', id: 'A', type: 'point', x: 4, y: 0, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 0, y: 4, label: 'B' },
+            { op: 'create', id: 'OA', type: 'segment', point1Id: 'O', point2Id: 'A', showLabel: false },
+            { op: 'create', id: 'OB', type: 'segment', point1Id: 'O', point2Id: 'B', showLabel: false },
+            { op: 'create', id: 'right_AOB', type: 'rightAngleMarker', vertexId: 'O', line1Id: 'OA', line2Id: 'OB' },
+            { op: 'create', id: 'angle_AOB', type: 'angleDimension', vertexId: 'O', point1Id: 'A', point2Id: 'B', arcRadius: 0.75, showValue: false }
+        ]
+    };
+    const prompt = {
+        id: 'concentric_quarter_sector_wedge',
+        expect: {
+            requireRenderableRightAngleMarkers: true,
+            requireRenderableAngles: true,
+            minAngleArcRadius: 0.7
+        }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
+});
+
+test('prompt-local smoke expectations reject tiny prism cross-sections', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -4, y: -2, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: -1, y: -2, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: -1, y: 1, showLabel: false },
+            { op: 'create', id: 'D', type: 'point', x: -4, y: 1, showLabel: false },
+            { op: 'create', id: 'A1', type: 'point', x: -2.5, y: -0.5, showLabel: false },
+            { op: 'create', id: 'B1', type: 'point', x: 0.5, y: -0.5, showLabel: false },
+            { op: 'create', id: 'C1', type: 'point', x: 0.5, y: 2.5, showLabel: false },
+            { op: 'create', id: 'D1', type: 'point', x: -2.5, y: 2.5, showLabel: false },
+            { op: 'create', id: 'pr1', type: 'prism', baseVertexIds: ['A', 'B', 'C', 'D'], topVertexIds: ['A1', 'B1', 'C1', 'D1'], showLabel: false },
+            { op: 'create', id: 'P', type: 'point', x: -2.7, y: 0.2, showLabel: false },
+            { op: 'create', id: 'Q', type: 'point', x: -1.3, y: 0.2, showLabel: false },
+            { op: 'create', id: 'R', type: 'point', x: -1.3, y: 1.4, showLabel: false },
+            { op: 'create', id: 'S', type: 'point', x: -2.7, y: 1.4, showLabel: false },
+            { op: 'create', id: 'section', type: 'polygon', vertexIds: ['P', 'Q', 'R', 'S'], fillOpacity: 0.25, showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'prism_diagonal_cross_section',
+        expect: {
+            firstPrismProjection: { minWidth: 6, minHeight: 4.5, minAspectRatio: 1.2 },
+            crossSectionPolygonScale: { minVertexCount: 4, minAreaRatio: 0.18, minWidthRatio: 0.5, minHeightRatio: 0.4 }
+        }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /first prism projection is too small/);
+    assert.match(errors.join('\n'), /cross-section polygon is too small/);
+});
+
+test('prompt-local smoke expectations accept broad prism cross-sections', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -4, y: -2, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: 2, y: -2, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: 2, y: 1, showLabel: false },
+            { op: 'create', id: 'D', type: 'point', x: -4, y: 1, showLabel: false },
+            { op: 'create', id: 'A1', type: 'point', x: -2, y: 0, showLabel: false },
+            { op: 'create', id: 'B1', type: 'point', x: 4, y: 0, showLabel: false },
+            { op: 'create', id: 'C1', type: 'point', x: 4, y: 3, showLabel: false },
+            { op: 'create', id: 'D1', type: 'point', x: -2, y: 3, showLabel: false },
+            { op: 'create', id: 'box', type: 'prism', baseVertexIds: ['A', 'B', 'C', 'D'], topVertexIds: ['A1', 'B1', 'C1', 'D1'], showLabel: false },
+            { op: 'create', id: 'P', type: 'point', x: -3, y: -1, showLabel: false },
+            { op: 'create', id: 'Q', type: 'point', x: 1, y: -1, showLabel: false },
+            { op: 'create', id: 'R', type: 'point', x: 3, y: 2, showLabel: false },
+            { op: 'create', id: 'S', type: 'point', x: -1, y: 2, showLabel: false },
+            { op: 'create', id: 'section', type: 'polygon', vertexIds: ['P', 'Q', 'R', 'S'], fillOpacity: 0.18, showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'prism_diagonal_cross_section',
+        expect: {
+            firstPrismProjection: { minWidth: 6, minHeight: 4.5, minAspectRatio: 1.2 },
+            crossSectionPolygonScale: { minVertexCount: 4, minAreaRatio: 0.18, minWidthRatio: 0.5, minHeightRatio: 0.4 }
+        }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
+});
+
+test('prompt-local smoke expectations reject cramped inner pyramids', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -4, y: -2, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: -1, y: -2, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: -2.5, y: 1, showLabel: false },
+            { op: 'create', id: 'A2', type: 'point', x: -2.5, y: 0.5, showLabel: false },
+            { op: 'create', id: 'B2', type: 'point', x: -0.5, y: 0.5, showLabel: false },
+            { op: 'create', id: 'C2', type: 'point', x: -2, y: 3.5, showLabel: false },
+            { op: 'create', id: 'P1', type: 'point', x: -3.3, y: -1.3, showLabel: false },
+            { op: 'create', id: 'P2', type: 'point', x: -2.2, y: -1.3, showLabel: false },
+            { op: 'create', id: 'P3', type: 'point', x: -2.75, y: -0.2, showLabel: false },
+            { op: 'create', id: 'P4', type: 'point', x: -2.4, y: 0.6, showLabel: false },
+            { op: 'create', id: 'prism1', type: 'prism', baseVertexIds: ['A', 'B', 'C'], topVertexIds: ['A2', 'B2', 'C2'], showLabel: false },
+            { op: 'create', id: 'pyramid1', type: 'pyramid', apexId: 'P4', baseVertexIds: ['P1', 'P2', 'P3'], showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'triangular_pyramid_inside_triangular_prism',
+        expect: {
+            firstPrismProjection: { minWidth: 6, minHeight: 5, minAspectRatio: 0.9 },
+            innerSolidProjection: { type: 'pyramid', minWidthRatio: 0.25, minHeightRatio: 0.3, minMarginRatio: 0.16 }
+        }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /first prism projection is too small/);
+    assert.match(errors.join('\n'), /inner pyramid projection is too cramped/);
+});
+
+test('prompt-local smoke expectations accept centered inner pyramids', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -4, y: -2, showLabel: false },
+            { op: 'create', id: 'B', type: 'point', x: 3, y: -2, showLabel: false },
+            { op: 'create', id: 'C', type: 'point', x: -1, y: 2, showLabel: false },
+            { op: 'create', id: 'A1', type: 'point', x: -2, y: 0, showLabel: false },
+            { op: 'create', id: 'B1', type: 'point', x: 5, y: 0, showLabel: false },
+            { op: 'create', id: 'C1', type: 'point', x: 1, y: 4, showLabel: false },
+            { op: 'create', id: 'outer', type: 'prism', baseVertexIds: ['A', 'B', 'C'], topVertexIds: ['A1', 'B1', 'C1'], showLabel: false },
+            { op: 'create', id: 'P', type: 'point', x: -1.8, y: -0.9, showLabel: false },
+            { op: 'create', id: 'Q', type: 'point', x: 1, y: -0.9, showLabel: false },
+            { op: 'create', id: 'R', type: 'point', x: -0.6, y: 0.7, showLabel: false },
+            { op: 'create', id: 'V', type: 'point', x: 0, y: 1.8, showLabel: false },
+            { op: 'create', id: 'inner', type: 'pyramid', apexId: 'V', baseVertexIds: ['P', 'Q', 'R'], showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'triangular_pyramid_inside_triangular_prism',
+        expect: {
+            firstPrismProjection: { minWidth: 6, minHeight: 5, minAspectRatio: 0.9 },
+            innerSolidProjection: { type: 'pyramid', minWidthRatio: 0.25, minHeightRatio: 0.3, minMarginRatio: 0.16 }
+        }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
+});
+
 test('smoke semantics rejects pixel-style point coordinates outside the default view', () => {
     const payload = {
         operations: [

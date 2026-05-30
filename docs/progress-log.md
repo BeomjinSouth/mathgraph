@@ -2,6 +2,42 @@
 
 ## 2026-05-30
 
+### Root-cause fix for live OpenAI drawing visual false positives
+
+#### Work completed
+
+- Traced the strict visual-audit failures to missing prompt-local visual quality gates rather than API/model availability or canvas rendering failures.
+- Strengthened `stress_novel` prompts for:
+  - label offsets on crowded tangent and Euler-line labels,
+  - a larger `angleDimension` aid for crowded right-angle marking,
+  - broad prism projection proportions,
+  - minimum cross-section polygon area/span,
+  - inner solid projection size and margin inside an outer prism.
+- Added prompt-local smoke validators for required `labelOffset`, visible right-angle marker geometry, minimum `angleDimension.arcRadius`, first-prism projection size/aspect, cross-section polygon scale, and inner-solid projection margins.
+- Added regression tests that reject the exact classes of false positives observed in the saved live run.
+- Updated the MathGraph drawing skill, feature manual, AI reference, and live audit note so future API prompts receive the same visual guardrails.
+
+#### Findings
+
+- The previous `prism_diagonal_cross_section` live output had an outer prism projection of 4.5 by 4.5 math units and a cross-section area ratio of about 0.08, so object presence alone was too weak.
+- The previous `triangular_pyramid_inside_triangular_prism` live output had a narrow outer prism projection and a minimum inner-pyramid margin ratio of about 0.13, so containment alone was too weak.
+- The previous concentric, tangent, and Euler-line outputs were structurally correct but lacked the explicit angle/label layout information needed for print-ready readability.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 52 tests.
+- Revalidated `tmp/live-openai-csat-drawing-smoke-20260530/live-openai-random-results.json`; expected failure count 5 confirmed for the previously weak saved outputs.
+- Rendered strengthened local reference targets with `LIVE_AI_PROMPT_SET=stress_novel`, `LIVE_AI_RENDER_REFERENCE_TARGETS=1`, and `LIVE_AI_OUTPUT_DIR=tmp/live-openai-csat-reference-rootfix-20260530`; passed with 10 targets, 0 failures, and 0 browser console errors.
+- Parsed `.agents/skills/mathgraph-drawing/references/feature-manual.json` and `retrieval-index.json`; passed.
+- Ran `npm.cmd test`; passed with 108 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran a secret-pattern scan for actual `sk-proj-...` values outside `node_modules` and `.git`; no matches.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Live OpenAI CSAT-style drawing audit
 
 #### Work completed

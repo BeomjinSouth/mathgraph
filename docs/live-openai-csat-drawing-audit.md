@@ -66,6 +66,36 @@ Result: 10 live outputs rendered, 0 validation failures, 0 browser console error
 | `prism_diagonal_cross_section` | Rectangular prism with internal diagonal and shaded cross-section. | Needs rerun / prompt strengthening. | The required object families were created, but the rendered box is too cube-like and the shaded section reads as a small internal square rather than a broad middle cross-section. It is "made" structurally, but not good enough as a textbook-style target. |
 | `triangular_pyramid_inside_triangular_prism` | Triangular pyramid inside a triangular prism. | Needs rerun / prompt strengthening. | The `prism` and `pyramid` objects exist, but the projection is cramped and visually ambiguous; the inner pyramid does not read cleanly as inside a larger triangular prism. |
 
+## Root-Cause Fix
+
+The root cause was not API connectivity or JSON parsing. The smoke validator accepted object-family presence and renderability but did not yet encode several human-visible quality rules:
+
+- required labels near tangency points or collinear construction points need explicit `labelOffset`;
+- a default small `rightAngleMarker` can be technically present but visually weak at a crowded center point;
+- solid diagrams need projection-size and aspect checks, not only `prism`/`pyramid` object counts;
+- cross-section polygons need minimum area/span ratios against the outer prism;
+- inner solids need visible projection margins, not only containment.
+
+The live smoke runner now has prompt-local validators for those cases. Revalidating the saved live result file without another API call now rejects 5 outputs:
+
+```powershell
+$env:LIVE_AI_REVALIDATE_RESULTS='tmp/live-openai-csat-drawing-smoke-20260530/live-openai-random-results.json'
+node tools\run-live-openai-random-drawing-smoke.mjs
+```
+
+Expected result after the fix: failure count 5. The rejected IDs are `concentric_quarter_sector_wedge`, `external_point_two_tangents`, `triangle_euler_line`, `prism_diagonal_cross_section`, and `triangular_pyramid_inside_triangular_prism`.
+
+The strengthened local reference targets still render successfully:
+
+```powershell
+$env:LIVE_AI_PROMPT_SET='stress_novel'
+$env:LIVE_AI_RENDER_REFERENCE_TARGETS='1'
+$env:LIVE_AI_OUTPUT_DIR='tmp/live-openai-csat-reference-rootfix-20260530'
+node tools\run-live-openai-random-drawing-smoke.mjs
+```
+
+Result: 10 reference targets rendered, 0 failures, 0 browser console errors.
+
 ## Summary
 
 - Automated outcome: 10 of 10 live outputs passed schema validation, reference validation, intent validation, runtime readability, semantic validation, and browser rendering.
@@ -73,8 +103,8 @@ Result: 10 live outputs rendered, 0 validation failures, 0 browser console error
   - 5 direct passes: logistic, parabola, absolute-value region, feasible region, pentagon/pentagram.
   - 3 passes with minor readability issues: concentric sector angle marker, external tangents label placement, Euler-line center-label crowding.
   - 2 need rerun or stricter prompt constraints: rectangular prism cross-section, triangular pyramid inside triangular prism.
-- No runtime code change was needed for this pass.
-- The strongest remaining product gaps are still native chart primitives, exact annular sectors, richer function-bounded fills, label-offset control in prompts, and stronger projection/layout constraints for compact solid diagrams.
+- Follow-up outcome: the validator and prompt set now reject those 5 weak saved outputs instead of accepting them as all-pass.
+- The strongest remaining product gaps are still native chart primitives, exact annular sectors, richer function-bounded fills, and first-class curved solid primitives.
 
 ## Verification
 
@@ -82,4 +112,6 @@ Result: 10 live outputs rendered, 0 validation failures, 0 browser console error
 - Ran live OpenAI drawing smoke for `stress_novel`; passed with 10 outputs, 0 failures, and 0 console errors.
 - Inspected the live and reference contact sheets, then opened the 10 live screenshots one by one for stricter visual review.
 - Queried `/v1/models` and ran tiny `/v1/responses` checks for available `gpt-5.5` and `gpt-5.4-mini` models.
+- Revalidated the saved live result file after the root-cause fix; expected failure count 5 confirmed.
+- Rendered the strengthened local reference targets under `tmp/live-openai-csat-reference-rootfix-20260530/`; passed with 10 targets and 0 console errors.
 - Ran a secret-pattern scan for actual `sk-proj-...` values outside `node_modules` and `.git`; no matches.

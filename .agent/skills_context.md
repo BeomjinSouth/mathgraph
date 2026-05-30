@@ -4,6 +4,38 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The fix turns human visual review findings into GraphA-aware semantic validators for future OpenAI drawing runs.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The live path uses Responses API structured outputs, but this root-cause pass should rely on saved-result revalidation unless a key is safely present.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The target quality bar is the rendered canvas, so local reference rendering remains part of verification.
+
+## Current Task Notes
+
+- User concern:
+  - Prevent a repeat of accepting generated-but-weak drawings as successful.
+- Root cause:
+  - The smoke test was strong on schema, references, runtime rendering, and object-family semantics, but too weak on human-visible layout: label offsets, right-angle readability, and solid projection proportions.
+- Fix direction:
+  - Add opt-in `expect` checks for required label offsets and minimum visible label spacing.
+  - Validate `rightAngleMarker` geometry so marker rays are resolvable, long enough, and close to perpendicular.
+  - Add solid projection checks for outer prism width/height/aspect, cross-section polygon area/span, and inner solid size/margins.
+  - Revalidate the saved `tmp/live-openai-csat-drawing-smoke-20260530/live-openai-random-results.json` file and require the old weak outputs to fail.
+- Implemented result:
+  - Saved-result revalidation now rejects 5 previously accepted weak outputs.
+  - Strengthened local reference targets render under `tmp/live-openai-csat-reference-rootfix-20260530/` with 0 failures and 0 browser console errors.
+  - Focused smoke tests now cover label offsets, visible right-angle aids, prism projection size, cross-section scale, and inner-solid margins.
+- Secret handling:
+  - No live API call is needed for the root-cause fix. Do not write or echo the user-provided key.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The live audit must judge OpenAI output against GraphA-supported object families and prompt-local semantic validators, not just a raw screenshot.
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:
