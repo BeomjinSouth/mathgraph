@@ -8,6 +8,15 @@ This note records a live OpenAI Responses API check for CSAT/mock-exam-style Mat
 
 The API key was supplied only through the process environment for the live command. The key is not written to reports, screenshots, docs, or committed source files.
 
+## Model Availability Check
+
+Checked through the live API model list for the supplied key on 2026-05-30:
+
+- Exact `gpt-5.5-mini`: not visible in `/v1/models`, so this project should treat it as unavailable for this key.
+- Visible `gpt-5.5` family: `gpt-5.5`, `gpt-5.5-2026-04-23`, `gpt-5.5-pro`, `gpt-5.5-pro-2026-04-23`.
+- Visible mini alternatives include `gpt-5.4-mini`, `gpt-5-mini`, `gpt-4.1-mini`, and `gpt-4o-mini`.
+- Tiny `/v1/responses` calls succeeded for `gpt-5.5` and `gpt-5.4-mini`; `gpt-5.5-mini` was not called because the exact model ID was not visible.
+
 ## Evidence
 
 Local reference targets:
@@ -50,23 +59,27 @@ Result: 10 live outputs rendered, 0 validation failures, 0 browser console error
 | `parabola_focus_directrix_latus` | Parabola `0.25*x^2`, focus, vertex, dashed directrix, and latus rectum. | Pass. | Needed 2 attempts, then matched the requested focus/directrix/latus-rectum structure with 4 visible labels. |
 | `absolute_plateau_cap_region` | Absolute-value plateau graph capped by a horizontal line, with shaded cap region. | Pass. | First attempt matched the function, cap line, four named points, and shaded polygon approximation. |
 | `three_inequality_feasible_region` | Feasible triangle for `x>=0`, `y>=0`, `x+y<=6`. | Pass. | First attempt produced the three boundary lines and the shaded triangular feasible region. |
-| `concentric_quarter_sector_wedge` | Two concentric circles plus an outer quarter-sector fill. | Pass within current primitive limits. | Result matches the supported target: outer sector fill plus inner circle outline. This is not a true annular-sector cutout because `annularSector` is not first-class yet. |
-| `external_point_two_tangents` | Two tangents from an external point to a radius-3 circle, with radius segments and right-angle markers. | Pass. | The live drawing uses tangent geometry plus finite support segments; the reference target also includes full tangent lines. If a worksheet needs full infinite tangent lines, the prompt should say that explicitly. |
-| `triangle_euler_line` | Triangle, circumcircle, centroid/circumcenter/orthocenter on a dashed Euler line. | Pass. | Matched the construction and kept `O`, `G`, `H` collinear on the dashed line. |
+| `concentric_quarter_sector_wedge` | Two concentric circles plus an outer quarter-sector fill. | Pass with minor visual issue. | The circles, radii, and filled supported sector are present. The requested 90-degree marker object exists but is not easy to see because it sits at the filled center/radius intersection. |
+| `external_point_two_tangents` | Two tangents from an external point to a radius-3 circle, with radius segments and right-angle markers. | Pass with label/readability issue. | Tangency, radius segments, and right-angle markers are present. The `T2` label sits too close to the marker/line, so it needs label-offset guidance for polished worksheets. |
+| `triangle_euler_line` | Triangle, circumcircle, centroid/circumcenter/orthocenter on a dashed Euler line. | Pass with label/readability issue. | The triangle, circumcircle, dashed Euler line, and collinear center points are present, but `O/G/H` labels are cramped along the dashed line. |
 | `pentagon_pentagram_diagonals` | Regular pentagon, circumcircle, and pentagram diagonals. | Pass. | Produced an unfilled pentagon outline, circumcircle, and five star diagonals. |
-| `prism_diagonal_cross_section` | Rectangular prism with internal diagonal and shaded cross-section. | Pass with visual-proportion caveat. | First-class `prism`, body diagonal, and cross-section polygon were present and rendered. The live prism is more compact/cube-like than the reference rectangular box; add aspect-ratio/projection constraints if textbook proportions matter. |
-| `triangular_pyramid_inside_triangular_prism` | Triangular pyramid inside a triangular prism. | Pass with readability caveat. | First-class 3/3 triangular `prism` and triangular-base `pyramid` were present and rendered. The live result is compact; future prompts can require wider projection separation for print readability. |
+| `prism_diagonal_cross_section` | Rectangular prism with internal diagonal and shaded cross-section. | Needs rerun / prompt strengthening. | The required object families were created, but the rendered box is too cube-like and the shaded section reads as a small internal square rather than a broad middle cross-section. It is "made" structurally, but not good enough as a textbook-style target. |
+| `triangular_pyramid_inside_triangular_prism` | Triangular pyramid inside a triangular prism. | Needs rerun / prompt strengthening. | The `prism` and `pyramid` objects exist, but the projection is cramped and visually ambiguous; the inner pyramid does not read cleanly as inside a larger triangular prism. |
 
 ## Summary
 
 - Automated outcome: 10 of 10 live outputs passed schema validation, reference validation, intent validation, runtime readability, semantic validation, and browser rendering.
-- Visual outcome: 8 of 10 are direct matches to the intended target; 2 of 10 are acceptable but should get stricter proportion/readability wording for production worksheet-style diagrams.
+- Strict visual outcome:
+  - 5 direct passes: logistic, parabola, absolute-value region, feasible region, pentagon/pentagram.
+  - 3 passes with minor readability issues: concentric sector angle marker, external tangents label placement, Euler-line center-label crowding.
+  - 2 need rerun or stricter prompt constraints: rectangular prism cross-section, triangular pyramid inside triangular prism.
 - No runtime code change was needed for this pass.
-- The strongest remaining product gaps are still native chart primitives, exact annular sectors, richer function-bounded fills, and stronger projection/layout constraints for compact solid diagrams.
+- The strongest remaining product gaps are still native chart primitives, exact annular sectors, richer function-bounded fills, label-offset control in prompts, and stronger projection/layout constraints for compact solid diagrams.
 
 ## Verification
 
 - Ran local reference rendering for `stress_novel`; passed with 10 targets and 0 console errors.
 - Ran live OpenAI drawing smoke for `stress_novel`; passed with 10 outputs, 0 failures, and 0 console errors.
-- Inspected the live and reference contact sheets.
+- Inspected the live and reference contact sheets, then opened the 10 live screenshots one by one for stricter visual review.
+- Queried `/v1/models` and ran tiny `/v1/responses` checks for available `gpt-5.5` and `gpt-5.4-mini` models.
 - Ran a secret-pattern scan for actual `sk-proj-...` values outside `node_modules` and `.git`; no matches.

@@ -52,7 +52,8 @@
 - Current status:
   - Live output evidence is under `tmp/live-openai-csat-drawing-smoke-20260530/`.
   - Prompt/result comparison is documented in `docs/live-openai-csat-drawing-audit.md`.
-  - Two acceptable caveats remain for production worksheets: stricter tangent-line wording when infinite tangent lines are desired, and stronger projection/aspect constraints for compact solid diagrams.
+  - Follow-up stricter visual review found that `gpt-5.5-mini` is not visible to the supplied key; `gpt-5.5` and `gpt-5.4-mini` both respond to tiny Responses calls.
+  - Strict one-by-one visual review marks 5 direct passes, 3 minor readability issues, and 2 solid-diagram outputs that need rerun or stronger projection prompts.
 
 ---
 

@@ -47,6 +47,38 @@
 
 - No Vercel configuration or deployment settings were changed.
 
+### Strict one-by-one visual re-audit and model availability check
+
+#### Work completed
+
+- Queried the live API model list for the supplied key and checked exact `gpt-5.5-mini` availability.
+- Ran tiny `/v1/responses` calls for the available `gpt-5.5` and `gpt-5.4-mini` model IDs to confirm they are callable, not merely listed.
+- Opened the 10 live rendered PNG outputs one by one and rejudged whether each drawing was actually made in a prompt-faithful, visually readable way.
+- Updated `docs/live-openai-csat-drawing-audit.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md` with the stricter judgement.
+
+#### Findings
+
+- Exact `gpt-5.5-mini` is not visible in `/v1/models` for the supplied key, so it should be treated as unavailable.
+- Visible `gpt-5.5` family models include `gpt-5.5`, `gpt-5.5-2026-04-23`, `gpt-5.5-pro`, and `gpt-5.5-pro-2026-04-23`.
+- `gpt-5.5` and `gpt-5.4-mini` both succeeded on tiny Responses calls.
+- Strict visual judgement:
+  - Direct pass: `logistic_midpoint_asymptotes`, `parabola_focus_directrix_latus`, `absolute_plateau_cap_region`, `three_inequality_feasible_region`, `pentagon_pentagram_diagonals`.
+  - Minor readability issues: `concentric_quarter_sector_wedge` has a hard-to-see right-angle marker, `external_point_two_tangents` has cramped `T2` label placement, and `triangle_euler_line` has crowded `O/G/H` labels.
+  - Needs rerun or prompt strengthening: `prism_diagonal_cross_section` and `triangular_pyramid_inside_triangular_prism` are structurally created but not visually strong enough for print-ready textbook diagrams.
+
+#### Verification
+
+- API model list check completed without writing the key to files.
+- Tiny Responses calls completed for `gpt-5.5` and `gpt-5.4-mini`.
+- Opened and inspected all 10 live PNG screenshots under `tmp/live-openai-csat-drawing-smoke-20260530/screenshots/`.
+- Ran `npm.cmd test`; passed with 100 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran a secret-pattern scan for actual `sk-proj-...` values outside `node_modules` and `.git`; no matches.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-29
 
 ### Solid 3D broad case matrix and zero-error audit

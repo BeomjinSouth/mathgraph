@@ -25,7 +25,8 @@
   - Audit note: `docs/live-openai-csat-drawing-audit.md`.
 - Result:
   - 10/10 live outputs passed schema/reference/intent/runtime/semantic validation and browser rendering.
-  - Visual review accepted all 10, with caveats that tangent-line infinity and solid projection proportions may need stricter prompt wording for print-ready worksheet use.
+  - Stricter visual review: 5 direct passes, 3 minor readability issues, 2 solid-diagram results that are structurally created but not print-ready.
+  - `gpt-5.5-mini` is not visible to the supplied API key; `gpt-5.5` and `gpt-5.4-mini` both work in tiny Responses calls.
 - Secret handling:
   - The provided API key was used only as a process environment variable and was not written to repository files or reports.
 

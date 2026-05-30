@@ -37,6 +37,8 @@
 - [x] Each live result renders in the browser canvas with no console errors or is documented as failed.
 - [x] Prompt/result comparison is recorded in a dedicated audit note.
 - [x] The repository is scanned to confirm no actual `sk-proj-...` key was written.
+- [x] Exact `gpt-5.5-mini` API availability is checked against the supplied key.
+- [x] Each live screenshot is opened and judged one by one for real visual/prompt fidelity.
 
 ---
 
