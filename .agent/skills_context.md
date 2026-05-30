@@ -4,6 +4,60 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The request is about turning a clicked enclosed geometry area into editable MathGraph vector objects.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The visible acceptance bar is whether the canvas responds like a paint bucket while preserving vector geometry.
+
+## Current Task Notes
+
+- User concern:
+  - Existing object fill was not enough; they want the area enclosed by curves or segments to become colored when clicked.
+- Root correction:
+  - Keep fill vector-based, not raster-based.
+  - Infer a closed segment loop under the click and create a persisted filled region object.
+  - Infer a two-circle overlap under the click and create a `lensRegion` automatically.
+  - Leave arbitrary function-bounded/implicit regions as a documented follow-up unless a safe runtime primitive exists.
+- Verification target:
+  - Focused unit tests for loose segment-loop fill, auto lens fill, existing polygon/circle fill, undo, and save/load.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The root fix now lives in the GraphA generation pipeline, where app-owned code can correct common diagram-quality defects before operations reach the canvas.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - Model output still uses strict Structured Outputs, but the app no longer depends on prompt compliance alone for known visual layout rules.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The quality bar remains the rendered canvas; tests and render checks should continue to catch cases the enhancer cannot safely normalize.
+
+## Current Task Notes
+
+- User concern:
+  - A validator-only fix was not enough; similar requests should come out correctly without the user needing to ask for label offsets, larger angle aids, or better solid projection every time.
+- Root cause:
+  - The pipeline treated model-authored GraphA as the final answer too early. Validators could reject bad output, but there was no deterministic correction step for recurring presentation failures.
+- Fix direction:
+  - Add `js/ai/DiagramQualityEnhancer.js` as an app-owned post-generation pass.
+  - Run it from `AIService.processCommand` for API and local fallback command results.
+  - Run it for image recreate analysis before semantic intent validation; skip it for selected-object patch mode.
+  - Respect explicit coordinate-heavy prompts so precise constructions are not rewritten.
+- Implemented result:
+  - Tangent labels like `T2` and Euler-line labels like `O/G/H` receive screen-space `labelOffset` values when missing.
+  - Right-angle requests can gain a larger hidden-label `angleDimension` aid when a default `rightAngleMarker` would be hard to see.
+  - Rectangular-prism cross-section requests are widened and their section polygon is normalized to a substantial middle slice.
+  - Triangular-pyramid-inside-triangular-prism requests are expanded/recentered so the inner solid reads inside the outer projection with visible margins.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The fix turns human visual review findings into GraphA-aware semantic validators for future OpenAI drawing runs.
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:

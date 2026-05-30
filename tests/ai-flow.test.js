@@ -384,6 +384,109 @@ test('AIService strips nullable Structured Output fields before validation', () 
     });
 });
 
+test('AIService enhances command JSON with readable labels and right-angle aids', async () => {
+    const originalFetch = globalThis.fetch;
+
+    globalThis.fetch = async () => ({
+        ok: true,
+        async json() {
+            return {
+                id: 'resp_quality',
+                output: [
+                    {
+                        type: 'message',
+                        content: [
+                            {
+                                type: 'output_text',
+                                text: JSON.stringify({
+                                    operations: [
+                                        { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+                                        { op: 'create', id: 'A', type: 'point', x: 4, y: 0, label: 'A' },
+                                        { op: 'create', id: 'B', type: 'point', x: 0, y: 4, label: 'B' },
+                                        { op: 'create', id: 'OA', type: 'segment', point1Id: 'O', point2Id: 'A', showLabel: false },
+                                        { op: 'create', id: 'OB', type: 'segment', point1Id: 'O', point2Id: 'B', showLabel: false },
+                                        { op: 'create', id: 'right_O', type: 'rightAngleMarker', vertexId: 'O', line1Id: 'OA', line2Id: 'OB' },
+                                        { op: 'create', id: 'T2', type: 'point', x: 1.8, y: -2.4, label: 'T2' }
+                                    ]
+                                })
+                            }
+                        ]
+                    }
+                ]
+            };
+        }
+    });
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            referenceManual: TEST_REFERENCE_MANUAL,
+            referenceIndex: TEST_REFERENCE_INDEX,
+            save() { }
+        });
+
+        const result = await service.processCommand('동심원 부채꼴의 90도 방향과 외부점 접선 T2 라벨을 그려줘', { objects: [] });
+        const angleAid = result.json.operations.find(operation => operation.type === 'angleDimension');
+        const t2 = result.json.operations.find(operation => operation.id === 'T2');
+
+        assert.equal(result.success, true);
+        assert.equal(angleAid.vertexId, 'O');
+        assert.equal(angleAid.arcRadius, 0.75);
+        assert.equal(angleAid.showValue, false);
+        assert.ok(Math.hypot(t2.labelOffset.x, t2.labelOffset.y) >= 8);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('AIService expands weak prism cross-section layouts before application', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: weakPrismCrossSectionOperations()
+    }, '직육면체 prism을 그리고 가운데 사각 단면을 크게 표시해줘');
+
+    const prism = enhanced.operations.find(operation => operation.type === 'prism');
+    const section = enhanced.operations.find(operation => operation.id === 'sec1');
+    const outerBounds = boundsForIds(enhanced.operations, [...prism.baseVertexIds, ...prism.topVertexIds]);
+    const sectionBounds = boundsForIds(enhanced.operations, section.vertexIds);
+    const outerWidth = outerBounds.maxX - outerBounds.minX;
+    const outerHeight = outerBounds.maxY - outerBounds.minY;
+    const sectionWidth = sectionBounds.maxX - sectionBounds.minX;
+    const sectionHeight = sectionBounds.maxY - sectionBounds.minY;
+
+    assert.ok(outerWidth >= 7);
+    assert.ok(outerHeight >= 5);
+    assert.ok(outerWidth / outerHeight >= 1.25);
+    assert.ok(sectionWidth / outerWidth >= 0.5);
+    assert.ok(sectionHeight / outerHeight >= 0.4);
+});
+
+test('AIService recenters cramped triangular pyramid inside triangular prism layouts', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: crampedTriangularPyramidInsidePrismOperations()
+    }, '큰 삼각기둥 안에 작은 삼각뿔이 들어 있는 모습을 그려줘');
+
+    const prism = enhanced.operations.find(operation => operation.type === 'prism');
+    const pyramid = enhanced.operations.find(operation => operation.type === 'pyramid');
+    const outerBounds = boundsForIds(enhanced.operations, [...prism.baseVertexIds, ...prism.topVertexIds]);
+    const innerBounds = boundsForIds(enhanced.operations, [...pyramid.baseVertexIds, pyramid.apexId]);
+    const outerWidth = outerBounds.maxX - outerBounds.minX;
+    const outerHeight = outerBounds.maxY - outerBounds.minY;
+    const minMargin = Math.min(
+        (innerBounds.minX - outerBounds.minX) / outerWidth,
+        (outerBounds.maxX - innerBounds.maxX) / outerWidth,
+        (innerBounds.minY - outerBounds.minY) / outerHeight,
+        (outerBounds.maxY - innerBounds.maxY) / outerHeight
+    );
+
+    assert.ok(outerWidth >= 7);
+    assert.ok(outerHeight >= 5.8);
+    assert.ok(minMargin >= 0.25);
+});
+
 test('extractOpenAIResponseText supports output_text and parsed responses', () => {
     assert.equal(
         extractOpenAIResponseText({
@@ -937,3 +1040,58 @@ test('PatchApplier creates lens regions and resolves temporary circle ids', () =
     assert.equal(lens.fillOpacity, 0.28);
     assert.deepEqual(history.map(item => item[0]), ['create']);
 });
+
+function operationPointMap(operations) {
+    return new Map(
+        operations
+            .filter(operation => operation.type === 'point')
+            .map(operation => [operation.id, operation])
+    );
+}
+
+function boundsForIds(operations, ids) {
+    const points = operationPointMap(operations);
+    const resolved = ids.map(id => points.get(id)).filter(Boolean);
+    return {
+        minX: Math.min(...resolved.map(point => point.x)),
+        maxX: Math.max(...resolved.map(point => point.x)),
+        minY: Math.min(...resolved.map(point => point.y)),
+        maxY: Math.max(...resolved.map(point => point.y))
+    };
+}
+
+function weakPrismCrossSectionOperations() {
+    return [
+        { op: 'create', id: 'A', type: 'point', x: -4, y: -2, showLabel: false },
+        { op: 'create', id: 'B', type: 'point', x: -1, y: -2, showLabel: false },
+        { op: 'create', id: 'C', type: 'point', x: -1, y: 1, showLabel: false },
+        { op: 'create', id: 'D', type: 'point', x: -4, y: 1, showLabel: false },
+        { op: 'create', id: 'A1', type: 'point', x: -2.5, y: -0.5, showLabel: false },
+        { op: 'create', id: 'B1', type: 'point', x: 0.5, y: -0.5, showLabel: false },
+        { op: 'create', id: 'C1', type: 'point', x: 0.5, y: 2.5, showLabel: false },
+        { op: 'create', id: 'D1', type: 'point', x: -2.5, y: 2.5, showLabel: false },
+        { op: 'create', id: 'pr1', type: 'prism', baseVertexIds: ['A', 'B', 'C', 'D'], topVertexIds: ['A1', 'B1', 'C1', 'D1'], showLabel: false },
+        { op: 'create', id: 'P', type: 'point', x: -2.7, y: 0.2, showLabel: false },
+        { op: 'create', id: 'Q', type: 'point', x: -1.3, y: 0.2, showLabel: false },
+        { op: 'create', id: 'R', type: 'point', x: -1.3, y: 1.4, showLabel: false },
+        { op: 'create', id: 'S', type: 'point', x: -2.7, y: 1.4, showLabel: false },
+        { op: 'create', id: 'sec1', type: 'polygon', vertexIds: ['P', 'Q', 'R', 'S'], fillOpacity: 0.25, showLabel: false }
+    ];
+}
+
+function crampedTriangularPyramidInsidePrismOperations() {
+    return [
+        { op: 'create', id: 'A', type: 'point', x: -4, y: -2, showLabel: false },
+        { op: 'create', id: 'B', type: 'point', x: -1, y: -2, showLabel: false },
+        { op: 'create', id: 'C', type: 'point', x: -2.5, y: 1, showLabel: false },
+        { op: 'create', id: 'A2', type: 'point', x: -2.5, y: 0.5, showLabel: false },
+        { op: 'create', id: 'B2', type: 'point', x: -0.5, y: 0.5, showLabel: false },
+        { op: 'create', id: 'C2', type: 'point', x: -2, y: 3.5, showLabel: false },
+        { op: 'create', id: 'P1', type: 'point', x: -3.3, y: -1.3, showLabel: false },
+        { op: 'create', id: 'P2', type: 'point', x: -2.2, y: -1.3, showLabel: false },
+        { op: 'create', id: 'P3', type: 'point', x: -2.75, y: -0.2, showLabel: false },
+        { op: 'create', id: 'P4', type: 'point', x: -2.4, y: 0.6, showLabel: false },
+        { op: 'create', id: 'prism1', type: 'prism', baseVertexIds: ['A', 'B', 'C'], topVertexIds: ['A2', 'B2', 'C2'], showLabel: false },
+        { op: 'create', id: 'pyramid1', type: 'pyramid', apexId: 'P4', baseVertexIds: ['P1', 'P2', 'P3'], showLabel: false }
+    ];
+}

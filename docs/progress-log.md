@@ -2,6 +2,37 @@
 
 ## 2026-05-30
 
+### Generation-side AI diagram quality enhancer
+
+#### Work completed
+
+- Added `js/ai/DiagramQualityEnhancer.js` as a deterministic post-generation pass for recurring textbook-diagram readability failures.
+- Wired command-mode AI results through the enhancer in `AIService.processCommand`, including API and local fallback results.
+- Wired recreate-mode image analysis results through the enhancer before semantic intent validation for OpenAI and Gemini image flows.
+- Preserved selected-object patch behavior by bypassing the enhancer in patch mode.
+- Encoded automatic corrections for crowded tangent/Euler labels, weak right-angle visibility, undersized prism cross-sections, and cramped triangular-pyramid-inside-triangular-prism layouts.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `docs/ai-reference.md`, `docs/live-openai-csat-drawing-audit.md`, and the MathGraph drawing feature manual.
+
+#### Findings
+
+- The previous validator pass was a safety gate, not a generation fix: it could reject bad outputs but did not make common requests produce better diagrams automatically.
+- The safer root boundary is now: model GraphA output -> app-owned diagram quality enhancer -> semantic/schema/render validation -> canvas application.
+- Exact coordinate-heavy prompts are intentionally not projection-normalized, because user-supplied coordinates should remain authoritative.
+
+#### Verification
+
+- Ran `node --check js\ai\DiagramQualityEnhancer.js`; passed.
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 33 tests.
+- Parsed `.agents/skills/mathgraph-drawing/references/feature-manual.json` and `retrieval-index.json`; passed.
+- Ran `npm.cmd test`; passed with 111 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran a secret-pattern scan for actual `sk-proj-...` values outside `node_modules` and `.git`; no matches.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Root-cause fix for live OpenAI drawing visual false positives
 
 #### Work completed

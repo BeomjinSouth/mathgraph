@@ -7,6 +7,7 @@
 
 import { parseAIJSONPayload } from './JSONUtils.js';
 import { SchemaValidator } from './SchemaValidator.js';
+import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-5.5';
 
@@ -435,7 +436,12 @@ export class AIService {
         }
 
         if (!this.config.apiKey || this.config.provider === 'local') {
-            return this.fallbackProcess(normalizedMessage, context);
+            return this.enhanceProcessResult(
+                this.fallbackProcess(normalizedMessage, context),
+                normalizedMessage,
+                context,
+                'command'
+            );
         }
 
         try {
@@ -447,19 +453,39 @@ export class AIService {
             } else if (this.config.provider === 'gemini') {
                 response = await this.callGemini(messages);
             } else {
-                return this.fallbackProcess(normalizedMessage, context);
+                return this.enhanceProcessResult(
+                    this.fallbackProcess(normalizedMessage, context),
+                    normalizedMessage,
+                    context,
+                    'command'
+                );
             }
 
             // JSON 파싱
             const json = this.extractJSON(response);
             if (json) {
-                return { success: true, json, message: response };
+                return this.enhanceProcessResult(
+                    { success: true, json, message: response },
+                    normalizedMessage,
+                    context,
+                    'command'
+                );
             } else {
-                return this.fallbackProcess(normalizedMessage, context);
+                return this.enhanceProcessResult(
+                    this.fallbackProcess(normalizedMessage, context),
+                    normalizedMessage,
+                    context,
+                    'command'
+                );
             }
         } catch (error) {
             console.error('AI 처리 오류:', error);
-            return this.fallbackProcess(normalizedMessage, context);
+            return this.enhanceProcessResult(
+                this.fallbackProcess(normalizedMessage, context),
+                normalizedMessage,
+                context,
+                'command'
+            );
         }
     }
 
@@ -871,6 +897,29 @@ export class AIService {
         } catch (e) {
             return null;
         }
+    }
+
+    enhanceDiagramQuality(json, requestText = '', context = null, mode = 'command') {
+        if (mode === 'patch') {
+            return json;
+        }
+
+        return enhanceDiagramQuality(json, requestText, {
+            context,
+            mode,
+            enabled: this.config.diagramQualityEnhancement !== false
+        });
+    }
+
+    enhanceProcessResult(result, requestText = '', context = null, mode = 'command') {
+        if (!result?.success || !result.json) {
+            return result;
+        }
+
+        return {
+            ...result,
+            json: this.enhanceDiagramQuality(result.json, requestText, context, mode)
+        };
     }
 
     /**
@@ -1934,7 +1983,9 @@ export class AIService {
         try {
             if (this.config.provider === 'openai') {
                 const firstAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, promptText);
-                const json = firstAttempt.json;
+                const json = firstAttempt.json
+                    ? this.enhanceDiagramQuality(firstAttempt.json, options.instruction, options.context, options.mode)
+                    : null;
 
                 if (json) {
                     const intentResult = this.validateImageAnalysisIntent(json, options);
@@ -1948,11 +1999,17 @@ export class AIService {
                     });
 
                     if (repairAttempt.json) {
-                        const repairedIntentResult = this.validateImageAnalysisIntent(repairAttempt.json, options);
+                        const repairedJson = this.enhanceDiagramQuality(
+                            repairAttempt.json,
+                            options.instruction,
+                            options.context,
+                            options.mode
+                        );
+                        const repairedIntentResult = this.validateImageAnalysisIntent(repairedJson, options);
                         if (repairedIntentResult.valid) {
                             return {
                                 success: true,
-                                json: repairAttempt.json,
+                                json: repairedJson,
                                 message: repairAttempt.content,
                                 repaired: true,
                                 repairErrors: intentResult.errors
@@ -1963,7 +2020,7 @@ export class AIService {
                             success: false,
                             error: `AI patch semantic validation failed after repair: ${repairedIntentResult.errors.join(' ')}`,
                             message: repairAttempt.content,
-                            json: repairAttempt.json,
+                            json: repairedJson,
                             validationErrors: repairedIntentResult.errors
                         };
                     }
@@ -2008,15 +2065,16 @@ export class AIService {
                 const json = this.extractJSON(content);
 
                 if (json) {
-                    const intentResult = this.validateImageAnalysisIntent(json, options);
+                    const enhancedJson = this.enhanceDiagramQuality(json, options.instruction, options.context, options.mode);
+                    const intentResult = this.validateImageAnalysisIntent(enhancedJson, options);
                     if (intentResult.valid) {
-                        return { success: true, json, message: content };
+                        return { success: true, json: enhancedJson, message: content };
                     }
                     return {
                         success: false,
                         error: `AI patch semantic validation failed: ${intentResult.errors.join(' ')}`,
                         message: content,
-                        json,
+                        json: enhancedJson,
                         validationErrors: intentResult.errors
                     };
                 }

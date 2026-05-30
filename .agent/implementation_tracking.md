@@ -2,6 +2,102 @@
 
 ## Status
 
+- Task: Click-to-fill inferred vector regions
+- State: In progress
+- Last updated: 2026-05-30
+
+## Plan
+
+1. Record the click-to-fill behavior scope and acceptance criteria before implementation.
+2. Add a persisted vector region object for segment-loop fills.
+3. Extend the fill tool so empty-area clicks infer segment loops or two-circle overlaps before falling back to whole-object fill.
+4. Add focused regression tests for inferred regions, lens creation, direct fill preservation, and undo/load behavior.
+5. Run verification, update progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [ ] Step 2
+- [ ] Step 3
+- [ ] Step 4
+- [ ] Step 5
+
+## Decisions
+
+- Decision: Keep the feature vector-based rather than adding raster flood fill.
+- Reason: MathGraph needs editable geometry, save/load, undo, SVG export, and AI/runtime compatibility.
+- Decision: Scope automatic inference to visible segment loops and two-circle lens overlaps in this pass.
+- Reason: These cover the common textbook-style enclosed regions while avoiding a risky general solver for arbitrary function-bounded regions.
+
+## Blockers
+
+- Blocker: None for local implementation.
+
+## Verification
+
+- Planned:
+  - `node --test tests\fill-tool.test.js tests\lens-region.test.js`
+  - `npm.cmd test` if focused checks pass
+  - `git diff --check`
+
+---
+
+## Status
+
+- Task: Generation-side root fix for AI diagram readability
+- State: Done
+- Last updated: 2026-05-30
+
+## Plan
+
+1. Move beyond validator-only rejection and add an app-owned post-generation quality pass.
+2. Wire the pass into command-mode AI output and recreate-mode image analysis output without changing patch semantics.
+3. Encode the known weak families: crowded labels, small right-angle markings, weak prism cross-sections, and cramped triangular solids.
+4. Add focused flow tests, update durable docs, run verification, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+
+## Decisions
+
+- Decision: Add `DiagramQualityEnhancer` after model JSON parsing instead of relying only on prompt text or validators.
+- Reason: The user-facing failure is a weak generated diagram, so MathGraph must own a correction step before the payload is accepted.
+- Decision: Leave image patch mode unchanged.
+- Reason: Selected-object patching must not create unrelated objects or move non-selected geometry while trying to improve layout.
+- Decision: Respect coordinate-heavy prompts.
+- Reason: When a user supplies several exact coordinates, automatic projection rewriting could violate the requested construction.
+
+## Blockers
+
+- Blocker: None.
+
+## Verification
+
+- Completed:
+  - `node --check js\ai\DiagramQualityEnhancer.js`
+  - `node --check js\ai\AIService.js`
+  - `node --test tests\ai-flow.test.js`; passed with 33 tests.
+  - JSON parse check for `.agents/skills/mathgraph-drawing/references/feature-manual.json` and `retrieval-index.json`; passed.
+  - `npm.cmd test`; passed with 111 tests.
+  - `git diff --check`; passed with line-ending warnings only.
+  - Secret-pattern scan for actual `sk-proj-...` values outside `.git` and `node_modules`; no matches.
+
+## Handoff
+
+- Current status:
+  - AI command results now pass through `DiagramQualityEnhancer` before returning to the UI.
+  - OpenAI and Gemini recreate-mode image analysis results are enhanced before semantic intent validation.
+  - Patch-mode image edits bypass the enhancer.
+  - The enhancer adds label offsets for tangent/Euler-line crowding, large hidden-label `angleDimension` aids for right-angle requests, substantial prism cross-section layouts, and clearer triangular-pyramid-inside-triangular-prism projection.
+
+---
+
+## Status
+
 - Task: Root-cause fix for live OpenAI drawing visual false positives
 - State: Done
 - Last updated: 2026-05-30

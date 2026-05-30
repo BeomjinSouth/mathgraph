@@ -7,7 +7,7 @@
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
   "sourceOfTruth": {
     "runtime": ["js/core/ObjectManager.js", "js/objects/*.js", "js/tools/*.js", "js/main.js"],
-    "aiContract": ["js/ai/SchemaValidator.js", "js/ai/PatchApplier.js", "js/ai/AIService.js", "js/ai/SceneGraphCompiler.js", "docs/ai-reference.md"],
+    "aiContract": ["js/ai/SchemaValidator.js", "js/ai/PatchApplier.js", "js/ai/AIService.js", "js/ai/SceneGraphCompiler.js", "js/ai/DiagramQualityEnhancer.js", "docs/ai-reference.md"],
     "ui": ["index.html", "js/ui/CommandPalette.js", "js/ui/AlgebraInput.js", "js/core/EventHandler.js"],
     "officialOpenAISourcesChecked": [
       "https://developers.openai.com/api/docs/guides/structured-outputs",
@@ -50,6 +50,18 @@
     "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
     "Hide construction helper points with visible:false when they are only used to shape regions or guide construction."
   ],
+  "runtimeQualityEnhancement": {
+    "file": "js/ai/DiagramQualityEnhancer.js",
+    "pipelinePosition": "After AI JSON parsing and before command results are returned or recreate-mode image results are semantically accepted.",
+    "appliesTo": ["text command AI output", "local fallback command output", "image recreate output"],
+    "skips": ["selected-object patch mode", "projection rewriting for coordinate-heavy prompts"],
+    "rules": [
+      "Add screen-space labelOffset values for crowded visible point labels, tangent labels such as T1/T2, and Euler-line labels O/G/H.",
+      "Add a larger hidden-label angleDimension aid for right-angle requests when a rightAngleMarker alone may be visually weak.",
+      "Expand prism cross-section prompts so the outer projection is broad and the section polygon spans a substantial middle portion.",
+      "Expand and recenter triangular-pyramid-inside-triangular-prism prompts so the inner solid has visible projection margins."
+    ]
+  },
   "sceneGraphPipeline": {
     "purpose": "Root architecture for image/PDF recreation: ask the model for a high-level math scene, then compile it deterministically into GraphA operations.",
     "recommendedFor": ["pasted image recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],

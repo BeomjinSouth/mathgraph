@@ -85,6 +85,8 @@ node tools\run-live-openai-random-drawing-smoke.mjs
 
 Expected result after the fix: failure count 5. The rejected IDs are `concentric_quarter_sector_wedge`, `external_point_two_tangents`, `triangle_euler_line`, `prism_diagonal_cross_section`, and `triangular_pyramid_inside_triangular_prism`.
 
+Follow-up generation-side fix: `js/ai/DiagramQualityEnhancer.js` now runs after AI JSON parsing for command/recreate flows. It adds the missing label offsets and larger right-angle aids, and normalizes weak prism cross-section and triangular-prism/pyramid projection layouts before the result reaches semantic validation or the canvas. Selected-object patch mode is intentionally excluded.
+
 The strengthened local reference targets still render successfully:
 
 ```powershell

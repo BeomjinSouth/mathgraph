@@ -89,6 +89,19 @@ The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene
 
 Unsupported scene nodes such as `cylinder`, `cone`, `sphere`, native `histogram`, native `scatterPlot`, and independent `textLabel` are returned as warnings instead of invalid GraphA. That is intentional: exact textbook parity for those features requires new first-class runtime primitives.
 
+## 1.2.2 Diagram Quality Enhancement
+
+Text-command and recreate-mode AI output now runs through `js/ai/DiagramQualityEnhancer.js` after JSON parsing and before the result is returned or semantically accepted. This is the app-owned correction step for known exam-style presentation failures, so the model is no longer the only place where label spacing, marker readability, and solid projection quality are decided.
+
+Current deterministic corrections:
+
+- add screen-space `labelOffset` values for crowded point labels, tangent labels such as `T1`/`T2`, and Euler-line labels such as `O`/`G`/`H`;
+- add a larger `angleDimension` aid with `arcRadius` at least `0.7` and `showValue:false` when a right-angle request would otherwise rely only on a small `rightAngleMarker`;
+- expand weak rectangular-prism cross-section layouts and make the section polygon span a substantial middle portion of the prism;
+- expand and recenter triangular-pyramid-inside-triangular-prism layouts so the inner solid has visible projection margins.
+
+The enhancer deliberately skips selected-object patch mode and skips projection rewriting when a prompt supplies several explicit coordinates.
+
 ## 1.3 PDF Sample Semantic Validation
 
 PDF-derived samples use one more gate beyond schema/reference/render checks: `js/ai/SemanticValidator.js`.
@@ -190,7 +203,7 @@ Most object types accept the following optional properties:
 | `lineWidth` | number | Stroke width |
 | `pointSize` | number | Point radius/size |
 | `fontSize` | number | Label size |
-| `labelOffset` | object | Label offset such as `{ "x": 0.2, "y": 0.1 }` |
+| `labelOffset` | object | Screen-space label offset such as `{ "x": 14, "y": -12 }` |
 | `dashed` | boolean | Dashed stroke toggle |
 | `fillColor` | string | Fill color for area-capable objects such as circles, polygons, sectors, circular segments, and lens regions. |
 | `fillOpacity` | number | Fill opacity between `0` and `1` |

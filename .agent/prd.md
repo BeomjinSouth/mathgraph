@@ -2,6 +2,87 @@
 
 ## Summary
 
+- Task: Click-to-fill inferred vector regions
+- Owner: Codex
+- Date: 2026-05-30
+- Related files:
+  - `js/tools/FillTool.js`
+  - `js/objects/ClosedRegion.js`
+  - `js/core/ObjectManager.js`
+  - `tests/fill-tool.test.js`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The current fill tool can fill existing closed vector objects such as polygons, circles, sectors, circular segments, and lens regions.
+- It does not yet complete the paint-bucket expectation where a user clicks an empty region enclosed by separately drawn boundary objects.
+- Raster flood fill would lose MathGraph's editable vector geometry, save/load semantics, undo behavior, and SVG export quality.
+
+## Goals
+
+- When a user clicks inside a region enclosed by visible segment boundaries, create a first-class vector filled region from that closed loop.
+- When a user clicks inside the overlap of two circles and no lens region already exists, create and fill a `lensRegion` automatically.
+- Preserve existing direct fill behavior for existing closed objects.
+- Record creation/fill as undoable history actions and keep saved drawings restorable.
+
+## Non-Goals
+
+- Do not implement general implicit/function-bounded region solving in this pass.
+- Do not introduce bitmap/raster flood fill.
+- Do not change OpenAI API behavior or GraphA generation contracts beyond documentation notes.
+
+## Acceptance Criteria
+
+- [ ] Clicking inside a triangle made from separate segment objects creates a filled vector region.
+- [ ] The inferred segment-loop region serializes/deserializes and follows moved boundary points.
+- [ ] Clicking inside a two-circle overlap auto-creates a filled lens region instead of filling a whole circle.
+- [ ] Existing fills for direct polygon and circle targets still work.
+- [ ] Focused tests and useful project verification pass, and progress docs are updated.
+
+---
+
+## Summary
+
+- Task: Generation-side root fix for AI diagram readability
+- Owner: Codex
+- Date: 2026-05-30
+- Related files:
+  - `js/ai/DiagramQualityEnhancer.js`
+  - `js/ai/AIService.js`
+  - `tests/ai-flow.test.js`
+  - `docs/ai-reference.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The validator-only fix correctly rejected weak saved outputs, but it did not make ordinary user requests automatically produce better drawings.
+- Similar future requests should not depend on the model remembering every visual detail for label offsets, large right-angle aids, cross-section scale, or nested-solid projection spacing.
+- The root product boundary needs an app-owned quality pass after model output parsing and before operations are applied or semantically accepted.
+
+## Goals
+
+- Add a deterministic post-generation enhancer for GraphA `operations[]`.
+- Apply the enhancer to command-mode AI results and recreate-mode image analysis results, while preserving selected-object patch semantics.
+- Automatically add readable label offsets, large right-angle angle aids, broad prism cross-section layouts, and clear triangular-pyramid-inside-triangular-prism layouts for the known weak request families.
+- Keep all changes inside the existing GraphA operation contract.
+
+## Non-Goals
+
+- Do not invent unsupported primitives such as native curved solids or annular-sector cutouts.
+- Do not override explicit coordinate-heavy prompts where the user has deliberately specified the geometry.
+- Do not run another paid live API pass just to prove local post-processing behavior.
+
+## Acceptance Criteria
+
+- [x] Command-mode AI output is enhanced before returning to the caller.
+- [x] Recreate-mode image analysis output is enhanced before semantic intent validation; patch-mode output is left unchanged.
+- [x] Focused tests prove the enhancer adds label offsets, large right-angle aids, stronger prism cross-sections, and clearer nested triangular-solid projection.
+- [x] Full tests, whitespace check, and secret-pattern scan pass.
+
+---
+
+## Summary
+
 - Task: Root-cause fix for live OpenAI drawing visual false positives
 - Owner: Codex
 - Date: 2026-05-30

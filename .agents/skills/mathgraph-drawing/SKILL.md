@@ -51,6 +51,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For prism cross-sections, make the outer solid projection broad enough to read and make the section polygon span a substantial middle portion of the prism, not a tiny internal square.
 - For nested solids, leave visible projection margin between the inner solid and the outer prism/pyramid boundary; containment alone is not enough when the result looks cramped.
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.
+- For command/recreate AI flows, remember that `AIService` now runs `DiagramQualityEnhancer` after JSON parsing; prompt for good geometry, but rely on the app-owned enhancer for recurring label-offset, right-angle-aid, prism cross-section, and nested triangular-solid layout corrections.
 - Default object stroke and fill color is `#000000`; omit color fields unless a user explicitly requests color, and never introduce multiple colors on your own.
 - For image/PDF recreation, do not silently approximate unsupported first-class nodes such as cylinder, cone, sphere, native histogram/scatter/box plot, or standalone text. Emit a scene graph unsupported item or compiler warning unless the user explicitly accepts approximation.
 
