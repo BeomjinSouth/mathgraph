@@ -2,6 +2,46 @@
 
 ## Summary
 
+- Task: Live OpenAI CSAT-style drawing audit
+- Owner: Codex
+- Date: 2026-05-30
+- Related files:
+  - `tools/run-live-openai-random-drawing-smoke.mjs`
+  - `docs/live-openai-csat-drawing-audit.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The user supplied an OpenAI API key and asked to draw varied graph/diagram types that would be useful for CSAT or mock-exam materials.
+- Previous local and live runs had shown that schema-valid GraphA output can still be visually or mathematically weak, so this check must compare rendered output against the requested prompt.
+- The supplied key must not be stored in source files, reports, screenshots, or committed documentation.
+
+## Goals
+
+- Run a live OpenAI drawing smoke pass over a diverse, non-overlapping exam-style prompt set.
+- Render a local reference target contact sheet for comparison.
+- Render the live OpenAI outputs in the real MathGraph browser canvas.
+- Compare each prompt against the actual rendered output and record pass/caveat judgements.
+- Record verification, secret-handling, and remaining limitations in durable project docs.
+
+## Non-Goals
+
+- Do not add new drawing primitives in this pass.
+- Do not store or echo the API key.
+- Do not claim exact native support for unsupported targets such as annular sectors, native chart objects, or full 3D containment.
+
+## Acceptance Criteria
+
+- [x] At least 10 varied exam-style graph/diagram prompts are checked through live OpenAI generation.
+- [x] Each live result passes GraphA schema/reference/intent/runtime/semantic validation or is documented as failed.
+- [x] Each live result renders in the browser canvas with no console errors or is documented as failed.
+- [x] Prompt/result comparison is recorded in a dedicated audit note.
+- [x] The repository is scanned to confirm no actual `sk-proj-...` key was written.
+
+---
+
+## Summary
+
 - Task: Solid 3D broad case matrix and zero-error audit
 - Owner: Codex
 - Date: 2026-05-29

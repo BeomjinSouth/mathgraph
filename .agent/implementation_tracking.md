@@ -2,6 +2,62 @@
 
 ## Status
 
+- Task: Live OpenAI CSAT-style drawing audit
+- State: Done
+- Last updated: 2026-05-30
+
+## Plan
+
+1. Read project rules, prior audit context, and MathGraph drawing references.
+2. Select an existing diverse prompt set that fits CSAT/mock-exam-style graph and diagram needs.
+3. Render local reference targets for comparison.
+4. Run the live OpenAI Responses API drawing smoke and browser rendering path.
+5. Compare prompts with actual contact-sheet results and record caveats.
+6. Run verification, secret scan, update docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+- [x] Step 6
+
+## Decisions
+
+- Decision: Reuse `LIVE_AI_PROMPT_SET=stress_novel` for this audit.
+- Reason: It already covers non-overlapping function, analytic-geometry, circle, construction, polygon, and solid cases, with local reference targets and prompt-local validators.
+- Decision: Use the supplied OpenAI key only as a process-scoped `OPENAI_API_KEY`.
+- Reason: The user explicitly asked for live API checking, but the key must not be written to repo files, reports, or persistent environment settings.
+- Decision: Treat the contact sheet as the final human-facing evidence.
+- Reason: The user asked whether results match prompts, and the browser-rendered canvas is the source of truth beyond JSON validation.
+
+## Blockers
+
+- Blocker: None. The live API run completed successfully.
+
+## Verification
+
+- Completed:
+  - Local reference render with `LIVE_AI_PROMPT_SET=stress_novel`, `LIVE_AI_RENDER_REFERENCE_TARGETS=1`, and `LIVE_AI_OUTPUT_DIR=tmp/live-openai-csat-reference-20260530`; passed with 10 targets, 0 failures, and 0 browser console errors.
+  - Live OpenAI run with `LIVE_AI_PROMPT_SET=stress_novel`, `LIVE_AI_OUTPUT_DIR=tmp/live-openai-csat-drawing-smoke-20260530`, `LIVE_AI_MAX_OUTPUT_TOKENS=14000`, and `LIVE_AI_MAX_ATTEMPTS=4`; selected `gpt-5.4-mini` and passed with 10 outputs, 0 failures, and 0 browser console errors.
+  - Visual inspection of the reference and live contact sheets.
+  - Secret-pattern scan for actual `sk-proj-...` values outside `node_modules` and `.git`; no matches.
+  - `npm.cmd test` passed with 100 tests.
+  - `git diff --check` passed with line-ending warnings only.
+
+## Handoff
+
+- Current status:
+  - Live output evidence is under `tmp/live-openai-csat-drawing-smoke-20260530/`.
+  - Prompt/result comparison is documented in `docs/live-openai-csat-drawing-audit.md`.
+  - Two acceptable caveats remain for production worksheets: stricter tangent-line wording when infinite tangent lines are desired, and stronger projection/aspect constraints for compact solid diagrams.
+
+---
+
+## Status
+
 - Task: Solid 3D broad case matrix and zero-error audit
 - State: Done
 - Last updated: 2026-05-29

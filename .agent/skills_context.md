@@ -4,6 +4,37 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The live audit must judge OpenAI output against GraphA-supported object families and prompt-local semantic validators, not just a raw screenshot.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The run uses OpenAI Responses API structured output with `OPENAI_API_KEY` supplied only as a process-scoped environment variable.
+- Skill: Browser / Playwright
+- Why it matters:
+  - The actual acceptance evidence is the rendered MathGraph canvas contact sheet and screenshot set.
+
+## Current Task Notes
+
+- User concern:
+  - Draw varied graph and diagram types useful for CSAT/mock-exam materials, then compare actual outputs with request prompts to confirm whether the OpenAI drawing path works.
+- Prompt set selected:
+  - `stress_novel`, because it covers logistic/asymptote/tangent, parabola focus/directrix, absolute-value region, inequality feasible region, concentric circle/sector, external tangents, Euler line, regular pentagon/pentagram, prism cross-section, and nested triangular solid diagrams.
+- Final evidence:
+  - Local reference contact sheet: `tmp/live-openai-csat-reference-20260530/contact-sheet.png`.
+  - Live OpenAI contact sheet: `tmp/live-openai-csat-drawing-smoke-20260530/contact-sheet.png`.
+  - Live report: `tmp/live-openai-csat-drawing-smoke-20260530/live-openai-random-report.md`.
+  - Audit note: `docs/live-openai-csat-drawing-audit.md`.
+- Result:
+  - 10/10 live outputs passed schema/reference/intent/runtime/semantic validation and browser rendering.
+  - Visual review accepted all 10, with caveats that tangent-line infinity and solid projection proportions may need stricter prompt wording for print-ready worksheet use.
+- Secret handling:
+  - The provided API key was used only as a process environment variable and was not written to repository files or reports.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The broad audit must use valid GraphA `operations[]` with first-class `prism` and `pyramid` objects, not hand-authored segment approximations.
 - Skill: Browser / Playwright
 - Why it matters:

@@ -1,5 +1,52 @@
 # Progress Log
 
+## 2026-05-30
+
+### Live OpenAI CSAT-style drawing audit
+
+#### Work completed
+
+- Rendered local reference targets for the existing `stress_novel` prompt set as a comparison baseline for CSAT/mock-exam-style diagrams.
+- Ran the real OpenAI Responses API drawing smoke path with the user-supplied key supplied only as process-scoped `OPENAI_API_KEY`.
+- Rendered the live outputs in the MathGraph browser canvas and inspected the live contact sheet against the reference contact sheet.
+- Added `docs/live-openai-csat-drawing-audit.md` with prompt/result comparisons, pass/caveat judgements, evidence paths, and remaining primitive/layout limitations.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Findings
+
+- The live run selected `gpt-5.4-mini` from the API-visible model list.
+- All 10 live outputs passed schema validation, reference validation, intent validation, runtime readability, semantic validation, and browser rendering.
+- Browser rendering produced 0 console errors.
+- Visual review accepted all 10 generated diagrams.
+- Two production-quality caveats remain:
+  - `external_point_two_tangents` is mathematically correct, but a worksheet that wants infinite tangent lines should say so explicitly because finite tangent segments are also a natural rendering.
+  - `prism_diagonal_cross_section` and `triangular_pyramid_inside_triangular_prism` are valid and readable, but print-ready textbook proportions may need stronger aspect/projection wording.
+- The pasted OpenAI API key was not stored in repository files, generated reports, screenshots, or docs.
+
+#### Verification
+
+- Ran local reference rendering:
+  - `LIVE_AI_PROMPT_SET=stress_novel`
+  - `LIVE_AI_RENDER_REFERENCE_TARGETS=1`
+  - `LIVE_AI_OUTPUT_DIR=tmp/live-openai-csat-reference-20260530`
+  - Result: 10 targets rendered, 0 failures, 0 browser console errors.
+- Ran live OpenAI rendering:
+  - `LIVE_AI_PROMPT_SET=stress_novel`
+  - `LIVE_AI_OUTPUT_DIR=tmp/live-openai-csat-drawing-smoke-20260530`
+  - `LIVE_AI_MAX_OUTPUT_TOKENS=14000`
+  - `LIVE_AI_MAX_ATTEMPTS=4`
+  - Result: 10 live outputs rendered, 0 failures, 0 browser console errors.
+- Inspected:
+  - `tmp/live-openai-csat-reference-20260530/contact-sheet.png`
+  - `tmp/live-openai-csat-drawing-smoke-20260530/contact-sheet.png`
+- Ran a secret-pattern scan for actual `sk-proj-...` values outside `node_modules` and `.git`; no matches.
+- Ran `npm.cmd test`; passed with 100 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-29
 
 ### Solid 3D broad case matrix and zero-error audit
