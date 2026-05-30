@@ -851,7 +851,7 @@ const freshCsatSmokePrompts = [
         id: 'boxplot_approximation_number_line',
         title: 'Box plot approximation on a number line',
         tags: 'statistics chart approximation number_line polygon segment',
-        promptKo: '현재 MathGraph에는 boxPlot 객체가 없으므로 numberLine, segment, polygon으로 상자그림을 근사해줘. 기본 화면에서 잘 보이도록 수직선은 -5부터 5까지로 두고, L(-4), Q1(-2), M(0), Q3(2), U(4)를 표시해. Q1-Q3 상자는 polygon으로 만들고, 중앙값은 세로 segment, 수염은 segment로 그려줘. 보이는 라벨은 L,Q1,M,Q3,U 다섯 개만 남겨줘.',
+        promptKo: '현재 MathGraph에는 boxPlot 객체가 없으므로 numberLine, segment, polygon으로 상자그림을 근사해줘. 기본 화면에서 잘 보이도록 수직선은 -5부터 5까지로 두고, L(-4), Q1(-2), M(0), Q3(2), U(4)를 표시해. Q1-Q3 상자는 polygon으로 만들고, 중앙값 M은 x=0에서 서로 다른 위/아래 숨김점 두 개를 이어 실제 세로 segment로 그려줘. 수염 L-Q1, Q3-U도 segment로 그려줘. 보이는 라벨은 L,Q1,M,Q3,U 다섯 개만 남기고, customMarks 라벨을 쓰면 같은 위치 point 라벨은 showLabel:false로 숨겨줘.',
         showAxes: false,
         expect: {
             minTypes: { numberLine: 1, polygon: 1, segment: 3, point: 5 },
@@ -862,6 +862,7 @@ const freshCsatSmokePrompts = [
                 { name: 'Q3', xMin: 1.9, xMax: 2.1, yMin: -0.1, yMax: 0.1 },
                 { name: 'U', xMin: 3.9, xMax: 4.1, yMin: -0.1, yMax: 0.1 }
             ],
+            requiredVerticalSegments: [{ name: 'median', xMin: -0.1, xMax: 0.1, ySpanMin: 0.5 }],
             maxVisibleLabels: 5,
             maxLabelTextLength: 3
         },
@@ -1246,6 +1247,7 @@ function developerPrompt(referencePrompt = '') {
         'For multiple angleDimension markers at the same vertex, use staggered arcRadius values and set showValue:false or customText to avoid overlapping automatic degree labels.',
         'For construction-only polygons that should look like outlines, set fillOpacity:0. Use a positive fillOpacity only when the user requests a shaded region.',
         'For histograms, draw bars on the requested class-interval boundaries, such as [0,1], [1,2], not centered half-offset ranges such as [0.5,1.5] unless explicitly requested.',
+        'For median markers or other vertical marker segments, never create a segment from a point to itself. Create two distinct hidden endpoints and connect them with a visible segment.',
         'For prism or solid prompts, prefer the first-class prism/pyramid object so hidden-edge dashed rendering is determined consistently by the runtime.',
         'For prism objects, use baseVertexIds for the near/front face and topVertexIds for the shifted rear face so visible front edges stay solid and hidden rear edges become dashed.',
         'For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.',
@@ -1253,6 +1255,7 @@ function developerPrompt(referencePrompt = '') {
         'For prism cross-sections, make the section polygon span a substantial middle portion of the outer projection, not a tiny square floating inside the box.',
         'For nested solids, keep every inner vertex inside the outer projection, leave visible margins from the outer edges, and separate multiple inner solids so their screen-projection centers do not overlap.',
         'For dense graphs or solids, label only the essential points requested by the prompt. Use labelOffset on required labels near tangency points, angle markers, collinear construction points, or crowded intersections. Set showLabel:false on helper points, functions, circles, arcs, sectors, prisms, and pyramids when labels would clutter the drawing.',
+        'For numberLine customMarks, do not duplicate the same text with visible point labels at the same coordinate. Either use customMarks labels or point labels; if using customMarks labels, set overlapping point labels showLabel:false.',
         'For helper points that only shape a filled or outlined region, set visible:false so they do not appear as extra dots.',
         'For chart-like or unsupported details, approximate with points, segments, polygons, numberLine, prism, or pyramid only.',
         referencePrompt
@@ -1461,7 +1464,37 @@ function runtimeVisibleLabelText(operation) {
 
 function countRuntimeVisibleLabels(payload) {
     const operations = Array.isArray(payload?.operations) ? payload.operations : [];
-    return operations.filter(operation => operation?.op === 'create' && hasRuntimeVisibleLabel(operation)).length;
+    return collectRuntimeVisibleLabelItems(operations).length;
+}
+
+function collectRuntimeVisibleLabelItems(operations) {
+    const labels = [];
+    for (const operation of operations || []) {
+        if (operation?.op !== 'create') continue;
+
+        if (hasRuntimeVisibleLabel(operation)) {
+            labels.push({
+                operation,
+                text: runtimeVisibleLabelText(operation) || '',
+                description: describeRuntimeLabel(operation)
+            });
+        }
+
+        if (operation.visible === false || operation.type !== 'numberLine' || !Array.isArray(operation.customMarks)) {
+            continue;
+        }
+
+        operation.customMarks.forEach((mark, index) => {
+            if (typeof mark?.label !== 'string' || !mark.label.trim()) return;
+            const text = mark.label.trim();
+            labels.push({
+                operation,
+                text,
+                description: `${operation.type}:${operation.id || '(no id)'}:customMarks[${index}]:${text}`
+            });
+        });
+    }
+    return labels;
 }
 
 function validatePromptExpectations(ctx, prompt, errors) {
@@ -1478,21 +1511,19 @@ function validatePromptExpectations(ctx, prompt, errors) {
     }
 
     if (Number.isFinite(expectations.maxVisibleLabels)) {
-        const labeled = ctx.creates.filter(hasRuntimeVisibleLabel);
+        const labeled = collectRuntimeVisibleLabelItems(ctx.creates);
         if (labeled.length > expectations.maxVisibleLabels) {
-            const examples = labeled.slice(0, 6).map(describeRuntimeLabel).join(', ');
+            const examples = labeled.slice(0, 6).map(item => item.description).join(', ');
             errors.push(`${prompt.id}: expected at most ${expectations.maxVisibleLabels} runtime-visible label(s), but found ${labeled.length}; hide nonessential labels with showLabel:false. Examples: ${examples}.`);
         }
     }
 
     if (Number.isFinite(expectations.maxLabelTextLength)) {
-        const longLabels = ctx.creates
-            .filter(hasRuntimeVisibleLabel)
-            .map(operation => ({ operation, text: runtimeVisibleLabelText(operation) || '' }))
+        const longLabels = collectRuntimeVisibleLabelItems(ctx.creates)
             .filter(item => item.text.length > expectations.maxLabelTextLength);
         if (longLabels.length > 0) {
             const examples = longLabels.slice(0, 6)
-                .map(({ operation, text }) => `${operation.type || '(unknown)'}:${operation.id || '(no id)'}:${text}`)
+                .map(item => item.description)
                 .join(', ');
             errors.push(`${prompt.id}: visible labels must be ${expectations.maxLabelTextLength} character(s) or shorter to avoid overlap; long label(s): ${examples}.`);
         }
@@ -1524,6 +1555,10 @@ function validatePromptExpectations(ctx, prompt, errors) {
 
     if (Array.isArray(expectations.requiredSegmentsBetween)) {
         validateRequiredSegmentsBetween(ctx, prompt, expectations.requiredSegmentsBetween, errors);
+    }
+
+    if (Array.isArray(expectations.requiredVerticalSegments)) {
+        validateRequiredVerticalSegments(ctx, prompt, expectations.requiredVerticalSegments, errors);
     }
 
     if (Number.isFinite(expectations.minDashedLines)) {
@@ -1759,6 +1794,39 @@ function validateRequiredSegmentsBetween(ctx, prompt, segmentRules, errors) {
         }
         if (!findSegmentBetween(ctx, id1, id2)) {
             errors.push(`${prompt.id}: expected a segment between ${name1} and ${name2}.`);
+        }
+    }
+}
+
+function validateRequiredVerticalSegments(ctx, prompt, segmentRules, errors) {
+    const resolvedSegments = ctx.byType('segment')
+        .map(segment => {
+            const point1 = resolvePoint(ctx, segment.point1Id, new Set());
+            const point2 = resolvePoint(ctx, segment.point2Id, new Set());
+            if (!point1 || !point2) return null;
+            return {
+                segment,
+                midpointX: (point1.x + point2.x) / 2,
+                xSpan: Math.abs(point1.x - point2.x),
+                ySpan: Math.abs(point1.y - point2.y)
+            };
+        })
+        .filter(Boolean);
+
+    for (const rule of segmentRules) {
+        const maxXSpan = Number.isFinite(rule.maxXSpan) ? rule.maxXSpan : 0.15;
+        const match = resolvedSegments.find(item =>
+            item.midpointX >= rule.xMin &&
+            item.midpointX <= rule.xMax &&
+            item.xSpan <= maxXSpan &&
+            item.ySpan >= rule.ySpanMin
+        );
+        if (!match) {
+            const name = rule.name || 'required';
+            const examples = resolvedSegments.slice(0, 6)
+                .map(item => `${item.segment.id || '(no id)'}:x=${formatNumber(item.midpointX)},dx=${formatNumber(item.xSpan)},dy=${formatNumber(item.ySpan)}`)
+                .join(', ') || 'none';
+            errors.push(`${prompt.id}: expected a real ${name} vertical segment with midpoint x=[${formatNumber(rule.xMin)}, ${formatNumber(rule.xMax)}] and y-span at least ${formatNumber(rule.ySpanMin)}, but no matching segment was found. Segment candidates: ${examples}.`);
         }
     }
 }

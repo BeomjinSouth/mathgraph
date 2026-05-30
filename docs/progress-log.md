@@ -8,26 +8,36 @@
 
 - Added `fresh_csat` as a new selectable prompt set in `tools/run-live-openai-random-drawing-smoke.mjs`.
 - Added 10 fresh reference targets covering rational functions, cubic extrema, crossed chords, altitude similarity, interval/ray number lines, piecewise area graphs, box-plot approximation, unit-circle projection, pairwise Venn lenses, and pyramid cross-sections.
-- Rendered the fresh local reference contact sheet under `tmp/live-openai-fresh-csat-reference-final2-20260530`.
-- Opened the fresh contact sheet and the box-plot screenshot for visual comparison.
-- Adjusted the box-plot approximation prompt/payload after visual review so labels use shorter `L,Q1,M,Q3,U` names in the default viewport.
-- Added `docs/fresh-csat-drawing-audit.md` with prompt/reference comparisons, evidence paths, live-run blocker, and remaining approximation gaps.
+- Rendered the fresh local reference contact sheet under `tmp/live-openai-fresh-csat-reference-20260530-final`.
+- Ran live OpenAI sliced generation for all 10 fresh prompts with `gpt-5.4-mini`.
+- Opened the contact sheets and individual PNGs for visual comparison, not just render-presence checks.
+- Found two visual/semantic issues in the initial box-plot live result: duplicated `numberLine.customMarks`/point labels and a zero-length median segment.
+- Added validator coverage for `numberLine.customMarks` labels and required nondegenerate vertical marker segments, then reran the box plot successfully under `tmp/live-openai-fresh-csat-drawing-smoke-20260530-boxplot-rerun2`.
+- Added `docs/fresh-csat-drawing-audit.md` with prompt/live-result comparisons, evidence paths, the root-cause fix, and remaining approximation gaps.
 
 #### Findings
 
 - All 10 fresh local reference targets passed schema/reference/intent/runtime/semantic validation and browser rendering.
-- The visible reference set is useful for additional CSAT/mock-exam categories beyond the previous `stress_novel` set.
-- The chart-like outputs remain approximations because native box-plot primitives and exact open/closed endpoint styling are not first-class yet.
-- Fresh live OpenAI generation is blocked until `OPENAI_API_KEY` is present in the process environment. The pasted key was not copied into command text or repository files.
+- All 10 final live OpenAI outputs passed schema/reference/intent/runtime/semantic validation and browser rendering.
+- The visible live set is useful for additional CSAT/mock-exam categories beyond the previous `stress_novel` set.
+- The chart-like outputs remain approximations because native box-plot primitives, exact open/closed endpoint styling, and exact three-circle common-region fills are not first-class yet.
+- The supplied API key was used only as a process-scoped environment variable and was not written to repository files, generated reports, screenshots, or persistent environment settings.
 
 #### Verification
 
 - Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 56 tests.
 - Ran `LIVE_AI_PROMPT_SET=fresh_csat` with `LIVE_AI_RENDER_REFERENCE_TARGETS=1`; passed with 10 targets, 0 failures, and 0 browser console errors.
-- Attempted `LIVE_AI_PROMPT_SET=fresh_csat` live mode without `OPENAI_API_KEY`; blocked before network call with `OPENAI_API_KEY is required.`
-- Ran `npm.cmd test`; passed with 113 tests.
+- Ran live OpenAI generation in slices:
+  - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part1`
+  - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part2`
+  - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part3`
+  - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part4`
+  - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-boxplot-rerun2`
+- Final live result: 10 outputs, 0 final validation failures, 0 browser console errors.
+- Ran `npm.cmd test`; passed with 117 tests.
 - Ran `git diff --check`; passed with line-ending warnings only.
-- Ran narrowed secret scans for actual long `sk-...` tokens and inline `OPENAI_API_KEY=sk-...` assignments outside `node_modules`, `tmp`, and `.git`; no matches.
+- Ran narrowed secret scans for actual long `sk-...` tokens outside `node_modules`, `tmp`, and `.git`; no matches.
 
 #### Deployment / Vercel
 

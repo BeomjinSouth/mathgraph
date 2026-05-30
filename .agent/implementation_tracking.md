@@ -3,7 +3,7 @@
 ## Status
 
 - Task: Fresh CSAT-style live OpenAI drawing set
-- State: Done with live OpenAI rerun blocked
+- State: Done
 - Last updated: 2026-05-30
 
 ## Plan
@@ -19,7 +19,7 @@
 - [x] Step 1 planning started
 - [x] Step 1 implementation
 - [x] Step 2
-- [ ] Step 3 blocked by missing process environment key
+- [x] Step 3
 - [x] Step 4
 - [x] Step 5 local verification and docs
 
@@ -32,28 +32,37 @@
 
 ## Blockers
 
-- Blocker: Fresh live OpenAI rerun is blocked because the current process has no `OPENAI_API_KEY`. The pasted key was not copied into a shell command or file to avoid leaving a secret in logs.
+- Blocker: None for this pass.
 
 ## Verification
 
 - Completed:
   - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --test tests\live-openai-random-smoke.test.js`; passed with 56 tests.
   - local reference rendering for `LIVE_AI_PROMPT_SET=fresh_csat`; passed with 10 targets, 0 failures, and 0 browser console errors.
-  - live OpenAI attempt for `LIVE_AI_PROMPT_SET=fresh_csat`; blocked before network call with `OPENAI_API_KEY is required.`
-  - Opened the contact sheet and the box-plot screenshot for visual comparison.
+  - live OpenAI sliced generation for `LIVE_AI_PROMPT_SET=fresh_csat`; passed with 10 final outputs, 0 validation failures, and 0 browser console errors.
+  - Opened the contact sheets and individual PNGs for prompt/result visual comparison.
+
+  - `npm.cmd test`; passed with 117 tests.
+  - `git diff --check`; passed with line-ending warnings only.
+  - narrowed secret-pattern scan for actual long `sk-...` tokens outside `node_modules`, `tmp`, and `.git`; no matches.
 
 Planned before final handoff:
-  - `npm.cmd test`
-  - `git diff --check`
-  - narrowed secret-pattern scan for actual long `sk-...` tokens
+  - Commit and push the completed changes.
 
 ## Handoff
 
 - Current status:
   - `fresh_csat` is selectable from `LIVE_AI_PROMPT_SET`.
-  - Local reference evidence is under `tmp/live-openai-fresh-csat-reference-final2-20260530/`.
+  - Local reference evidence is under `tmp/live-openai-fresh-csat-reference-20260530-final/`.
+  - Live evidence is split across:
+    - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part1/`
+    - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part2/`
+    - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part3/`
+    - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part4/`
+    - `tmp/live-openai-fresh-csat-drawing-smoke-20260530-boxplot-rerun2/`
   - Prompt/result comparison is documented in `docs/fresh-csat-drawing-audit.md`.
-  - A fresh paid live run still needs `OPENAI_API_KEY` supplied through the environment, not pasted into source or command text.
+  - The supplied API key was used only as a process-scoped environment variable and was not written to source, reports, screenshots, or persistent environment settings.
 
 ---
 

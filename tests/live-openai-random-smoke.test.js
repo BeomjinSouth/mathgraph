@@ -356,6 +356,63 @@ test('prompt-local smoke expectations accept hidden helper labels', () => {
     assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
 });
 
+test('prompt-local smoke expectations count numberLine custom mark labels', () => {
+    const payload = {
+        operations: [
+            {
+                op: 'create',
+                id: 'nl',
+                type: 'numberLine',
+                start: -5,
+                end: 5,
+                step: 1,
+                y: 0,
+                customMarks: [
+                    { value: -4, label: 'L' },
+                    { value: -2, label: 'Q1' }
+                ]
+            },
+            { op: 'create', id: 'L', type: 'point', x: -4, y: 0, label: 'L' },
+            { op: 'create', id: 'Q1', type: 'point', x: -2, y: 0, label: 'Q1' }
+        ]
+    };
+    const prompt = {
+        id: 'number_line_custom_label_budget_sample',
+        expect: { maxVisibleLabels: 2 }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /at most 2 runtime-visible label/);
+    assert.match(errors.join('\n'), /customMarks\[0\]:L/);
+});
+
+test('prompt-local smoke expectations reject long numberLine custom mark labels', () => {
+    const payload = {
+        operations: [
+            {
+                op: 'create',
+                id: 'nl',
+                type: 'numberLine',
+                start: -1,
+                end: 3,
+                step: 1,
+                y: 0,
+                customMarks: [{ value: 1.4142, label: 'sqrt(2)' }]
+            }
+        ]
+    };
+    const prompt = {
+        id: 'number_line_custom_label_length_sample',
+        expect: { maxVisibleLabels: 1, maxLabelTextLength: 3 }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /visible labels must be 3 character/);
+    assert.match(errors.join('\n'), /customMarks\[0\]:sqrt\(2\)/);
+});
+
 test('prompt-local smoke expectations reject long visible labels in dense diagrams', () => {
     const payload = {
         operations: [
@@ -394,6 +451,40 @@ test('prompt-local smoke expectations reject missing tangent x values and dashed
     assert.match(errors.join('\n'), /tangentFunction at x=-1/);
     assert.match(errors.join('\n'), /tangentFunction at x=1/);
     assert.match(errors.join('\n'), /dashed line/);
+});
+
+test('prompt-local smoke expectations reject degenerate vertical marker segments', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'M', type: 'point', x: 0, y: 0, label: 'M', showLabel: false },
+            { op: 'create', id: 'median', type: 'segment', point1Id: 'M', point2Id: 'M', showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'boxplot_median_sample',
+        expect: { requiredVerticalSegments: [{ name: 'median', xMin: -0.1, xMax: 0.1, ySpanMin: 0.5 }] }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /real median vertical segment/);
+    assert.match(errors.join('\n'), /dy=0/);
+});
+
+test('prompt-local smoke expectations accept nondegenerate vertical marker segments', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'Mb', type: 'point', x: 0, y: -0.4, visible: false, showLabel: false },
+            { op: 'create', id: 'Mt', type: 'point', x: 0, y: 0.4, visible: false, showLabel: false },
+            { op: 'create', id: 'median', type: 'segment', point1Id: 'Mb', point2Id: 'Mt', showLabel: false }
+        ]
+    };
+    const prompt = {
+        id: 'boxplot_median_sample',
+        expect: { requiredVerticalSegments: [{ name: 'median', xMin: -0.1, xMax: 0.1, ySpanMin: 0.5 }] }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
 });
 
 test('prompt-local smoke expectations reject wrong asymptote line geometry', () => {

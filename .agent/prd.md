@@ -34,8 +34,8 @@
 
 - [x] A new prompt set exists and is selectable independently from earlier prompt sets.
 - [x] Local reference targets render successfully.
-- [ ] Live OpenAI outputs render through the real MathGraph browser canvas. Blocked until `OPENAI_API_KEY` is available as an environment variable.
-- [x] Each local reference result is judged against the prompt, not only against render presence.
+- [x] Live OpenAI outputs render through the real MathGraph browser canvas.
+- [x] Each local reference and live output result is judged against the prompt, not only against render presence.
 - [x] Verification and docs are updated.
 
 ---
