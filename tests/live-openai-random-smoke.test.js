@@ -584,6 +584,82 @@ test('prompt-local smoke expectations reject visible helper points in lens diagr
     assert.match(errors.join('\n'), /visible:false/);
 });
 
+test('prompt-local smoke expectations reject visible circle centers when labels should be outside', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: -1.5, y: 0, label: 'O' },
+            { op: 'create', id: 'P', type: 'point', x: 1.5, y: 0, label: 'P' },
+            { op: 'create', id: 'Q', type: 'point', x: 0, y: 2.1, label: 'Q' }
+        ]
+    };
+    const prompt = {
+        id: 'three_circle_pairwise_lenses',
+        expect: {
+            requiredHiddenPointWindows: [
+                { name: 'O', xMin: -1.6, xMax: -1.4, yMin: -0.1, yMax: 0.1 }
+            ],
+            requiredVisibleLabelWindows: [
+                { label: 'O', xMin: -4.1, xMax: -3.5, yMin: -2.6, yMax: -1.9 }
+            ]
+        }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /support point O must be hidden/);
+    assert.match(errors.join('\n'), /expected visible label "O"/);
+});
+
+test('prompt-local smoke expectations accept hidden centers and external label anchors', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: -1.5, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'P', type: 'point', x: 1.5, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'Q', type: 'point', x: 0, y: 2.1, visible: false, showLabel: false },
+            { op: 'create', id: 'O_label', type: 'point', x: -3.8, y: -2.25, label: 'O', pointSize: 0.1 },
+            { op: 'create', id: 'P_label', type: 'point', x: 3.8, y: -2.25, label: 'P', pointSize: 0.1 },
+            { op: 'create', id: 'Q_label', type: 'point', x: 0, y: 4.75, label: 'Q', pointSize: 0.1 }
+        ]
+    };
+    const prompt = {
+        id: 'three_circle_pairwise_lenses',
+        expect: {
+            requiredHiddenPointWindows: [
+                { name: 'O', xMin: -1.6, xMax: -1.4, yMin: -0.1, yMax: 0.1 },
+                { name: 'P', xMin: 1.4, xMax: 1.6, yMin: -0.1, yMax: 0.1 },
+                { name: 'Q', xMin: -0.1, xMax: 0.1, yMin: 2.0, yMax: 2.2 }
+            ],
+            requiredVisibleLabelWindows: [
+                { label: 'O', xMin: -4.1, xMax: -3.5, yMin: -2.6, yMax: -1.9 },
+                { label: 'P', xMin: 3.5, xMax: 4.1, yMin: -2.6, yMax: -1.9 },
+                { label: 'Q', xMin: -0.3, xMax: 0.3, yMin: 4.4, yMax: 5.0 }
+            ],
+            maxVisiblePointCount: 3,
+            maxVisiblePointSize: 0.5,
+            maxVisibleLabels: 3
+        }
+    };
+
+    assert.deepEqual(validateSmokeSemantics(payload, prompt), []);
+});
+
+test('prompt-local smoke expectations reject oversized external label anchors', () => {
+    const payload = {
+        operations: [
+            { op: 'create', id: 'O_label', type: 'point', x: -3.8, y: -2.25, label: 'O' }
+        ]
+    };
+    const prompt = {
+        id: 'three_circle_pairwise_lenses',
+        expect: { maxVisiblePointSize: 0.5 }
+    };
+
+    const errors = validateSmokeSemantics(payload, prompt);
+
+    assert.match(errors.join('\n'), /pointSize <= 0.5/);
+    assert.match(errors.join('\n'), /O_label/);
+});
+
 test('prompt-local smoke expectations reject unequal-radius lens circles', () => {
     const payload = {
         operations: [

@@ -32,6 +32,7 @@ Fresh live OpenAI evidence:
 - Part 3: `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part3/`
 - Part 4: `tmp/live-openai-fresh-csat-drawing-smoke-20260530-part4/`
 - Final box-plot rerun: `tmp/live-openai-fresh-csat-drawing-smoke-20260530-boxplot-rerun2/`
+- Corrected 9/10 rerun after user visual review: `tmp/live-openai-fresh-csat-drawing-smoke-20260531-9-10-rerun1/`
 
 Result: 10 final live outputs rendered, 0 final validation failures, 0 browser console errors.
 
@@ -47,8 +48,8 @@ Result: 10 final live outputs rendered, 0 final validation failures, 0 browser c
 | `speed_time_area_graph` | Draw A-B-C-D speed-time polyline and shade the trapezoid area. | Pass. Polyline, point placement, and shaded area match the prompt. |
 | `boxplot_approximation_number_line` | Approximate a box plot with numberLine, polygon, whisker segments, and a real median segment. | Final pass after root-cause fix. Initial live outputs duplicated custom mark labels and then created a zero-length median segment; the final rerun has five labels and a real median segment. |
 | `unit_circle_sine_projection` | Draw radius-3 circle, point P, projections H/V, segments, and angle POH. | Pass. Projection structure and angle marker are visible and label count matches the prompt. |
-| `three_circle_pairwise_lenses` | Draw three overlapping circles and shade pairwise lens regions. | Pass as pairwise-lens approximation. Exact triple-overlap fill is still not a first-class primitive. |
-| `square_pyramid_midsection` | Draw first-class square pyramid, mid-height section polygon, and dashed height segment. | Pass. Pyramid, internal section, and height segment render cleanly with no labels. |
+| `three_circle_pairwise_lenses` | Draw three overlapping circles and shade pairwise lens regions. | Corrected pass. The first live output had visible center dots/labels inside the overlap and was too visually awkward; the rerun hides support centers and places O/P/Q labels outside the circles with tiny label anchors. |
+| `square_pyramid_midsection` | Draw first-class square pyramid, mid-height section polygon, and dashed height segment. | Corrected pass. The first live output read too much like a boxy projection; the rerun uses a rhombus-like base projection and cleaner internal section. |
 
 ## Fixes Made
 
@@ -57,6 +58,8 @@ Result: 10 final live outputs rendered, 0 final validation failures, 0 browser c
 - Counted `numberLine.customMarks` labels as runtime-visible labels so duplicated chart labels are caught by semantic validation.
 - Added `requiredVerticalSegments` validation so a median marker or similar vertical marker cannot pass as a zero-length segment from a point to itself.
 - Strengthened the developer prompt and box-plot prompt to avoid duplicated custom mark labels and degenerate median segments.
+- Added hidden-center and external-label-anchor validation for the three-circle Venn-style prompt after user review found the first output visually wrong.
+- Constrained the square-pyramid prompt to a rhombus-like base projection with exact point windows so the live output does not regress to a boxy shape.
 
 ## Remaining Limitations
 
@@ -71,6 +74,7 @@ Result: 10 final live outputs rendered, 0 final validation failures, 0 browser c
 - Rendered `LIVE_AI_PROMPT_SET=fresh_csat` local reference targets; passed with 10 targets, 0 failures, and 0 browser console errors.
 - Ran live OpenAI sliced generation for the 10 final outputs; passed with 0 final validation failures and 0 browser console errors.
 - Opened the contact sheets and individual PNGs for prompt/result visual comparison.
-- Ran `npm.cmd test`; passed with 117 tests.
+- Reran prompts 9 and 10 after user visual review; both passed validation and manual visual inspection.
+- Ran `npm.cmd test`; passed with 120 tests.
 - Ran `git diff --check`; passed with line-ending warnings only.
 - Ran a narrowed secret-pattern scan for actual long `sk-...` tokens outside `node_modules`, `tmp`, and `.git`; no matches.

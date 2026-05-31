@@ -2,6 +2,39 @@
 
 ## Summary
 
+- Task: Correct fresh CSAT live outputs 9 and 10
+- Owner: Codex
+- Date: 2026-05-31
+- Related files:
+  - `tools/run-live-openai-random-drawing-smoke.mjs`
+  - `tests/live-openai-random-smoke.test.js`
+  - `docs/fresh-csat-drawing-audit.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The user correctly pointed out that the final sheet's 9th Venn-style output has awkward visible center dots/labels inside the overlap region.
+- The 10th square-pyramid output reads too much like a boxy projection and does not look like a clean exam-style square pyramid with a midsection.
+- The prior validation accepted these because it checked object presence and basic renderability, not label-anchor placement or exact solid projection shape.
+
+## Goals
+
+- Regenerate outputs 9 and 10 with cleaner exam-style visuals.
+- Strengthen prompt-local checks so center support points can be hidden while visible labels are placed outside the circles.
+- Constrain the square-pyramid example to a diamond/rhombus base projection with a substantial internal section.
+- Update the audit record to mark the previous judgement as corrected.
+
+## Acceptance Criteria
+
+- [x] 9th output has hidden circle centers and O/P/Q labels outside the circle interiors/overlap.
+- [x] 10th output has a clean first-class pyramid with a rhombus-like base projection and readable cross-section.
+- [x] Local reference and live rerun evidence for prompts 9 and 10 are visually checked.
+- [x] Focused/full verification and docs are updated.
+
+---
+
+## Summary
+
 - Task: Fresh CSAT-style live OpenAI drawing set
 - Owner: Codex
 - Date: 2026-05-30

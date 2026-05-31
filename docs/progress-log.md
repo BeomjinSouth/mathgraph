@@ -1,5 +1,41 @@
 # Progress Log
 
+## 2026-05-31
+
+### Fresh CSAT output 9/10 visual correction
+
+#### Work completed
+
+- Accepted the user's visual review that the previous 9th and 10th final outputs were not good enough despite passing schema/render validation.
+- Strengthened `three_circle_pairwise_lenses` so center support points are hidden and O/P/Q labels are placed outside the circles through tiny label anchors.
+- Added prompt-local validation for hidden support-point windows, external visible-label windows, and maximum visible label-anchor point size.
+- Strengthened `square_pyramid_midsection` with exact rhombus-base and section point windows so it renders as a clean pyramid instead of a boxy projection.
+- Reran local reference rendering for prompts 9 and 10 under `tmp/live-openai-fresh-csat-reference-20260531-9-10-v3`.
+- Reran live OpenAI generation for prompts 9 and 10 under `tmp/live-openai-fresh-csat-drawing-smoke-20260531-9-10-rerun1`.
+- Regenerated the final 10-image contact sheet under `tmp/live-openai-fresh-csat-drawing-smoke-20260531-final-contact-sheet-v2.png`.
+
+#### Findings
+
+- The previous 9th output was visually wrong because the center labels/dots sat inside the overlap region.
+- The previous 10th output was visually weak because the projection read too much like a rectangular box under the pyramid.
+- The corrected 9th output now hides support centers and keeps only external O/P/Q labels visible.
+- The corrected 10th output now uses a rhombus-like base and a clearer internal section.
+
+#### Verification
+
+- Ran `node --check tools\run-live-openai-random-drawing-smoke.mjs`; passed.
+- Ran `node --test tests\live-openai-random-smoke.test.js`; passed with 59 tests.
+- Local reference rerender for prompts 9 and 10 passed with 2 targets, 0 failures, and 0 browser console errors.
+- Live OpenAI rerun for prompts 9 and 10 passed with 2 targets, 0 failures, and 0 browser console errors.
+- Opened the corrected 9/10 contact sheet and individual screenshots for manual visual comparison.
+- Ran `npm.cmd test`; passed with 120 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran narrowed secret scans for actual long `sk-...` tokens and the supplied key prefix outside `node_modules` and `.git`; no matches.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-30
 
 ### Fresh CSAT-style drawing prompt set

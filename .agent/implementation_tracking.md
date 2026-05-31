@@ -2,6 +2,56 @@
 
 ## Status
 
+- Task: Correct fresh CSAT live outputs 9 and 10
+- State: Done
+- Last updated: 2026-05-31
+
+## Plan
+
+1. Re-evaluate the saved 9th and 10th live outputs against the prompt intent.
+2. Strengthen the Venn-style prompt/validation so center support points are hidden and visible labels are outside the overlap.
+3. Strengthen the square-pyramid prompt/reference so the base is a clean rhombus projection and the section is readable.
+4. Rerender references and rerun live generation only for prompts 9 and 10.
+5. Update docs, run verification, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Treat the user's visual objection as valid even though the previous semantic checks passed.
+- Reason: The project quality bar is prompt/result visual parity, not just schema/render success.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check tools\run-live-openai-random-drawing-smoke.mjs`
+  - `node --test tests\live-openai-random-smoke.test.js`; passed with 59 tests.
+  - local reference rerender for prompts 9 and 10; passed with 2 targets, 0 failures, and 0 browser console errors.
+  - live rerun for prompts 9 and 10; passed with 2 targets, 0 failures, and 0 browser console errors.
+  - opened corrected contact sheets and individual PNGs for visual inspection.
+  - `npm.cmd test`; passed with 120 tests.
+  - `git diff --check`; passed with line-ending warnings only.
+  - narrowed secret-pattern scans for actual long `sk-...` tokens and the supplied key prefix outside `node_modules` and `.git`; no matches.
+
+## Handoff
+
+- Corrected final contact sheet: `tmp/live-openai-fresh-csat-drawing-smoke-20260531-final-contact-sheet-v2.png`
+- Corrected live 9/10 report: `tmp/live-openai-fresh-csat-drawing-smoke-20260531-9-10-rerun1/live-openai-random-report.md`
+
+---
+
+## Status
+
 - Task: Fresh CSAT-style live OpenAI drawing set
 - State: Done
 - Last updated: 2026-05-30

@@ -928,32 +928,47 @@ const freshCsatSmokePrompts = [
         id: 'three_circle_pairwise_lenses',
         title: 'Three-circle Venn-style pairwise overlaps',
         tags: 'circle lensRegion venn overlap',
-        promptKo: '반지름 2.6인 세 원을 중심 O(-1.5,0), P(1.5,0), Q(0,2.1)에 두어 벤다이어그램처럼 겹치게 그려줘. 현재 정확한 세 원 공통영역 primitive는 없으므로, 세 쌍의 겹침은 lensRegion 세 개로 연하게 표시해줘. 세 원의 반지름점은 직접 만들고 숨기며, 보이는 라벨은 O,P,Q만 남겨줘.',
+        promptKo: '반지름 2.4인 세 원을 중심 O(-1.5,0), P(1.5,0), Q(0,2.1)에 두어 벤다이어그램처럼 겹치게 그려줘. 중심점 O,P,Q와 반지름점은 모두 visible:false, showLabel:false로 숨겨서 겹침 영역 안에 점이 찍히지 않게 해줘. 현재 정확한 세 원 공통영역 primitive는 없으므로, 세 쌍의 겹침은 lensRegion 세 개로 연하게 표시해줘. 원 이름 O,P,Q는 중심점 라벨이 아니라 원 바깥쪽 작은 label anchor point 세 개로 표시해줘: O_label(-3.8,-2.25), P_label(3.8,-2.25), Q_label(0,4.75). label anchor point는 pointSize를 0.5 이하로 아주 작게 해서 점이 튀지 않게 하고, 보이는 라벨은 이 O,P,Q 세 개만 남겨줘.',
         showAxes: false,
         expect: {
-            minTypes: { circle: 3, lensRegion: 3, point: 6 },
+            minTypes: { circle: 3, lensRegion: 3, point: 9 },
             requiredCircleRadii: [
-                { center: 'O', radius: 2.6 },
-                { center: 'P', radius: 2.6 },
-                { center: 'Q', radius: 2.6 }
+                { center: 'O', radius: 2.4 },
+                { center: 'P', radius: 2.4 },
+                { center: 'Q', radius: 2.4 }
             ],
+            requiredHiddenPointWindows: [
+                { name: 'O', xMin: -1.6, xMax: -1.4, yMin: -0.1, yMax: 0.1 },
+                { name: 'P', xMin: 1.4, xMax: 1.6, yMin: -0.1, yMax: 0.1 },
+                { name: 'Q', xMin: -0.1, xMax: 0.1, yMin: 2.0, yMax: 2.2 }
+            ],
+            requiredVisibleLabelWindows: [
+                { label: 'O', xMin: -4.15, xMax: -3.45, yMin: -2.65, yMax: -1.85 },
+                { label: 'P', xMin: 3.45, xMax: 4.15, yMin: -2.65, yMax: -1.85 },
+                { label: 'Q', xMin: -0.35, xMax: 0.35, yMin: 4.35, yMax: 5.05 }
+            ],
+            maxVisiblePointCount: 3,
+            maxVisiblePointSize: 0.5,
             maxVisibleLabels: 3,
             maxLabelTextLength: 1
         },
         referencePayload: {
             operations: [
-                { op: 'create', id: 'O', type: 'point', x: -1.5, y: 0, label: 'O' },
-                { op: 'create', id: 'P', type: 'point', x: 1.5, y: 0, label: 'P' },
-                { op: 'create', id: 'Q', type: 'point', x: 0, y: 2.1, label: 'Q' },
-                { op: 'create', id: 'OR', type: 'point', x: 1.1, y: 0, visible: false, showLabel: false },
-                { op: 'create', id: 'PR', type: 'point', x: 4.1, y: 0, visible: false, showLabel: false },
-                { op: 'create', id: 'QR', type: 'point', x: 2.6, y: 2.1, visible: false, showLabel: false },
+                { op: 'create', id: 'O', type: 'point', x: -1.5, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'P', type: 'point', x: 1.5, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'Q', type: 'point', x: 0, y: 2.1, visible: false, showLabel: false },
+                { op: 'create', id: 'OR', type: 'point', x: 0.9, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'PR', type: 'point', x: 3.9, y: 0, visible: false, showLabel: false },
+                { op: 'create', id: 'QR', type: 'point', x: 2.4, y: 2.1, visible: false, showLabel: false },
                 { op: 'create', id: 'cO', type: 'circle', centerId: 'O', pointOnCircleId: 'OR', showLabel: false },
                 { op: 'create', id: 'cP', type: 'circle', centerId: 'P', pointOnCircleId: 'PR', showLabel: false },
                 { op: 'create', id: 'cQ', type: 'circle', centerId: 'Q', pointOnCircleId: 'QR', showLabel: false },
                 { op: 'create', id: 'lensOP', type: 'lensRegion', circle1Id: 'cO', circle2Id: 'cP', fillOpacity: 0.12, showLabel: false },
                 { op: 'create', id: 'lensOQ', type: 'lensRegion', circle1Id: 'cO', circle2Id: 'cQ', fillOpacity: 0.12, showLabel: false },
-                { op: 'create', id: 'lensPQ', type: 'lensRegion', circle1Id: 'cP', circle2Id: 'cQ', fillOpacity: 0.12, showLabel: false }
+                { op: 'create', id: 'lensPQ', type: 'lensRegion', circle1Id: 'cP', circle2Id: 'cQ', fillOpacity: 0.12, showLabel: false },
+                { op: 'create', id: 'O_label', type: 'point', x: -3.8, y: -2.25, label: 'O', pointSize: 0.1 },
+                { op: 'create', id: 'P_label', type: 'point', x: 3.8, y: -2.25, label: 'P', pointSize: 0.1 },
+                { op: 'create', id: 'Q_label', type: 'point', x: 0, y: 4.75, label: 'Q', pointSize: 0.1 }
             ]
         }
     },
@@ -961,10 +976,23 @@ const freshCsatSmokePrompts = [
         id: 'square_pyramid_midsection',
         title: 'Square pyramid with a mid-height cross-section',
         tags: 'solid pyramid polygon cross_section',
-        promptKo: '사각뿔 pyramid를 그리고, 중간 높이에서 밑면과 평행한 사각 단면 P,Q,R,S를 polygon으로 연하게 칠해줘. 바깥 입체는 first-class pyramid 객체여야 하고, 단면 polygon은 사각뿔 내부에 충분히 크게 보여야 해. 꼭짓점과 단면점 라벨은 모두 숨기고, 꼭짓점 V에서 밑면 중심 H로 내려가는 높이 선분 하나만 점선처럼 표시해줘.',
+        promptKo: '사각뿔 pyramid를 수능 도식처럼 그려줘. 밑면은 직사각형 상자처럼 보이지 않게 마름모 투영으로 직접 잡아: A(-3,-2), B(0,-3.2), C(3,-2), D(0,-0.8), 꼭짓점 V(0,4). 바깥 입체는 반드시 first-class pyramid 객체여야 해. 중간 높이에서 밑면과 평행한 사각 단면은 P(-1.8,0.4), Q(0,-0.32), R(1.8,0.4), S(0,1.12)를 polygon으로 연하게 칠해줘. 꼭짓점과 단면점 라벨은 모두 숨기고, V에서 밑면 중심 H(0,-2)로 내려가는 높이 선분 하나만 점선처럼 표시해줘.',
         showAxes: false,
         expect: {
             minTypes: { pyramid: 1, polygon: 1, segment: 1, point: 10 },
+            requiredPointWindows: [
+                { name: 'A', xMin: -3.1, xMax: -2.9, yMin: -2.1, yMax: -1.9 },
+                { name: 'B', xMin: -0.1, xMax: 0.1, yMin: -3.3, yMax: -3.1 },
+                { name: 'C', xMin: 2.9, xMax: 3.1, yMin: -2.1, yMax: -1.9 },
+                { name: 'D', xMin: -0.1, xMax: 0.1, yMin: -0.9, yMax: -0.7 },
+                { name: 'V', xMin: -0.1, xMax: 0.1, yMin: 3.9, yMax: 4.1 },
+                { name: 'P', xMin: -1.9, xMax: -1.7, yMin: 0.3, yMax: 0.5 },
+                { name: 'Q', xMin: -0.1, xMax: 0.1, yMin: -0.42, yMax: -0.22 },
+                { name: 'R', xMin: 1.7, xMax: 1.9, yMin: 0.3, yMax: 0.5 },
+                { name: 'S', xMin: -0.1, xMax: 0.1, yMin: 1.02, yMax: 1.22 },
+                { name: 'H', xMin: -0.1, xMax: 0.1, yMin: -2.1, yMax: -1.9 }
+            ],
+            requiredSegmentsBetween: [['V', 'H']],
             requiredPyramidBaseVertexCounts: [{ count: 4, min: 1 }],
             validPyramidApexes: true,
             maxVisiblePointCount: 0,
@@ -972,18 +1000,18 @@ const freshCsatSmokePrompts = [
         },
         referencePayload: {
             operations: [
-                { op: 'create', id: 'A', type: 'point', x: -4, y: -2, visible: false, showLabel: false },
-                { op: 'create', id: 'B', type: 'point', x: 2, y: -2, visible: false, showLabel: false },
-                { op: 'create', id: 'C', type: 'point', x: 3, y: 1, visible: false, showLabel: false },
-                { op: 'create', id: 'D', type: 'point', x: -3, y: 1, visible: false, showLabel: false },
+                { op: 'create', id: 'A', type: 'point', x: -3, y: -2, visible: false, showLabel: false },
+                { op: 'create', id: 'B', type: 'point', x: 0, y: -3.2, visible: false, showLabel: false },
+                { op: 'create', id: 'C', type: 'point', x: 3, y: -2, visible: false, showLabel: false },
+                { op: 'create', id: 'D', type: 'point', x: 0, y: -0.8, visible: false, showLabel: false },
                 { op: 'create', id: 'V', type: 'point', x: 0, y: 4, visible: false, showLabel: false },
                 { op: 'create', id: 'pyramid', type: 'pyramid', baseVertexIds: ['A', 'B', 'C', 'D'], apexId: 'V', showLabel: false },
-                { op: 'create', id: 'P', type: 'point', x: -2.4, y: -0.8, visible: false, showLabel: false },
-                { op: 'create', id: 'Q', type: 'point', x: 0.9, y: -0.8, visible: false, showLabel: false },
-                { op: 'create', id: 'R', type: 'point', x: 1.4, y: 0.55, visible: false, showLabel: false },
-                { op: 'create', id: 'S', type: 'point', x: -1.9, y: 0.55, visible: false, showLabel: false },
+                { op: 'create', id: 'P', type: 'point', x: -1.8, y: 0.4, visible: false, showLabel: false },
+                { op: 'create', id: 'Q', type: 'point', x: 0, y: -0.32, visible: false, showLabel: false },
+                { op: 'create', id: 'R', type: 'point', x: 1.8, y: 0.4, visible: false, showLabel: false },
+                { op: 'create', id: 'S', type: 'point', x: 0, y: 1.12, visible: false, showLabel: false },
                 { op: 'create', id: 'section', type: 'polygon', vertexIds: ['P', 'Q', 'R', 'S'], fillOpacity: 0.18, showLabel: false },
-                { op: 'create', id: 'H', type: 'point', x: -0.5, y: -0.45, visible: false, showLabel: false },
+                { op: 'create', id: 'H', type: 'point', x: 0, y: -2, visible: false, showLabel: false },
                 { op: 'create', id: 'height', type: 'segment', point1Id: 'V', point2Id: 'H', dashed: true, showLabel: false }
             ]
         }
@@ -1537,6 +1565,19 @@ function validatePromptExpectations(ctx, prompt, errors) {
         }
     }
 
+    if (Number.isFinite(expectations.maxVisiblePointSize)) {
+        const oversized = ctx.byType('point')
+            .filter(point => point.visible !== false)
+            .map(point => ({ point, size: Number(point.pointSize ?? 6) }))
+            .filter(item => Number.isFinite(item.size) && item.size > expectations.maxVisiblePointSize);
+        if (oversized.length > 0) {
+            const examples = oversized.slice(0, 8)
+                .map(({ point, size }) => `${point.id || '(no id)'}:${formatNumber(size)}`)
+                .join(', ');
+            errors.push(`${prompt.id}: visible point markers must have pointSize <= ${formatNumber(expectations.maxVisiblePointSize)} so label anchors do not appear as extra dots; oversized point(s): ${examples}.`);
+        }
+    }
+
     if (Array.isArray(expectations.requiredLabelOffsets)) {
         validateRequiredLabelOffsets(ctx, prompt, expectations.requiredLabelOffsets, errors);
     }
@@ -1547,6 +1588,14 @@ function validatePromptExpectations(ctx, prompt, errors) {
 
     if (Array.isArray(expectations.requiredPointWindows)) {
         validateRequiredPointWindows(ctx, prompt, expectations.requiredPointWindows, errors);
+    }
+
+    if (Array.isArray(expectations.requiredHiddenPointWindows)) {
+        validateRequiredHiddenPointWindows(ctx, prompt, expectations.requiredHiddenPointWindows, errors);
+    }
+
+    if (Array.isArray(expectations.requiredVisibleLabelWindows)) {
+        validateRequiredVisibleLabelWindows(ctx, prompt, expectations.requiredVisibleLabelWindows, errors);
     }
 
     if (Array.isArray(expectations.requiredFunctionExpressions)) {
@@ -1696,6 +1745,54 @@ function validateRequiredPointWindows(ctx, prompt, windows, errors) {
             point.y >= window.yMin && point.y <= window.yMax;
         if (!inWindow) {
             errors.push(`${prompt.id}: point ${window.name} should be inside x=[${formatNumber(window.xMin)}, ${formatNumber(window.xMax)}], y=[${formatNumber(window.yMin)}, ${formatNumber(window.yMax)}], but was (${formatNumber(point.x)}, ${formatNumber(point.y)}).`);
+        }
+    }
+}
+
+function validateRequiredHiddenPointWindows(ctx, prompt, windows, errors) {
+    for (const window of windows) {
+        const pointId = findNamedPointId(ctx, window.name);
+        const operation = pointId ? ctx.byId.get(pointId) : null;
+        const point = pointId ? resolvePoint(ctx, pointId, new Set()) : null;
+        if (!operation || !point) {
+            errors.push(`${prompt.id}: expected hidden support point ${window.name} in the requested coordinate window, but it was missing or unresolved.`);
+            continue;
+        }
+        const inWindow = point.x >= window.xMin && point.x <= window.xMax &&
+            point.y >= window.yMin && point.y <= window.yMax;
+        if (!inWindow) {
+            errors.push(`${prompt.id}: hidden support point ${window.name} should be inside x=[${formatNumber(window.xMin)}, ${formatNumber(window.xMax)}], y=[${formatNumber(window.yMin)}, ${formatNumber(window.yMax)}], but was (${formatNumber(point.x)}, ${formatNumber(point.y)}).`);
+        }
+        if (operation.visible !== false || hasRuntimeVisibleLabel(operation)) {
+            errors.push(`${prompt.id}: support point ${window.name} must be hidden with visible:false and showLabel:false so it does not appear as an extra dot or label.`);
+        }
+    }
+}
+
+function validateRequiredVisibleLabelWindows(ctx, prompt, windows, errors) {
+    const candidates = ctx.creates
+        .filter(isPointLikeOperation)
+        .filter(hasRuntimeVisibleLabel)
+        .map(operation => ({
+            operation,
+            text: runtimeVisibleLabelText(operation) || '',
+            point: resolvePoint(ctx, operation.id, new Set())
+        }))
+        .filter(item => item.point);
+
+    for (const window of windows) {
+        const matching = candidates.filter(item => item.text === window.label);
+        const inWindow = matching.find(item =>
+            item.point.x >= window.xMin &&
+            item.point.x <= window.xMax &&
+            item.point.y >= window.yMin &&
+            item.point.y <= window.yMax
+        );
+        if (!inWindow) {
+            const examples = matching.slice(0, 6)
+                .map(item => `${item.operation.id || '(no id)'}:(${formatNumber(item.point.x)}, ${formatNumber(item.point.y)})`)
+                .join(', ') || 'none';
+            errors.push(`${prompt.id}: expected visible label "${window.label}" inside x=[${formatNumber(window.xMin)}, ${formatNumber(window.xMax)}], y=[${formatNumber(window.yMin)}, ${formatNumber(window.yMax)}], but no matching label anchor was found. Candidates: ${examples}.`);
         }
     }
 }
