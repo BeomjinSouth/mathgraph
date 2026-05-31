@@ -2,6 +2,35 @@
 
 ## Relevant Skills
 
+- Skill: MathGraph Drawing
+- Why it matters:
+  - This change affects how point objects and helper vertices render while building ordinary geometric figures.
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The acceptance bar is visible canvas behavior: point bodies must disappear while labels remain.
+
+## Current Task Notes
+
+- User concern:
+  - When a point is created, they want an option to remove the point marker and leave only the alphabetic point name.
+  - They also want a default option so points created while drawing shapes are transparent/borderless.
+- Implementation direction:
+  - Treat `pointSize: 0` as the label-only state.
+  - Fix render/export paths that currently fall back to a visible dot or border when point size is zero.
+  - Add a persistent "new points label-only" default and wire it into `ObjectManager.createPoint`.
+  - Keep explicit labels and explicit point sizes available for cases where a visible dot is needed.
+- Verification target:
+  - Focused tests for zero-sized point preservation/defaults, plus full test suite and whitespace check.
+- Completed result:
+  - `pointSize: 0` now suppresses the point dot and border while labels remain visible.
+  - The style panel includes a persistent "새 점은 이름만 표시" option for future point-like objects.
+  - The selected-object properties panel includes a point-body visibility toggle for existing point-like objects.
+  - Browser verification confirmed the point center pixels do not change while the label region does.
+
+---
+
+## Relevant Skills
+
 - Skill: Vercel Deployments & CI/CD
 - Why it matters:
   - The user reported that Vercel did not reflect the pushed icon-system change, so the current deployment state and production deploy path need direct verification.

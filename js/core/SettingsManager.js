@@ -1,4 +1,5 @@
 const DEFAULT_STYLE_COLOR = '#000000';
+const DEFAULT_POINT_SIZE = 4;
 const LEGACY_STYLE_COLORS = new Set(['#6366f1', '#3b82f6', '#22c55e', '#f97316']);
 const DEFAULT_STYLE_COLOR_KEYS = ['pointColor', 'lineColor', 'circleColor', 'functionColor'];
 
@@ -17,7 +18,7 @@ export class SettingsManager {
 
         // 기본 스타일
         this.defaultStyles = {
-            pointSize: 4,
+            pointSize: DEFAULT_POINT_SIZE,
             lineWidth: 2,
             pointColor: DEFAULT_STYLE_COLOR,
             lineColor: DEFAULT_STYLE_COLOR,
@@ -29,6 +30,7 @@ export class SettingsManager {
         // 표시 옵션
         this.showLabels = true;
         this.hidePoints = false;
+        this.hideNewPointBodies = false;
 
         // 로컬 스토리지에서 불러오기
         this.load();
@@ -87,6 +89,18 @@ export class SettingsManager {
         }
     }
 
+    setHideNewPointBodies(hide) {
+        this.hideNewPointBodies = !!hide;
+        this.save();
+    }
+
+    getDefaultPointParams() {
+        return {
+            pointSize: (this.hidePoints || this.hideNewPointBodies) ? 0 : this.defaultStyles.pointSize,
+            color: this.defaultStyles.pointColor
+        };
+    }
+
     normalizeDefaultStyleColors() {
         let changed = false;
 
@@ -137,19 +151,25 @@ export class SettingsManager {
         }
 
         this.hidePoints = hide;
+        this.save();
     }
 
     /**
      * 저장
      */
     save() {
+        if (typeof localStorage === 'undefined') {
+            return;
+        }
+
         localStorage.setItem('graphA_settings', JSON.stringify({
             snapMode: this.snapMode,
             magnetEnabled: this.magnetEnabled,
             magnetStep: this.magnetStep,
             defaultStyles: this.defaultStyles,
             showLabels: this.showLabels,
-            hidePoints: this.hidePoints
+            hidePoints: this.hidePoints,
+            hideNewPointBodies: this.hideNewPointBodies
         }));
     }
 
@@ -167,6 +187,7 @@ export class SettingsManager {
                 if (data.defaultStyles) Object.assign(this.defaultStyles, data.defaultStyles);
                 if (data.showLabels !== undefined) this.showLabels = data.showLabels;
                 if (data.hidePoints !== undefined) this.hidePoints = data.hidePoints;
+                if (data.hideNewPointBodies !== undefined) this.hideNewPointBodies = data.hideNewPointBodies;
 
                 if (this.normalizeDefaultStyleColors()) {
                     this.save();

@@ -618,7 +618,7 @@ export class CircleCenterPoint extends GeoObject {
         this.addDependency(circleId);
 
         this.position = new Vec2(0, 0);
-        this.pointSize = params.pointSize || 4;
+        this.pointSize = params.pointSize !== undefined ? params.pointSize : 4;
     }
 
     update(objectManager) {

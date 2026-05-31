@@ -146,9 +146,9 @@ export class GeoObject {
 
         // 스타일 (기본: 검정색, 굵기 3, 폰트 30)
         this.color = params.color || DEFAULT_OBJECT_COLOR;
-        this.lineWidth = params.lineWidth || 3;
-        this.pointSize = params.pointSize || 6;
-        this.fontSize = params.fontSize || 30;
+        this.lineWidth = params.lineWidth !== undefined ? params.lineWidth : 3;
+        this.pointSize = params.pointSize !== undefined ? params.pointSize : 6;
+        this.fontSize = params.fontSize !== undefined ? params.fontSize : 30;
         this.dashed = params.dashed || false;
 
         // 라벨 오프셋 (드래그로 위치 조정 가능)

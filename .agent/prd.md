@@ -2,6 +2,50 @@
 
 ## Summary
 
+- Task: Label-only point body default option
+- Owner: Codex
+- Date: 2026-05-31
+- Related files:
+  - `js/objects/GeoObject.js`
+  - `js/objects/Point.js`
+  - `js/core/Canvas.js`
+  - `js/core/ObjectManager.js`
+  - `js/core/SettingsManager.js`
+  - `js/main.js`
+  - `index.html`
+  - `tests/monochrome-defaults.test.js`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The existing "hide all points" control uses `pointSize = 0`, but zero-sized points still render a border because point rendering falls back to the border radius.
+- New points created while drawing segments, circles, polygons, prisms, or pyramids still appear as filled dots by default.
+- Teachers often need exam-style diagrams where vertex names remain visible but the point markers themselves are invisible.
+
+## Goals
+
+- Make `pointSize: 0` render as no visible point body or border while preserving labels.
+- Add a persistent default option for newly created points to use label-only rendering.
+- Apply the default to manually created points and helper vertices created by drawing tools.
+- Keep explicit visible points and AI/user-specified `pointSize` values supported.
+
+## Non-Goals
+
+- Do not remove point labels or point selection behavior.
+- Do not change line, circle, polygon, or solid object geometry.
+- Do not alter Vercel deployment settings in this pass.
+
+## Acceptance Criteria
+
+- [x] A point with `pointSize: 0` renders no dot and no border on canvas/SVG, but its label can still render.
+- [x] A UI setting can make newly created points label-only by default.
+- [x] Existing "hide all points" behavior hides point bodies without hiding labels and persists its state.
+- [x] Focused tests and full tests pass, docs are updated, and the change is committed/pushed.
+
+---
+
+## Summary
+
 - Task: Restore Vercel production deployment for generated icon update
 - Owner: Codex
 - Date: 2026-05-31

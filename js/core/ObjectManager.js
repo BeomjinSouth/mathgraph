@@ -26,6 +26,7 @@ export class ObjectManager {
 
         this.selectedObjects = new Set();
         this.highlightedObject = null;
+        this.defaultPointParams = {};
 
         // 이벤트 리스너
         this.listeners = {
@@ -52,6 +53,14 @@ export class ObjectManager {
         if (this.listeners[event]) {
             this.listeners[event].forEach(cb => cb(data));
         }
+    }
+
+    setDefaultPointParams(params = {}) {
+        this.defaultPointParams = { ...params };
+    }
+
+    getPointCreationParams(params = {}) {
+        return { ...this.defaultPointParams, ...params };
     }
 
     /**
@@ -623,7 +632,7 @@ export class ObjectManager {
      * 객체 생성 헬퍼들
      */
     createPoint(x, y, params = {}) {
-        return this.addObject(new FreePoint(x, y, params));
+        return this.addObject(new FreePoint(x, y, this.getPointCreationParams(params)));
     }
 
     createSegment(point1Id, point2Id, params = {}) {
@@ -647,19 +656,19 @@ export class ObjectManager {
     }
 
     createIntersection(object1Id, object2Id, anchor = null, params = {}) {
-        return this.addObject(new IntersectionPoint(object1Id, object2Id, anchor, params));
+        return this.addObject(new IntersectionPoint(object1Id, object2Id, anchor, this.getPointCreationParams(params)));
     }
 
     createMidpoint(segmentId, params = {}) {
-        return this.addObject(new Midpoint(segmentId, params));
+        return this.addObject(new Midpoint(segmentId, this.getPointCreationParams(params)));
     }
 
     createPointOnLine(lineId, t = 0.5, params = {}) {
-        return this.addObject(new PointOnLine(lineId, t, params));
+        return this.addObject(new PointOnLine(lineId, t, this.getPointCreationParams(params)));
     }
 
     createPointOnCircle(circleId, angle = 0, params = {}) {
-        return this.addObject(new PointOnCircle(circleId, angle, params));
+        return this.addObject(new PointOnCircle(circleId, angle, this.getPointCreationParams(params)));
     }
 
     createParallelLine(baseLineId, throughPointId, params = {}) {
@@ -747,7 +756,7 @@ export class ObjectManager {
 
     // Mk.4: 원의 중심점 생성
     createCircleCenterPoint(circleId, params = {}) {
-        return this.addObject(new CircleCenterPoint(circleId, params));
+        return this.addObject(new CircleCenterPoint(circleId, this.getPointCreationParams(params)));
     }
 
     // Mk.4: 수직선 생성

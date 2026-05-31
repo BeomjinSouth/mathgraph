@@ -75,6 +75,7 @@ class GraphAApp {
 
         // Mk.2: 설정 관리 초기화
         this.settingsManager = new SettingsManager();
+        this.syncDefaultPointParams();
 
         // Mk.4: 숨김 객체 보기 상태 초기화
         this.showHiddenObjects = false;
@@ -89,6 +90,14 @@ class GraphAApp {
         this.render();
 
         console.log('그래프A Mk2.1 준비 완료! 📐');
+    }
+
+    syncDefaultPointParams() {
+        this.objectManager.setDefaultPointParams(this.settingsManager.getDefaultPointParams());
+    }
+
+    isPointLikeObject(obj) {
+        return ['point', 'pointOnObject', 'intersection', 'midpoint'].includes(obj?.type);
     }
 
     exportPNG(options = {}) {
@@ -365,6 +374,7 @@ class GraphAApp {
         document.getElementById('hideAllPoints')?.addEventListener('click', () => {
             const newState = !this.settingsManager.hidePoints;
             this.settingsManager.togglePointsVisibility(this.objectManager, newState);
+            this.syncDefaultPointParams();
             this.render();
             this.showToast(newState ? '모든 점 숨김' : '모든 점 표시', 'info');
 
@@ -463,6 +473,16 @@ class GraphAApp {
         document.getElementById('defaultLineWidth')?.addEventListener('change', (e) => {
             this.settingsManager.setDefaultStyle('lineWidth', parseInt(e.target.value));
         });
+
+        const defaultPointBodyHidden = document.getElementById('defaultPointBodyHidden');
+        if (defaultPointBodyHidden) {
+            defaultPointBodyHidden.checked = this.settingsManager.hideNewPointBodies;
+            defaultPointBodyHidden.addEventListener('change', (e) => {
+                this.settingsManager.setHideNewPointBodies(e.target.checked);
+                this.syncDefaultPointParams();
+                this.showToast(e.target.checked ? '새 점은 이름만 표시됩니다.' : '새 점 본체가 다시 표시됩니다.', 'info');
+            });
+        }
 
         // Mk.2: 기본 색상 변경
         document.getElementById('defaultColor')?.addEventListener('input', (e) => {
@@ -934,8 +954,27 @@ class GraphAApp {
             });
             container.appendChild(colorRow);
 
+            if (this.isPointLikeObject(obj)) {
+                const bodyRow = document.createElement('div');
+                bodyRow.className = 'property-row';
+                bodyRow.innerHTML = `
+                    <label>점 본체:</label>
+                    <input type="checkbox" ${obj.pointSize > 0 ? 'checked' : ''} class="prop-input point-body-toggle">
+                    <span class="property-note">보이기</span>
+                `;
+                const bodyInput = bodyRow.querySelector('input');
+                bodyInput.addEventListener('mousedown', e => e.stopPropagation());
+                bodyInput.addEventListener('click', e => e.stopPropagation());
+                bodyInput.addEventListener('change', (e) => {
+                    obj.pointSize = e.target.checked ? this.settingsManager.defaultStyles.pointSize : 0;
+                    this.render();
+                    this.updateSidebar();
+                });
+                container.appendChild(bodyRow);
+            }
+
             // 선 굵기 (점 제외)
-            if (obj.type !== 'point') {
+            if (!this.isPointLikeObject(obj)) {
                 const widthRow = document.createElement('div');
                 widthRow.className = 'property-row';
                 widthRow.innerHTML = `
@@ -1911,7 +1950,9 @@ class GraphAApp {
         if (!position) return '';
 
         const screen = this.canvas.toScreen(position);
-        const radius = obj.pointSize || 4;
+        const radius = obj.pointSize !== undefined ? Math.max(0, Number(obj.pointSize) || 0) : 4;
+        if (radius <= 0) return '';
+
         const fill = this.escapeSVG(obj.color || '#000000');
 
         return [

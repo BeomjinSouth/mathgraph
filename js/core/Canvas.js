@@ -382,7 +382,8 @@ export class Canvas {
             selected = false
         } = options;
 
-        const r = highlighted ? radius + 2 : radius;
+        const baseRadius = Math.max(0, Number(radius) || 0);
+        const r = highlighted ? baseRadius + 2 : baseRadius;
 
         // 선택 표시
         if (selected) {
@@ -390,6 +391,10 @@ export class Canvas {
             ctx.beginPath();
             ctx.arc(screen.x, screen.y, r + 6, 0, Math.PI * 2);
             ctx.fill();
+        }
+
+        if (baseRadius <= 0) {
+            return;
         }
 
         // 테두리

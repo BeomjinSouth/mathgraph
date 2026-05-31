@@ -2,6 +2,62 @@
 
 ## Status
 
+- Task: Label-only point body default option
+- State: Done
+- Last updated: 2026-05-31
+
+## Plan
+
+1. Record the label-only point scope before implementation.
+2. Fix zero-sized point rendering so no point body or border is drawn.
+3. Add a persisted default for newly created point bodies and wire it into point creation.
+4. Add UI controls for the default and selected point body visibility.
+5. Run focused/full verification, update docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Use `pointSize: 0` as the label-only representation.
+- Reason: Existing save/load, GraphA operations, tests, and the global hide-points flow already understand point size, so this avoids a new object property.
+- Decision: Keep labels visible when only the point body is hidden.
+- Reason: The requested classroom/exam diagram behavior is "alphabet only," not full point-object invisibility.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\objects\GeoObject.js`
+  - `node --check js\objects\Point.js`
+  - `node --check js\core\Canvas.js`
+  - `node --check js\core\ObjectManager.js`
+  - `node --check js\core\SettingsManager.js`
+  - `node --check js\main.js`
+  - `node --test tests\point-label-only.test.js`; passed with 4 tests.
+  - `npm.cmd test`; passed with 124 tests.
+  - Browser/Playwright visual check on `http://127.0.0.1:4176/`; label-only default created a point with `pointSize: 0`, 0 changed pixels around the point body, and 163 changed pixels in the label area.
+  - `git diff --check`; passed with line-ending warnings only.
+
+## Handoff
+
+- Current status:
+  - `pointSize: 0` is now a real label-only point state.
+  - The style panel has a persistent default option for label-only new points.
+  - Individual point-like objects can toggle their point body from the selection properties panel.
+
+---
+
+## Status
+
 - Task: Restore Vercel production deployment for generated icon update
 - State: Done
 - Last updated: 2026-05-31

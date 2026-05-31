@@ -2,6 +2,30 @@
 
 ## 2026-05-31
 
+### Label-only point body default option
+
+#### Work completed
+
+- Fixed zero-sized point rendering so `pointSize: 0` suppresses both the point body and border while labels still render.
+- Preserved `pointSize: 0` through point constructors and SVG export instead of falling back to visible radii.
+- Added a persisted style-panel option, `새 점은 이름만 표시`, so new point-like objects can default to label-only rendering.
+- Wired the existing "hide all points" state into future point creation and made that state persist.
+- Added a selected-object point-body toggle for existing point-like objects.
+- Added focused unit coverage for label-only defaults and canvas rendering.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Verification
+
+- Ran `node --check` for `js\objects\GeoObject.js`, `js\objects\Point.js`, `js\core\Canvas.js`, `js\core\ObjectManager.js`, `js\core\SettingsManager.js`, and `js\main.js`; all passed.
+- Ran `node --test tests\point-label-only.test.js`; passed with 4 tests.
+- Ran `npm.cmd test`; passed with 124 tests.
+- Ran a Playwright browser check on `http://127.0.0.1:4176/`; with the new default enabled, a new point had `pointSize: 0`, the point-center pixel-diff count was 0, and the label-area pixel-diff count was 163.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Vercel production deployment recovery for generated icons
 
 #### Work completed
