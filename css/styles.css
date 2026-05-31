@@ -2213,7 +2213,7 @@ body {
    =========================== */
 /*
   설명서 단축키 탭에서 "아이콘 + 키" 조합을 보여주기 위해
-  key-combo 내부의 Material Symbols 아이콘 스타일을 추가합니다.
+  key-combo 내부의 생성형 SVG 아이콘 스타일을 추가합니다.
 */
 .key-combo .material-symbols-outlined {
     font-size: 18px;
@@ -2811,4 +2811,38 @@ body {
     font-size: 14px;
     color: var(--text-secondary);
     line-height: 1.6;
+}
+
+/* ===========================
+   Generated MathGraph Icons
+   =========================== */
+.material-symbols-outlined.generated-icon,
+.material-symbols-outlined {
+    font-family: inherit;
+    font-weight: inherit;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    flex: 0 0 auto;
+    color: currentColor;
+    user-select: none;
+    overflow: visible;
+}
+
+.generated-icon-svg {
+    width: 1em;
+    height: 1em;
+    display: block;
+    overflow: visible;
+    color: currentColor;
+}
+
+.command-icon .material-symbols-outlined {
+    font-size: 20px;
 }

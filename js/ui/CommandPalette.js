@@ -8,6 +8,8 @@
  * - 점 도구 단축키를 P에서 D로 변경합니다.
  */
 
+import { iconHTML } from './IconRenderer.js';
+
 export class CommandPalette {
     constructor(app) {
         this.app = app;
@@ -217,7 +219,7 @@ export class CommandPalette {
         if (query && this.filteredCommands.length === 0) {
             algebraHint = `
                 <div class="command-item algebra-hint" data-action="algebra">
-                    <div class="command-icon">📐</div>
+                    <div class="command-icon">${iconHTML('functions')}</div>
                     <div class="command-info">
                         <div class="command-name">"${query}" 대수식으로 생성</div>
                         <div class="command-category">Enter를 눌러 생성</div>
@@ -235,6 +237,10 @@ export class CommandPalette {
                 </div>
             </div>
         `).join('');
+        const algebraIcon = this.resultList.querySelector('.algebra-hint .command-icon');
+        if (algebraIcon) {
+            algebraIcon.innerHTML = iconHTML('functions');
+        }
 
         // 클릭 이벤트
         this.resultList.querySelectorAll('.command-item').forEach((item, i) => {
@@ -257,14 +263,10 @@ export class CommandPalette {
      * 카테고리 아이콘
      */
     getCategoryIcon(category) {
-        const icons = {
-            '도구': '🔧',
-            '편집': '✏️',
-            '뷰': '👁️',
-            '내보내기': '📤',
-            '기타': '⚙️'
-        };
-        return icons[category] || '📋';
+        const categoryOrder = [...new Set(this.commands.map((cmd) => cmd.category))];
+        const iconNames = ['construction', 'select_all', 'center_focus_strong', 'download', 'settings'];
+        return iconHTML(iconNames[categoryOrder.indexOf(category)] || 'interests');
+
     }
 
     /**

@@ -2,6 +2,47 @@
 
 ## Summary
 
+- Task: Replace borrowed UI icons with generated MathGraph icon system
+- Owner: Codex
+- Date: 2026-05-31
+- Related files:
+  - `index.html`
+  - `js/ui/IconRenderer.js`
+  - `js/ui/CommandPalette.js`
+  - `js/main.js`
+  - `css/styles.css`
+  - `css/glass_theme.css`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The UI currently relies on generic Material Symbols and a few emoji-like command icons, which makes the site feel assembled from stock icon pieces.
+- Icon meanings need to remain recognizable for repeated math-tool workflows, but the visual language should match the existing dark glass MathGraph tone.
+
+## Goals
+
+- Remove the external Material Symbols icon-font dependency.
+- Add a project-owned generated SVG icon renderer that keeps the existing icon-name contract stable for current HTML and JS.
+- Replace command-palette emoji icons with the same generated icon language.
+- Preserve current layout, colors, tool selection behavior, and accessibility labels.
+
+## Non-Goals
+
+- Do not redesign the full application shell.
+- Do not change drawing tools, graph behavior, AI drawing behavior, or persistence.
+- Do not introduce a new third-party icon package.
+
+## Acceptance Criteria
+
+- [x] Toolbar, sidebars, canvas controls, object list, AI chat controls, modals, manual cards, and command palette render generated SVG icons instead of Material Symbols/emoji.
+- [x] Dynamic icon state changes still work for sidebar toggles, hidden-point toggle, object list visibility, and object type rows.
+- [x] App renders without framework/runtime console errors.
+- [x] Focused syntax checks, full tests, and visual browser smoke are recorded.
+
+---
+
+## Summary
+
 - Task: Correct fresh CSAT live outputs 9 and 10
 - Owner: Codex
 - Date: 2026-05-31

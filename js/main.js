@@ -47,6 +47,7 @@ import { parseAIJSONPayload } from './ai/JSONUtils.js';
 // Mk.2: UI 모듈
 import { AlgebraInput } from './ui/AlgebraInput.js';
 import { CommandPalette } from './ui/CommandPalette.js';
+import { getGeneratedIconName, hydrateGeneratedIcons, setGeneratedIcon } from './ui/IconRenderer.js';
 import { SettingsManager } from './core/SettingsManager.js';
 
 /**
@@ -166,9 +167,9 @@ class GraphAApp {
                     const dropdown = item.closest('.tool-dropdown');
                     const trigger = dropdown?.previousElementSibling;
                     if (trigger && trigger.classList.contains('tool-group-trigger')) {
-                        const icon = item.querySelector('.material-symbols-outlined')?.textContent;
+                        const icon = getGeneratedIconName(item.querySelector('.material-symbols-outlined'));
                         if (icon) {
-                            trigger.querySelector('.material-symbols-outlined').textContent = icon;
+                            setGeneratedIcon(trigger.querySelector('.material-symbols-outlined'), icon);
                         }
                         trigger.dataset.tool = tool;
                     }
@@ -308,7 +309,7 @@ class GraphAApp {
                 const btn = document.getElementById('toggleLeftSidebar');
                 const icon = btn?.querySelector('.material-symbols-outlined');
                 if (icon) {
-                    icon.textContent = panel.classList.contains('collapsed') ? 'left_panel_open' : 'left_panel_close';
+                    setGeneratedIcon(icon, panel.classList.contains('collapsed') ? 'left_panel_open' : 'left_panel_close');
                 }
             }
         });
@@ -321,7 +322,7 @@ class GraphAApp {
                 const btn = document.getElementById('toggleRightSidebar');
                 const icon = btn?.querySelector('.material-symbols-outlined');
                 if (icon) {
-                    icon.textContent = panel.classList.contains('collapsed') ? 'right_panel_open' : 'right_panel_close';
+                    setGeneratedIcon(icon, panel.classList.contains('collapsed') ? 'right_panel_open' : 'right_panel_close');
                 }
             }
         });
@@ -371,7 +372,7 @@ class GraphAApp {
             const btn = document.getElementById('hideAllPoints');
             const icon = btn?.querySelector('.material-symbols-outlined');
             if (icon) {
-                icon.textContent = newState ? 'visibility' : 'visibility_off';
+                setGeneratedIcon(icon, newState ? 'visibility' : 'visibility_off');
             }
         });
 
@@ -521,6 +522,7 @@ class GraphAApp {
 
         // Mk.4: 수직선 모달
         this.setupNumberLineModal();
+        hydrateGeneratedIcons(document);
     }
 
     /**
@@ -551,10 +553,45 @@ class GraphAApp {
             function: '함수'
         };
 
+        const toolIcons = {
+            select: 'near_me',
+            point: 'fiber_manual_record',
+            pointOnObject: 'commit',
+            intersection: 'hub',
+            midpoint: 'radio_button_checked',
+            segment: 'horizontal_rule',
+            line: 'diagonal_line',
+            ray: 'arrow_right_alt',
+            vector: 'arrow_outward',
+            parallel: 'drag_handle',
+            perpendicular: 'add',
+            perpendicularBisector: 'vertical_align_center',
+            angleBisector: 'call_split',
+            tangentCircle: 'motion_photos_pause',
+            tangentFunction: 'query_stats',
+            circle: 'radio_button_unchecked',
+            circleThreePoints: 'filter_tilt_shift',
+            arc: 'rss_feed',
+            sector: 'donut_small',
+            circularSegment: 'nightlight_round',
+            polygon: 'pentagon',
+            fill: 'format_color_fill',
+            prism: 'view_in_ar',
+            pyramid: 'details',
+            angleDimension: 'angle',
+            lengthDimension: 'architecture',
+            rightAngle: 'square_foot',
+            equalLength: 'straighten',
+            numberLine: 'timeline',
+            function: 'functions'
+        };
+
         const nameEl = document.getElementById('currentToolName');
         if (nameEl) {
             nameEl.textContent = toolNames[toolName] || toolName;
         }
+
+        setGeneratedIcon(document.getElementById('currentToolIcon'), toolIcons[toolName] || 'near_me');
     }
 
     /**
@@ -1345,6 +1382,7 @@ class GraphAApp {
                     <p>도구를 선택하고 캔버스에 그려보세요</p>
                 </div>
             `;
+            hydrateGeneratedIcons(objectList);
             return;
         }
 
@@ -1376,6 +1414,7 @@ class GraphAApp {
                 </div>
             `;
         }).join('');
+        hydrateGeneratedIcons(objectList);
 
         // 이벤트 바인딩
         objectList.querySelectorAll('.object-item').forEach(item => {

@@ -2,6 +2,38 @@
 
 ## 2026-05-31
 
+### Generated MathGraph UI icon system
+
+#### Work completed
+
+- Replaced the external Google Material Symbols icon-font dependency with a project-owned generated inline-SVG icon renderer.
+- Added `js/ui/IconRenderer.js` with MathGraph-toned icons built from points, strokes, axes, curves, panels, solids, and construction marks.
+- Hydrated existing `material-symbols-outlined` placeholders in place so current HTML/CSS selectors and button states remain compatible.
+- Updated dynamic icon paths for active tool display, sidebar panel toggles, hidden-point toggle, object list rows, and command-palette category icons.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Findings
+
+- The existing UI used generic Material Symbols across toolbar, sidebars, canvas controls, modals, manual cards, object list, and command palette.
+- Keeping the existing class as a compatibility hook avoided a broad markup rewrite while still removing the external icon font.
+- Generated SVG icons inherit `currentColor`, so category colors, hover states, active glow, and dark glass theme styling remain consistent.
+
+#### Verification
+
+- Ran `node --check js\ui\IconRenderer.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --check js\ui\CommandPalette.js`; passed.
+- Ran `npm.cmd test`; passed with 120 tests.
+- Browser visual smoke on `http://127.0.0.1:4174/` passed: app loaded with title `그래프A Mk2.1`, 98 icon placeholders hydrated to 98 generated SVGs, 0 Material icon font links, 0 visible raw icon-name texts, and 0 console errors/warnings.
+- Browser interaction proof passed: the functions category activated the functions submenu, and the left panel toggle changed the generated icon state from `left_panel_open` to `left_panel_close` and back.
+- Playwright mobile-width check at 390x844 passed: after opening the command palette, 108 generated SVG icons rendered, including 10 command-palette icons, with 0 missing SVG icons and 0 console errors/warnings.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+- Local visual QA used an existing non-project server on 4173 as a negative check, then started this project on `http://127.0.0.1:4174/` for the actual verification.
+
 ### Fresh CSAT output 9/10 visual correction
 
 #### Work completed

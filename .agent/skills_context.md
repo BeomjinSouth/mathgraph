@@ -2,6 +2,33 @@
 
 ## Relevant Skills
 
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - This is a rendered frontend visual-system change, so the acceptance bar includes seeing the app load with the new icon language and checking console health.
+- Skill: Image Generation
+- Why it matters:
+  - The user asked for generative-AI-made icons. For this dense UI, the project-bound deliverable should be generated vector SVG rather than raster bitmaps so it remains crisp, themeable, and layout-stable.
+
+## Current Task Notes
+
+- User concern:
+  - The app's icons feel like arbitrary free icon-font picks and should be replaced with generated icons that preserve the existing tone and manner.
+- Implementation direction:
+  - Remove the Material Symbols icon font dependency.
+  - Add a project-owned generated SVG renderer that maps existing icon names to MathGraph-style strokes, points, curves, grids, and panels.
+  - Hydrate current icon placeholders in place so existing HTML structure and CSS states continue to work.
+  - Update dynamic icon updates and command-palette icon output to use the same renderer.
+- Verification target:
+  - App shell loads with generated icons, no raw icon-name text visible in primary controls, no console errors, and tests still pass.
+- Completed result:
+  - Added a generated inline-SVG icon renderer and removed the external Material Symbols font dependency.
+  - Browser QA confirmed generated SVG hydration for the app shell and dynamic sidebar icon states.
+  - Playwright mobile-width QA confirmed command-palette icons render through the same generated SVG system.
+
+---
+
+## Relevant Skills
+
 - Skill: MathGraph Drawing
 - Why it matters:
   - The fresh CSAT-style prompt set needs valid GraphA operations, prompt-local expectations, and visual reference targets for exam-style diagrams.

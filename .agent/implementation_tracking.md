@@ -2,6 +2,59 @@
 
 ## Status
 
+- Task: Replace borrowed UI icons with generated MathGraph icon system
+- State: Done
+- Last updated: 2026-05-31
+
+## Plan
+
+1. Document the icon-system scope and acceptance criteria.
+2. Add a generated SVG icon renderer with MathGraph-specific path shapes and compatibility helpers.
+3. Remove Material Symbols font loading and hydrate existing icon placeholders with generated SVG.
+4. Update dynamic icon code paths and command-palette icons to use the renderer.
+5. Run tests and rendered browser QA, then update docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Use generated inline SVG icons rather than raster image files.
+- Reason: The application icon surface needs sharp scaling, currentColor theming, hover/active state inheritance, and deterministic layout in dense toolbars.
+- Decision: Keep the existing `material-symbols-outlined` class as a compatibility hook while replacing its rendering.
+- Reason: Current HTML/CSS/JS already uses that selector widely; preserving it keeps the change narrowly scoped.
+
+## Blockers
+
+- Blocker: None.
+
+## Verification
+
+- Completed:
+  - `node --check js\ui\IconRenderer.js`
+  - `node --check js\main.js`
+  - `node --check js\ui\CommandPalette.js`
+  - `npm.cmd test`; passed with 120 tests.
+  - Browser visual smoke on `http://127.0.0.1:4174/`; app loaded, 98 icon placeholders hydrated to 98 generated SVGs, 0 Material icon font links, 0 visible raw icon-name texts, and 0 console errors/warnings.
+  - Browser interaction proof: the functions category activated the functions submenu, and the left panel toggle changed generated icon state from `left_panel_open` back to `left_panel_close`.
+  - Playwright mobile-width check at 390x844: app loaded, 108 generated SVG icons after opening the command palette, 10 command-palette icons generated, 0 missing SVG icons, and 0 console errors/warnings.
+  - `git diff --check`; passed with line-ending warnings only.
+
+## Handoff
+
+- Custom icon renderer: `js/ui/IconRenderer.js`.
+- Local verification server used for QA: `http://127.0.0.1:4174/`.
+- No Vercel deployment settings were changed.
+
+---
+
+## Status
+
 - Task: Correct fresh CSAT live outputs 9 and 10
 - State: Done
 - Last updated: 2026-05-31
