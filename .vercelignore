@@ -1,0 +1,20 @@
+# Local dependencies and VCS data
+/node_modules/
+/.git/
+
+# Agent, test, and documentation workspaces are not runtime assets.
+/.agent/
+/.agents/
+/docs/
+/tests/
+/tools/
+/tmp/
+
+# Local source PDFs used only for audit/research.
+*.pdf
+
+# Local environment and OS/editor noise
+.env*
+!.env.example
+.DS_Store
+Thumbs.db

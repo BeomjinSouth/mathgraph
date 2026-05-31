@@ -2,6 +2,34 @@
 
 ## Relevant Skills
 
+- Skill: Vercel Deployments & CI/CD
+- Why it matters:
+  - The user reported that Vercel did not reflect the pushed icon-system change, so the current deployment state and production deploy path need direct verification.
+- Skill: Vercel CLI
+- Why it matters:
+  - The project is linked through `.vercel/project.json`, and CLI commands can inspect deployments and retry production deploys from the current workspace.
+
+## Current Task Notes
+
+- User concern:
+  - Vercel still shows no change after the generated icon commit was pushed.
+- Finding:
+  - `npx.cmd vercel ls` showed no recent deployments; latest listed deployment was 47 days old.
+  - Direct `vercel deploy --prod --yes` initially failed because the upload payload was about 665 MB and exceeded the 100 MB limit.
+  - The first `.vercelignore` draft excluded root `tools/` but the unanchored pattern also excluded runtime files under `js/tools/`, which caused production module 404s and prevented the generated icon hydration from completing.
+- Fix direction:
+  - Add `.vercelignore` for local dependencies, PDFs, tmp render output, tests, docs, root tools, and agent workspace files.
+  - Anchor root-only ignore patterns such as `/tools/` so runtime subdirectories remain deployable.
+  - Retry production deployment and verify the deployed URL.
+- Completed result:
+  - Production deployment is Ready and aliased to `https://mathgraph-five.vercel.app`.
+  - `js/tools/Tool.js` now returns 200 on the production alias.
+  - Browser/Playwright smoke confirmed all 98 icon placeholders hydrate to generated SVGs with no Material Symbols font link.
+
+---
+
+## Relevant Skills
+
 - Skill: Frontend Testing Debugging
 - Why it matters:
   - This is a rendered frontend visual-system change, so the acceptance bar includes seeing the app load with the new icon language and checking console health.

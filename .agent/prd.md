@@ -2,6 +2,46 @@
 
 ## Summary
 
+- Task: Restore Vercel production deployment for generated icon update
+- Owner: Codex
+- Date: 2026-05-31
+- Related files:
+  - `.vercelignore`
+  - `vercel.json`
+  - `docs/progress-log.md`
+
+## Problem
+
+- GitHub push to `codex/ai-fallback-recovery` did not produce a visible Vercel site change.
+- `vercel ls` showed the latest Vercel deployment was 47 days old.
+- A direct production deploy failed because Vercel tried to upload about 665 MB, exceeding the 100 MB file size limit.
+- The project root contains local-only PDFs, `tmp/`, `node_modules/`, and agent/test/docs artifacts that should not be deployed as static runtime files.
+- The first `.vercelignore` draft used an unanchored `tools/` pattern, which also excluded the runtime `js/tools/` modules and caused production 404s.
+
+## Goals
+
+- Add deployment ignore rules so only runtime-relevant static files are uploaded.
+- Redeploy the current icon-system commit to Vercel production.
+- Verify the deployed site shows the generated icon system and has no console errors.
+- Record deployment result and remaining Vercel notes.
+
+## Non-Goals
+
+- Do not change app behavior beyond deployment packaging.
+- Do not add server-side functions or environment variables.
+- Do not move the static site into a new output directory in this pass.
+
+## Acceptance Criteria
+
+- [x] `.vercelignore` excludes large local-only artifacts from Vercel upload without excluding runtime `js/tools/` modules.
+- [x] `vercel deploy --prod --yes` succeeds.
+- [x] Deployed production URL loads with generated SVG icons and no Material Symbols font link.
+- [x] Deployment result is documented and pushed.
+
+---
+
+## Summary
+
 - Task: Replace borrowed UI icons with generated MathGraph icon system
 - Owner: Codex
 - Date: 2026-05-31

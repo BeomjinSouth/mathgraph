@@ -2,6 +2,40 @@
 
 ## 2026-05-31
 
+### Vercel production deployment recovery for generated icons
+
+#### Work completed
+
+- Confirmed the generated icon commit had been pushed, but Vercel had not produced a recent production deployment.
+- Ran `npx.cmd vercel ls` and found the previous production deployment was 47 days old.
+- Tried `npx.cmd vercel deploy --prod --yes`; the first attempt failed because local-only artifacts made the upload about 665 MB, exceeding Vercel's 100 MB file size limit.
+- Added `.vercelignore` to exclude local dependencies, VCS data, PDFs, tmp output, docs, tests, root tools, and agent workspace folders from Vercel upload.
+- Fixed the ignore rules by anchoring root-only entries such as `/tools/`; the first unanchored `tools/` pattern also excluded runtime `js/tools/` modules.
+- Redeployed production successfully and aliased it to `https://mathgraph-five.vercel.app`.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Findings
+
+- Vercel was not changing because no automatic deployment had run from the pushed branch.
+- Direct deploy needed `.vercelignore` because the repository root contains large local PDFs, `node_modules/`, `.git/`, and generated tmp artifacts.
+- The first successful deploy still rendered no icon change because `js/tools/*.js` returned 404; anchoring `/tools/` fixed the browser module graph.
+
+#### Verification
+
+- Ran `npx.cmd vercel deploy --prod --yes`; succeeded with production URL `https://mathgraph-lrd67ir7t-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-lrd67ir7t-beomjinsouths-projects.vercel.app`; deployment `dpl_42sqfKgzJwd95a23Yavr4srBfVit` was Ready and aliased to `https://mathgraph-five.vercel.app`.
+- Checked `https://mathgraph-five.vercel.app/js/tools/Tool.js`; returned 200 after anchoring the ignore rule.
+- Browser/Playwright production smoke confirmed 98 icon placeholders, 98 generated SVG icons, 0 missing SVG icons, and 0 Material Symbols font links.
+- Production interaction proof passed: the functions submenu became active, the left panel toggle changed from `left_panel_close` to `left_panel_open`, and no console/page/request errors were captured.
+- Ran `npm.cmd test`; passed with 120 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- Latest production alias: `https://mathgraph-five.vercel.app`.
+- Latest production deployment: `https://mathgraph-lrd67ir7t-beomjinsouths-projects.vercel.app`.
+- No Vercel project linkage or environment variables were changed.
+
 ### Generated MathGraph UI icon system
 
 #### Work completed

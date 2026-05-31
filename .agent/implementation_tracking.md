@@ -2,6 +2,61 @@
 
 ## Status
 
+- Task: Restore Vercel production deployment for generated icon update
+- State: Done
+- Last updated: 2026-05-31
+
+## Plan
+
+1. Inspect local Vercel link and recent deployments.
+2. Reproduce the deploy issue from the current branch.
+3. Add `.vercelignore` for local-only dependencies, PDFs, docs, tests, root tools, and generated artifacts.
+4. Redeploy to production and verify the deployed site.
+5. Update logs, commit, push, and report the deployment URL.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Add `.vercelignore` instead of moving the static output directory.
+- Reason: The app is a static root-hosted site today; ignore rules fix the deployment payload without restructuring runtime paths.
+- Decision: Anchor root-only ignore entries such as `/tools/`.
+- Reason: Unanchored `tools/` also excluded `js/tools/`, which is part of the browser module graph.
+
+## Blockers
+
+- Blocker: None.
+- Resolved: Initial direct production deploy failed because the upload payload exceeded Vercel's 100 MB file size limit.
+- Resolved: The first ignore draft excluded `js/tools/`, causing production 404s until root-only patterns were anchored.
+
+## Verification
+
+- Completed:
+  - `npx.cmd vercel ls`; latest deployment before this task was 47 days old.
+  - `npx.cmd vercel deploy --prod --yes`; failed before `.vercelignore` with `File size limit exceeded (100 MB)`.
+  - `npx.cmd vercel deploy --prod --yes`; succeeded after `.vercelignore`.
+  - `npx.cmd vercel inspect https://mathgraph-lrd67ir7t-beomjinsouths-projects.vercel.app`; production deployment `dpl_42sqfKgzJwd95a23Yavr4srBfVit` was Ready and aliased to `https://mathgraph-five.vercel.app`.
+  - Direct asset check confirmed `https://mathgraph-five.vercel.app/js/tools/Tool.js` returns 200 after anchoring `/tools/`.
+  - Browser/Playwright production smoke confirmed 98 icon placeholders hydrate to 98 generated SVG icons, 0 missing SVG icons, and 0 Material Symbols font links.
+  - Interaction proof passed on production: the functions submenu became active, and the left panel toggle changed from `left_panel_close` to `left_panel_open`.
+  - `npm.cmd test`; passed with 120 tests.
+  - `git diff --check`; passed with line-ending warnings only.
+
+## Handoff
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Latest production deployment: `https://mathgraph-lrd67ir7t-beomjinsouths-projects.vercel.app`.
+
+---
+
+## Status
+
 - Task: Replace borrowed UI icons with generated MathGraph icon system
 - State: Done
 - Last updated: 2026-05-31
