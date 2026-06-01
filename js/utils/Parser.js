@@ -212,7 +212,7 @@ class Parser {
     }
 
     parseExpression(minPrecedence = 0) {
-        let left = this.parsePrimary();
+        let left = this.parseUnary();
 
         while (true) {
             const op = this.peek();
@@ -238,13 +238,14 @@ class Parser {
         return left;
     }
 
-    parsePrimary() {
+    parseUnary() {
         const token = this.peek();
 
-        // 단항 연산자
         if (token.type === TokenType.OPERATOR && (token.value === '-' || token.value === '+')) {
             this.advance();
-            const operand = this.parsePrimary();
+            // Exponentiation binds more tightly than leading signs in standard notation:
+            // -x^2 is parsed as -(x^2), while (-x)^2 stays explicit through parentheses.
+            const operand = this.parseExpression(PRECEDENCE['^']);
             return {
                 type: 'UnaryOp',
                 op: token.value,
@@ -252,6 +253,13 @@ class Parser {
             };
         }
 
+        return this.parsePrimary();
+    }
+
+    parsePrimary() {
+        const token = this.peek();
+
+        // 단항 연산자
         // 숫자
         if (token.type === TokenType.NUMBER) {
             this.advance();

@@ -76,6 +76,7 @@ class GraphAApp {
         // Mk.2: 설정 관리 초기화
         this.settingsManager = new SettingsManager();
         this.syncDefaultPointParams();
+        this.syncCanvasViewSettings();
 
         // Mk.4: 숨김 객체 보기 상태 초기화
         this.showHiddenObjects = false;
@@ -96,8 +97,72 @@ class GraphAApp {
         this.objectManager.setDefaultPointParams(this.settingsManager.getDefaultPointParams());
     }
 
+    syncCanvasViewSettings() {
+        this.canvas.showAxisNumbers = this.settingsManager.showAxisNumbers;
+        this.canvas.axisNumberInterval = this.settingsManager.axisNumberInterval;
+    }
+
     isPointLikeObject(obj) {
         return ['point', 'pointOnObject', 'intersection', 'midpoint'].includes(obj?.type);
+    }
+
+    getPointLikeObjects(objects = this.objectManager.getAllObjects()) {
+        return objects.filter(obj => this.isPointLikeObject(obj));
+    }
+
+    formatPointSize(size) {
+        const normalized = this.settingsManager.normalizePointSize(size);
+        return Number.isInteger(normalized) ? String(normalized) : normalized.toFixed(1);
+    }
+
+    syncPointSizeRange(input, display, size) {
+        const normalized = this.settingsManager.normalizePointSize(size);
+        if (input) {
+            input.value = String(normalized);
+        }
+        if (display) {
+            display.textContent = this.formatPointSize(normalized);
+        }
+        return normalized;
+    }
+
+    createPointSizeControl({ labelText = '점 크기:', value = 4, noteText = '', onInput }) {
+        const row = document.createElement('div');
+        row.className = 'property-row point-size-row';
+
+        const label = document.createElement('label');
+        label.textContent = labelText;
+
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = '0';
+        input.max = '20';
+        input.step = '1';
+        input.className = 'prop-slider point-size-slider';
+
+        const display = document.createElement('span');
+        display.className = 'value-display point-size-value';
+
+        row.append(label, input, display);
+
+        if (noteText) {
+            const note = document.createElement('span');
+            note.className = 'property-note';
+            note.textContent = noteText;
+            row.appendChild(note);
+        }
+
+        const setValue = (nextSize) => this.syncPointSizeRange(input, display, nextSize);
+        setValue(value);
+
+        input.addEventListener('mousedown', e => e.stopPropagation());
+        input.addEventListener('click', e => e.stopPropagation());
+        input.addEventListener('input', (e) => {
+            const size = setValue(e.target.value);
+            onInput?.(size, e);
+        });
+
+        return { row, input, display, setValue };
     }
 
     exportPNG(options = {}) {
@@ -269,6 +334,8 @@ class GraphAApp {
         const showGridPanel = document.getElementById('showGridPanel');
         const showXAxisPanel = document.getElementById('showXAxisPanel');
         const showYAxisPanel = document.getElementById('showYAxisPanel');
+        const showAxisNumbersPanel = document.getElementById('showAxisNumbersPanel');
+        const axisNumberIntervalPanel = document.getElementById('axisNumberIntervalPanel');
 
         showGridPanel?.addEventListener('change', (e) => {
             this.setGridVisibility(e.target.checked, { syncInputs: false });
@@ -278,6 +345,12 @@ class GraphAApp {
         });
         showYAxisPanel?.addEventListener('change', (e) => {
             this.setAxesVisibility(this.canvas.showXAxis, e.target.checked, { syncInputs: false });
+        });
+        showAxisNumbersPanel?.addEventListener('change', (e) => {
+            this.setAxisNumbersVisibility(e.target.checked, { syncInputs: false });
+        });
+        axisNumberIntervalPanel?.addEventListener('change', (e) => {
+            this.setAxisNumberInterval(e.target.value, { syncInputs: false });
         });
 
         // 숨김 객체 보기 토글
@@ -474,6 +547,17 @@ class GraphAApp {
             this.settingsManager.setDefaultStyle('lineWidth', parseInt(e.target.value));
         });
 
+        const defaultPointSizeInput = document.getElementById('defaultPointSize');
+        const defaultPointSizeValue = document.getElementById('defaultPointSizeValue');
+        if (defaultPointSizeInput) {
+            this.syncPointSizeRange(defaultPointSizeInput, defaultPointSizeValue, this.settingsManager.defaultStyles.pointSize);
+            defaultPointSizeInput.addEventListener('input', (e) => {
+                const pointSize = this.syncPointSizeRange(defaultPointSizeInput, defaultPointSizeValue, e.target.value);
+                this.settingsManager.setDefaultPointSize(pointSize);
+                this.syncDefaultPointParams();
+            });
+        }
+
         const defaultPointBodyHidden = document.getElementById('defaultPointBodyHidden');
         if (defaultPointBodyHidden) {
             defaultPointBodyHidden.checked = this.settingsManager.hideNewPointBodies;
@@ -503,6 +587,24 @@ class GraphAApp {
             this.settingsManager.applyStylesToAll(this.objectManager, { lineWidth });
             this.render();
             this.showToast('모든 객체에 선 굵기 적용됨', 'success');
+        });
+
+        const bulkPointSizeInput = document.getElementById('bulkPointSize');
+        const bulkPointSizeValue = document.getElementById('bulkPointSizeValue');
+        if (bulkPointSizeInput) {
+            this.syncPointSizeRange(bulkPointSizeInput, bulkPointSizeValue, this.settingsManager.defaultStyles.pointSize);
+            bulkPointSizeInput.addEventListener('input', (e) => {
+                this.syncPointSizeRange(bulkPointSizeInput, bulkPointSizeValue, e.target.value);
+            });
+        }
+
+        document.getElementById('applyBulkPointSize')?.addEventListener('click', () => {
+            const pointSize = this.syncPointSizeRange(bulkPointSizeInput, bulkPointSizeValue, bulkPointSizeInput?.value);
+            const changedCount = this.settingsManager.applyPointSizeToAll(this.objectManager, pointSize);
+            this.render();
+            this.updateSidebar();
+            this.updatePropertyPanel();
+            this.showToast(`${changedCount}개 점에 크기 적용됨`, 'success');
         });
 
         // Mk.2: 선택된 객체 복사
@@ -916,6 +1018,24 @@ class GraphAApp {
 
         container.innerHTML = '';
 
+        const selectedPointLikeObjects = this.getPointLikeObjects(selected);
+        if (selected.length > 1 && selectedPointLikeObjects.length > 0) {
+            const currentSize = selectedPointLikeObjects.every(obj => obj.pointSize === selectedPointLikeObjects[0].pointSize)
+                ? selectedPointLikeObjects[0].pointSize
+                : this.settingsManager.defaultStyles.pointSize;
+            const sizeControl = this.createPointSizeControl({
+                labelText: '선택 점 크기:',
+                value: currentSize,
+                noteText: `${selectedPointLikeObjects.length}개`,
+                onInput: (size) => {
+                    this.settingsManager.applyPointSizeToObjects(selectedPointLikeObjects, size);
+                    this.render();
+                    this.updateSidebar();
+                }
+            });
+            container.appendChild(sizeControl.row);
+        }
+
         if (selected.length === 1) {
             const obj = selected[0];
 
@@ -955,6 +1075,20 @@ class GraphAApp {
             container.appendChild(colorRow);
 
             if (this.isPointLikeObject(obj)) {
+                const pointSizeControl = this.createPointSizeControl({
+                    value: obj.pointSize,
+                    onInput: (size) => {
+                        obj.pointSize = size;
+                        const bodyToggle = container.querySelector('.point-body-toggle');
+                        if (bodyToggle) {
+                            bodyToggle.checked = size > 0;
+                        }
+                        this.render();
+                        this.updateSidebar();
+                    }
+                });
+                container.appendChild(pointSizeControl.row);
+
                 const bodyRow = document.createElement('div');
                 bodyRow.className = 'property-row';
                 bodyRow.innerHTML = `
@@ -966,7 +1100,8 @@ class GraphAApp {
                 bodyInput.addEventListener('mousedown', e => e.stopPropagation());
                 bodyInput.addEventListener('click', e => e.stopPropagation());
                 bodyInput.addEventListener('change', (e) => {
-                    obj.pointSize = e.target.checked ? this.settingsManager.defaultStyles.pointSize : 0;
+                    obj.pointSize = e.target.checked ? this.settingsManager.normalizePointSize(this.settingsManager.defaultStyles.pointSize) : 0;
+                    pointSizeControl.setValue(obj.pointSize);
                     this.render();
                     this.updateSidebar();
                 });
@@ -1049,36 +1184,41 @@ class GraphAApp {
                 });
                 container.appendChild(exprRow);
 
-                // 도메인(x 범위) 설정
-                const domainRow = document.createElement('div');
-                domainRow.className = 'property-row';
-                const xMin = obj.xMin !== null ? obj.xMin : '';
-                const xMax = obj.xMax !== null ? obj.xMax : '';
-                domainRow.innerHTML = `
-                    <label>x 범위:</label>
-                    <div style="display: flex; gap: 4px; align-items: center;">
-                        <input type="number" class="prop-input xmin-input" value="${xMin}" placeholder="-∞" style="width: 60px;">
-                        <span>~</span>
-                        <input type="number" class="prop-input xmax-input" value="${xMax}" placeholder="∞" style="width: 60px;">
-                    </div>
-                `;
-                const xminInput = domainRow.querySelector('.xmin-input');
-                const xmaxInput = domainRow.querySelector('.xmax-input');
+                // 도메인/치역(x/y 범위) 설정
+                const createFunctionRangeRow = (axis, minKey, maxKey) => {
+                    const rangeRow = document.createElement('div');
+                    rangeRow.className = 'property-row';
+                    const minValue = obj[minKey] !== null ? obj[minKey] : '';
+                    const maxValue = obj[maxKey] !== null ? obj[maxKey] : '';
+                    rangeRow.innerHTML = `
+                        <label>${axis} 범위:</label>
+                        <div style="display: flex; gap: 4px; align-items: center;">
+                            <input type="number" class="prop-input min-input" value="${minValue}" placeholder="-∞" style="width: 60px;">
+                            <span>~</span>
+                            <input type="number" class="prop-input max-input" value="${maxValue}" placeholder="∞" style="width: 60px;">
+                        </div>
+                    `;
 
-                [xminInput, xmaxInput].forEach(input => {
-                    input.addEventListener('mousedown', e => e.stopPropagation());
-                    input.addEventListener('click', e => e.stopPropagation());
-                });
+                    const minInput = rangeRow.querySelector('.min-input');
+                    const maxInput = rangeRow.querySelector('.max-input');
 
-                xminInput.addEventListener('change', (e) => {
-                    obj.xMin = e.target.value.trim() === '' ? null : parseFloat(e.target.value);
-                    this.render();
-                });
-                xmaxInput.addEventListener('change', (e) => {
-                    obj.xMax = e.target.value.trim() === '' ? null : parseFloat(e.target.value);
-                    this.render();
-                });
-                container.appendChild(domainRow);
+                    [minInput, maxInput].forEach(input => {
+                        input.addEventListener('mousedown', e => e.stopPropagation());
+                        input.addEventListener('click', e => e.stopPropagation());
+                    });
+
+                    minInput.addEventListener('change', (e) => {
+                        this.updateFunctionRangeValue(obj, minKey, e.target);
+                    });
+                    maxInput.addEventListener('change', (e) => {
+                        this.updateFunctionRangeValue(obj, maxKey, e.target);
+                    });
+
+                    return rangeRow;
+                };
+
+                container.appendChild(createFunctionRangeRow('x', 'xMin', 'xMax'));
+                container.appendChild(createFunctionRangeRow('y', 'yMin', 'yMax'));
 
                 // 라벨 위치 초기화 버튼
                 const resetRow = document.createElement('div');
@@ -1292,10 +1432,14 @@ class GraphAApp {
         const showGridPanel = document.getElementById('showGridPanel');
         const showXAxisPanel = document.getElementById('showXAxisPanel');
         const showYAxisPanel = document.getElementById('showYAxisPanel');
+        const showAxisNumbersPanel = document.getElementById('showAxisNumbersPanel');
+        const axisNumberIntervalPanel = document.getElementById('axisNumberIntervalPanel');
 
         if (showGridPanel) showGridPanel.checked = !!this.canvas.showGrid;
         if (showXAxisPanel) showXAxisPanel.checked = !!this.canvas.showXAxis;
         if (showYAxisPanel) showYAxisPanel.checked = !!this.canvas.showYAxis;
+        if (showAxisNumbersPanel) showAxisNumbersPanel.checked = !!this.canvas.showAxisNumbers;
+        if (axisNumberIntervalPanel) axisNumberIntervalPanel.value = String(this.canvas.axisNumberInterval || 'auto');
     }
 
     setGridVisibility(visible, { render = true, syncInputs = true } = {}) {
@@ -1319,6 +1463,49 @@ class GraphAApp {
         if (render) {
             this.render();
         }
+    }
+
+    setAxisNumbersVisibility(visible, { render = true, syncInputs = true } = {}) {
+        this.settingsManager.setShowAxisNumbers(visible);
+        this.canvas.showAxisNumbers = this.settingsManager.showAxisNumbers;
+
+        if (syncInputs) {
+            this.syncViewToggleInputs();
+        }
+        if (render) {
+            this.render();
+        }
+    }
+
+    setAxisNumberInterval(interval, { render = true, syncInputs = true } = {}) {
+        this.settingsManager.setAxisNumberInterval(interval);
+        this.canvas.axisNumberInterval = this.settingsManager.axisNumberInterval;
+
+        if (syncInputs) {
+            this.syncViewToggleInputs();
+        }
+        if (render) {
+            this.render();
+        }
+    }
+
+    updateFunctionRangeValue(obj, key, input) {
+        const rawValue = input.value.trim();
+        if (rawValue === '') {
+            obj[key] = null;
+            this.render();
+            return;
+        }
+
+        const value = Number(rawValue);
+        if (!Number.isFinite(value)) {
+            input.value = obj[key] ?? '';
+            this.showToast('범위 값은 숫자여야 합니다', 'warning');
+            return;
+        }
+
+        obj[key] = value;
+        this.render();
     }
 
     toggleAxesVisibility() {
@@ -2122,8 +2309,11 @@ class GraphAApp {
         const bounds = this.canvas.getVisibleBounds();
         const drawMinX = obj.xMin !== null ? Math.max(bounds.minX, obj.xMin) : bounds.minX;
         const drawMaxX = obj.xMax !== null ? Math.min(bounds.maxX, obj.xMax) : bounds.maxX;
+        const drawMinY = obj.yMin !== null ? obj.yMin : null;
+        const drawMaxY = obj.yMax !== null ? obj.yMax : null;
 
         if (drawMinX >= drawMaxX) return '';
+        if (drawMinY !== null && drawMaxY !== null && drawMinY >= drawMaxY) return '';
 
         const samples = 500;
         const step = (drawMaxX - drawMinX) / samples;
@@ -2142,6 +2332,17 @@ class GraphAApp {
                 current = [];
                 prevY = null;
                 prevX = null;
+                continue;
+            }
+
+            if ((drawMinY !== null && y < drawMinY) ||
+                (drawMaxY !== null && y > drawMaxY)) {
+                if (current.length > 1) {
+                    segments.push(current);
+                }
+                current = [];
+                prevY = y;
+                prevX = x;
                 continue;
             }
 

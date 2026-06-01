@@ -2,6 +2,307 @@
 
 ## Status
 
+- Task: Function unary-minus exponent precedence
+- State: In Progress
+- Last updated: 2026-06-01
+
+## Plan
+
+1. Record the scoped parser bug before implementation.
+2. Refactor parser precedence so exponentiation binds before leading unary signs while preserving negative exponents.
+3. Add focused parser regression coverage for `-x^2`, `(-x)^2`, and `2^-2`.
+4. Run focused/full verification, update progress docs, commit, and push or record blockers.
+
+## Progress Log
+
+- [x] Step 1
+- [ ] Step 2
+- [ ] Step 3
+- [ ] Step 4
+
+## Decisions
+
+- Decision: Fix the existing parser instead of adding a new parser dependency.
+- Reason: The bug is localized to unary/exponent precedence and the app already has a compact parser contract used by functions, intersections, and tests.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Pending.
+
+## Handoff
+
+- Current status:
+  - `-x^2` is currently parsed as `(-x)^2`; implementation is being adjusted so it follows standard mathematical precedence.
+
+---
+
+## Status
+
+- Task: Point size controls for default, bulk, and individual edits
+- State: Done
+- Last updated: 2026-06-01
+
+## Plan
+
+1. Record the point-size control scope before implementation.
+2. Add settings helpers for normalized default and bulk point sizes.
+3. Add style-panel controls for default point size and all-point batch resizing.
+4. Add selected-point controls for individual and selected-batch resizing.
+5. Run focused/full/browser verification, update progress docs, commit, and push or record blockers.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Continue using existing `pointSize` instead of adding a new size field.
+- Reason: Rendering, persistence, SVG export, AI operations, and label-only behavior already use `pointSize`.
+- Decision: Keep `pointSize: 0` as the label-only state.
+- Reason: The current hide-point-body feature depends on zero size and should stay compatible with saved drawings.
+
+## Blockers
+
+- Blocker: Commit/push is not safe from this task turn because the worktree already contains unrelated staged and unstaged changes for axis labels, function ranges, fill regions, selection, and other tests.
+- Checked: `git status --short --branch` and `git diff --cached --name-status`.
+- Reason commit/push was skipped: `git commit` would include unrelated staged files, while this point-size work also has hunks inside files that already contain unrelated changes.
+
+## Verification
+
+- Completed:
+  - `node --check js\core\SettingsManager.js`; passed.
+  - `node --check js\main.js`; passed.
+  - `node --test tests\point-label-only.test.js`; passed with 5 tests.
+  - `npm.cmd test`; passed with 144 tests.
+  - Browser plugin rendered check on `http://127.0.0.1:4180/`; default point size 8, bulk size 12, and selected point size 5 were reflected in the DOM/state with 0 console errors or warnings.
+  - Browser plugin screenshot capture failed with `Page.captureScreenshot` timeout; fallback Playwright screenshot saved to `%TEMP%\mathgraph-point-size-qa.png`.
+  - Fallback Playwright check confirmed point sizes `[8, 8]` after default creation, `[12, 12]` after bulk apply, and selected point size `[5]` after individual edit, with 0 console/page errors.
+  - `git diff --check`; passed with CRLF normalization warnings only.
+
+## Handoff
+
+- Current status:
+  - Style panel now has default and all-point point-size controls.
+  - Selection panel now has point-size controls for a single selected point and selected point groups.
+  - `SettingsManager` normalizes point sizes and applies batch sizing only to point-like objects.
+  - Commit/push remains blocked by pre-existing unrelated staged/unstaged worktree changes.
+
+---
+
+## Status
+
+- Task: Function-axis inferred fill regions
+- State: Done
+- Last updated: 2026-06-01
+
+## Plan
+
+1. Record the scoped function-axis fill behavior before implementation.
+2. Extend fill inference to detect a clicked region bounded by a function graph and the coordinate axes.
+3. Add focused regression coverage for first- and second-quadrant parabola-axis fills plus existing fill inference paths.
+4. Run focused/full verification, update progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+
+## Decisions
+
+- Decision: Represent inferred function-axis fills with the existing `closedRegion` object and stored sample vertices.
+- Reason: This preserves undo, save/load, and SVG export behavior without introducing a new curved-region primitive or leaving hidden helper-point objects behind.
+- Decision: Limit this pass to regions using the coordinate axes and one explicit function graph.
+- Reason: It directly addresses the reported x-axis/y-axis workflow while avoiding a broad and risky general region solver.
+
+## Blockers
+
+- Blocker: None.
+
+## Verification
+
+- Completed:
+  - `node --check js\tools\FillTool.js`
+  - `node --check js\objects\ClosedRegion.js`
+  - `node --test tests\fill-tool.test.js`
+  - Browser path attempted on `http://127.0.0.1:4183/`; page identity and console checks worked, but screenshot capture timed out and text entry was blocked by the Browser virtual clipboard.
+  - Playwright fallback on `http://127.0.0.1:4183/`; created `y=-3/8x^2+6`, clicked the first-quadrant function-axis region, and confirmed one valid `closedRegion` with 34 stored sample vertices containing the clicked point.
+  - Screenshot evidence: `C:\Users\pbj95\AppData\Local\Temp\mathgraph-function-axis-fill.png`.
+  - `npm.cmd test`; passed with 144 tests.
+  - `git diff --check`; passed with line-ending warnings only.
+
+## Handoff
+
+- Current status:
+  - Function-axis fill inference is implemented for coordinate-axis regions bounded by one function graph.
+  - The inferred region is stored as a sampled `closedRegion`, so undo/save/load work without creating hidden helper-point objects.
+
+---
+
+## Status
+
+- Task: Stacked fraction rendering for function labels
+- State: Done
+- Last updated: 2026-06-01
+
+## Plan
+
+1. Record the scoped function-label fraction rendering issue before implementation.
+2. Extend the canvas math-label tokenizer with a `fraction` part for simple slash fractions and `\frac{...}{...}` input.
+3. Extend math-label measurement/rendering to draw numerator, bar, and denominator without changing stored expressions.
+4. Add focused regression coverage for `y=-3/8x^2+6` and fraction drawing calls.
+5. Run focused/full verification, update progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Add fraction support inside `Canvas` math-label rendering only.
+- Reason: The reported problem is visual label formatting; expression parsing/evaluation and GraphA payloads should remain unchanged.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\core\Canvas.js`
+  - `node --test tests\math-label-rendering.test.js`
+  - `npm.cmd test`; passed with 144 tests.
+  - In-app Browser loaded `http://127.0.0.1:4181/` and exercised the function tool, but screenshot capture failed with a CDP timeout.
+  - Playwright fallback on `http://127.0.0.1:4181/` created `-3/8x^2+6`, confirmed parsed display parts include a `fraction` token and no slash text, captured `C:\Users\pbj95\AppData\Local\Temp\mathgraph-fraction-label-smoke.png`, and saw 0 console warnings/errors.
+  - `git diff --check`; passed with line-ending warnings only.
+
+## Handoff
+
+- Current status:
+  - Canvas math labels now render slash fractions such as `3/8` as stacked numerator/denominator fractions.
+  - Function expressions, parsing, GraphA payloads, save/load, and evaluation remain unchanged.
+
+---
+
+## Status
+
+- Task: Drag-box selection coverage for functions and solids
+- State: Done
+- Last updated: 2026-06-01
+
+## Plan
+
+1. Record the scoped selection behavior change before implementation.
+2. Replace the drag-box selection predicate with a geometry-aware rectangle intersection check.
+3. Add focused regression coverage for function, prism, pyramid, and crossing-segment selection.
+4. Run focused/full verification, update progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+
+## Decisions
+
+- Decision: Keep the new logic inside `SelectTool` instead of changing object schemas.
+- Reason: The issue is a selection predicate gap; rendering, persistence, and GraphA output should remain unchanged.
+
+## Blockers
+
+- Blocker: In-app Browser CUA drag replay did not reliably emit drag-box selection events, so final rendered drag verification used Playwright against the same local server.
+
+## Verification
+
+- Completed:
+  - `node --check js\tools\SelectTool.js`
+  - `node --test tests\select-tool-box-selection.test.js`
+  - `npm.cmd test`; passed with 138 tests.
+  - In-app Browser loaded `http://127.0.0.1:4177/`, confirmed the app title and console health, and verified click-selection of a function.
+  - Playwright fallback on `http://127.0.0.1:4177/` verified drag-box selection for a function graph and for a prism edge, with no console issues.
+  - `git diff --check` passed with line-ending warnings only.
+  - Scoped `git diff --check` for this task's files also passed with line-ending warnings only.
+
+## Handoff
+
+- Current status:
+  - Drag-box selection now uses geometry-aware rectangle intersection checks for visible functions, segments, lines/rays, circles, polygons, and solid projected edges.
+  - Focused coverage includes a function graph, crossing segment, prism edge, and pyramid edge.
+
+---
+
+## Status
+
+- Task: Axis number controls and function range limits
+- State: Done
+- Last updated: 2026-06-01
+
+## Plan
+
+1. Record the requested axis-number and function-range behavior before implementation.
+2. Add canvas/settings support for axis-number visibility and fixed numeric intervals.
+3. Add function `yMin`/`yMax` limits across rendering, selection UI, save/load, and SVG export.
+4. Add focused regression coverage and run the useful project verification.
+5. Update progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Keep axis visibility and axis-number visibility as separate settings.
+- Reason: Teachers may want visible axes without numeric labels on exam-style diagrams.
+- Decision: Treat fixed axis intervals as label/tick intervals, not as a grid-spacing redesign.
+- Reason: The request is specifically about numbers on coordinate axes and existing grid behavior can remain automatic.
+- Decision: Implement `yMin`/`yMax` as function range clipping.
+- Reason: This matches the existing `xMin`/`xMax` domain-limiting workflow while avoiding a broader function-region feature.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\core\Canvas.js`
+  - `node --check js\core\SettingsManager.js`
+  - `node --check js\objects\Function.js`
+  - `node --check js\main.js`
+  - `node --test tests\axis-label-settings.test.js tests\function-range-limits.test.js`; passed with 7 tests.
+  - `npm.cmd test`; passed with 141 tests.
+  - Browser plugin smoke on `http://127.0.0.1:4182/`; app title was `그래프A Mk2.1`, settings controls were present, axis-number checkbox changed to off, fixed interval changed to `1`, function creation exposed both `x 범위` and `y 범위`, and console error/warn logs were empty.
+  - Browser plugin screenshot capture returned no data, so Playwright screenshot fallback reproduced the same flow and saved `C:\Users\pbj95\AppData\Local\Temp\mathgraph-axis-function-range-qa.png`.
+  - `git diff --check`; passed with line-ending warnings only.
+
+## Handoff
+
+- Current status:
+  - Axis number visibility and fixed interval settings are implemented.
+  - Function graphs now support editable and persisted `yMin`/`yMax` visible-range limits.
+
+---
+
+## Status
+
 - Task: Math label minus sign rendering polish
 - State: Done
 - Last updated: 2026-06-01

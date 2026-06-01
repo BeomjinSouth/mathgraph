@@ -18,11 +18,29 @@ function createRecordingContext() {
         set fillStyle(value) {
             calls.push(['fillStyle', value]);
         },
+        set strokeStyle(value) {
+            calls.push(['strokeStyle', value]);
+        },
+        set lineWidth(value) {
+            calls.push(['lineWidth', value]);
+        },
         set textAlign(value) {
             calls.push(['textAlign', value]);
         },
         set textBaseline(value) {
             calls.push(['textBaseline', value]);
+        },
+        beginPath() {
+            calls.push(['beginPath']);
+        },
+        moveTo(x, y) {
+            calls.push(['moveTo', x, y]);
+        },
+        lineTo(x, y) {
+            calls.push(['lineTo', x, y]);
+        },
+        stroke() {
+            calls.push(['stroke']);
         },
         fillText(text, x, y) {
             calls.push(['fillText', text, x, y]);
@@ -68,4 +86,56 @@ test('math label rendering never draws ASCII hyphen-minus for minus signs', () =
 
     assert.ok(renderedText.includes('\u2212'));
     assert.equal(renderedText.includes('-'), false);
+});
+
+test('math label parsing turns slash coefficient fractions into fraction parts', () => {
+    const canvas = createCanvasFacade();
+    const parts = canvas.parseMathExpression('y=-3/8x^2+6');
+
+    assert.deepEqual(parts, [
+        { type: 'normal', text: 'y=\u2212' },
+        {
+            type: 'fraction',
+            numerator: [{ type: 'normal', text: '3' }],
+            denominator: [{ type: 'normal', text: '8' }]
+        },
+        { type: 'normal', text: 'x' },
+        { type: 'super', text: '2' },
+        { type: 'normal', text: '+6' }
+    ]);
+});
+
+test('math label parsing supports latex frac groups', () => {
+    const canvas = createCanvasFacade();
+    const parts = canvas.parseMathExpression('y=\\frac{x^2+1}{x-1}');
+
+    assert.deepEqual(parts, [
+        { type: 'normal', text: 'y=' },
+        {
+            type: 'fraction',
+            numerator: [
+                { type: 'normal', text: 'x' },
+                { type: 'super', text: '2' },
+                { type: 'normal', text: '+1' }
+            ],
+            denominator: [{ type: 'normal', text: 'x\u22121' }]
+        }
+    ]);
+});
+
+test('math label rendering draws a fraction bar instead of slash text', () => {
+    const canvas = createCanvasFacade();
+    const ctx = createRecordingContext();
+    const parts = canvas.parseMathExpression('y=-3/8x^2+6');
+
+    canvas.renderMathExpression(parts, ctx, 0, 0, 30, '#000000');
+
+    const renderedText = ctx.calls
+        .filter(call => call[0] === 'fillText')
+        .map(call => call[1]);
+
+    assert.equal(renderedText.includes('/'), false);
+    assert.ok(renderedText.includes('3'));
+    assert.ok(renderedText.includes('8'));
+    assert.ok(ctx.calls.some(call => call[0] === 'lineTo'));
 });

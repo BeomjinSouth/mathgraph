@@ -67,6 +67,32 @@ test('SettingsManager persists label-only new-point default separately from show
     });
 });
 
+test('SettingsManager controls default and bulk point size without touching non-points', () => {
+    withMockStorage(undefined, () => {
+        const settings = new SettingsManager();
+        const objectManager = new ObjectManager();
+
+        settings.setDefaultPointSize(9);
+        objectManager.setDefaultPointParams(settings.getDefaultPointParams());
+
+        const pointA = objectManager.createPoint(0, 0);
+        const pointB = objectManager.createPoint(1, 0);
+        const segment = objectManager.createSegment(pointA.id, pointB.id);
+
+        assert.equal(pointA.pointSize, 9);
+        assert.equal(pointB.pointSize, 9);
+        assert.equal(settings.normalizePointSize(-4), 0);
+        assert.equal(settings.normalizePointSize(40), 30);
+
+        const changedCount = settings.applyPointSizeToAll(objectManager, 12);
+
+        assert.equal(changedCount, 2);
+        assert.equal(pointA.pointSize, 12);
+        assert.equal(pointB.pointSize, 12);
+        assert.equal(segment.pointSize, 6);
+    });
+});
+
 test('drawPoint does not draw a point body or border for radius zero', () => {
     const calls = [];
     const fakeContext = {

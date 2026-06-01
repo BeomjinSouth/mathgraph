@@ -2,6 +2,172 @@
 
 ## Relevant Skills
 
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The symptom appears on the rendered canvas, so the parser fix should be backed by focused tests and, if practical, a rendered function-graph check.
+
+## Current Task Notes
+
+- User concern:
+  - Entering `-x^2 + 4` draws an upward-opening graph even though the label reads like a downward-opening parabola.
+- Finding:
+  - `FunctionParser` currently handles unary `-` in `parsePrimary()`, so `-x^2` becomes `(-x)^2`.
+  - Standard classroom/math notation treats exponentiation as higher precedence than unary negation: `-x^2` means `-(x^2)`.
+- Implementation direction:
+  - Move unary parsing into a level below exponentiation.
+  - Let exponentiation parse its right operand through unary parsing so `2^-2` continues to work.
+  - Preserve explicit parentheses: `(-x)^2` remains distinct from `-x^2`.
+- Verification target:
+  - Focused parser tests for `-x^2 + 4`, `(-x)^2 + 4`, negative exponents, and existing implicit multiplication behavior; then full project tests and whitespace check.
+
+---
+
+## Relevant Skills
+
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The requested behavior is a visible canvas/UI edit, so the control flow should be verified in a rendered browser, not only through unit tests.
+
+## Current Task Notes
+
+- User concern:
+  - Point size should be adjustable both in bulk and one point at a time.
+- Finding:
+  - `pointSize` already exists on point-like objects and `pointSize: 0` is the label-only state.
+  - The UI currently exposes only point-body hide/show toggles, not a numeric size control.
+- Implementation direction:
+  - Add a persisted default point-size control for future points.
+  - Add a style-panel batch control for all point-like objects.
+  - Add selected-object controls that resize a single point-like object and selected point-like groups.
+  - Preserve `pointSize: 0` as a valid size for label-only points.
+- Verification target:
+  - Focused settings/unit coverage, full tests, and a browser interaction check for default, all-point, and selected-point resizing.
+- Completed result:
+  - The style panel includes default point-size and all-point point-size sliders.
+  - The selection panel includes point-size sliders for a single selected point and for multi-selected point groups.
+  - `SettingsManager` clamps point sizes to a safe UI/runtime range and only applies batch point-size changes to point-like objects.
+  - Verification passed through focused tests, full tests, Browser plugin interaction checks, and a fallback Playwright screenshot after Browser screenshot capture timed out.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The user-visible failure is a graph-region construction issue, and current MathGraph guidance says function-bounded curved regions need polygon/sample-point approximation until a first-class curved fill primitive exists.
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The acceptance bar is whether a canvas click creates and renders a filled vector region without breaking existing fill tool behavior.
+
+## Current Task Notes
+
+- User concern:
+  - A quadratic graph such as `y = -3/8x^2 + 6` cannot fill the area bounded by the x-axis and y-axis; the app says there is no fillable shape.
+- Finding:
+  - `FillTool` can target existing closed objects, infer loose segment loops, and infer two-circle lenses.
+  - It does not currently treat canvas coordinate axes as boundary objects, so a function-axis region is invisible to the fill inference path.
+- Implementation direction:
+  - After segment-loop and lens checks, inspect visible function graphs for x-axis/y-axis intercepts in the clicked quadrant.
+  - Sample the function between the origin-side axis intercepts and create a `closedRegion` from stored sample vertices.
+  - Avoid hidden helper point objects; keep exact curved-region primitives as a future enhancement.
+- Verification target:
+  - Focused tests for first-quadrant and second-quadrant parabola-axis fill creation, plus existing segment-loop/lens tests and full project tests.
+- Completed result:
+  - The fill tool now infers x-axis/y-axis/function bounded regions when the click is inside the relevant quadrant.
+  - `ClosedRegion` can now persist stored sample vertices, which avoids creating hidden helper-point objects for sampled curve fills.
+  - Browser QA confirmed the first-quadrant region for `y=-3/8x^2+6` is filled as a valid `closedRegion`.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The visible issue appears in MathGraph's function-label surface for graph drawings.
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The acceptance bar is rendered canvas behavior: the label should draw a stacked fraction instead of inline slash text.
+
+## Current Task Notes
+
+- User concern:
+  - A function label like `y=-3/8x^2+6` does not display the fractional coefficient properly.
+- Finding:
+  - Function labels flow through `FunctionGraph.getLabelText()` and `Canvas.drawMathLabel()`.
+  - The current parser supports normal text, superscripts, subscripts, `*` suppression, and minus normalization, but `/` is treated as plain text.
+- Implementation direction:
+  - Add a `fraction` token to `Canvas.parseMathExpression()` for simple slash fractions and LaTeX-style `\frac{...}{...}`.
+  - Render the token as centered numerator/denominator with a horizontal bar.
+  - Keep the saved/evaluated expression as the user's original ASCII-friendly text.
+- Verification target:
+  - Focused math-label tests, full tests, rendered browser smoke, and whitespace check.
+- Completed result:
+  - `Canvas.parseMathExpression()` now emits `fraction` parts for simple slash fractions and `\frac{...}{...}` groups.
+  - `Canvas.renderMathExpression()` centers numerator/denominator text around a horizontal fraction bar.
+  - Browser verification created `-3/8x^2+6` and confirmed the displayed label path uses a fraction token without slash text.
+
+---
+
+## Relevant Skills
+
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The user-visible behavior is canvas drag selection, so focused unit coverage plus rendered interaction verification are useful.
+
+## Current Task Notes
+
+- User concern:
+  - Function graphs and solid figures appear not to be selected by drag-box selection.
+- Finding:
+  - `SelectTool` currently checks point positions, the first two dependency points, or a center point.
+  - Function graphs have no point dependencies or center, and solids can be missed when the box crosses an edge without containing the first two dependency points.
+- Implementation direction:
+  - Add a geometry-aware drag-box predicate that checks object points, drawn edges, function samples, circle samples, and existing `hitTest` fallback probes against the selection rectangle.
+  - Keep hidden objects unselectable in normal drag-box selection.
+- Verification target:
+  - Focused tests for function, prism, pyramid, and crossing-segment drag-box selection, plus full tests and whitespace check.
+- Completed result:
+  - `SelectTool` now uses object geometry instead of only stored positions for drag-box selection.
+  - Function graphs are sampled within their visible range, solids are selected by projected edges, and segment-like objects are selected when an edge crosses the rectangle.
+  - Browser plugin loaded the app and verified console health/click selection; Playwright fallback verified actual drag-box function and prism selection because Browser CUA drag replay was unreliable.
+
+---
+
+## Relevant Skills
+
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The request changes rendered canvas controls and the right-side settings/properties UI, so browser validation is part of the acceptance bar.
+- Skill: Image Generation
+- Why it matters:
+  - Project rules ask for a target screen before vibe-coding webapp UI changes; a 16:9 target mockup was generated for this session.
+
+## Current Task Notes
+
+- User concern:
+  - Axis numbers should be separately showable/hideable.
+  - Axis numbers should optionally stay at fixed intervals such as `0.1`, `1`, or `2` regardless of zoom.
+  - Function graphs should support visible-range limits based on `y` values, not only `x` values.
+- Finding:
+  - Axis labels and ticks are rendered in `Canvas.drawAxisLabels()` using an automatic zoom-based gap.
+  - View toggles already live in the right settings panel.
+  - Function `xMin`/`xMax` exists in `FunctionGraph` and the selection property panel, but persistence/export support is incomplete and there is no `yMin`/`yMax`.
+- Implementation direction:
+  - Add `showAxisNumbers` and `axisNumberInterval` settings, with `auto` retaining the current zoom-derived behavior.
+  - Keep axes visible even when numeric labels are hidden.
+  - Add `yMin`/`yMax` to function rendering, hit testing, save/load, and SVG path generation.
+- Verification target:
+  - Focused unit tests for axis interval resolution and function y-range clipping, plus full tests, browser smoke, and whitespace check.
+- Completed result:
+  - The settings panel now has `축 숫자` and `축 숫자 간격` controls.
+  - Axis-number interval can stay automatic or fixed at values such as `0.1`, `1`, and `2`.
+  - Function properties now show both `x 범위` and `y 범위`.
+  - Canvas rendering, hit testing, SVG export, and JSON save/load now honor `yMin`/`yMax`.
+
+---
+
+## Relevant Skills
+
 - Skill: MathGraph Drawing
 - Why it matters:
   - The visible issue appears in MathGraph's formula label surface for a graph drawing.

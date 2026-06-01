@@ -2,6 +2,256 @@
 
 ## Summary
 
+- Task: Function unary-minus exponent precedence
+- Owner: Codex
+- Date: 2026-06-01
+- Related files:
+  - `js/utils/Parser.js`
+  - `tests/function-parser.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- A function entered as `-x^2 + 4` is rendered as an upward-opening parabola.
+- Standard math notation interprets `-x^2` as `-(x^2)`, but the current parser treats it like `(-x)^2`.
+- This makes the graph disagree with the label and with classroom expectations for quadratic functions.
+
+## Goals
+
+- Parse unary minus with lower precedence than exponentiation for expressions such as `-x^2`.
+- Preserve explicit parentheses, so `(-x)^2` still renders as an upward-opening graph.
+- Preserve negative exponents such as `2^-2` and existing arithmetic behavior.
+
+## Non-Goals
+
+- Do not replace the full parser or add a third-party math parser in this pass.
+- Do not change label rendering semantics beyond making the evaluated graph match the entered expression.
+- Do not alter Vercel deployment settings.
+
+## Acceptance Criteria
+
+- [ ] `-x^2 + 4` evaluates to `0` at `x=2` and `4` at `x=0`.
+- [ ] `(-x)^2 + 4` still evaluates to `8` at `x=2`.
+- [ ] Negative exponents and existing parser behavior remain covered by tests.
+- [ ] Focused parser tests, relevant full tests, and whitespace checks pass or blockers are recorded.
+
+---
+
+## Summary
+
+- Task: Point size controls for default, bulk, and individual edits
+- Owner: Codex
+- Date: 2026-06-01
+- Related files:
+  - `index.html`
+  - `js/core/SettingsManager.js`
+  - `js/main.js`
+  - `tests/point-label-only.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Users can hide point bodies through `pointSize: 0`, but there is no direct UI to choose a visible point radius.
+- Existing point-size edits are only possible through generated/AI payloads or indirect hide/show controls.
+- Teachers need both fast batch resizing for all or selected points and precise per-point resizing for individual diagram cleanup.
+
+## Goals
+
+- Add a default point-size control for newly created points.
+- Add a bulk point-size control that updates all existing point-like objects.
+- Add a selected-point control so individual point-like objects can be resized directly.
+- Preserve `pointSize: 0` as the label-only state and keep the existing point-body toggle behavior.
+
+## Non-Goals
+
+- Do not change point labels, point coordinates, or geometry dependencies.
+- Do not change GraphA schema fields; continue using existing `pointSize`.
+- Do not alter Vercel deployment configuration.
+
+## Acceptance Criteria
+
+- [x] New points use the configured default point size unless label-only defaults or hide-all-points are active.
+- [x] Existing point-like objects can be resized in one batch from the style panel.
+- [x] A selected point-like object can be resized independently from the selection panel.
+- [x] `pointSize: 0` still hides only the point body while preserving labels.
+- [x] Focused tests, full tests, browser verification, docs, commit, and push are handled or blockers are recorded.
+
+---
+
+## Summary
+
+- Task: Function-axis inferred fill regions
+- Owner: Codex
+- Date: 2026-06-01
+- Related files:
+  - `js/tools/FillTool.js`
+  - `tests/fill-tool.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The fill tool can fill existing closed objects, loose segment loops, and two-circle lens regions.
+- A common graphing workflow still fails: clicking the area bounded by a function graph and the coordinate axes reports that no fillable shape exists.
+- In examples such as `y = -3/8x^2 + 6`, the first-quadrant region bounded by the x-axis, y-axis, and the parabola should be fillable even though the axes are canvas primitives rather than MathGraph objects.
+
+## Goals
+
+- Let the fill tool infer a vector fill region when the clicked point is inside a region bounded by a visible function graph, the x-axis, and the y-axis.
+- Create the inferred region from stored sample vertices so it remains persistent in the current `closedRegion` object model without leaving hidden helper-point objects behind.
+- Prefer the smallest matching function-axis region under the click and preserve existing segment-loop, lens, polygon, and circle fill behavior.
+
+## Non-Goals
+
+- Do not add a new first-class curved-region primitive in this pass.
+- Do not implement arbitrary function-function or function-line bounded region solving.
+- Do not change Vercel deployment settings.
+
+## Acceptance Criteria
+
+- [x] Clicking inside the first-quadrant area bounded by `y = -3/8x^2 + 6`, the x-axis, and the y-axis creates a filled closed region.
+- [x] The same inference works for the symmetric second-quadrant region when clicked there.
+- [x] Existing segment-loop and two-circle lens inference behavior remains unchanged.
+- [x] Focused tests, full tests, browser QA, and whitespace checks pass.
+- [x] Progress docs are updated, and the completed code/test change is committed and pushed.
+
+---
+
+## Summary
+
+- Task: Stacked fraction rendering for function labels
+- Owner: Codex
+- Date: 2026-06-01
+- Related files:
+  - `js/core/Canvas.js`
+  - `tests/math-label-rendering.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Function labels use MathGraph's canvas-based math renderer.
+- Slash fractions such as `y=-3/8x^2+6` are currently drawn inline as `3/8`, so the expression does not look like a proper textbook/LaTeX-style fraction.
+- The graph expression parser should remain ASCII-compatible, but the visible label needs a stacked numerator/denominator form.
+
+## Goals
+
+- Render simple slash fractions such as `3/8` as stacked fractions in canvas math labels.
+- Keep adjacent implicit multiplication readable, so `-3/8x^2` displays as minus, stacked `3/8`, then `x^2`.
+- Preserve existing superscript/subscript and mathematical minus rendering.
+- Keep stored function expressions, GraphA schemas, save/load, and function evaluation unchanged.
+
+## Non-Goals
+
+- Do not replace the custom canvas math renderer with full KaTeX DOM rendering.
+- Do not change the function parser or require users to enter LaTeX.
+- Do not alter Vercel deployment configuration.
+
+## Acceptance Criteria
+
+- [x] `y=-3/8x^2+6` tokenizes into a stacked `3/8` fraction followed by `x^2`.
+- [x] Fraction rendering draws a horizontal fraction bar and does not draw `/` as text.
+- [x] Existing minus and exponent rendering tests still pass.
+- [x] Focused tests, full tests, and whitespace checks pass or any blocker is recorded.
+- [x] Progress docs are updated; commit/push is blocked by unrelated pre-existing staged and unstaged work in this workspace.
+
+---
+
+## Summary
+
+- Task: Drag-box selection coverage for functions and solids
+- Owner: Codex
+- Date: 2026-06-01
+- Related files:
+  - `js/tools/SelectTool.js`
+  - `tests/select-tool-box-selection.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The select tool's drag box currently relies mostly on object positions or the first two dependency points.
+- Function graphs do not expose a simple point position, so a drag box crossing a visible curve may not select the function.
+- Prism and pyramid objects can also be missed when the drag box crosses a visible edge but does not contain the first dependency points.
+
+## Goals
+
+- Make drag-box selection include function curves when the selected rectangle intersects the visible graph.
+- Make drag-box selection include prism and pyramid objects when the rectangle intersects their visible projected edges.
+- Preserve existing click selection, shift-add selection, dragging selected objects, and hidden-object behavior.
+- Keep the change local to selection hit coverage instead of changing object persistence or drawing semantics.
+
+## Non-Goals
+
+- Do not change how functions, prisms, or pyramids are rendered.
+- Do not add new object types or GraphA schema fields.
+- Do not alter Vercel deployment configuration.
+
+## Acceptance Criteria
+
+- [x] A drag box crossing a function graph selects that function.
+- [x] A drag box crossing a prism or pyramid edge selects that solid.
+- [x] Existing point/segment/polygon-style drag-box selection remains supported.
+- [x] Focused tests, full tests, and whitespace checks pass, with Git line-ending warnings only.
+- [x] Progress docs are updated; commit and push are handled at task close or any blocker is recorded.
+
+---
+
+## Summary
+
+- Task: Axis number controls and function range limits
+- Owner: Codex
+- Date: 2026-06-01
+- Related files:
+  - `index.html`
+  - `js/core/Canvas.js`
+  - `js/core/SettingsManager.js`
+  - `js/objects/Function.js`
+  - `js/main.js`
+  - `tests/axis-label-settings.test.js`
+  - `tests/function-range-limits.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Axis numeric labels are always shown whenever the corresponding axis is visible.
+- Axis label spacing is automatically recalculated from zoom level, so teachers cannot force labels at a fixed interval such as `0.1`, `1`, or `2`.
+- Function graphs can be limited by `xMin`/`xMax`, but there is no matching `yMin`/`yMax` range limit.
+
+## Goals
+
+- Add a view setting to show or hide coordinate-axis numeric labels independently from axis visibility.
+- Add an axis-number interval setting that can stay automatic or force a fixed math-unit interval regardless of zoom.
+- Add function `yMin`/`yMax` range limits alongside the existing `xMin`/`xMax` controls.
+- Persist range values through save/load and keep SVG export aligned with canvas rendering.
+
+## Non-Goals
+
+- Do not redesign the whole property panel.
+- Do not add a general implicit/function-bounded region solver.
+- Do not alter Vercel deployment settings in this pass.
+
+## Acceptance Criteria
+
+- [x] Settings UI can toggle axis numbers without hiding the axes themselves.
+- [x] Settings UI can select automatic or fixed axis-number intervals including `0.1`, `1`, and `2`.
+- [x] Function graph rendering honors `yMin`/`yMax` as well as `xMin`/`xMax`.
+- [x] Function range settings are editable in the selected-function property panel and survive JSON save/load.
+- [x] Focused tests, full tests, browser QA, and whitespace checks pass or any blocker is recorded.
+
+---
+
+## Summary
+
 - Task: Math label minus sign rendering polish
 - Owner: Codex
 - Date: 2026-06-01

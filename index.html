@@ -472,6 +472,12 @@
                                 </select>
                                 <button class="btn-small" id="applyBulkWidth">모두 적용</button>
                             </div>
+                            <div class="property-row point-size-row">
+                                <label for="bulkPointSize">점 크기:</label>
+                                <input type="range" id="bulkPointSize" min="0" max="20" step="1" value="4">
+                                <span class="value-display" id="bulkPointSizeValue">4</span>
+                                <button class="btn-small" id="applyBulkPointSize">모든 점 적용</button>
+                            </div>
                         </div>
                         <h4>새 객체 기본값</h4>
                         <div class="style-section">
@@ -487,6 +493,11 @@
                                     <option value="3">3</option>
                                     <option value="4">4</option>
                                 </select>
+                            </div>
+                            <div class="property-row point-size-row">
+                                <label for="defaultPointSize">점 크기:</label>
+                                <input type="range" id="defaultPointSize" min="0" max="20" step="1" value="4">
+                                <span class="value-display" id="defaultPointSizeValue">4</span>
                             </div>
                             <div class="property-row">
                                 <label for="defaultPointBodyHidden">점 본체:</label>
@@ -553,6 +564,23 @@
                             <div class="property-row">
                                 <label for="showYAxisPanel">Y축</label>
                                 <input type="checkbox" id="showYAxisPanel" checked>
+                            </div>
+                            <div class="property-row">
+                                <label for="showAxisNumbersPanel">축 숫자</label>
+                                <input type="checkbox" id="showAxisNumbersPanel" checked>
+                            </div>
+                            <div class="property-row">
+                                <label for="axisNumberIntervalPanel">축 숫자 간격</label>
+                                <select id="axisNumberIntervalPanel">
+                                    <option value="auto" selected>자동</option>
+                                    <option value="0.1">0.1</option>
+                                    <option value="0.2">0.2</option>
+                                    <option value="0.5">0.5</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                </select>
                             </div>
                             <div class="property-row">
                                 <label for="showHiddenPanel">숨김 객체 보기</label>

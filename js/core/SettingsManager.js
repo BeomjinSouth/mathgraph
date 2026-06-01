@@ -1,7 +1,23 @@
 const DEFAULT_STYLE_COLOR = '#000000';
 const DEFAULT_POINT_SIZE = 4;
+const MIN_POINT_SIZE = 0;
+const MAX_POINT_SIZE = 30;
 const LEGACY_STYLE_COLORS = new Set(['#6366f1', '#3b82f6', '#22c55e', '#f97316']);
 const DEFAULT_STYLE_COLOR_KEYS = ['pointColor', 'lineColor', 'circleColor', 'functionColor'];
+const POINT_LIKE_TYPES = new Set(['point', 'pointOnObject', 'intersection', 'midpoint']);
+
+function normalizePointSize(value, fallback = DEFAULT_POINT_SIZE) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+        return fallback;
+    }
+
+    return Math.min(MAX_POINT_SIZE, Math.max(MIN_POINT_SIZE, numeric));
+}
+
+function isPointLikeObject(obj) {
+    return POINT_LIKE_TYPES.has(obj?.type);
+}
 
 /**
  * SettingsManager.js - 전역 설정 관리 (Mk.2)
@@ -31,6 +47,8 @@ export class SettingsManager {
         this.showLabels = true;
         this.hidePoints = false;
         this.hideNewPointBodies = false;
+        this.showAxisNumbers = true;
+        this.axisNumberInterval = 'auto';
 
         // 로컬 스토리지에서 불러오기
         this.load();
@@ -84,9 +102,22 @@ export class SettingsManager {
      */
     setDefaultStyle(key, value) {
         if (key in this.defaultStyles) {
+            if (key === 'pointSize') {
+                this.setDefaultPointSize(value);
+                return;
+            }
             this.defaultStyles[key] = value;
             this.save();
         }
+    }
+
+    setDefaultPointSize(size) {
+        this.defaultStyles.pointSize = normalizePointSize(size);
+        this.save();
+    }
+
+    normalizePointSize(size, fallback = DEFAULT_POINT_SIZE) {
+        return normalizePointSize(size, fallback);
     }
 
     setHideNewPointBodies(hide) {
@@ -94,9 +125,28 @@ export class SettingsManager {
         this.save();
     }
 
+    setShowAxisNumbers(show) {
+        this.showAxisNumbers = !!show;
+        this.save();
+    }
+
+    setAxisNumberInterval(interval) {
+        if (interval === 'auto') {
+            this.axisNumberInterval = 'auto';
+            this.save();
+            return;
+        }
+
+        const numeric = Number(interval);
+        if (Number.isFinite(numeric) && numeric > 0) {
+            this.axisNumberInterval = String(numeric);
+            this.save();
+        }
+    }
+
     getDefaultPointParams() {
         return {
-            pointSize: (this.hidePoints || this.hideNewPointBodies) ? 0 : this.defaultStyles.pointSize,
+            pointSize: (this.hidePoints || this.hideNewPointBodies) ? 0 : normalizePointSize(this.defaultStyles.pointSize),
             color: this.defaultStyles.pointColor
         };
     }
@@ -137,6 +187,24 @@ export class SettingsManager {
         }
     }
 
+    applyPointSizeToObjects(objects, pointSize) {
+        const size = normalizePointSize(pointSize, 0);
+        let changedCount = 0;
+
+        for (const obj of objects) {
+            if (isPointLikeObject(obj) && obj.pointSize !== undefined) {
+                obj.pointSize = size;
+                changedCount++;
+            }
+        }
+
+        return changedCount;
+    }
+
+    applyPointSizeToAll(objectManager, pointSize) {
+        return this.applyPointSizeToObjects(objectManager.getAllObjects(), pointSize);
+    }
+
     /**
      * 모든 점 숨기기/보이기
      */
@@ -146,7 +214,7 @@ export class SettingsManager {
         for (const obj of objects) {
             if (obj.type === 'point' || obj.type === 'pointOnObject' ||
                 obj.type === 'intersection' || obj.type === 'midpoint') {
-                obj.pointSize = hide ? 0 : this.defaultStyles.pointSize;
+                obj.pointSize = hide ? 0 : normalizePointSize(this.defaultStyles.pointSize);
             }
         }
 
@@ -169,7 +237,9 @@ export class SettingsManager {
             defaultStyles: this.defaultStyles,
             showLabels: this.showLabels,
             hidePoints: this.hidePoints,
-            hideNewPointBodies: this.hideNewPointBodies
+            hideNewPointBodies: this.hideNewPointBodies,
+            showAxisNumbers: this.showAxisNumbers,
+            axisNumberInterval: this.axisNumberInterval
         }));
     }
 
@@ -185,9 +255,12 @@ export class SettingsManager {
                 if (data.magnetEnabled !== undefined) this.magnetEnabled = data.magnetEnabled;
                 if (data.magnetStep !== undefined) this.magnetStep = data.magnetStep;
                 if (data.defaultStyles) Object.assign(this.defaultStyles, data.defaultStyles);
+                this.defaultStyles.pointSize = normalizePointSize(this.defaultStyles.pointSize);
                 if (data.showLabels !== undefined) this.showLabels = data.showLabels;
                 if (data.hidePoints !== undefined) this.hidePoints = data.hidePoints;
                 if (data.hideNewPointBodies !== undefined) this.hideNewPointBodies = data.hideNewPointBodies;
+                if (data.showAxisNumbers !== undefined) this.showAxisNumbers = !!data.showAxisNumbers;
+                if (data.axisNumberInterval !== undefined) this.setAxisNumberInterval(data.axisNumberInterval);
 
                 if (this.normalizeDefaultStyleColors()) {
                     this.save();

@@ -2,6 +2,149 @@
 
 ## 2026-06-01
 
+### Function-axis inferred fill regions
+
+#### Work completed
+
+- Extended the fill tool so clicks inside a region bounded by one visible function graph, the x-axis, and the y-axis can create a filled vector region.
+- Added stored-vertex support to `ClosedRegion`, allowing sampled function-axis fills to persist without creating hidden helper point objects.
+- Kept existing direct fills, loose segment-loop inference, and two-circle lens inference behavior intact.
+- Added focused regression coverage for the first- and second-quadrant regions of `y=-3/8x^2+6`.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Verification
+
+- Ran `node --check js\tools\FillTool.js`; passed.
+- Ran `node --check js\objects\ClosedRegion.js`; passed.
+- Ran `node --test tests\fill-tool.test.js`; passed with 6 tests.
+- In-app Browser loaded `http://127.0.0.1:4183/` with title `그래프A Mk2.1` and no console warnings/errors; screenshot capture timed out and text entry was blocked by the Browser virtual clipboard.
+- Ran a Playwright fallback on `http://127.0.0.1:4183/`; created `y=-3/8x^2+6`, clicked the first-quadrant function-axis region, and confirmed one valid `closedRegion` with 34 stored sample vertices containing the clicked point.
+- Screenshot evidence: `C:\Users\pbj95\AppData\Local\Temp\mathgraph-function-axis-fill.png`.
+- Ran `npm.cmd test`; passed with 144 tests.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Git / GitHub
+
+- Committed the fill-region code/test files only with `git commit --only js/objects/ClosedRegion.js js/tools/FillTool.js tests/fill-tool.test.js -m "Add function-axis fill inference"` (`aa2a302`).
+- Pushed `codex/ai-fallback-recovery` to GitHub.
+- This progress-log/documentation update remains unstaged because unrelated staged and unstaged documentation/UI changes already exist in the workspace.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
+### Point size controls for default, bulk, and individual edits
+
+#### Work completed
+
+- Added style-panel point-size sliders for the default new-point size and all existing point-like objects.
+- Added selection-panel point-size sliders for a single selected point-like object and selected point-like groups.
+- Preserved `pointSize: 0` as the label-only point-body state while allowing visible points to be resized directly.
+- Added `SettingsManager` helpers to normalize point sizes and apply batch point-size changes only to point-like objects.
+- Added focused test coverage for default point size and bulk point-size application.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Verification
+
+- Ran `node --check js\core\SettingsManager.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --test tests\point-label-only.test.js`; passed with 5 tests.
+- Ran `npm.cmd test`; passed with 144 tests.
+- Browser plugin verification on `http://127.0.0.1:4180/` confirmed default size 8 for newly created points, bulk size 12 for point-like objects, selected point size 5, and 0 console warnings/errors.
+- Browser plugin screenshot capture failed with `Page.captureScreenshot` timeout, so a Playwright fallback reproduced the flow and saved `C:\Users\pbj95\AppData\Local\Temp\mathgraph-point-size-qa.png`.
+- Ran `git diff --check`; passed with CRLF normalization warnings only.
+
+#### Git / GitHub
+
+- Checked `git status --short --branch` and `git diff --cached --name-status`.
+- Commit and push were not performed from this task turn because the workspace already contains unrelated staged and unstaged changes for axis labels, function range limits, function-axis fill regions, drag-box selection, and other tests.
+- `git commit` / `git push` were intentionally skipped to avoid bundling unrelated staged work into the point-size change.
+- Next action: commit or shelve unrelated work separately, then stage this point-size change intentionally and push.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
+### Drag-box selection coverage for functions and solids
+
+#### Work completed
+
+- Replaced the drag-box selection path in `SelectTool` with geometry-aware rectangle intersection checks.
+- Added selection coverage for visible function graph samples, crossing segments, infinite lines, rays, circles, polygons, and projected prism/pyramid edges.
+- Preserved hidden-object behavior, shift-add selection, and existing click/drag flows.
+- Added focused regression coverage for function graph, crossing segment, prism edge, and pyramid edge drag-box selection.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Verification
+
+- Ran `node --check js\tools\SelectTool.js`; passed.
+- Ran `node --test tests\select-tool-box-selection.test.js`; passed with 4 tests.
+- Ran `npm.cmd test`; passed with 144 tests.
+- In-app Browser loaded `http://127.0.0.1:4177/`, confirmed title `그래프A Mk2.1`, saw no console warnings/errors, and verified function click-selection. Browser CUA drag replay did not reliably trigger the drag-box path, so rendered drag verification used Playwright.
+- Playwright fallback on `http://127.0.0.1:4177/` created `x^2` and a prism, then verified drag-box selection for the function graph and a prism edge with 0 console issues. Screenshot evidence: `C:\Users\pbj95\AppData\Local\Temp\mathgraph-drag-box-selection-qa.png`.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran scoped `git diff --check` for this task's files; passed with line-ending warnings only.
+
+#### Git / GitHub
+
+- Committed and pushed the isolated code/test change as `b54fd0e` (`Improve drag-box selection coverage`) on `codex/ai-fallback-recovery`.
+- Pre-existing unrelated staged and unstaged changes were left untouched. The project docs are updated in the working tree, but not included in the pushed commit to avoid mixing those unrelated in-progress changes.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
+### Axis numbers and function y-range controls
+
+#### Work completed
+
+- Added a settings-panel `축 숫자` toggle so coordinate-axis numbers can be hidden while axes and tick marks remain visible.
+- Added `축 숫자 간격` with automatic spacing plus fixed intervals including `0.1`, `0.2`, `0.5`, `1`, `2`, `5`, and `10`.
+- Added `yMin`/`yMax` function range limits alongside the existing `xMin`/`xMax` property controls.
+- Applied `yMin`/`yMax` to canvas rendering, function hit testing, SVG export path generation, and JSON save/load.
+- Added focused tests for fixed axis intervals, hidden axis numbers, y-range clipping, and function range persistence.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Verification
+
+- Ran `node --check` for `js\core\Canvas.js`, `js\core\SettingsManager.js`, `js\objects\Function.js`, and `js\main.js`; all passed.
+- Ran `node --test tests\axis-label-settings.test.js tests\function-range-limits.test.js`; passed with 7 tests.
+- Ran `npm.cmd test`; passed with 141 tests.
+- Browser plugin smoke on `http://127.0.0.1:4182/` confirmed the app title, settings controls, axis-number toggle, fixed interval selection, selected-function `x 범위`/`y 범위` rows, and 0 console error/warn logs.
+- Browser plugin screenshot capture returned no data, so a Playwright screenshot fallback reproduced the same flow and saved `C:\Users\pbj95\AppData\Local\Temp\mathgraph-axis-function-range-qa.png`.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
+### Stacked fraction rendering for function labels
+
+#### Work completed
+
+- Added fraction tokens to the canvas math-label parser for simple slash fractions such as `3/8` and LaTeX-style `\frac{...}{...}` groups.
+- Rendered fraction tokens as centered numerator/denominator text with a horizontal fraction bar instead of drawing `/`.
+- Preserved the stored function expression and evaluation path, so inputs such as `-3/8x^2+6` remain ASCII-friendly while the visible label becomes textbook-style.
+- Kept the existing mathematical minus and exponent/subscript rendering behavior.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Verification
+
+- Ran `node --check js\core\Canvas.js`; passed.
+- Ran `node --test tests\math-label-rendering.test.js`; passed with 6 tests.
+- Ran `npm.cmd test`; passed with 138 tests.
+- In-app Browser loaded `http://127.0.0.1:4181/` and exercised the function tool, but screenshot capture failed with a CDP timeout.
+- Ran a Playwright fallback smoke on `http://127.0.0.1:4181/`; created `-3/8x^2+6`, confirmed parsed display parts include a `fraction` token and no slash text, captured `C:\Users\pbj95\AppData\Local\Temp\mathgraph-fraction-label-smoke.png`, and saw 0 console warnings/errors.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Git / GitHub
+
+- Commit and push were not performed because the workspace already contains unrelated staged and unstaged changes across docs, UI, settings, fill, selection, and point-size work. Next action: commit or shelve those unrelated changes separately, then stage this fraction-rendering change intentionally.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ### Math label minus sign rendering polish
 
 #### Work completed

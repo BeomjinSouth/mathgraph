@@ -7,6 +7,15 @@ import { Vec2, Geometry } from '../utils/Geometry.js';
 import { FunctionParser } from '../utils/Parser.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
+function normalizeOptionalNumber(value) {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+}
+
 /**
  * 함수 그래프 (Function Graph)
  */
@@ -18,8 +27,10 @@ export class FunctionGraph extends GeoObject {
         this._error = null;
 
         // 도메인 제한 (x 범위)
-        this.xMin = params.xMin !== undefined ? params.xMin : null;
-        this.xMax = params.xMax !== undefined ? params.xMax : null;
+        this.xMin = normalizeOptionalNumber(params.xMin);
+        this.xMax = normalizeOptionalNumber(params.xMax);
+        this.yMin = normalizeOptionalNumber(params.yMin);
+        this.yMax = normalizeOptionalNumber(params.yMax);
 
         // 라벨 수학 좌표 위치 (null이면 자동 계산)
         this._labelMathPos = params.labelMathPos || null;
@@ -54,8 +65,13 @@ export class FunctionGraph extends GeoObject {
      * 도메인 설정
      */
     setDomain(xMin, xMax) {
-        this.xMin = xMin;
-        this.xMax = xMax;
+        this.xMin = normalizeOptionalNumber(xMin);
+        this.xMax = normalizeOptionalNumber(xMax);
+    }
+
+    setRange(yMin, yMax) {
+        this.yMin = normalizeOptionalNumber(yMin);
+        this.yMax = normalizeOptionalNumber(yMax);
     }
 
     /**
@@ -70,6 +86,28 @@ export class FunctionGraph extends GeoObject {
             return `x < ${this.xMax}`;
         }
         return '';
+    }
+
+    /**
+     * 치역 문자열 반환 (예: "1 < y < 3")
+     */
+    getRangeString() {
+        if (this.yMin !== null && this.yMax !== null) {
+            return `${this.yMin} < y < ${this.yMax}`;
+        } else if (this.yMin !== null) {
+            return `y > ${this.yMin}`;
+        } else if (this.yMax !== null) {
+            return `y < ${this.yMax}`;
+        }
+        return '';
+    }
+
+    isPointWithinVisibleRange(x, y) {
+        if (this.xMin !== null && x < this.xMin - MathUtils.EPSILON) return false;
+        if (this.xMax !== null && x > this.xMax + MathUtils.EPSILON) return false;
+        if (this.yMin !== null && y < this.yMin - MathUtils.EPSILON) return false;
+        if (this.yMax !== null && y > this.yMax + MathUtils.EPSILON) return false;
+        return true;
     }
 
     /**
@@ -94,7 +132,8 @@ export class FunctionGraph extends GeoObject {
 
         const labelY = this._fn(labelX);
 
-        if (!isFinite(labelY) || labelY < bounds.minY || labelY > bounds.maxY) {
+        if (!isFinite(labelY) || labelY < bounds.minY || labelY > bounds.maxY ||
+            !this.isPointWithinVisibleRange(labelX, labelY)) {
             return null;
         }
 
@@ -163,7 +202,9 @@ export class FunctionGraph extends GeoObject {
             highlighted: this.highlighted,
             selected: this.selected,
             xMin: this.xMin,
-            xMax: this.xMax
+            xMax: this.xMax,
+            yMin: this.yMin,
+            yMax: this.yMax
         });
 
         if (this.showLabel && this.label) {
@@ -222,7 +263,7 @@ export class FunctionGraph extends GeoObject {
             const x = point.x + dx;
             const y = this._fn(x);
 
-            if (isFinite(y)) {
+            if (isFinite(y) && this.isPointWithinVisibleRange(x, y)) {
                 const dist = Math.abs(point.y - y);
                 if (dist <= screenThreshold) {
                     return true;
@@ -318,7 +359,11 @@ export class FunctionGraph extends GeoObject {
         return {
             ...super.toJSON(),
             expression: this.expression,
-            labelX: this._labelX,
+            xMin: this.xMin,
+            xMax: this.xMax,
+            yMin: this.yMin,
+            yMax: this.yMax,
+            labelMathPos: this._labelMathPos ? { x: this._labelMathPos.x, y: this._labelMathPos.y } : null,
             labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y }
         };
     }
@@ -326,9 +371,6 @@ export class FunctionGraph extends GeoObject {
     static fromJSON(data) {
         const func = new FunctionGraph(data.expression, data);
         func.id = data.id;
-        if (data.labelX !== undefined) {
-            func._labelX = data.labelX;
-        }
         return func;
     }
 }

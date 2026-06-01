@@ -19,6 +19,8 @@ export class Canvas {
         this.showGrid = true;
         this.showXAxis = true;
         this.showYAxis = true;
+        this.showAxisNumbers = true;
+        this.axisNumberInterval = 'auto';
         this.backgroundColor = '#ffffff';
 
         // 그리드 설정
@@ -290,17 +292,7 @@ export class Canvas {
         const origin = this.toScreen(new Vec2(0, 0));
         const bounds = this.getVisibleBounds();
 
-        // 간격 계산
-        const targetPixelGap = 100;
-        const rawGap = targetPixelGap / this.scale;
-        const possibleGaps = [0.5, 1, 2, 5, 10, 20, 50, 100];
-        let gap = possibleGaps[0];
-        for (const g of possibleGaps) {
-            if (g >= rawGap) {
-                gap = g;
-                break;
-            }
-        }
+        const gap = this.getAxisNumberGap();
 
         ctx.font = '11px "Noto Sans KR", sans-serif';
         ctx.fillStyle = '#666666';
@@ -309,8 +301,7 @@ export class Canvas {
 
         // X축 레이블 (X축이 활성화된 경우에만)
         if (this.showXAxis) {
-            const startX = Math.floor(bounds.minX / gap) * gap;
-            for (let x = startX; x <= bounds.maxX; x += gap) {
+            for (const x of this.getTickValues(bounds.minX, bounds.maxX, gap)) {
                 if (MathUtils.isZero(x)) continue;
 
                 const screenX = this.toScreen(new Vec2(x, 0)).x;
@@ -324,9 +315,10 @@ export class Canvas {
                 ctx.lineTo(screenX, origin.y + 3);
                 ctx.stroke();
 
-                // 레이블
-                const label = Number.isInteger(x) ? x.toString() : x.toFixed(1);
-                ctx.fillText(label, screenX, labelY);
+                if (this.showAxisNumbers) {
+                    const label = this.formatAxisNumber(x, gap);
+                    ctx.fillText(label, screenX, labelY);
+                }
             }
         }
 
@@ -335,8 +327,7 @@ export class Canvas {
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
 
-            const startY = Math.floor(bounds.minY / gap) * gap;
-            for (let y = startY; y <= bounds.maxY; y += gap) {
+            for (const y of this.getTickValues(bounds.minY, bounds.maxY, gap)) {
                 if (MathUtils.isZero(y)) continue;
 
                 const screenY = this.toScreen(new Vec2(0, y)).y;
@@ -350,20 +341,75 @@ export class Canvas {
                 ctx.lineTo(origin.x + 3, screenY);
                 ctx.stroke();
 
-                // 레이블
-                const label = Number.isInteger(y) ? y.toString() : y.toFixed(1);
-                ctx.fillText(label, labelX, screenY);
+                if (this.showAxisNumbers) {
+                    const label = this.formatAxisNumber(y, gap);
+                    ctx.fillText(label, labelX, screenY);
+                }
             }
         }
 
         // 원점 O (양쪽 축이 모두 보일 때만)
-        if (this.showXAxis && this.showYAxis &&
+        if (this.showAxisNumbers && this.showXAxis && this.showYAxis &&
             bounds.minX <= 0 && bounds.maxX >= 0 &&
             bounds.minY <= 0 && bounds.maxY >= 0) {
             ctx.textAlign = 'right';
             ctx.textBaseline = 'top';
             ctx.fillText('O', origin.x - 5, origin.y + 5);
         }
+    }
+
+    getAxisNumberGap() {
+        if (this.axisNumberInterval !== 'auto') {
+            const fixedGap = Number(this.axisNumberInterval);
+            if (Number.isFinite(fixedGap) && fixedGap > 0) {
+                return fixedGap;
+            }
+        }
+
+        const targetPixelGap = 100;
+        const rawGap = targetPixelGap / this.scale;
+        const possibleGaps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
+        for (const gap of possibleGaps) {
+            if (gap >= rawGap) {
+                return gap;
+            }
+        }
+        return possibleGaps[possibleGaps.length - 1];
+    }
+
+    getTickValues(min, max, gap) {
+        if (!Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(gap) || gap <= 0) {
+            return [];
+        }
+
+        const start = Math.ceil((min - MathUtils.EPSILON) / gap);
+        const end = Math.floor((max + MathUtils.EPSILON) / gap);
+        const decimals = this.getDecimalPlaces(gap);
+        const values = [];
+
+        for (let tick = start; tick <= end; tick++) {
+            values.push(Number((tick * gap).toFixed(decimals)));
+        }
+
+        return values;
+    }
+
+    formatAxisNumber(value, gap = 1) {
+        if (MathUtils.isZero(value)) {
+            return '0';
+        }
+
+        const decimals = this.getDecimalPlaces(gap);
+        return Number(value.toFixed(decimals)).toString();
+    }
+
+    getDecimalPlaces(value) {
+        const text = String(value);
+        if (text.includes('e-')) {
+            return Math.min(8, Number(text.split('e-')[1]) || 0);
+        }
+        const decimal = text.split('.')[1];
+        return decimal ? Math.min(8, decimal.length) : 0;
     }
 
     /**
@@ -794,7 +840,9 @@ export class Canvas {
             highlighted = false,
             selected = false,
             xMin = null,
-            xMax = null
+            xMax = null,
+            yMin = null,
+            yMax = null
         } = options;
 
         ctx.strokeStyle = color;
@@ -806,8 +854,11 @@ export class Canvas {
         // 도메인 제한 적용
         const drawMinX = xMin !== null ? Math.max(bounds.minX, xMin) : bounds.minX;
         const drawMaxX = xMax !== null ? Math.min(bounds.maxX, xMax) : bounds.maxX;
+        const drawMinY = yMin !== null ? yMin : null;
+        const drawMaxY = yMax !== null ? yMax : null;
 
         if (drawMinX >= drawMaxX) return; // 그릴 범위가 없음
+        if (drawMinY !== null && drawMaxY !== null && drawMinY >= drawMaxY) return;
 
         const step = (drawMaxX - drawMinX) / samples;
         let isDrawing = false;
@@ -857,6 +908,18 @@ export class Canvas {
 
             // 화면 범위 체크 (너무 벗어나면 그리지 않음)
             if (y < bounds.minY - 100 || y > bounds.maxY + 100) {
+                if (isDrawing) {
+                    ctx.stroke();
+                    ctx.beginPath();
+                    isDrawing = false;
+                }
+                prevY = y;
+                prevX = x;
+                continue;
+            }
+
+            if ((drawMinY !== null && y < drawMinY) ||
+                (drawMaxY !== null && y > drawMaxY)) {
                 if (isDrawing) {
                     ctx.stroke();
                     ctx.beginPath();
@@ -928,11 +991,16 @@ export class Canvas {
      * 수학 표현식 파싱 (위첨자/아래첨자 지원)
      */
     parseMathExpression(text, fontSize, color) {
+        text = String(text ?? '');
         const parts = [];
         let i = 0;
 
         while (i < text.length) {
-            if (text[i] === '^') {
+            const latexFraction = this.parseLatexFractionAt(text, i);
+            if (latexFraction) {
+                parts.push(latexFraction.part);
+                i = latexFraction.nextIndex;
+            } else if (text[i] === '^') {
                 // 위첨자
                 i++;
                 if (text[i] === '{') {
@@ -972,17 +1040,219 @@ export class Canvas {
             } else {
                 // 일반 텍스트 수집
                 let normalText = '';
-                while (i < text.length && text[i] !== '^' && text[i] !== '_' && text[i] !== '*') {
+                while (i < text.length &&
+                    text[i] !== '^' &&
+                    text[i] !== '_' &&
+                    text[i] !== '*' &&
+                    !text.startsWith('\\frac', i)) {
                     normalText += text[i];
                     i++;
                 }
                 if (normalText) {
-                    parts.push({ type: 'normal', text: this.normalizeMathLabelText(normalText) });
+                    this.appendMathLabelTextParts(parts, normalText);
                 }
             }
         }
 
         return parts;
+    }
+
+    appendMathLabelTextParts(parts, text) {
+        let index = 0;
+        const source = String(text ?? '');
+
+        while (index < source.length) {
+            const fraction = this.findAsciiFractionInText(source, index);
+            if (!fraction) {
+                const rest = source.slice(index);
+                if (rest) {
+                    parts.push({ type: 'normal', text: this.normalizeMathLabelText(rest) });
+                }
+                return;
+            }
+
+            if (fraction.start > index) {
+                parts.push({
+                    type: 'normal',
+                    text: this.normalizeMathLabelText(source.slice(index, fraction.start))
+                });
+            }
+
+            parts.push(this.createFractionPart(fraction.numerator, fraction.denominator));
+            index = fraction.end;
+        }
+    }
+
+    createFractionPart(numeratorText, denominatorText) {
+        return {
+            type: 'fraction',
+            numerator: this.parseMathExpression(this.stripOuterFractionGrouping(numeratorText)),
+            denominator: this.parseMathExpression(this.stripOuterFractionGrouping(denominatorText))
+        };
+    }
+
+    findAsciiFractionInText(text, fromIndex = 0) {
+        let slashIndex = text.indexOf('/', fromIndex);
+
+        while (slashIndex !== -1) {
+            const numerator = this.readFractionNumerator(text, slashIndex);
+            const denominator = this.readFractionDenominator(text, slashIndex);
+
+            if (numerator && denominator && numerator.start >= fromIndex) {
+                return {
+                    start: numerator.start,
+                    end: denominator.end,
+                    numerator: numerator.text,
+                    denominator: denominator.text
+                };
+            }
+
+            slashIndex = text.indexOf('/', slashIndex + 1);
+        }
+
+        return null;
+    }
+
+    readFractionNumerator(text, slashIndex) {
+        let i = slashIndex - 1;
+        while (i >= 0 && /\s/.test(text[i])) i--;
+        if (i < 0) return null;
+
+        const end = i + 1;
+        if (text[i] === ')') {
+            const start = this.findMatchingOpenParen(text, i);
+            if (start !== -1) {
+                return { start, end, text: text.slice(start, end) };
+            }
+            return null;
+        }
+
+        if (this.isMathNumberChar(text[i])) {
+            while (i >= 0 && this.isMathNumberChar(text[i])) i--;
+            return { start: i + 1, end, text: text.slice(i + 1, end) };
+        }
+
+        if (this.isMathIdentifierChar(text[i])) {
+            while (i >= 0 && this.isMathIdentifierChar(text[i])) i--;
+            return { start: i + 1, end, text: text.slice(i + 1, end) };
+        }
+
+        return null;
+    }
+
+    readFractionDenominator(text, slashIndex) {
+        let i = slashIndex + 1;
+        while (i < text.length && /\s/.test(text[i])) i++;
+        if (i >= text.length) return null;
+
+        const start = i;
+        if (text[i] === '(') {
+            const end = this.findMatchingCloseParen(text, i);
+            if (end !== -1) {
+                return { start, end: end + 1, text: text.slice(start, end + 1) };
+            }
+            return null;
+        }
+
+        if (this.isMathNumberChar(text[i])) {
+            while (i < text.length && this.isMathNumberChar(text[i])) i++;
+            return { start, end: i, text: text.slice(start, i) };
+        }
+
+        if (this.isMathIdentifierChar(text[i])) {
+            while (i < text.length && this.isMathIdentifierChar(text[i])) i++;
+            return { start, end: i, text: text.slice(start, i) };
+        }
+
+        return null;
+    }
+
+    parseLatexFractionAt(text, index) {
+        if (!String(text).startsWith('\\frac', index)) {
+            return null;
+        }
+
+        let cursor = index + '\\frac'.length;
+        while (cursor < text.length && /\s/.test(text[cursor])) cursor++;
+        if (text[cursor] !== '{') return null;
+
+        const numerator = this.readBracedGroup(text, cursor);
+        if (!numerator) return null;
+
+        cursor = numerator.end + 1;
+        while (cursor < text.length && /\s/.test(text[cursor])) cursor++;
+        if (text[cursor] !== '{') return null;
+
+        const denominator = this.readBracedGroup(text, cursor);
+        if (!denominator) return null;
+
+        return {
+            part: this.createFractionPart(numerator.text, denominator.text),
+            nextIndex: denominator.end + 1
+        };
+    }
+
+    readBracedGroup(text, openIndex) {
+        if (text[openIndex] !== '{') return null;
+
+        let depth = 0;
+        for (let i = openIndex; i < text.length; i++) {
+            if (text[i] === '{') depth++;
+            if (text[i] === '}') {
+                depth--;
+                if (depth === 0) {
+                    return {
+                        start: openIndex,
+                        end: i,
+                        text: text.slice(openIndex + 1, i)
+                    };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    findMatchingOpenParen(text, closeIndex) {
+        let depth = 0;
+        for (let i = closeIndex; i >= 0; i--) {
+            if (text[i] === ')') depth++;
+            if (text[i] === '(') {
+                depth--;
+                if (depth === 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    findMatchingCloseParen(text, openIndex) {
+        let depth = 0;
+        for (let i = openIndex; i < text.length; i++) {
+            if (text[i] === '(') depth++;
+            if (text[i] === ')') {
+                depth--;
+                if (depth === 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    stripOuterFractionGrouping(text) {
+        const trimmed = String(text ?? '').trim();
+        if (trimmed.startsWith('(') &&
+            trimmed.endsWith(')') &&
+            this.findMatchingCloseParen(trimmed, 0) === trimmed.length - 1) {
+            return trimmed.slice(1, -1);
+        }
+        return trimmed;
+    }
+
+    isMathNumberChar(char) {
+        return /[0-9.]/.test(char);
+    }
+
+    isMathIdentifierChar(char) {
+        return /[a-zA-Zπ]/.test(char);
     }
 
     normalizeMathLabelText(text) {
@@ -1005,6 +1275,15 @@ export class Canvas {
             'log', 'ln', 'exp', 'lim', 'max', 'min', 'abs'];
 
         for (const part of parts) {
+            if (part.type === 'fraction') {
+                const fractionFontSize = fontSize * 0.72;
+                const padding = Math.max(4, fontSize * 0.14);
+                const numeratorWidth = this.measureMathExpression(part.numerator, ctx, fractionFontSize);
+                const denominatorWidth = this.measureMathExpression(part.denominator, ctx, fractionFontSize);
+                totalWidth += Math.max(numeratorWidth, denominatorWidth) + padding * 2;
+                continue;
+            }
+
             const text = part.text;
             const isSmall = part.type === 'super' || part.type === 'sub';
 
@@ -1066,6 +1345,32 @@ export class Canvas {
         ctx.textBaseline = 'bottom';
 
         for (const part of parts) {
+            if (part.type === 'fraction') {
+                const fractionFontSize = fontSize * 0.72;
+                const padding = Math.max(4, fontSize * 0.14);
+                const numeratorWidth = this.measureMathExpression(part.numerator, ctx, fractionFontSize);
+                const denominatorWidth = this.measureMathExpression(part.denominator, ctx, fractionFontSize);
+                const fractionWidth = Math.max(numeratorWidth, denominatorWidth) + padding * 2;
+                const barY = startY - fontSize * 0.32;
+                const numeratorX = currentX + (fractionWidth - numeratorWidth) / 2;
+                const denominatorX = currentX + (fractionWidth - denominatorWidth) / 2;
+                const numeratorBaseline = barY - fontSize * 0.1;
+                const denominatorBaseline = barY + fractionFontSize + fontSize * 0.16;
+
+                this.renderMathExpression(part.numerator, ctx, numeratorX, numeratorBaseline, fractionFontSize, color);
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = Math.max(1, fontSize * 0.04);
+                ctx.beginPath();
+                ctx.moveTo(currentX + padding * 0.5, barY);
+                ctx.lineTo(currentX + fractionWidth - padding * 0.5, barY);
+                ctx.stroke();
+
+                this.renderMathExpression(part.denominator, ctx, denominatorX, denominatorBaseline, fractionFontSize, color);
+                currentX += fractionWidth;
+                continue;
+            }
+
             let text = part.text;
             const isSmall = part.type === 'super' || part.type === 'sub';
             const yOffset = part.type === 'super' ? -fontSize * 0.35 :
