@@ -90,5 +90,18 @@ This repository is a local context hub for OpenAI developer documentation. Use i
 
 ## Deployment
 
-- This project currently has no Vercel deployment configuration.
-- If Vercel is later added, document the project ID, target branch, environment variables, and deployment verification steps here instead of hardcoding them in prompts.
+- Vercel project linkage is present in `.vercel/project.json`.
+- Vercel project: `mathgraph`.
+- Vercel project ID: `prj_72kqKNP31NaiZ86JHAhyRGF6kXIw`.
+- Vercel org/team ID: `team_IisUu66EBjsNE4JkX4qO2UAZ`.
+- Primary production alias: `https://mathgraph-five.vercel.app`.
+- Current direct-deploy branch used by Codex: `codex/ai-fallback-recovery`.
+- Environment variables: none required for the static app deployment at this time.
+- Production deploy command: `npx.cmd vercel deploy --prod --yes`.
+- Deployment verification steps:
+  - Run `npm.cmd test`.
+  - Run `npm.cmd run vercel-build`.
+  - Run `git diff --check`.
+  - Run `npx.cmd vercel inspect <deployment-url>` and confirm `target` is `production`, `status` is `Ready`, and the production alias is attached.
+  - Check `https://mathgraph-five.vercel.app/` returns HTTP 200.
+  - For runtime smoke, load the production URL in Playwright and confirm `window.app` exists with no console errors or failed requests.

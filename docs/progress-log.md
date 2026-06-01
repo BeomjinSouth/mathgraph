@@ -2,6 +2,39 @@
 
 ## 2026-06-01
 
+### Vercel production deployment for current updates
+
+#### Work completed
+
+- Consolidated the current MathGraph working-tree updates, including axis-number controls, function x/y range controls, point-size controls, math-label rendering updates, parser unary precedence handling, and related regression tests.
+- Confirmed the local Vercel project link points to project `mathgraph` (`prj_72kqKNP31NaiZ86JHAhyRGF6kXIw`) under org/team `team_IisUu66EBjsNE4JkX4qO2UAZ`.
+- Deployed the current production build to Vercel and aliased it to `https://mathgraph-five.vercel.app`.
+- Updated `AGENTS.md` with the current Vercel linkage, production alias, environment-variable status, and deployment verification steps.
+
+#### Verification
+
+- Ran `npm.cmd test`; passed with 148 tests.
+- Ran `npm.cmd run vercel-build`; passed (`Static site build step not required`).
+- Ran `git diff --check`; passed with CRLF normalization warnings only.
+- Ran targeted parser/function/fill/selection checks after an initial full-test parser-state failure; targeted checks passed with 13 tests and final full suite passed.
+- Ran `npx.cmd vercel inspect https://mathgraph-q1fk9uz5h-beomjinsouths-projects.vercel.app`; deployment `dpl_271btTYMUWubmDEWbeoB3haV1mtL` was `Ready`.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200 with title `그래프A Mk2.1`.
+- Checked `https://mathgraph-five.vercel.app/js/utils/Parser.js`; returned HTTP 200 and included `parseUnary`.
+- Ran Vercel error-log scans with `npx.cmd vercel logs --level error --since 1h --environment production --no-branch --limit 20` and `npx.cmd vercel logs dpl_271btTYMUWubmDEWbeoB3haV1mtL --no-follow --level error --limit 20`; no logs found.
+- Ran a Playwright production smoke on `https://mathgraph-five.vercel.app/`; `window.app` was ready, 98 generated icon SVGs rendered, and there were 0 console issues and 0 failed requests.
+
+#### Git / GitHub
+
+- Committed the current app/test/documentation updates as `92ca060` (`Prepare MathGraph updates for deployment`).
+- Pushed `codex/ai-fallback-recovery` to GitHub.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-q1fk9uz5h-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_271btTYMUWubmDEWbeoB3haV1mtL`.
+- No Vercel environment variables or project settings were changed.
+
 ### Function-axis inferred fill regions
 
 #### Work completed
