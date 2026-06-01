@@ -2,6 +2,45 @@
 
 ## Summary
 
+- Task: Math label minus sign rendering polish
+- Owner: Codex
+- Date: 2026-06-01
+- Related files:
+  - `js/core/Canvas.js`
+  - `tests/math-label-rendering.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Function labels are rendered by MathGraph's canvas-based math label renderer, not by KaTeX DOM output.
+- The renderer currently draws ASCII hyphen-minus characters directly, so unary/subtraction minus signs can look like a short text hyphen in formulas such as `y = -(x+2)^2 + 3`.
+- This weakens the expected LaTeX-like appearance of classroom graph labels.
+
+## Goals
+
+- Normalize display-time math minus signs to the mathematical minus glyph.
+- Keep the stored function expression and label text unchanged.
+- Keep the fix scoped to math label rendering so geometry, parsing, AI schema, and save/load behavior remain unchanged.
+
+## Non-Goals
+
+- Do not replace the canvas math renderer with full KaTeX rendering in this pass.
+- Do not change function expression parsing or GraphA operation schemas.
+- Do not alter Vercel deployment configuration.
+
+## Acceptance Criteria
+
+- [x] Canvas math-label parsing turns ASCII `-` into Unicode mathematical minus for visible rendering.
+- [x] Superscript/subscript parsing still works for labels such as `y = -(x+2)^2 + 3`.
+- [x] Focused tests, full tests, and whitespace checks pass.
+- [x] Progress docs are updated, and the completed change is committed and pushed.
+
+---
+
+## Summary
+
 - Task: Label-only point body default option
 - Owner: Codex
 - Date: 2026-05-31

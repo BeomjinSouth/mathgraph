@@ -939,15 +939,15 @@ export class Canvas {
                     // 중괄호로 묶인 경우
                     const end = text.indexOf('}', i);
                     if (end !== -1) {
-                        parts.push({ type: 'super', text: text.slice(i + 1, end) });
+                        parts.push({ type: 'super', text: this.normalizeMathLabelText(text.slice(i + 1, end)) });
                         i = end + 1;
                     } else {
-                        parts.push({ type: 'super', text: text.slice(i + 1) });
+                        parts.push({ type: 'super', text: this.normalizeMathLabelText(text.slice(i + 1)) });
                         break;
                     }
                 } else {
                     // 단일 문자
-                    parts.push({ type: 'super', text: text[i] || '' });
+                    parts.push({ type: 'super', text: this.normalizeMathLabelText(text[i] || '') });
                     i++;
                 }
             } else if (text[i] === '_') {
@@ -956,14 +956,14 @@ export class Canvas {
                 if (text[i] === '{') {
                     const end = text.indexOf('}', i);
                     if (end !== -1) {
-                        parts.push({ type: 'sub', text: text.slice(i + 1, end) });
+                        parts.push({ type: 'sub', text: this.normalizeMathLabelText(text.slice(i + 1, end)) });
                         i = end + 1;
                     } else {
-                        parts.push({ type: 'sub', text: text.slice(i + 1) });
+                        parts.push({ type: 'sub', text: this.normalizeMathLabelText(text.slice(i + 1)) });
                         break;
                     }
                 } else {
-                    parts.push({ type: 'sub', text: text[i] || '' });
+                    parts.push({ type: 'sub', text: this.normalizeMathLabelText(text[i] || '') });
                     i++;
                 }
             } else if (text[i] === '*') {
@@ -977,12 +977,16 @@ export class Canvas {
                     i++;
                 }
                 if (normalText) {
-                    parts.push({ type: 'normal', text: normalText });
+                    parts.push({ type: 'normal', text: this.normalizeMathLabelText(normalText) });
                 }
             }
         }
 
         return parts;
+    }
+
+    normalizeMathLabelText(text) {
+        return String(text ?? '').replace(/-/g, '\u2212');
     }
 
     /**

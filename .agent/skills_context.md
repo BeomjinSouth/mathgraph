@@ -4,6 +4,34 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The visible issue appears in MathGraph's formula label surface for a graph drawing.
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The acceptance bar is a rendered visual detail in the canvas math-label path, so focused rendering-token tests and a browser smoke are useful.
+
+## Current Task Notes
+
+- User concern:
+  - In `y = -(x+2)^2 + 3`, only the `-` looks unlike a clean LaTeX/math minus.
+- Finding:
+  - Function labels use `Canvas.drawMathLabel()` and a custom canvas renderer.
+  - ASCII `-` is drawn directly, which can render as a short text hyphen instead of a mathematical minus.
+- Implementation direction:
+  - Normalize display-time `-` tokens to `\u2212` inside the math-label tokenization path.
+  - Preserve the source expression and GraphA payloads as ASCII-compatible strings.
+- Verification target:
+  - Focused tests for minus normalization plus existing full tests and whitespace check.
+- Completed result:
+  - Math label tokenization now converts display-time ASCII `-` to `\u2212`.
+  - The source expression still remains ASCII-compatible, so function parsing and saved GraphA data are unchanged.
+  - Browser evidence confirmed `y = -(x+2)^2 + 3` renders with a proper mathematical minus glyph.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - This change affects how point objects and helper vertices render while building ordinary geometric figures.
 - Skill: Frontend Testing Debugging
 - Why it matters:

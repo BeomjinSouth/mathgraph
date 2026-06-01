@@ -1,5 +1,29 @@
 # Progress Log
 
+## 2026-06-01
+
+### Math label minus sign rendering polish
+
+#### Work completed
+
+- Fixed the canvas math-label tokenization path so display-time ASCII hyphen-minus characters render as the mathematical minus glyph.
+- Kept stored function expressions and label text unchanged, preserving parser, save/load, AI schema, and GraphA behavior.
+- Added focused regression coverage for unary minus, subtraction, negative superscripts, and canvas text rendering.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Verification
+
+- Ran `node --check js\core\Canvas.js`; passed.
+- Ran `node --test tests\math-label-rendering.test.js`; passed with 3 tests.
+- Ran `npm.cmd test`; passed with 142 tests.
+- Ran browser/Playwright visual verification on `http://127.0.0.1:4177/`; `y = -(x+2)^2 + 3` rendered with `\u2212`, no ASCII hyphen-minus in parsed display parts, and 0 console warnings/errors.
+- Saved visual evidence to `tmp/math-label-minus-visual.png`.
+- Ran `git diff --check`; passed with line-ending warnings only.
+
+#### Deployment / Vercel
+
+- No Vercel configuration or deployment settings were changed.
+
 ## 2026-05-31
 
 ### Label-only point body default option

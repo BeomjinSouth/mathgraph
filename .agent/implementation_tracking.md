@@ -2,6 +2,52 @@
 
 ## Status
 
+- Task: Math label minus sign rendering polish
+- State: Done
+- Last updated: 2026-06-01
+
+## Plan
+
+1. Record the scoped visual-rendering issue before implementation.
+2. Normalize ASCII hyphen-minus to a mathematical minus glyph inside the canvas math-label display path.
+3. Add focused regression coverage for unary/subtraction minus rendering and exponent parsing.
+4. Run focused/full verification, update progress docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+
+## Decisions
+
+- Decision: Normalize only the display tokens inside `Canvas.parseMathExpression`.
+- Reason: The user-visible issue is glyph rendering; stored function expressions and parser input should remain simple ASCII-compatible strings.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\core\Canvas.js`
+  - `node --test tests\math-label-rendering.test.js`
+  - `npm.cmd test`; passed with 142 tests.
+  - Browser/Playwright visual check on `http://127.0.0.1:4177/`; rendered `y = -(x+2)^2 + 3` with math-label parts containing `\u2212`, no ASCII hyphen-minus, and no browser console messages.
+  - `git diff --check`; passed with line-ending warnings only.
+
+## Handoff
+
+- Current status:
+  - Canvas math labels now display ASCII `-` as a mathematical minus glyph while preserving stored expressions.
+  - Visual evidence: `tmp/math-label-minus-visual.png`.
+
+---
+
+## Status
+
 - Task: Label-only point body default option
 - State: Done
 - Last updated: 2026-05-31
