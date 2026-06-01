@@ -19,6 +19,11 @@
   - Preserve explicit parentheses: `(-x)^2` remains distinct from `-x^2`.
 - Verification target:
   - Focused parser tests for `-x^2 + 4`, `(-x)^2 + 4`, negative exponents, and existing implicit multiplication behavior; then full project tests and whitespace check.
+- Completed result:
+  - `FunctionParser` now parses `-x^2 + 4` as `-(x^2) + 4`, so the graph opens downward.
+  - `(-x)^2 + 4` still opens upward because the negative base is explicit.
+  - Negative exponents such as `2^-2` and implicit multiplication such as `-3/8x^2 + 6` are covered by focused parser tests.
+  - Browser verification created `-x^2 + 4` through the function tool UI and confirmed the rendered canvas shows the downward-opening parabola with no console warnings/errors.
 
 ---
 

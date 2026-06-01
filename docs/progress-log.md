@@ -2,6 +2,33 @@
 
 ## 2026-06-01
 
+### Function unary-minus exponent precedence
+
+#### Work completed
+
+- Fixed the function parser so `-x^2` follows standard math precedence as `-(x^2)` instead of `(-x)^2`.
+- Preserved explicit negative bases such as `(-x)^2` and negative exponents such as `2^-2`.
+- Added focused parser regression coverage for the reported expression, explicit parentheses, negative exponents, and implicit multiplication with negative coefficients.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Verification
+
+- Ran `node --check js\utils\Parser.js`; passed.
+- Ran `node --test tests\function-parser.test.js`; passed with 4 tests.
+- Ran `npm.cmd test`; passed with 148 tests.
+- In-app Browser loaded `http://127.0.0.1:4184/`, created `-x^2 + 4` through the function tool UI, rendered a downward-opening parabola with label `f(x) = -x^2 + 4`, and reported 0 console warnings/errors.
+- Ran `git diff --check`; passed with CRLF normalization warnings only.
+
+#### Git / GitHub
+
+- Parser and focused test changes are included in pushed commit `92ca060` (`Prepare MathGraph updates for deployment`).
+- This documentation completion update is being committed separately.
+
+#### Deployment / Vercel
+
+- No Vercel settings or environment variables were changed for this bug fix.
+- The current production alias remains `https://mathgraph-five.vercel.app`.
+
 ### Vercel production deployment for current updates
 
 #### Work completed

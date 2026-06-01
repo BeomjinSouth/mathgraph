@@ -32,10 +32,10 @@
 
 ## Acceptance Criteria
 
-- [ ] `-x^2 + 4` evaluates to `0` at `x=2` and `4` at `x=0`.
-- [ ] `(-x)^2 + 4` still evaluates to `8` at `x=2`.
-- [ ] Negative exponents and existing parser behavior remain covered by tests.
-- [ ] Focused parser tests, relevant full tests, and whitespace checks pass or blockers are recorded.
+- [x] `-x^2 + 4` evaluates to `0` at `x=2` and `4` at `x=0`.
+- [x] `(-x)^2 + 4` still evaluates to `8` at `x=2`.
+- [x] Negative exponents and existing parser behavior remain covered by tests.
+- [x] Focused parser tests, relevant full tests, browser verification, and whitespace checks pass or blockers are recorded.
 
 ---
 

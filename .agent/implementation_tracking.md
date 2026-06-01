@@ -3,7 +3,7 @@
 ## Status
 
 - Task: Function unary-minus exponent precedence
-- State: In Progress
+- State: Done
 - Last updated: 2026-06-01
 
 ## Plan
@@ -16,9 +16,9 @@
 ## Progress Log
 
 - [x] Step 1
-- [ ] Step 2
-- [ ] Step 3
-- [ ] Step 4
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
 
 ## Decisions
 
@@ -31,12 +31,18 @@
 
 ## Verification
 
-- Pending.
+- Completed:
+  - `node --check js\utils\Parser.js`; passed.
+  - `node --test tests\function-parser.test.js`; passed with 4 tests.
+  - `npm.cmd test`; passed with 148 tests.
+  - In-app Browser loaded `http://127.0.0.1:4184/`, created `-x^2 + 4` through the function tool UI, rendered a downward-opening parabola with label `f(x) = -x^2 + 4`, and reported 0 console warnings/errors.
+  - `git diff --check`; passed with CRLF normalization warnings only.
 
 ## Handoff
 
 - Current status:
-  - `-x^2` is currently parsed as `(-x)^2`; implementation is being adjusted so it follows standard mathematical precedence.
+  - `-x^2` now follows standard mathematical precedence as `-(x^2)`.
+  - Explicit parentheses such as `(-x)^2` and negative exponents such as `2^-2` remain supported.
 
 ---
 
