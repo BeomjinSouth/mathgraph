@@ -4,7 +4,7 @@
 
 import { Tool } from './Tool.js';
 import { ObjectType } from '../objects/GeoObject.js';
-import { Geometry } from '../utils/Geometry.js';
+import { Geometry, Vec2 } from '../utils/Geometry.js';
 
 const FILLABLE_TYPES = new Set([
     ObjectType.CIRCLE,
@@ -20,6 +20,9 @@ const MAX_SEGMENTS_FOR_INFERENCE = 80;
 const MAX_LOOP_VERTICES = 12;
 const MAX_INFERRED_CYCLES = 500;
 const MIN_REGION_AREA = 1e-8;
+const MAX_FUNCTION_AXIS_SAMPLES = 48;
+const MIN_FUNCTION_AXIS_SAMPLES = 16;
+const FUNCTION_AXIS_EPSILON = 1e-7;
 
 export class FillTool extends Tool {
     constructor() {
@@ -44,7 +47,12 @@ export class FillTool extends Tool {
         let createdTarget = null;
 
         if (!target || isCircleType(target.type)) {
-            createdTarget = this.createInferredFillTargetAt(mathPos, app, { fillColor, fillOpacity });
+            createdTarget = this.createInferredFillTargetAt(
+                mathPos,
+                app,
+                { fillColor, fillOpacity },
+                { includeFunctionAxis: !target }
+            );
             if (createdTarget) {
                 target = createdTarget;
             }
@@ -141,13 +149,22 @@ export class FillTool extends Tool {
         return null;
     }
 
-    createInferredFillTargetAt(mathPos, app, params) {
+    createInferredFillTargetAt(mathPos, app, params, options = {}) {
         const segmentRegion = this.createSegmentLoopRegionAt(mathPos, app, params);
         if (segmentRegion) {
             return segmentRegion;
         }
 
-        return this.createTwoCircleLensAt(mathPos, app, params);
+        const lensRegion = this.createTwoCircleLensAt(mathPos, app, params);
+        if (lensRegion) {
+            return lensRegion;
+        }
+
+        if (options.includeFunctionAxis !== false) {
+            return this.createFunctionAxisRegionAt(mathPos, app, params);
+        }
+
+        return null;
     }
 
     createSegmentLoopRegionAt(mathPos, app, params) {
@@ -207,6 +224,24 @@ export class FillTool extends Tool {
         return app.objectManager.createLensRegion(best.circle1Id, best.circle2Id, {
             ...params,
             showLabel: false
+        });
+    }
+
+    createFunctionAxisRegionAt(mathPos, app, params) {
+        if (typeof app.objectManager.createClosedRegion !== 'function') {
+            return null;
+        }
+
+        const candidate = findSmallestFunctionAxisRegionAt(mathPos, app);
+        if (!candidate) {
+            return null;
+        }
+
+        return app.objectManager.createClosedRegion([], [candidate.functionId], {
+            ...params,
+            showLabel: false,
+            lineWidth: 0,
+            vertices: candidate.vertices.map(vertex => ({ x: vertex.x, y: vertex.y }))
         });
     }
 
@@ -307,6 +342,176 @@ function findSmallestSegmentLoopAt(point, app) {
     }
 
     return best;
+}
+
+function findSmallestFunctionAxisRegionAt(point, app) {
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+        return null;
+    }
+
+    const functions = app.objectManager.getAllObjects().filter(object =>
+        object.visible &&
+        object.valid &&
+        object.type === ObjectType.FUNCTION &&
+        typeof object.getFunction === 'function'
+    );
+
+    const tolerance = app.canvas?.toMathLength ? app.canvas.toMathLength(8) : 0.08;
+    let best = null;
+
+    for (const functionObject of functions) {
+        const candidate = createFunctionAxisCandidate(functionObject, point, app, tolerance);
+        if (!candidate) {
+            continue;
+        }
+
+        if (!best || candidate.area < best.area) {
+            best = candidate;
+        }
+    }
+
+    return best;
+}
+
+function createFunctionAxisCandidate(functionObject, point, app, tolerance) {
+    const fn = functionObject.getFunction();
+    const yAtOrigin = safeEvaluate(fn, 0);
+    if (yAtOrigin === null || Math.abs(yAtOrigin) <= FUNCTION_AXIS_EPSILON) {
+        return null;
+    }
+
+    if (!isWithinFunctionDomain(functionObject, 0)) {
+        return null;
+    }
+
+    const xSign = point.x >= 0 ? 1 : -1;
+    const ySign = yAtOrigin >= 0 ? 1 : -1;
+    if (point.y * ySign < -tolerance) {
+        return null;
+    }
+
+    const endX = getFunctionAxisSearchEnd(functionObject, point, xSign, app);
+    if (endX === null || endX * xSign <= FUNCTION_AXIS_EPSILON) {
+        return null;
+    }
+
+    const domainMin = Number.isFinite(functionObject.xMin) ? functionObject.xMin : null;
+    const domainMax = Number.isFinite(functionObject.xMax) ? functionObject.xMax : null;
+    const roots = Geometry.functionLineIntersection(
+        fn,
+        new Vec2(0, 0),
+        new Vec2(endX, 0),
+        { lineType: 'segment', domainMin, domainMax }
+    );
+
+    const root = roots
+        .filter(candidate =>
+            Number.isFinite(candidate.x) &&
+            candidate.x * xSign > FUNCTION_AXIS_EPSILON
+        )
+        .sort((a, b) => Math.abs(a.x) - Math.abs(b.x))[0];
+
+    if (!root || point.x * xSign < -tolerance || point.x * xSign - Math.abs(root.x) > tolerance) {
+        return null;
+    }
+
+    const vertices = buildFunctionAxisVertices(fn, root.x, ySign, tolerance);
+    if (!vertices || vertices.length < 3) {
+        return null;
+    }
+
+    const area = Geometry.polygonArea(vertices);
+    if (area <= MIN_REGION_AREA || !isSimplePolygon(vertices)) {
+        return null;
+    }
+
+    if (!pointInsideOrNearPolygon(point, vertices, tolerance)) {
+        return null;
+    }
+
+    return {
+        area,
+        vertices,
+        functionId: functionObject.id
+    };
+}
+
+function getFunctionAxisSearchEnd(functionObject, point, xSign, app) {
+    const bounds = typeof app.canvas?.getVisibleBounds === 'function'
+        ? app.canvas.getVisibleBounds()
+        : null;
+    const visibleEdge = bounds
+        ? (xSign > 0 ? bounds.maxX : bounds.minX)
+        : null;
+    const clickedExtent = Math.abs(point.x) * 2 + 2;
+    let extent = Math.max(10, clickedExtent, Math.abs(visibleEdge || 0));
+
+    if (xSign > 0 && Number.isFinite(functionObject.xMax)) {
+        extent = Math.min(extent, Math.max(0, functionObject.xMax));
+    } else if (xSign < 0 && Number.isFinite(functionObject.xMin)) {
+        extent = Math.min(extent, Math.max(0, -functionObject.xMin));
+    }
+
+    if (!Number.isFinite(extent) || extent <= FUNCTION_AXIS_EPSILON) {
+        return null;
+    }
+
+    return xSign * extent;
+}
+
+function buildFunctionAxisVertices(fn, rootX, ySign, tolerance) {
+    const sampleCount = Math.max(
+        MIN_FUNCTION_AXIS_SAMPLES,
+        Math.min(MAX_FUNCTION_AXIS_SAMPLES, Math.ceil(Math.abs(rootX) * 8))
+    );
+    const vertices = [new Vec2(0, 0), new Vec2(rootX, 0)];
+
+    for (let i = 1; i <= sampleCount; i++) {
+        const t = i / sampleCount;
+        const x = rootX * (1 - t);
+        const y = safeEvaluate(fn, x);
+        if (y === null || y * ySign < -tolerance) {
+            return null;
+        }
+        vertices.push(new Vec2(x, y));
+    }
+
+    return removeNearDuplicateVertices(vertices);
+}
+
+function removeNearDuplicateVertices(vertices) {
+    const result = [];
+    for (const vertex of vertices) {
+        const previous = result[result.length - 1];
+        if (!previous || previous.distanceTo(vertex) > FUNCTION_AXIS_EPSILON) {
+            result.push(vertex);
+        }
+    }
+
+    if (result.length > 1 && result[0].distanceTo(result[result.length - 1]) <= FUNCTION_AXIS_EPSILON) {
+        result.pop();
+    }
+
+    return result;
+}
+
+function safeEvaluate(fn, x) {
+    try {
+        const y = fn(x);
+        return Number.isFinite(y) ? y : null;
+    } catch {
+        return null;
+    }
+}
+
+function isWithinFunctionDomain(functionObject, x) {
+    if (Number.isFinite(functionObject.xMin) && x < functionObject.xMin - FUNCTION_AXIS_EPSILON) {
+        return false;
+    }
+    if (Number.isFinite(functionObject.xMax) && x > functionObject.xMax + FUNCTION_AXIS_EPSILON) {
+        return false;
+    }
+    return true;
 }
 
 function walkSegmentCycles(startId, currentId, path, visited, graph, seenCycles, cycles) {

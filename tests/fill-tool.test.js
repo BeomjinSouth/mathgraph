@@ -13,7 +13,10 @@ function createApp(objectManager, historyManager, fillColor = '#ef4444', fillOpa
         historyManager,
         currentFillColor: fillColor,
         currentFillOpacity: fillOpacity,
-        canvas: { toMathLength: value => value / 100 },
+        canvas: {
+            toMathLength: value => value / 100,
+            getVisibleBounds: () => ({ minX: -6, maxX: 6, minY: -2, maxY: 8 })
+        },
         renderCount: 0,
         returnedToSelect: false,
         showToast() { },
@@ -109,6 +112,60 @@ test('FillTool infers and fills a closed region from loose segments', () => {
     assert.equal(objectManager.getAllObjects().some(object => object.type === ObjectType.CLOSED_REGION), false);
     historyManager.redo();
     assert.equal(objectManager.getAllObjects().some(object => object.type === ObjectType.CLOSED_REGION), true);
+});
+
+test('FillTool infers a function-axis region in the first quadrant', () => {
+    const objectManager = new ObjectManager();
+    const historyManager = new HistoryManager(objectManager);
+    const graph = objectManager.createFunction('-3/8x^2+6', { showLabel: false });
+    const tool = new FillTool();
+    app = createApp(objectManager, historyManager, '#ef4444', 0.32);
+
+    tool.onMouseDown(new Vec2(2, 2), null, null, app);
+
+    const region = objectManager.getAllObjects().find(object => object.type === ObjectType.CLOSED_REGION);
+    assert.ok(region);
+    assert.equal(region.fillColor, '#ef4444');
+    assert.equal(region.fillOpacity, 0.32);
+    assert.deepEqual(region.boundaryObjectIds, [graph.id]);
+    assert.equal(region.vertexIds.length, 0);
+    assert.ok(region.vertices.length > 12);
+    assert.equal(region.hitTest(new Vec2(2, 2), 8, app.canvas), true);
+    assert.equal(objectManager.getAllObjects().some(object => object.type === ObjectType.POINT), false);
+    assert.equal(historyManager.undoStack.length, 1);
+    assert.equal(historyManager.undoStack[0].type, 'create');
+
+    const restored = new ObjectManager();
+    restored.fromJSON(objectManager.toJSON());
+    const restoredRegion = restored.getAllObjects().find(object => object.type === ObjectType.CLOSED_REGION);
+    assert.ok(restoredRegion);
+    assert.equal(restoredRegion.valid, true);
+    assert.equal(restoredRegion.vertexIds.length, 0);
+    assert.ok(restoredRegion.vertices.length > 12);
+
+    historyManager.undo();
+    assert.equal(objectManager.getAllObjects().some(object => object.type === ObjectType.CLOSED_REGION), false);
+    historyManager.redo();
+    assert.equal(objectManager.getAllObjects().some(object => object.type === ObjectType.CLOSED_REGION), true);
+});
+
+test('FillTool infers the symmetric function-axis region in the second quadrant', () => {
+    const objectManager = new ObjectManager();
+    const historyManager = new HistoryManager(objectManager);
+    const graph = objectManager.createFunction('-3/8x^2+6', { showLabel: false });
+    const tool = new FillTool();
+    app = createApp(objectManager, historyManager, '#0f172a', 0.28);
+
+    tool.onMouseDown(new Vec2(-2, 2), null, null, app);
+
+    const region = objectManager.getAllObjects().find(object => object.type === ObjectType.CLOSED_REGION);
+    assert.ok(region);
+    assert.equal(region.fillColor, '#0f172a');
+    assert.equal(region.fillOpacity, 0.28);
+    assert.deepEqual(region.boundaryObjectIds, [graph.id]);
+    assert.equal(region.hitTest(new Vec2(-2, 2), 8, app.canvas), true);
+    assert.ok(region.vertices.some(vertex => vertex.x < -3.9 && Math.abs(vertex.y) < 0.05));
+    assert.ok(region.vertices.some(vertex => Math.abs(vertex.x) < 0.05 && vertex.y > 5.9));
 });
 
 test('FillTool infers a two-circle lens before filling a whole circle', () => {

@@ -3,13 +3,18 @@
  */
 
 import { DEFAULT_OBJECT_COLOR, GeoObject, ObjectType } from './GeoObject.js';
-import { Geometry } from '../utils/Geometry.js';
+import { Geometry, Vec2 } from '../utils/Geometry.js';
 
 export class ClosedRegion extends GeoObject {
     constructor(vertexIds, boundaryObjectIds = [], params = {}) {
         super(ObjectType.CLOSED_REGION, { showLabel: false, ...params });
         this.vertexIds = Array.isArray(vertexIds) ? [...vertexIds] : [];
         this.boundaryObjectIds = Array.isArray(boundaryObjectIds) ? [...boundaryObjectIds] : [];
+        this.staticVertices = Array.isArray(params.vertices)
+            ? params.vertices
+                .filter(point => Number.isFinite(point?.x) && Number.isFinite(point?.y))
+                .map(point => new Vec2(point.x, point.y))
+            : [];
         this.fillColor = params.fillColor || DEFAULT_OBJECT_COLOR;
         this.fillOpacity = params.fillOpacity ?? 0.24;
         this.lineWidth = params.lineWidth ?? 0;
@@ -34,13 +39,17 @@ export class ClosedRegion extends GeoObject {
             }
         }
 
-        for (const id of this.vertexIds) {
-            const point = objectManager.getObject(id);
-            if (!point || !point.valid || typeof point.getPosition !== 'function') {
-                this.valid = false;
-                return;
+        if (this.vertexIds.length > 0) {
+            for (const id of this.vertexIds) {
+                const point = objectManager.getObject(id);
+                if (!point || !point.valid || typeof point.getPosition !== 'function') {
+                    this.valid = false;
+                    return;
+                }
+                this.vertices.push(point.getPosition());
             }
-            this.vertices.push(point.getPosition());
+        } else {
+            this.vertices = this.staticVertices.map(vertex => vertex.clone());
         }
 
         this.valid = this.vertices.length >= 3 && Geometry.polygonArea(this.vertices) > 1e-8;
@@ -125,13 +134,19 @@ export class ClosedRegion extends GeoObject {
     }
 
     toJSON() {
-        return {
+        const data = {
             ...super.toJSON(),
             vertexIds: [...this.vertexIds],
             boundaryObjectIds: [...this.boundaryObjectIds],
             fillColor: this.fillColor,
             fillOpacity: this.fillOpacity
         };
+
+        if (this.vertexIds.length === 0 && this.staticVertices.length > 0) {
+            data.vertices = this.staticVertices.map(vertex => ({ x: vertex.x, y: vertex.y }));
+        }
+
+        return data;
     }
 }
 
