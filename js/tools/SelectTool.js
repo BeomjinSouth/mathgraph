@@ -6,7 +6,19 @@
  */
 
 import { Tool } from './Tool.js';
-import { Vec2 } from '../utils/Geometry.js';
+import { Geometry, Vec2 } from '../utils/Geometry.js';
+
+const INFINITE_LINE_TYPES = new Set([
+    'line',
+    'parallel',
+    'perpendicular',
+    'perpendicularBisector',
+    'angleBisector',
+    'tangentCircle',
+    'tangentFunction'
+]);
+
+const RAY_TYPES = new Set(['ray']);
 
 export class SelectTool extends Tool {
     constructor() {
@@ -105,6 +117,323 @@ export class SelectTool extends Tool {
         }
 
         return Array.from(pointsToMove);
+    }
+
+    getSelectionRect(start, end) {
+        return {
+            minX: Math.min(start.x, end.x),
+            maxX: Math.max(start.x, end.x),
+            minY: Math.min(start.y, end.y),
+            maxY: Math.max(start.y, end.y)
+        };
+    }
+
+    pointInSelectionRect(point, rect) {
+        return point &&
+            Number.isFinite(point.x) &&
+            Number.isFinite(point.y) &&
+            point.x >= rect.minX &&
+            point.x <= rect.maxX &&
+            point.y >= rect.minY &&
+            point.y <= rect.maxY;
+    }
+
+    selectionRectCorners(rect) {
+        return [
+            new Vec2(rect.minX, rect.minY),
+            new Vec2(rect.maxX, rect.minY),
+            new Vec2(rect.maxX, rect.maxY),
+            new Vec2(rect.minX, rect.maxY)
+        ];
+    }
+
+    segmentIntersectsSelectionRect(p1, p2, rect) {
+        if (this.pointInSelectionRect(p1, rect) || this.pointInSelectionRect(p2, rect)) {
+            return true;
+        }
+
+        const corners = this.selectionRectCorners(rect);
+        for (let i = 0; i < corners.length; i++) {
+            const edgeStart = corners[i];
+            const edgeEnd = corners[(i + 1) % corners.length];
+            if (Geometry.segmentSegmentIntersection(p1, p2, edgeStart, edgeEnd)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    infiniteLineIntersectsSelectionRect(p1, p2, rect) {
+        const direction = p2.sub(p1);
+        if (direction.lengthSq() <= 1e-12) {
+            return false;
+        }
+
+        const signedDistances = this.selectionRectCorners(rect)
+            .map(corner => direction.cross(corner.sub(p1)));
+
+        const min = Math.min(...signedDistances);
+        const max = Math.max(...signedDistances);
+
+        return min <= 0 && max >= 0;
+    }
+
+    rayIntersectsSelectionRect(origin, throughPoint, rect) {
+        if (this.pointInSelectionRect(origin, rect)) {
+            return true;
+        }
+
+        const direction = throughPoint.sub(origin).normalize();
+        if (direction.lengthSq() <= 1e-12) {
+            return false;
+        }
+
+        const rectSpan = Math.max(rect.maxX - rect.minX, rect.maxY - rect.minY, 1);
+        const farthestCornerDistance = Math.max(
+            ...this.selectionRectCorners(rect).map(corner => corner.distanceTo(origin))
+        );
+        const farPoint = origin.add(direction.mul(farthestCornerDistance + rectSpan * 2 + 1));
+        return this.segmentIntersectsSelectionRect(origin, farPoint, rect);
+    }
+
+    circleIntersectsSelectionRect(center, radius, rect) {
+        if (!center || !Number.isFinite(radius) || radius < 0) {
+            return false;
+        }
+
+        if (this.pointInSelectionRect(center, rect)) {
+            return true;
+        }
+
+        const closestX = Math.max(rect.minX, Math.min(center.x, rect.maxX));
+        const closestY = Math.max(rect.minY, Math.min(center.y, rect.maxY));
+        const closest = new Vec2(closestX, closestY);
+        const minDistSq = closest.distanceToSq(center);
+        const maxDistSq = Math.max(
+            ...this.selectionRectCorners(rect).map(corner => corner.distanceToSq(center))
+        );
+        const radiusSq = radius * radius;
+
+        return minDistSq <= radiusSq && maxDistSq >= radiusSq;
+    }
+
+    functionIntersectsSelectionRect(object, rect) {
+        if (typeof object.getFunction !== 'function') {
+            return false;
+        }
+
+        const fn = object.getFunction();
+        if (typeof fn !== 'function') {
+            return false;
+        }
+
+        let minX = rect.minX;
+        let maxX = rect.maxX;
+        if (object.xMin !== null && object.xMin !== undefined) {
+            minX = Math.max(minX, object.xMin);
+        }
+        if (object.xMax !== null && object.xMax !== undefined) {
+            maxX = Math.min(maxX, object.xMax);
+        }
+        if (minX > maxX) {
+            return false;
+        }
+
+        const spanX = Math.max(maxX - minX, 1e-6);
+        const spanY = Math.max(rect.maxY - rect.minY, 1e-6);
+        const steps = Math.max(32, Math.min(240, Math.ceil(spanX * 48)));
+        let previous = null;
+
+        for (let i = 0; i <= steps; i++) {
+            const x = minX + spanX * (i / steps);
+            let y;
+            try {
+                y = fn(x);
+            } catch {
+                previous = null;
+                continue;
+            }
+
+            if (!Number.isFinite(y)) {
+                previous = null;
+                continue;
+            }
+
+            if (typeof object.isPointWithinVisibleRange === 'function' &&
+                !object.isPointWithinVisibleRange(x, y)) {
+                previous = null;
+                continue;
+            }
+
+            const current = new Vec2(x, y);
+            if (this.pointInSelectionRect(current, rect)) {
+                return true;
+            }
+
+            if (previous && Math.abs(current.y - previous.y) <= Math.max(spanY * 6, 10)) {
+                if (this.segmentIntersectsSelectionRect(previous, current, rect)) {
+                    return true;
+                }
+            }
+
+            previous = current;
+        }
+
+        return false;
+    }
+
+    getObjectSelectionPoints(object, app) {
+        const points = [];
+
+        if (typeof object.getPosition === 'function') {
+            points.push(object.getPosition());
+        }
+
+        if (typeof object.getCenter === 'function') {
+            const center = object.getCenter();
+            if (center) points.push(center);
+        }
+
+        if (typeof object.getTangentPoint === 'function') {
+            points.push(object.getTangentPoint());
+        }
+
+        if (typeof object.getVertices === 'function') {
+            for (const vertex of object.getVertices()) {
+                if (vertex?.position) {
+                    points.push(vertex.position);
+                }
+            }
+        }
+
+        if (Array.isArray(object.vertices)) {
+            points.push(...object.vertices);
+        }
+
+        if (Array.isArray(object.dependencies)) {
+            for (const depId of object.dependencies) {
+                const dependency = app.objectManager.getObject(depId);
+                if (dependency?.getPosition) {
+                    points.push(dependency.getPosition());
+                }
+            }
+        }
+
+        return points.filter(point =>
+            point &&
+            Number.isFinite(point.x) &&
+            Number.isFinite(point.y)
+        );
+    }
+
+    getObjectSelectionSegments(object) {
+        const segments = [];
+
+        if (typeof object.getEdges === 'function') {
+            for (const edge of object.getEdges()) {
+                if (edge?.p1 && edge?.p2) {
+                    segments.push({ p1: edge.p1, p2: edge.p2, mode: 'segment' });
+                }
+            }
+        }
+
+        if (Array.isArray(object.vertices) && object.vertices.length >= 2) {
+            for (let i = 0; i < object.vertices.length; i++) {
+                segments.push({
+                    p1: object.vertices[i],
+                    p2: object.vertices[(i + 1) % object.vertices.length],
+                    mode: 'segment'
+                });
+            }
+        }
+
+        if (typeof object.getPoint1 === 'function' && typeof object.getPoint2 === 'function') {
+            const p1 = object.getPoint1();
+            const p2 = object.getPoint2();
+            const mode = INFINITE_LINE_TYPES.has(object.type)
+                ? 'line'
+                : (RAY_TYPES.has(object.type) ? 'ray' : 'segment');
+            segments.push({ p1, p2, mode });
+        }
+
+        return segments.filter(segment =>
+            segment.p1 &&
+            segment.p2 &&
+            Number.isFinite(segment.p1.x) &&
+            Number.isFinite(segment.p1.y) &&
+            Number.isFinite(segment.p2.x) &&
+            Number.isFinite(segment.p2.y)
+        );
+    }
+
+    fallbackHitTestIntersectsSelectionRect(object, rect, app) {
+        if (typeof object.hitTest !== 'function') {
+            return false;
+        }
+
+        const samplePoints = [
+            new Vec2((rect.minX + rect.maxX) / 2, (rect.minY + rect.maxY) / 2),
+            ...this.selectionRectCorners(rect),
+            new Vec2((rect.minX + rect.maxX) / 2, rect.minY),
+            new Vec2((rect.minX + rect.maxX) / 2, rect.maxY),
+            new Vec2(rect.minX, (rect.minY + rect.maxY) / 2),
+            new Vec2(rect.maxX, (rect.minY + rect.maxY) / 2)
+        ];
+
+        return samplePoints.some(point => object.hitTest(point, 8, app.canvas));
+    }
+
+    objectIntersectsSelectionRect(object, rect, app) {
+        if (!object?.visible || !object.valid) {
+            return false;
+        }
+
+        if (this.functionIntersectsSelectionRect(object, rect)) {
+            return true;
+        }
+
+        if (typeof object.getCenter === 'function' && typeof object.getRadius === 'function') {
+            if (this.circleIntersectsSelectionRect(object.getCenter(), object.getRadius(), rect)) {
+                return true;
+            }
+        }
+
+        for (const point of this.getObjectSelectionPoints(object, app)) {
+            if (this.pointInSelectionRect(point, rect)) {
+                return true;
+            }
+        }
+
+        for (const segment of this.getObjectSelectionSegments(object)) {
+            if (segment.mode === 'line' && this.infiniteLineIntersectsSelectionRect(segment.p1, segment.p2, rect)) {
+                return true;
+            }
+            if (segment.mode === 'ray' && this.rayIntersectsSelectionRect(segment.p1, segment.p2, rect)) {
+                return true;
+            }
+            if (segment.mode === 'segment' && this.segmentIntersectsSelectionRect(segment.p1, segment.p2, rect)) {
+                return true;
+            }
+        }
+
+        return this.fallbackHitTestIntersectsSelectionRect(object, rect, app);
+    }
+
+    selectObjectsInBox(app, rect, addToSelection = false) {
+        if (!addToSelection) {
+            app.objectManager.clearSelection();
+        }
+
+        let selectedCount = 0;
+        for (const obj of app.objectManager.getAllObjects()) {
+            if (this.objectIntersectsSelectionRect(obj, rect, app)) {
+                app.objectManager.selectObject(obj, true);
+                selectedCount += 1;
+            }
+        }
+
+        return selectedCount;
     }
 
     beginPointDrag(targets, mathPos, app) {
@@ -352,13 +681,12 @@ export class SelectTool extends Tool {
 
         // Mk.2: 드래그 박스 선택 완료
         if (this.isBoxSelecting && this.boxStart && this.boxEnd) {
-            const minX = Math.min(this.boxStart.x, this.boxEnd.x);
-            const maxX = Math.max(this.boxStart.x, this.boxEnd.x);
-            const minY = Math.min(this.boxStart.y, this.boxEnd.y);
-            const maxY = Math.max(this.boxStart.y, this.boxEnd.y);
+            const rect = this.getSelectionRect(this.boxStart, this.boxEnd);
 
             // 박스 크기가 충분히 크면 선택 수행
-            if (maxX - minX > 0.1 || maxY - minY > 0.1) {
+            if (rect.maxX - rect.minX > 0.1 || rect.maxY - rect.minY > 0.1) {
+                this.selectObjectsInBox(app, rect, event.shiftKey);
+                if (false) {
                 // Shift 안 눌렸으면 기존 선택 해제
                 if (!event.shiftKey) {
                     app.objectManager.clearSelection();
@@ -415,6 +743,7 @@ export class SelectTool extends Tool {
                 }
             }
 
+                }
             this.isBoxSelecting = false;
             this.boxStart = null;
             this.boxEnd = null;
