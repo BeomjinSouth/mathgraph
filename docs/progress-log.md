@@ -45,7 +45,8 @@
 
 #### Git / GitHub
 
-- This task is ready to be committed and pushed on `codex/ai-fallback-recovery` after this progress-log update.
+- Committed and pushed implementation/docs as `b85537a` (`Add AI problem and photo graphing modes`) on `codex/ai-fallback-recovery`.
+- This Git/GitHub completion note is being recorded in a follow-up documentation commit.
 
 ## 2026-06-01
 
