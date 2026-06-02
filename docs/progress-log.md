@@ -50,7 +50,8 @@
 
 #### Git / GitHub
 
-- Implementation and documentation changes are ready to commit and push after this progress-log update.
+- Committed and pushed implementation/docs as `5f40a22` (`Add AI image cost controls`) on `codex/ai-fallback-recovery`.
+- This Git/GitHub completion note is being recorded in a follow-up documentation commit.
 
 ### AI problem-situation graphing and full-photo diagram recreation
 
