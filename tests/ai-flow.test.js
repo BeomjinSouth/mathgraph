@@ -508,6 +508,9 @@ test('AIService builds image prompts for recreation and targeted patching', () =
     const recreatePrompt = service.buildImageAnalysisPrompt('', null, 'recreate');
 
     assert.match(recreatePrompt, /이미지 재현/);
+    assert.match(recreatePrompt, /사진이 문제 전체 페이지/);
+    assert.match(recreatePrompt, /상대 위치를 최대한 보존/);
+    assert.match(recreatePrompt, /문제 본문, 보기, 긴 설명/);
     assert.match(recreatePrompt, /GraphA operations\[\]/);
     assert.match(recreatePrompt, new RegExp(DEFAULT_IMAGE_RECREATE_INSTRUCTION.slice(0, 12)));
 
@@ -522,6 +525,25 @@ test('AIService builds image prompts for recreation and targeted patching', () =
     assert.match(patchPrompt, /point_a/);
     assert.match(patchPrompt, /관련 없는 객체/);
     assert.equal(service.getDataUrlMimeType('data:image/jpeg;base64,AAAA'), 'image/jpeg');
+});
+
+test('AIService adds problem-situation graphing guidance for full problem text', () => {
+    const service = createAIService();
+    const problemText = [
+        '다음은 좌표평면에서 움직이는 점 P에 대한 문제이다.',
+        '점 P는 함수 y = x^2 - 4x + 3 위를 움직이고, 직선 y = x + 1과 만나는 두 점을 A, B라 한다.',
+        '선분 AB와 x축으로 둘러싸인 부분의 넓이를 구하여라.'
+    ].join('\n');
+
+    assert.equal(service.isLikelyProblemStatement(problemText), true);
+    assert.equal(service.isLikelyProblemStatement('삼각형 ABC를 그려줘'), false);
+
+    const messages = service.buildMessages(problemText, { objects: [] });
+    const joined = messages.map(message => message.content).join('\n\n');
+
+    assert.match(joined, /문제 상황 그래프 생성/);
+    assert.match(joined, /문제를 풀거나 정답을 말하지 말고/);
+    assert.match(joined, /조건을 설명하는 데 가장 유용한/);
 });
 
 test('AIService builds compact prompt references from the JSON feature manual', async () => {
@@ -682,6 +704,63 @@ test('AIService analyzeImage sends image input with targeted patch prompt', asyn
         assert.equal(userContent[0].type, 'input_text');
         assert.match(userContent[0].text, /부분 수정 패치/);
         assert.match(userContent[0].text, /point_a/);
+        assert.deepEqual(userContent[1], {
+            type: 'input_image',
+            image_url: 'data:image/png;base64,AAAA',
+            detail: 'high'
+        });
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('AIService analyzeImage sends full-photo recreate prompt for image-only input', async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedOptions = null;
+
+    globalThis.fetch = async (url, options) => {
+        capturedOptions = options;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: 'resp_image_recreate',
+                    output: [
+                        {
+                            type: 'message',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: '{"operations":[{"op":"create","id":"point_a","type":"point","x":0,"y":0,"label":"A"}]}'
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+
+        const result = await service.analyzeImage('data:image/png;base64,AAAA', {
+            mode: 'recreate',
+            context: { objects: [], selectedObjectIds: [] }
+        });
+
+        const body = JSON.parse(capturedOptions.body);
+        const userContent = body.input[1].content;
+
+        assert.equal(result.success, true);
+        assert.equal(result.json.operations[0].type, 'point');
+        assert.match(userContent[0].text, /사진이 문제 전체 페이지/);
+        assert.match(userContent[0].text, /점, 선분, 직선, 원, 호/);
         assert.deepEqual(userContent[1], {
             type: 'input_image',
             image_url: 'data:image/png;base64,AAAA',

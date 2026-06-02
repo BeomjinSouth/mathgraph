@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "MathGraph",
-  "updatedAt": "2026-05-25",
+  "updatedAt": "2026-06-02",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
   "referenceFiles": [
     {
@@ -45,6 +45,16 @@
       "ifPromptMentions": ["히스토그램", "도수", "상자그림", "산점도", "통계", "막대"],
       "loadChunks": ["contract-core", "objects-plane-core", "objects-number-line", "known-gaps"],
       "exampleTags": ["chart_approximation"]
+    },
+    {
+      "ifPromptMentions": ["문제 전문", "문제 전체", "문제 상황", "구하여라", "구하시오", "조건을 만족", "좌표평면"],
+      "loadChunks": ["api-prompting", "contract-core", "objects-graph", "objects-plane-core", "objects-number-line", "objects-construction", "objects-markers-dimensions", "known-gaps"],
+      "exampleTags": ["graph", "function", "plane", "number_line"]
+    },
+    {
+      "ifPromptMentions": ["사진", "이미지", "도식", "그림 재구성", "사진 속", "문제 사진"],
+      "loadChunks": ["api-prompting", "scene-graph-pipeline", "contract-core", "objects-plane-core", "objects-graph", "objects-circle-core", "objects-solid", "objects-number-line", "known-gaps"],
+      "exampleTags": ["plane", "graph", "circle", "solid", "chart_approximation"]
     },
     {
       "ifPromptMentions": ["API", "GPT", "structured output", "구조화", "프롬프트", "토큰"],

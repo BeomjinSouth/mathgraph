@@ -3059,7 +3059,7 @@ class GraphAApp {
             // 로딩 메시지
             const loadingText = mode === 'patch'
                 ? '이미지와 요청을 바탕으로 필요한 부분만 수정 중입니다...'
-                : '이미지를 GraphA 도형으로 변환 중입니다...';
+                : '사진 속 도식과 그래프를 GraphA 객체로 재구성 중입니다...';
             const loadingMessage = this.addChatMessage(loadingText, 'assistant');
 
             try {
@@ -3074,7 +3074,7 @@ class GraphAApp {
                     this.addChatMessage(
                         mode === 'patch'
                             ? '요청한 부분 수정 패치를 만들었습니다.'
-                            : '이미지에서 도형을 인식했습니다.',
+                            : '사진 속 도식과 그래프를 인식했습니다.',
                         'assistant'
                     );
                     this.processAIJSON(result.json, {

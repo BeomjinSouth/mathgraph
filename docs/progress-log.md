@@ -1,5 +1,52 @@
 # Progress Log
 
+## 2026-06-02
+
+### AI problem-situation graphing and full-photo diagram recreation
+
+#### Work completed
+
+- Added problem-statement detection in `AIService` so long textbook-style Korean problem text receives a problem-situation graphing instruction before the model call.
+- Added guidance that full-problem text should generate a useful supporting graph/diagram without solving the problem or copying dense prose/answer choices.
+- Strengthened image-only recreate prompts so whole photos can be used directly; the prompt now prioritizes the visible math diagram/graph/figure, relative geometry, labels, axes/ticks, intersections, tangencies, shading, and dashed/solid strokes.
+- Kept image-plus-text as targeted patch mode, preserving selected-object/current-canvas priority.
+- Updated AI chat greeting, input placeholder, upload tooltip, and recreate-mode loading/result messages.
+- Updated `docs/ai-reference.md` plus the project-local MathGraph drawing reference files for problem-situation and full-photo modes.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `.agent/image_reference_patching.md`, `.agent/scene_graph_pipeline.md`, `docs/ai-reference.md`, and `.agents/skills/mathgraph-drawing/SKILL.md`.
+- Official OpenAI docs:
+  - `https://developers.openai.com/api/docs/guides/images-vision/`
+  - `https://developers.openai.com/api/reference/resources/responses/methods/create`
+
+#### Verification
+
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran JSON parse validation for `.agents\skills\mathgraph-drawing\references\feature-manual.json` and `.agents\skills\mathgraph-drawing\references\retrieval-index.json`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 35 tests.
+- Ran in-app Browser smoke on `http://127.0.0.1:4185/`; page title was `그래프A Mk2.1`, AI chat opened, updated greeting/placeholder/upload title were present, screenshot was captured, and console warning/error count was 0.
+- Ran `npm.cmd test`; passed with 150 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_AZRSRUJTGhA4UeznG1VcnfaPvXwj` was created at `https://mathgraph-nh3gffekl-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-nh3gffekl-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Ran Playwright production smoke on `https://mathgraph-five.vercel.app/`; `window.app` existed, AI chat toggled open, updated AI chat text was present, and there were 0 console issues and 0 failed requests.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-nh3gffekl-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_AZRSRUJTGhA4UeznG1VcnfaPvXwj`.
+- No Vercel environment variables or project settings were changed.
+
+#### Git / GitHub
+
+- This task is ready to be committed and pushed on `codex/ai-fallback-recovery` after this progress-log update.
+
 ## 2026-06-01
 
 ### Function unary-minus exponent precedence

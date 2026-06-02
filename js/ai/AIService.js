@@ -340,7 +340,17 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 이제 사용자 요청에 맞는 JSON을 생성하세요.`;
 
 export const DEFAULT_IMAGE_RECREATE_INSTRUCTION =
-    '참조 이미지에 보이는 수학 도형, 그래프, 라벨, 보조선, 음영을 GraphA 객체로 최대한 비슷하게 재구성해줘.';
+    '사진 전체에 보이는 수학 도식, 그래프, 그림, 라벨, 보조선, 음영을 GraphA 객체로 정확하게 재구성해줘.';
+
+export const PROBLEM_SITUATION_GRAPH_GUIDANCE = [
+    '작업 모드: 문제 상황 그래프 생성.',
+    '사용자 입력은 짧은 그리기 명령이 아니라 수학 문제 전문일 수 있습니다.',
+    '문제를 풀거나 정답을 말하지 말고, 문제 상황을 이해하는 데 쓸 수 있는 GraphA 그래프/도식만 생성하세요.',
+    '문제에서 변수, 좌표축, 함수식, 방정식, 부등식, 수직선, 도형 조건, 길이/각/접선/교점/음영 조건을 추출하세요.',
+    '명시된 그림이 없더라도 조건을 설명하는 데 가장 유용한 좌표평면 그래프, 함수 그래프, 수직선, 기하 도식, 또는 영역 그림을 선택하세요.',
+    '문제 본문, 선택지, 긴 설명 문장은 객체로 복사하지 말고, 도식 이해에 필요한 점 이름, 축 이름, 짧은 라벨, 함수식만 사용하세요.',
+    '조건이 모호하면 정확한 수치가 주어진 요소를 우선 그리고, 남은 요소는 수학적으로 자연스러운 대표 배치로 구성하세요.'
+].join('\n');
 
 /**
  * AI 서비스 설정
@@ -503,6 +513,11 @@ export class AIService {
             messages.push({ role: 'system', content: contextStr });
         }
 
+        const problemSituationPrompt = this.buildProblemSituationPrompt(userMessage);
+        if (problemSituationPrompt) {
+            messages.push({ role: 'system', content: problemSituationPrompt });
+        }
+
         // 대화 히스토리 추가 (최근 4개만)
         const recentHistory = this.conversationHistory.slice(-4);
         messages.push(...recentHistory);
@@ -515,11 +530,47 @@ export class AIService {
 
     async buildMessagesWithReferences(userMessage, context) {
         const messages = this.buildMessages(userMessage, context);
-        const referencePrompt = await this.buildDrawingReferencePrompt(userMessage, context, 'command');
+        const referenceRequestText = this.isLikelyProblemStatement(userMessage)
+            ? `problem_situation\n${userMessage}`
+            : userMessage;
+        const referencePrompt = await this.buildDrawingReferencePrompt(referenceRequestText, context, 'command');
         if (referencePrompt) {
             messages.splice(1, 0, { role: 'system', content: referencePrompt });
         }
         return messages;
+    }
+
+    buildProblemSituationPrompt(userMessage) {
+        if (!this.isLikelyProblemStatement(userMessage)) {
+            return '';
+        }
+
+        return PROBLEM_SITUATION_GRAPH_GUIDANCE;
+    }
+
+    isLikelyProblemStatement(userMessage) {
+        const text = String(userMessage || '').trim();
+        if (!text) {
+            return false;
+        }
+
+        const compact = text.replace(/\s+/g, ' ');
+        const lineCount = text.split(/\r?\n/).filter(line => line.trim()).length;
+        const sentenceBreakCount = (text.match(/[.?!。？！]|[가-힣]\)|\d+[.)]/g) || []).length;
+        const longEnough = compact.length >= 80 || lineCount >= 3 || sentenceBreakCount >= 3;
+        if (!longEnough) {
+            return false;
+        }
+
+        const markerPatterns = [
+            /문제|다음|아래|위\s*그림|그림과\s*같이|조건|보기|선택지|좌표평면|도형|그래프|표/,
+            /구하|구하여라|찾으|나타내|설명|만족|지나|접하|만나|교점|넓이|둘레|부피|최댓값|최솟값/,
+            /함수|일차|이차|직선|포물선|원|삼각형|사각형|다각형|수직선|부등식|방정식|확률|통계/,
+            /[xy]\s*[=+\-^]|[<>]=?|√|제곱근|근호|\b\d+\s*차\b/
+        ];
+        const markerScore = markerPatterns.reduce((score, pattern) => score + (pattern.test(compact) ? 1 : 0), 0);
+
+        return markerScore >= 2;
     }
 
     buildCanvasContextPrompt(context) {
@@ -1872,9 +1923,13 @@ export class AIService {
             ].join('\n')
             : [
                 '작업 모드: 이미지 재현.',
-                '참조 이미지에 보이는 수학 도형을 GraphA 객체로 새로 재구성하세요.',
+                '사진이 문제 전체 페이지이거나 주변 여백이 많아도, 그 안의 수학 도식/그래프/그림 영역을 찾아 GraphA 객체로 새로 재구성하세요.',
+                '참조 이미지의 주요 점, 선, 곡선, 축, 눈금, 교점, 접점, 평행/수직 관계, 음영, 점선/실선, 짧은 라벨의 상대 위치를 최대한 보존하세요.',
                 '점, 선분, 직선, 원, 호, 다각형, 함수, 수직선, 치수, 입체 도형 등 현재 스키마가 지원하는 객체만 사용하세요.',
-                '이미지의 픽셀 자체를 생성하지 말고 GraphA operations[]만 반환하세요.'
+                '문제 본문, 보기, 긴 설명, 장식 격자, 페이지 여백은 복사하지 말고 도식 이해에 필요한 라벨과 수식만 남기세요.',
+                '지원되지 않는 차트/입체/독립 텍스트는 현재 지원 객체로 가능한 범위만 재구성하고, 보이는 구조를 왜곡하는 가짜 객체를 만들지 마세요.',
+                '이미지의 픽셀 자체를 생성하지 말고 GraphA operations[]만 반환하세요.',
+                '내부적으로 먼저 장면 그래프처럼 점/선/원/함수/관계/불확실성을 정리한 뒤, 최종 출력은 GraphA operations[]만 내보내세요.'
             ].join('\n');
 
         return [

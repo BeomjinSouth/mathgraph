@@ -1,7 +1,7 @@
 {
   "manualVersion": 1,
   "project": "MathGraph",
-  "updatedAt": "2026-05-30",
+  "updatedAt": "2026-06-02",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
@@ -12,6 +12,7 @@
     "officialOpenAISourcesChecked": [
       "https://developers.openai.com/api/docs/guides/structured-outputs",
       "https://developers.openai.com/api/reference/resources/responses/methods/create",
+      "https://developers.openai.com/api/docs/guides/images-vision",
       "https://developers.openai.com/api/docs/guides/tools-skills",
       "https://developers.openai.com/api/docs/guides/tools-tool-search"
     ],
@@ -21,6 +22,7 @@
     "defaultFlow": [
       "Classify the Korean request into tags such as plane, circle, solid, graph, number_line, or chart_approximation.",
       "Read retrieval-index.json and load only matching manual chunks and examples.",
+      "If the request is a full math problem, extract diagram-relevant conditions and draw a supporting graph/diagram instead of solving the problem.",
       "Plan dependency order: support points first, base primitives second, derived construction objects third, markers/dimensions/styles last.",
       "Return only valid JSON when the caller needs a MathGraph patch."
     ],
@@ -31,6 +33,8 @@
       "tokenPolicy": "Keep stable reusable instructions and selected schema chunks before request-specific prompt text. Do not include the full synthetic dataset unless retrieval selects it.",
       "storagePolicy": "Current local OpenAI path sets store: false.",
       "runtimeReferenceLoading": "AIService tries to fetch retrieval-index.json and feature-manual.json in browser API calls, selects relevant object types from the prompt/context, and injects a compact manual summary before the request-specific instruction.",
+      "problemSituationMode": "Long textbook-style problem text receives problem-situation graphing guidance. The model should not solve or answer; it should extract variables, axes, functions, relations, labels, and regions useful for the diagram.",
+      "fullPhotoRecreateMode": "Image-only upload/paste treats a whole photo as recreate mode. The model should locate the visible math diagram/graph/figure, preserve geometry and short labels, and ignore dense problem prose unless needed for the figure.",
       "imagePatchRepair": "OpenAI image analysis retries once when semantic intent validation rejects the first GraphA payload."
     },
     "toolSearchPattern": "For future API orchestration with many tool/function schemas, defer rarely used tool definitions and use tool_search or an app-owned retrieval step to load only relevant MathGraph schema chunks."
@@ -45,6 +49,8 @@
     "For concentric circles and fixed-radius tangency diagrams, reuse the same center id and place radius points at the requested numeric distance.",
     "For annular-sector-like requests, current GraphA has no first-class annularSector. Use a normal sector plus inner circle outline only when approximation is acceptable.",
     "For function-bounded curved fills, approximate with a polygon through explicit boundary/sample points and hide helper vertices unless a future first-class region exists.",
+    "For whole-problem text prompts, do not create objects for the full problem prose or answer choices; create only the graph, figure, labels, functions, and shaded regions needed to visualize the situation.",
+    "For full-photo recreation, prioritize the diagram area inside the photo and preserve relative positions of axes, ticks, labels, intersections, tangencies, solid/dashed strokes, and shaded regions.",
     "For solid prompts, make the outer prism/pyramid projection large enough to read; cross-section polygons should span a substantial middle portion of the outer solid instead of becoming a tiny internal square.",
     "For nested solids, use prism/pyramid objects, keep inner solid vertices inside the outer projection, leave visible margins from the outer edges, and keep projected centers visually separated instead of piling them on the same screen area.",
     "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
@@ -64,7 +70,7 @@
   },
   "sceneGraphPipeline": {
     "purpose": "Root architecture for image/PDF recreation: ask the model for a high-level math scene, then compile it deterministically into GraphA operations.",
-    "recommendedFor": ["pasted image recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
+    "recommendedFor": ["pasted image recreation", "whole-photo diagram recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
     "sceneRootShape": {
       "sceneType": "diagram",
       "nodes": "Array of math entities such as point, segment, circle, arc, sector, lensRegion, polygon, function, numberLine, prism, pyramid.",

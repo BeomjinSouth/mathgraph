@@ -2,6 +2,68 @@
 
 ## Status
 
+- Task: AI problem-situation graphing and full-photo diagram recreation
+- State: Done
+- Last updated: 2026-06-02
+
+## Plan
+
+1. Record the requested AI behavior before implementation.
+2. Add problem-statement detection and problem-situation graphing prompt guidance.
+3. Strengthen image recreate prompts for full-photo diagram reconstruction while keeping patch mode targeted.
+4. Update the chat UI wording so users know they can paste whole problems or photos.
+5. Add focused tests and run project verification.
+6. Update progress docs, commit, push, and deploy/verify when appropriate.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+- [x] Step 6
+
+## Decisions
+
+- Decision: Keep GraphA `operations[]` as the applied runtime contract.
+- Reason: The app already has strict Structured Outputs, schema/reference/intent validation, quality enhancement, and rollback patching built around that contract.
+- Decision: Add problem-situation guidance as a prompt-mode layer instead of a new UI button.
+- Reason: The user wants whole problem text to work naturally when pasted into the existing AI chat.
+- Decision: Treat whole-photo input as recreate mode unless the user typed an instruction with the image.
+- Reason: The current upload/paste flow already uses this split, and it matches the requested "사진을 통째로" behavior.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\ai\AIService.js`; passed.
+  - `node --check js\main.js`; passed.
+  - JSON parse check for `.agents\skills\mathgraph-drawing\references\feature-manual.json` and `retrieval-index.json`; passed.
+  - `node --test tests\ai-flow.test.js`; passed with 35 tests.
+  - In-app Browser loaded `http://127.0.0.1:4185/`, opened the AI chat, confirmed the new greeting/placeholder/upload title, captured a screenshot, and reported 0 console warnings/errors.
+  - `npm.cmd test`; passed with 150 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - `npx.cmd vercel deploy --prod --yes`; deployed production `dpl_AZRSRUJTGhA4UeznG1VcnfaPvXwj` at `https://mathgraph-nh3gffekl-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-nh3gffekl-beomjinsouths-projects.vercel.app`; target `production`, status `Ready`, alias `https://mathgraph-five.vercel.app` attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Playwright production smoke confirmed `window.app`, AI chat toggle, updated AI chat text, 0 console issues, and 0 failed requests.
+
+## Handoff
+
+- Current status:
+  - Whole problem text now receives problem-situation graph guidance before the model call.
+  - Image-only upload/paste now prompts for full-photo diagram reconstruction while image-plus-text remains targeted patch mode.
+  - UI wording, GraphA AI reference docs, and project-local drawing references have been updated.
+
+---
+
+## Status
+
 - Task: Function unary-minus exponent precedence
 - State: Done
 - Last updated: 2026-06-01

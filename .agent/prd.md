@@ -2,6 +2,54 @@
 
 ## Summary
 
+- Task: AI problem-situation graphing and full-photo diagram recreation
+- Owner: Codex
+- Date: 2026-06-02
+- Related files:
+  - `js/ai/AIService.js`
+  - `js/main.js`
+  - `index.html`
+  - `tests/ai-flow.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/ai-reference.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The AI chat can already turn short drawing requests into GraphA objects, but a full textbook-style problem statement can make the model solve or summarize the problem instead of extracting a useful graph/diagram.
+- Image-only upload/paste already enters recreation mode, but the prompt does not strongly distinguish a full-page photo from a cropped diagram.
+- Teachers need two high-friction inputs to work naturally:
+  - paste the whole problem text and get a graph or diagram that can be used for that situation;
+  - paste/upload the whole photo and get the math diagram or graph in the photo reconstructed as editable GraphA objects.
+
+## Goals
+
+- Detect full-problem text requests and add a problem-situation graphing instruction before the model call.
+- In problem-situation mode, ask the model to extract conditions, variables, axes, points, labels, functions, inequalities, regions, or geometric relations and draw a usable supporting graph without solving the problem.
+- Strengthen image recreate mode so full-page photos prioritize the visible math diagram/graph/figure, preserve labels and geometry, and ignore dense problem prose unless it is needed for the figure.
+- Keep the existing Responses API, strict GraphA Structured Outputs, BYOK browser flow, schema validation, semantic validation, and rollback patch application.
+
+## Non-Goals
+
+- Do not add a server-side API proxy in this pass.
+- Do not implement OCR-to-text extraction as a separate feature outside the current vision prompt.
+- Do not add new runtime primitives such as native histogram, scatter plot, cylinder, cone, sphere, or standalone text labels.
+- Do not change Vercel project settings unless deployment verification exposes a link/config issue.
+
+## Acceptance Criteria
+
+- [x] Full Korean problem text triggers problem-situation graphing guidance in the OpenAI request.
+- [x] Short drawing commands continue to use the ordinary drawing prompt.
+- [x] Image-only recreate prompts explicitly handle full-page photos and exact diagram reconstruction priorities.
+- [x] Image plus text remains targeted patch mode and continues to prioritize selected/current canvas objects.
+- [x] Unit tests cover problem-mode detection, prompt construction, and image request construction.
+- [x] Focused tests, full tests, whitespace checks, docs, commit, and push are handled or blockers are recorded.
+
+---
+
+## Summary
+
 - Task: Function unary-minus exponent precedence
 - Owner: Codex
 - Date: 2026-06-01

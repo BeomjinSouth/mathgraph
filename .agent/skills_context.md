@@ -2,6 +2,45 @@
 
 ## Relevant Skills
 
+- Skill: MathGraph Drawing
+- Why it matters:
+  - Whole problem text and whole-photo diagram recreation both need valid GraphA operations, supported object types, reference ordering, and exam-style visual guardrails.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The feature sits on OpenAI Responses API multimodal input and strict Structured Outputs, so current official docs and the local OpenAI routing context matter.
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The chat input/upload wording is visible UI, and image/text flows should be smoke-tested in the browser when possible.
+
+## Current Task Notes
+
+- User request:
+  - If a whole math problem is pasted into the AI chat, draw a graph related to the problem situation that can be used while solving or explaining it.
+  - If a whole photo is pasted/uploaded, recreate the diagram or graph visible in the photo accurately as editable MathGraph/GraphA objects.
+- Finding:
+  - `AIService.processCommand()` already sends text requests through Responses API Structured Outputs and applies deterministic quality enhancement.
+  - `AIService.analyzeImage()` already splits image-only input into recreate mode and image-plus-text into patch mode.
+  - The image recreate prompt needs stronger full-photo/diagram-priority guidance, and text commands need an explicit problem-statement mode so the model does not answer the problem instead of drawing.
+- Implementation direction:
+  - Add problem-statement detection based on length and Korean/math problem markers.
+  - Insert problem-situation drawing guidance into text requests only when the input looks like a full problem.
+  - Strengthen recreate-mode image prompts for full-page photos, diagram fidelity, labels, axes, tick marks, intersections, and unsupported-feature handling.
+  - Keep selected-object patch mode strict and unchanged except for clearer prompt boundaries.
+- Verification target:
+  - Unit tests for detection/prompt construction and OpenAI image input body.
+  - Full test suite and whitespace check.
+  - Browser smoke for chat placeholder/upload title and app load health.
+- Completed result:
+  - Full Korean problem text now triggers problem-situation graphing guidance while short drawing commands stay on the ordinary path.
+  - Image-only upload/paste now asks for full-photo diagram/graph reconstruction with stronger geometry, label, axis, tick, shading, and unsupported-feature boundaries.
+  - Image plus text remains targeted patch mode and still prioritizes selected/current canvas objects.
+  - AI chat copy, `docs/ai-reference.md`, and the project-local MathGraph drawing references now describe the new modes.
+  - Focused tests, full tests, Browser smoke, Vercel production deployment, inspect, HTTP, and production Playwright smoke all passed.
+
+---
+
+## Relevant Skills
+
 - Skill: Frontend Testing Debugging
 - Why it matters:
   - The symptom appears on the rendered canvas, so the parser fix should be backed by focused tests and, if practical, a rendered function-graph check.

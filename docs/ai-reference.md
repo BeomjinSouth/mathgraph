@@ -51,13 +51,24 @@ Current request defaults:
 
 The strict schema represents optional graph fields as nullable values because Structured Outputs requires all schema fields to be required. The app strips `null` fields before running `SchemaValidator` and `PatchApplier`.
 
+## 1.1.1 Problem Situation Graphing
+
+Whole problem statements pasted into the AI chat are treated as diagram-generation input, not as answer requests.
+
+When text looks like a full textbook-style problem, `AIService` adds a problem-situation graphing instruction before the model call:
+
+- extract diagram-relevant conditions such as variables, coordinate axes, functions, equations, inequalities, points, intersections, tangencies, geometric relations, regions, and short labels;
+- create a useful supporting graph or diagram even when the problem did not explicitly say "draw";
+- do not solve the problem, state the answer, copy full prose, or recreate answer choices as standalone text objects;
+- keep the final output in the same strict GraphA `operations[]` contract.
+
 ## 1.2 Image Reference And Targeted Patching
 
 The chat image workflow uses the same Responses API and strict `operations[]` output contract. Images are sent as `input_image` content with a text instruction. The app then validates and applies the returned graph-object patch through `SchemaValidator` and `PatchApplier`.
 
 Modes:
 
-- Image-only paste/upload: recreate the visible math diagram as new GraphA objects.
+- Image-only paste/upload: recreate the visible math diagram, graph, or figure as new GraphA objects, even when the uploaded photo is a whole problem page.
 - Image plus text instruction: treat the image as a reference and return only the requested `update`, `delete`, or targeted `create` operations.
 
 Context sent with image requests:
@@ -69,6 +80,7 @@ Important boundary:
 
 - This is vector-object reconstruction and patching. It is not pixel-level image editing or mask-based raster inpainting.
 - True raster edits would require a separate Images API edit workflow and, for precise local changes, a mask UI with same-size alpha-channel masks.
+- Full-photo recreate mode should prioritize the diagram area, preserve axes/ticks/labels/intersections/tangencies/shading/dashed strokes, and ignore dense problem prose unless it is needed for the figure.
 - Patch-mode responses run semantic intent validation after schema/reference validation:
   - If selected ids exist and the instruction asks to mutate the selected part, at least one selected id must be updated or deleted.
   - Strict selected-object edits such as "only this point" cannot create new objects or mutate unselected ids.
