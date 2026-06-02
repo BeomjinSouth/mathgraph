@@ -12,6 +12,12 @@ import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
 export const DEFAULT_OPENAI_MODEL = 'gpt-5.5';
 
 export const IMAGE_RECREATE_OPERATION_BUDGET = 45;
+export const OPENAI_IMAGE_FAST_MODEL = 'gpt-5.4-mini';
+export const AI_IMAGE_PREPROCESS_MAX_LONG_EDGE = 1800;
+export const AI_IMAGE_PREPROCESS_MIN_LONG_EDGE = 1200;
+export const AI_IMAGE_PREPROCESS_MIN_CROP_LONG_EDGE = 900;
+export const AI_IMAGE_PREPROCESS_CROP_PADDING_RATIO = 0.06;
+export const AI_IMAGE_PREPROCESS_JPEG_QUALITY = 0.92;
 
 export const OPENAI_MODEL_OPTIONS = [
     { value: 'gpt-5.5', label: 'GPT-5.5 (권장)' },
@@ -25,6 +31,122 @@ export const GEMINI_MODEL_OPTIONS = [
     { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
     { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }
 ];
+
+const OPENAI_MODEL_ROUTING_RANK = {
+    'gpt-5.4-nano': 1,
+    'gpt-5.4-mini': 2,
+    'gpt-5.4': 3,
+    'gpt-5.5': 4,
+    'gpt-5.5-pro': 5
+};
+
+function clampNumber(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function normalizePositiveInteger(value, fallback = 1) {
+    const number = Math.round(Number(value));
+    return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function normalizeCropBounds(cropBounds, width, height, options = {}) {
+    if (!cropBounds) {
+        return {
+            x: 0,
+            y: 0,
+            width,
+            height,
+            applied: false
+        };
+    }
+
+    const paddingRatio = Number.isFinite(options.cropPaddingRatio)
+        ? options.cropPaddingRatio
+        : AI_IMAGE_PREPROCESS_CROP_PADDING_RATIO;
+    const rawX = Number(cropBounds.x);
+    const rawY = Number(cropBounds.y);
+    const rawWidth = Number(cropBounds.width);
+    const rawHeight = Number(cropBounds.height);
+    if (![rawX, rawY, rawWidth, rawHeight].every(Number.isFinite) || rawWidth <= 0 || rawHeight <= 0) {
+        return {
+            x: 0,
+            y: 0,
+            width,
+            height,
+            applied: false
+        };
+    }
+
+    const padding = Math.max(12, Math.round(Math.max(rawWidth, rawHeight) * paddingRatio));
+    const x = clampNumber(Math.floor(rawX - padding), 0, width - 1);
+    const y = clampNumber(Math.floor(rawY - padding), 0, height - 1);
+    const right = clampNumber(Math.ceil(rawX + rawWidth + padding), x + 1, width);
+    const bottom = clampNumber(Math.ceil(rawY + rawHeight + padding), y + 1, height);
+    const cropWidth = right - x;
+    const cropHeight = bottom - y;
+    const minCropLongEdge = normalizePositiveInteger(
+        options.minCropLongEdge,
+        AI_IMAGE_PREPROCESS_MIN_CROP_LONG_EDGE
+    );
+    const cropLongEdge = Math.max(cropWidth, cropHeight);
+    const originalLongEdge = Math.max(width, height);
+    const cropAreaRatio = (cropWidth * cropHeight) / (width * height);
+    const areaSavingRatio = 1 - cropAreaRatio;
+    const cropChangesImage = areaSavingRatio >= 0.04
+        && (cropWidth < width - 4 || cropHeight < height - 4);
+    const keepsReadablePixels = cropLongEdge >= Math.min(minCropLongEdge, originalLongEdge);
+
+    if (!cropChangesImage || !keepsReadablePixels) {
+        return {
+            x: 0,
+            y: 0,
+            width,
+            height,
+            applied: false
+        };
+    }
+
+    return {
+        x,
+        y,
+        width: cropWidth,
+        height: cropHeight,
+        applied: true
+    };
+}
+
+export function chooseImagePreprocessPlan(imageSize, cropBounds = null, options = {}) {
+    const originalWidth = normalizePositiveInteger(imageSize?.width);
+    const originalHeight = normalizePositiveInteger(imageSize?.height);
+    const maxLongEdge = normalizePositiveInteger(
+        options.maxLongEdge,
+        AI_IMAGE_PREPROCESS_MAX_LONG_EDGE
+    );
+    const minLongEdge = normalizePositiveInteger(
+        options.minLongEdge,
+        AI_IMAGE_PREPROCESS_MIN_LONG_EDGE
+    );
+    const crop = normalizeCropBounds(cropBounds, originalWidth, originalHeight, options);
+    const cropLongEdge = Math.max(crop.width, crop.height);
+    const targetLongEdge = cropLongEdge > maxLongEdge
+        ? Math.min(cropLongEdge, Math.max(maxLongEdge, minLongEdge))
+        : cropLongEdge;
+    const scale = targetLongEdge / cropLongEdge;
+    const processedWidth = Math.max(1, Math.round(crop.width * scale));
+    const processedHeight = Math.max(1, Math.round(crop.height * scale));
+
+    return {
+        originalWidth,
+        originalHeight,
+        crop,
+        scale,
+        resized: scale < 0.999,
+        processedWidth,
+        processedHeight,
+        maxLongEdge,
+        minLongEdge
+    };
+}
 
 const GRAPH_OPERATION_TYPES = [
     'point', 'pointOnLine', 'pointOnCircle', 'circleCenterPoint',
@@ -898,6 +1020,25 @@ export class AIService {
     normalizeVerbosity(value) {
         const allowed = new Set(['low', 'medium', 'high']);
         return allowed.has(value) ? value : 'low';
+    }
+
+    getOpenAIModelRoutingRank(model) {
+        return OPENAI_MODEL_ROUTING_RANK[model] || OPENAI_MODEL_ROUTING_RANK[DEFAULT_OPENAI_MODEL];
+    }
+
+    selectOpenAIImageModel(options = {}, phase = 'first') {
+        if (options.model) {
+            return options.model;
+        }
+
+        if (phase === 'first') {
+            return this.config.imageFastModel || OPENAI_IMAGE_FAST_MODEL;
+        }
+
+        const configuredModel = this.config.model || DEFAULT_OPENAI_MODEL;
+        const configuredRank = this.getOpenAIModelRoutingRank(configuredModel);
+        const fastRank = this.getOpenAIModelRoutingRank(OPENAI_IMAGE_FAST_MODEL);
+        return configuredRank > fastRank ? configuredModel : DEFAULT_OPENAI_MODEL;
     }
 
     /**
@@ -1972,18 +2113,19 @@ export class AIService {
     }
 
     async callOpenAIImageAnalysis(imageDataUrl, promptText, requestOptions = {}) {
+        const imageDetail = requestOptions.detail || 'high';
         const requestBody = this.buildOpenAIRequestBodyFromInput([
             { role: 'developer', content: SYSTEM_PROMPT },
             {
                 role: 'user',
                 content: [
                     { type: 'input_text', text: promptText },
-                    { type: 'input_image', image_url: imageDataUrl, detail: 'high' }
+                    { type: 'input_image', image_url: imageDataUrl, detail: imageDetail }
                 ]
             }
         ], {
-            reasoningEffort: 'medium',
-            model: this.config.model || DEFAULT_OPENAI_MODEL,
+            reasoningEffort: requestOptions.reasoningEffort || 'medium',
+            model: requestOptions.model || this.config.model || DEFAULT_OPENAI_MODEL,
             previousResponseId: requestOptions.previousResponseId
         });
 
@@ -2037,7 +2179,11 @@ export class AIService {
 
         try {
             if (this.config.provider === 'openai') {
-                const firstAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, promptText);
+                const firstAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, promptText, {
+                    model: this.selectOpenAIImageModel(options, 'first'),
+                    reasoningEffort: 'medium',
+                    detail: 'high'
+                });
                 const json = firstAttempt.json
                     ? this.enhanceDiagramQuality(firstAttempt.json, options.instruction, options.context, options.mode)
                     : null;
@@ -2045,12 +2191,20 @@ export class AIService {
                 if (json) {
                     const intentResult = this.validateImageAnalysisIntent(json, options);
                     if (intentResult.valid) {
-                        return { success: true, json, message: firstAttempt.content };
+                        return {
+                            success: true,
+                            json,
+                            message: firstAttempt.content,
+                            model: firstAttempt.requestBody.model
+                        };
                     }
 
                     const repairPrompt = this.buildImageRepairPrompt(promptText, json, intentResult.errors, options);
                     const repairAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, repairPrompt, {
-                        previousResponseId: this.lastResponseId
+                        previousResponseId: this.lastResponseId,
+                        model: this.selectOpenAIImageModel(options, 'repair'),
+                        reasoningEffort: 'medium',
+                        detail: 'high'
                     });
 
                     if (repairAttempt.json) {
@@ -2067,7 +2221,9 @@ export class AIService {
                                 json: repairedJson,
                                 message: repairAttempt.content,
                                 repaired: true,
-                                repairErrors: intentResult.errors
+                                repairErrors: intentResult.errors,
+                                model: repairAttempt.requestBody.model,
+                                initialModel: firstAttempt.requestBody.model
                             };
                         }
 

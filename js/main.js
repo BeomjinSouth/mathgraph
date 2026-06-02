@@ -41,7 +41,13 @@ import { Vec2 } from './utils/Geometry.js';
 // Mk.2: AI 모듈
 import { SchemaValidator } from './ai/SchemaValidator.js';
 import { PatchApplier } from './ai/PatchApplier.js';
-import { AIService, OPENAI_MODEL_OPTIONS, GEMINI_MODEL_OPTIONS } from './ai/AIService.js';
+import {
+    AIService,
+    OPENAI_MODEL_OPTIONS,
+    GEMINI_MODEL_OPTIONS,
+    AI_IMAGE_PREPROCESS_JPEG_QUALITY,
+    chooseImagePreprocessPlan
+} from './ai/AIService.js';
 import { parseAIJSONPayload } from './ai/JSONUtils.js';
 
 // Mk.2: UI 모듈
@@ -3031,6 +3037,168 @@ class GraphAApp {
         return null;
     }
 
+    getImageDataUrlByteSize(dataUrl) {
+        const value = String(dataUrl || '');
+        const commaIndex = value.indexOf(',');
+        if (commaIndex < 0) return value.length;
+        const base64Length = value.length - commaIndex - 1;
+        return Math.round((base64Length * 3) / 4);
+    }
+
+    loadImageForAI(dataUrl) {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error('Image preprocessing failed to load the source image.'));
+            image.src = dataUrl;
+        });
+    }
+
+    findSafeImageContentBounds(image) {
+        const sourceWidth = image.naturalWidth || image.width;
+        const sourceHeight = image.naturalHeight || image.height;
+        if (!sourceWidth || !sourceHeight || typeof document === 'undefined' || !document.createElement) return null;
+
+        const sampleLongEdge = 720;
+        const sampleScale = Math.min(1, sampleLongEdge / Math.max(sourceWidth, sourceHeight));
+        const sampleWidth = Math.max(1, Math.round(sourceWidth * sampleScale));
+        const sampleHeight = Math.max(1, Math.round(sourceHeight * sampleScale));
+        const canvas = document.createElement('canvas');
+        canvas.width = sampleWidth;
+        canvas.height = sampleHeight;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return null;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, sampleWidth, sampleHeight);
+        ctx.drawImage(image, 0, 0, sampleWidth, sampleHeight);
+
+        const imageData = ctx.getImageData(0, 0, sampleWidth, sampleHeight);
+        const data = imageData.data;
+        const cornerSize = Math.max(4, Math.round(Math.min(sampleWidth, sampleHeight) * 0.035));
+        const corners = [
+            [0, 0],
+            [sampleWidth - cornerSize, 0],
+            [0, sampleHeight - cornerSize],
+            [sampleWidth - cornerSize, sampleHeight - cornerSize]
+        ];
+        const background = { r: 0, g: 0, b: 0, count: 0 };
+
+        for (const [startX, startY] of corners) {
+            for (let y = startY; y < Math.min(sampleHeight, startY + cornerSize); y += 2) {
+                for (let x = startX; x < Math.min(sampleWidth, startX + cornerSize); x += 2) {
+                    const index = (y * sampleWidth + x) * 4;
+                    background.r += data[index];
+                    background.g += data[index + 1];
+                    background.b += data[index + 2];
+                    background.count += 1;
+                }
+            }
+        }
+
+        if (!background.count) return null;
+        background.r /= background.count;
+        background.g /= background.count;
+        background.b /= background.count;
+
+        const threshold = 30;
+        let minX = sampleWidth;
+        let minY = sampleHeight;
+        let maxX = -1;
+        let maxY = -1;
+
+        for (let y = 0; y < sampleHeight; y++) {
+            for (let x = 0; x < sampleWidth; x++) {
+                const index = (y * sampleWidth + x) * 4;
+                const alpha = data[index + 3];
+                const dr = data[index] - background.r;
+                const dg = data[index + 1] - background.g;
+                const db = data[index + 2] - background.b;
+                const distance = Math.sqrt((dr * dr) + (dg * dg) + (db * db));
+                if (alpha > 24 && distance > threshold) {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        if (maxX < minX || maxY < minY) return null;
+
+        const scaleX = sourceWidth / sampleWidth;
+        const scaleY = sourceHeight / sampleHeight;
+        return {
+            x: Math.floor(minX * scaleX),
+            y: Math.floor(minY * scaleY),
+            width: Math.ceil((maxX - minX + 1) * scaleX),
+            height: Math.ceil((maxY - minY + 1) * scaleY)
+        };
+    }
+
+    async prepareImageForAI(imageDataUrl, options = {}) {
+        const originalBytes = this.getImageDataUrlByteSize(imageDataUrl);
+        const image = await this.loadImageForAI(imageDataUrl);
+        const sourceWidth = image.naturalWidth || image.width;
+        const sourceHeight = image.naturalHeight || image.height;
+        const cropBounds = this.findSafeImageContentBounds(image);
+        const plan = chooseImagePreprocessPlan(
+            { width: sourceWidth, height: sourceHeight },
+            cropBounds,
+            options
+        );
+        const metadata = {
+            originalWidth: plan.originalWidth,
+            originalHeight: plan.originalHeight,
+            processedWidth: plan.processedWidth,
+            processedHeight: plan.processedHeight,
+            cropApplied: plan.crop.applied,
+            resized: plan.resized,
+            scale: Number(plan.scale.toFixed(4)),
+            originalBytes,
+            processedBytes: originalBytes,
+            usedOriginal: true
+        };
+
+        if (!plan.crop.applied && !plan.resized) {
+            return { dataUrl: imageDataUrl, metadata };
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = plan.processedWidth;
+        canvas.height = plan.processedHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            return { dataUrl: imageDataUrl, metadata: { ...metadata, preprocessingSkipped: 'canvas-unavailable' } };
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(
+            image,
+            plan.crop.x,
+            plan.crop.y,
+            plan.crop.width,
+            plan.crop.height,
+            0,
+            0,
+            plan.processedWidth,
+            plan.processedHeight
+        );
+
+        const dataUrl = canvas.toDataURL('image/jpeg', AI_IMAGE_PREPROCESS_JPEG_QUALITY);
+        return {
+            dataUrl,
+            metadata: {
+                ...metadata,
+                processedBytes: this.getImageDataUrlByteSize(dataUrl),
+                usedOriginal: false
+            }
+        };
+    }
+
     handleImageUpload(file, options = {}) {
         const reader = new FileReader();
 
@@ -3051,6 +3219,8 @@ class GraphAApp {
             this.addChatImagePreview(imageDataUrl);
             this.lastImageReference = {
                 imageDataUrl,
+                processedImageDataUrl: imageDataUrl,
+                preprocessing: null,
                 source: options.source || 'upload',
                 mode,
                 instruction
@@ -3063,8 +3233,31 @@ class GraphAApp {
             const loadingMessage = this.addChatMessage(loadingText, 'assistant');
 
             try {
+                let analysisImageDataUrl = imageDataUrl;
+                let preprocessing = null;
+                try {
+                    const preparedImage = await this.prepareImageForAI(imageDataUrl, { mode });
+                    analysisImageDataUrl = preparedImage.dataUrl;
+                    preprocessing = preparedImage.metadata;
+                } catch (preprocessError) {
+                    console.warn('AI image preprocessing skipped:', preprocessError);
+                    preprocessing = {
+                        failed: true,
+                        error: preprocessError?.message || String(preprocessError)
+                    };
+                }
+
+                this.lastImageReference = {
+                    imageDataUrl,
+                    processedImageDataUrl: analysisImageDataUrl,
+                    preprocessing,
+                    source: options.source || 'upload',
+                    mode,
+                    instruction
+                };
+
                 // AIService로 이미지 분석
-                const result = await this.aiService.analyzeImage(imageDataUrl, {
+                const result = await this.aiService.analyzeImage(analysisImageDataUrl, {
                     instruction,
                     mode,
                     context: aiContext

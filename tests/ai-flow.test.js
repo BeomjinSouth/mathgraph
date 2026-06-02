@@ -9,6 +9,10 @@ import {
     GRAPH_OPERATIONS_RESPONSE_FORMAT,
     DEFAULT_IMAGE_RECREATE_INSTRUCTION,
     IMAGE_RECREATE_OPERATION_BUDGET,
+    OPENAI_IMAGE_FAST_MODEL,
+    AI_IMAGE_PREPROCESS_MAX_LONG_EDGE,
+    AI_IMAGE_PREPROCESS_MIN_LONG_EDGE,
+    chooseImagePreprocessPlan,
     extractOpenAIResponseText
 } from '../js/ai/AIService.js';
 import { SchemaValidator } from '../js/ai/SchemaValidator.js';
@@ -645,6 +649,40 @@ test('SchemaValidator enforces image recreation operation budget', () => {
     assert.match(result.errors.join('\n'), /operation budget/);
 });
 
+test('chooseImagePreprocessPlan downsizes oversized images without crossing readability floor', () => {
+    const plan = chooseImagePreprocessPlan(
+        { width: 4032, height: 3024 },
+        { x: 180, y: 120, width: 3600, height: 2500 }
+    );
+
+    assert.equal(plan.crop.applied, true);
+    assert.equal(plan.resized, true);
+    assert.ok(Math.max(plan.processedWidth, plan.processedHeight) <= AI_IMAGE_PREPROCESS_MAX_LONG_EDGE);
+    assert.ok(Math.max(plan.processedWidth, plan.processedHeight) >= AI_IMAGE_PREPROCESS_MIN_LONG_EDGE);
+    assert.ok(plan.scale < 1);
+});
+
+test('chooseImagePreprocessPlan keeps already readable images unchanged', () => {
+    const plan = chooseImagePreprocessPlan({ width: 1100, height: 780 });
+
+    assert.equal(plan.crop.applied, false);
+    assert.equal(plan.resized, false);
+    assert.equal(plan.processedWidth, 1100);
+    assert.equal(plan.processedHeight, 780);
+    assert.equal(plan.scale, 1);
+});
+
+test('chooseImagePreprocessPlan rejects suspicious tiny crops', () => {
+    const plan = chooseImagePreprocessPlan(
+        { width: 4032, height: 3024 },
+        { x: 1900, y: 1400, width: 120, height: 80 }
+    );
+
+    assert.equal(plan.crop.applied, false);
+    assert.equal(plan.resized, true);
+    assert.equal(plan.processedWidth, AI_IMAGE_PREPROCESS_MAX_LONG_EDGE);
+});
+
 test('AIService analyzeImage sends image input with targeted patch prompt', async () => {
     const originalFetch = globalThis.fetch;
     let capturedUrl = null;
@@ -698,6 +736,7 @@ test('AIService analyzeImage sends image input with targeted patch prompt', asyn
         assert.equal(result.success, true);
         assert.equal(result.json.operations[0].op, 'update');
         assert.equal(service.lastResponseId, 'resp_image_patch');
+        assert.equal(body.model, OPENAI_IMAGE_FAST_MODEL);
         assert.equal(body.store, false);
         assert.equal(body.reasoning.effort, 'medium');
         assert.equal(body.text.format.type, 'json_schema');
@@ -759,6 +798,7 @@ test('AIService analyzeImage sends full-photo recreate prompt for image-only inp
 
         assert.equal(result.success, true);
         assert.equal(result.json.operations[0].type, 'point');
+        assert.equal(body.model, OPENAI_IMAGE_FAST_MODEL);
         assert.match(userContent[0].text, /사진이 문제 전체 페이지/);
         assert.match(userContent[0].text, /점, 선분, 직선, 원, 호/);
         assert.deepEqual(userContent[1], {
@@ -825,6 +865,8 @@ test('AIService retries image patch when semantic validation rejects the first r
         assert.equal(result.json.operations[0].op, 'update');
         assert.equal(result.json.operations[0].id, 'point_a');
         assert.equal(capturedBodies.length, 2);
+        assert.equal(capturedBodies[0].model, OPENAI_IMAGE_FAST_MODEL);
+        assert.equal(capturedBodies[1].model, DEFAULT_OPENAI_MODEL);
         assert.match(capturedBodies[0].input[1].content[0].text, /MathGraph reference manual context/);
         assert.match(capturedBodies[1].input[1].content[0].text, /failed local semantic validation/);
         assert.equal(capturedBodies[1].previous_response_id, 'resp_bad_patch');

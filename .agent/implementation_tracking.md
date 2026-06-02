@@ -2,6 +2,69 @@
 
 ## Status
 
+- Task: AI image token reduction through safe preprocessing and model routing
+- State: Done
+- Last updated: 2026-06-02
+
+## Plan
+
+1. Record the scoped cost-reduction behavior before implementation.
+2. Add a safe image preprocessing plan and browser-side resize/trim path that avoids shrinking readable photos too far.
+3. Route first OpenAI image attempts to a cheaper mini model and reserve the configured stronger model for repair/fallback.
+4. Add focused unit coverage and browser smoke for the preprocessing path.
+5. Update docs, run verification, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Keep `detail: high` for image requests.
+- Reason: The requested feature is exact math diagram reconstruction, and small labels/ticks/thin strokes matter more than the token savings of low-detail mode.
+- Decision: Only trim background-like margins and never perform content-aware diagram cropping in this pass.
+- Reason: A wrong crop can remove problem conditions or labels; safe whitespace trimming and oversized-image downscaling are lower-risk.
+- Decision: Use a mini model for the first image attempt, then escalate only on repair/failure.
+- Reason: OpenAI docs recommend smaller variants for lower-cost/latency workloads while preserving a stronger path for difficult or invalid outputs.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\ai\AIService.js`; passed.
+  - `node --check js\main.js`; passed.
+  - `node --test tests\ai-flow.test.js`; passed with 38 tests.
+  - JSON parse check for `.agents\skills\mathgraph-drawing\references\feature-manual.json` and `retrieval-index.json`; passed.
+  - Browser plugin loaded `http://127.0.0.1:4186/`, confirmed title `그래프A Mk2.1`, captured a screenshot, and reported 0 console warnings/errors.
+  - Browser plugin could not execute the canvas-based preprocessing function because its evaluate surface is read-only for `document.createElement`; fallback Playwright was used for that specific interaction proof.
+  - Playwright local smoke on `http://127.0.0.1:4186/` called `window.app.prepareImageForAI()` on a generated 3200x2400 diagram image and produced a processed 1800x1277 JPEG with crop/resize enabled, 0 console issues, and 0 failed requests.
+  - `npm.cmd test`; passed with 153 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - `npx.cmd vercel deploy --prod --yes`; deployed production `dpl_HE1fF5dKKYi6tjnA8e1H19Lzff5D` at `https://mathgraph-gncgvbq52-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-gncgvbq52-beomjinsouths-projects.vercel.app`; target `production`, status `Ready`, alias `https://mathgraph-five.vercel.app` attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Playwright production smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, `prepareImageForAI()`, processed 3200x2400 to 1800x1277, and reported 0 console issues and 0 failed requests.
+
+## Handoff
+
+- Current status:
+  - Image upload/paste now keeps the visible preview as the original image but sends a safely preprocessed image to the OpenAI vision call.
+  - Safe preprocessing trims only background-like margins, rejects tiny suspicious crops, downscales only oversized images, and keeps a 1200 px readability floor for downscaled input.
+  - OpenAI image analysis now uses `gpt-5.4-mini` for the first attempt and escalates repair to the configured stronger model or `gpt-5.5`.
+  - `detail: high` remains in place for exact math diagram reconstruction.
+
+---
+
+## Status
+
 - Task: AI problem-situation graphing and full-photo diagram recreation
 - State: Done
 - Last updated: 2026-06-02

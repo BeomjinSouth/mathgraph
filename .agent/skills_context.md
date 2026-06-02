@@ -4,6 +4,47 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - Image preprocessing must preserve labels, axes, ticks, intersections, and relative geometry so the resulting GraphA operations remain faithful.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The work changes OpenAI vision request cost behavior and model choice, so current official docs for image tokens, Responses API, and model pricing were checked.
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The resize/trim path runs in the browser through `Image` and `canvas`, so it needs rendered-page smoke coverage in addition to unit tests.
+
+## Current Task Notes
+
+- User request:
+  - Apply cost-reduction options 2 and 3 first.
+  - For option 2, avoid shrinking photos so much that GPT can no longer recognize the diagram.
+- Finding:
+  - `handleImageUpload()` currently sends the original data URL directly to `AIService.analyzeImage()`.
+  - `AIService.callOpenAIImageAnalysis()` currently uses `detail: high` and the configured model for every image call.
+  - OpenAI image token cost is driven by size and detail; OpenAI model docs recommend smaller variants for lower-cost/latency workloads, while pricing shows `gpt-5.4-mini` is much cheaper than `gpt-5.5`.
+- Implementation direction:
+  - Add a pure preprocessing plan helper with safe max long edge and minimum readable long edge constraints.
+  - Use browser canvas to conservatively trim whitespace-like margins and downscale only oversized images before the API request.
+  - Keep `detail: high` for exact diagram reconstruction.
+  - Route first image attempts through `gpt-5.4-mini`; use the configured stronger model for validation repair.
+- Verification target:
+  - Unit tests for preprocessing plan and OpenAI image model routing.
+  - Browser smoke that calls the preprocessing helper on a generated oversized image.
+  - Full project tests, build check, whitespace check, deploy/inspect/HTTP/production smoke.
+- Completed result:
+  - `AIService` now exports image preprocessing constants and a pure `chooseImagePreprocessPlan()` helper.
+  - `main.js` prepares image uploads/pastes in the browser before API submission, while preserving the original image preview and storing preprocessing metadata in `lastImageReference`.
+  - Oversized images are downscaled to a 1800 px long-edge target, with a 1200 px downscale floor and no upscaling of small images.
+  - Background-like margin trimming is conservative and rejects tiny crops that could make GPT lose readable context.
+  - OpenAI image analysis uses `gpt-5.4-mini` first and escalates repair to the configured stronger model or `gpt-5.5`.
+  - `detail: high` stays enabled because exact diagram reconstruction depends on small labels, ticks, and thin strokes.
+  - Focused tests, full tests, local Browser/Playwright smoke, Vercel deployment, inspect, HTTP, and production Playwright smoke all passed.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - Whole problem text and whole-photo diagram recreation both need valid GraphA operations, supported object types, reference ordering, and exam-style visual guardrails.
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:

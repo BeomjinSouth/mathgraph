@@ -43,6 +43,8 @@ Current request defaults:
 
 - Endpoint: `POST https://api.openai.com/v1/responses`
 - Default model: `gpt-5.5`
+- Image first-attempt model: `gpt-5.4-mini`
+- Image repair/escalation model: configured model when stronger than mini, otherwise `gpt-5.5`
 - Text format: `json_schema` named `graph_operations`
 - Strict schema: enabled
 - Store responses: `false`
@@ -87,7 +89,20 @@ Important boundary:
   - OpenAI image analysis retries once with the semantic validation errors before failing.
 - Image recreation has an operation budget of 45 operations. Dense textbook grids, page text, and decorative elements should be simplified or ignored unless explicitly requested.
 
-## 1.2.1 Scene Graph Reconstruction Direction
+## 1.2.1 Image Cost Controls
+
+Before image analysis, `main.js` prepares a safer API input while preserving the user's original preview:
+
+- Trim only conservative background-like margins detected from corner color samples.
+- Reject suspicious tiny crops so a small detected content area does not become the whole model input.
+- Downscale only oversized images.
+- Keep a long-edge target of 1800 px and a readability floor of 1200 px for downscaled input.
+- Do not upscale small images.
+- Keep OpenAI image `detail: high` because exact math reconstruction needs small labels, axis numbers, ticks, thin strokes, and intersections.
+
+The first OpenAI image attempt uses `gpt-5.4-mini` to reduce normal-case cost. If semantic validation rejects the result, the repair call escalates to the configured stronger model, or to `gpt-5.5` when the configured model is mini/nano.
+
+## 1.2.2 Scene Graph Reconstruction Direction
 
 The root architecture for image/PDF reconstruction is moving away from direct model-authored GraphA operations.
 
@@ -101,7 +116,7 @@ The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene
 
 Unsupported scene nodes such as `cylinder`, `cone`, `sphere`, native `histogram`, native `scatterPlot`, and independent `textLabel` are returned as warnings instead of invalid GraphA. That is intentional: exact textbook parity for those features requires new first-class runtime primitives.
 
-## 1.2.2 Diagram Quality Enhancement
+## 1.2.3 Diagram Quality Enhancement
 
 Text-command and recreate-mode AI output now runs through `js/ai/DiagramQualityEnhancer.js` after JSON parsing and before the result is returned or semantically accepted. This is the app-owned correction step for known exam-style presentation failures, so the model is no longer the only place where label spacing, marker readability, and solid projection quality are decided.
 

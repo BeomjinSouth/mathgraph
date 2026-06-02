@@ -2,6 +2,56 @@
 
 ## 2026-06-02
 
+### AI image preprocessing and model routing cost controls
+
+#### Work completed
+
+- Added safe image preprocessing for AI upload/paste requests.
+- The app now keeps the original image for the visible chat preview, but sends a preprocessed image to OpenAI image analysis.
+- Added conservative background-like margin trimming, with suspicious tiny crops rejected to avoid losing readable math context.
+- Added oversized-image downscaling with a 1800 px long-edge target and a 1200 px readability floor; small/readable images are not upscaled or shrunk.
+- Kept OpenAI image `detail: high` because exact graph/diagram reconstruction depends on small labels, ticks, axes, and thin strokes.
+- Routed first OpenAI image attempts to `gpt-5.4-mini` and semantic repair/escalation to the configured stronger model or `gpt-5.5`.
+- Added focused tests for preprocessing plans, non-shrink behavior, tiny-crop rejection, first-attempt model routing, and repair model escalation.
+- Updated `docs/ai-reference.md`, the MathGraph drawing feature manual, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `.agents/skills/openai-vibecoding-context/SKILL.md`, `.agents/skills/mathgraph-drawing/SKILL.md`, and `docs/ai-reference.md`.
+- Official OpenAI docs:
+  - `https://developers.openai.com/api/docs/guides/images-vision/`
+  - `https://developers.openai.com/api/docs/guides/cost-optimization/`
+  - `https://developers.openai.com/api/docs/models/`
+  - `https://openai.com/api/pricing/`
+
+#### Verification
+
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 38 tests.
+- Ran JSON parse validation for `.agents\skills\mathgraph-drawing\references\feature-manual.json` and `retrieval-index.json`; passed.
+- Ran Browser plugin smoke on `http://127.0.0.1:4186/`; page title was `그래프A Mk2.1`, screenshot was captured, and console warning/error count was 0.
+- Browser plugin could not execute the canvas-based preprocessing function because its evaluate surface is read-only for `document.createElement`; fallback Playwright covered that interaction.
+- Ran Playwright local smoke on `http://127.0.0.1:4186/`; `window.app.prepareImageForAI()` processed a generated 3200x2400 diagram image into a cropped/resized 1800x1277 JPEG with 0 console issues and 0 failed requests.
+- Ran `npm.cmd test`; passed with 153 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_HE1fF5dKKYi6tjnA8e1H19Lzff5D` was created at `https://mathgraph-gncgvbq52-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-gncgvbq52-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Ran Playwright production smoke on `https://mathgraph-five.vercel.app/`; `window.app` and `prepareImageForAI()` existed, a generated 3200x2400 image processed to 1800x1277, and there were 0 console issues and 0 failed requests.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-gncgvbq52-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_HE1fF5dKKYi6tjnA8e1H19Lzff5D`.
+- No Vercel environment variables or project settings were changed.
+
+#### Git / GitHub
+
+- Implementation and documentation changes are ready to commit and push after this progress-log update.
+
 ### AI problem-situation graphing and full-photo diagram recreation
 
 #### Work completed

@@ -2,6 +2,51 @@
 
 ## Summary
 
+- Task: AI image token reduction through safe preprocessing and model routing
+- Owner: Codex
+- Date: 2026-06-02
+- Related files:
+  - `js/ai/AIService.js`
+  - `js/main.js`
+  - `tests/ai-flow.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/ai-reference.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Whole-photo diagram recreation sends the original pasted/uploaded image to the vision model, so large phone photos can cost more image tokens than necessary.
+- Reducing image size too aggressively can make small labels, axis numbers, ticks, and geometry unreadable to the vision model.
+- The current image-analysis path always uses the configured OpenAI model for the first vision attempt, even when a cheaper model could handle the normal case.
+
+## Goals
+
+- Preprocess image uploads/pastes before the OpenAI call by trimming only safe whitespace-like margins and downscaling only oversized images.
+- Keep a readability floor so small or moderately sized photos are not upscaled/downscaled into blurry input.
+- Keep `detail: high` for image analysis because exact math diagrams depend on labels, ticks, and thin strokes.
+- Route the first OpenAI image-analysis attempt through a cheaper vision-capable model, then use the configured stronger model for semantic repair/fallback.
+- Add tests that protect the resize floor and model routing behavior.
+
+## Non-Goals
+
+- Do not add a server-side image proxy in this pass.
+- Do not perform OCR, object detection, or risky content-aware cropping beyond safe margin trimming.
+- Do not switch to `detail: low` for whole-photo diagram reconstruction.
+- Do not change GraphA operation schemas or add new drawing primitives.
+
+## Acceptance Criteria
+
+- [x] Oversized images are reduced before API submission while preserving a long-edge readability floor.
+- [x] Images already at a safe size are not shrunk.
+- [x] Safe margin trimming is conservative and rejects suspicious tiny crops.
+- [x] OpenAI image analysis uses a mini model for the first attempt and escalates to the configured stronger model for repair.
+- [x] Focused tests, full tests, browser smoke, docs, commit, push, and deployment verification pass or blockers are recorded.
+
+---
+
+## Summary
+
 - Task: AI problem-situation graphing and full-photo diagram recreation
 - Owner: Codex
 - Date: 2026-06-02
