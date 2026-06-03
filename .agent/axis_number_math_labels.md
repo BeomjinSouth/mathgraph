@@ -39,8 +39,11 @@
   - `npm.cmd test`; passed with 160 tests.
   - `npm.cmd run vercel-build`; passed.
   - `git diff --check`; passed with line-ending warnings only.
+  - `npx.cmd vercel inspect https://mathgraph-five.vercel.app`; production deployment `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad` was `Ready` with the primary alias attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Playwright production smoke on `https://mathgraph-five.vercel.app/`; axis labels rendered through the math font path, math minus code `8722` was present, ASCII hyphen code `45` was absent, origin `O` rendered through the math font path, and there were 0 console issues / 0 failed requests.
 
 ## Notes
 
 - Browser plugin use was attempted first, but the required Node REPL JavaScript execution tool was not exposed in this session. Playwright was used as the rendered-validation fallback.
-- Manual Vercel deploy was not run from the dirty workspace because unrelated in-progress files are currently present and a direct deploy would include them.
+- Manual Vercel deploy was not run from this task turn, but the production alias was inspected after the branch update and the live site contains the axis-number math-label behavior.
