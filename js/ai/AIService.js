@@ -597,7 +597,12 @@ export class AIService {
             const json = this.extractJSON(response);
             if (json) {
                 return this.enhanceProcessResult(
-                    { success: true, json, message: response },
+                    {
+                        success: true,
+                        json,
+                        message: response,
+                        model: this.lastRequestModel || this.config.model
+                    },
                     normalizedMessage,
                     context,
                     'command'
@@ -941,6 +946,7 @@ export class AIService {
      */
     async callOpenAI(messages) {
         const requestBody = this.buildOpenAIRequestBody(messages);
+        this.lastRequestModel = requestBody.model;
 
         const response = await fetch('https://api.openai.com/v1/responses', {
             method: 'POST',
@@ -1045,6 +1051,8 @@ export class AIService {
      * Google Gemini API 호출
      */
     async callGemini(messages) {
+        this.lastRequestModel = this.config.model;
+
         // Gemini 형식으로 변환
         const parts = messages.map(m => ({
             role: m.role === 'assistant' ? 'model' : m.role,
@@ -2128,6 +2136,7 @@ export class AIService {
             model: requestOptions.model || this.config.model || DEFAULT_OPENAI_MODEL,
             previousResponseId: requestOptions.previousResponseId
         });
+        this.lastRequestModel = requestBody.model;
 
         const response = await fetch('https://api.openai.com/v1/responses', {
             method: 'POST',

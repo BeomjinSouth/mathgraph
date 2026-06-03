@@ -2835,7 +2835,7 @@ class GraphAApp {
     /**
      * 채팅 메시지 추가
      */
-    addChatMessage(content, type) {
+    addChatMessage(content, type, options = {}) {
         const messages = document.getElementById('chatMessages');
         if (!messages) return;
 
@@ -2845,9 +2845,27 @@ class GraphAApp {
         body.className = 'message-content';
         body.textContent = content;
         div.appendChild(body);
+
+        if (options.meta) {
+            const meta = document.createElement('div');
+            meta.className = 'message-meta';
+            meta.textContent = options.meta;
+            div.appendChild(meta);
+        }
+
         messages.appendChild(div);
         messages.scrollTop = messages.scrollHeight;
         return div;
+    }
+
+    getAIModelResultMeta(result) {
+        if (!result?.model) return '';
+        const initialModel = result.initialModel;
+        const finalModel = result.model;
+        if (initialModel && initialModel !== finalModel) {
+            return `모델: ${initialModel} -> ${finalModel}`;
+        }
+        return `모델: ${finalModel}`;
     }
 
     addChatImagePreview(imageDataUrl) {
@@ -2903,7 +2921,9 @@ class GraphAApp {
 
             if (result.success && result.json) {
                 // JSON 패치 적용
-                this.processAIJSON(result.json);
+                this.processAIJSON(result.json, {
+                    modelMeta: this.getAIModelResultMeta(result)
+                });
             } else if (result.error) {
                 this.addChatMessage(result.error, 'assistant');
             }
@@ -2994,7 +3014,9 @@ class GraphAApp {
         if (patchResult.success) {
             this.render();
             this.updateSidebar();
-            this.addChatMessage(`✅ ${patchResult.message}`, 'assistant');
+            this.addChatMessage(`✅ ${patchResult.message}`, 'assistant', {
+                meta: intentOptions.modelMeta || ''
+            });
         } else {
             this.addChatMessage(
                 `❌ 적용 실패: ${patchResult.message}\n${patchResult.errors.join('\n')}`,
@@ -3274,7 +3296,8 @@ class GraphAApp {
                         mode,
                         instruction,
                         context: aiContext,
-                        maxOperations: mode === 'recreate' ? 45 : undefined
+                        maxOperations: mode === 'recreate' ? 45 : undefined,
+                        modelMeta: this.getAIModelResultMeta(result)
                     });
                 } else if (result.error) {
                     this.addChatMessage(`❌ ${result.error}`, 'assistant');

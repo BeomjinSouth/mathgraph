@@ -102,6 +102,8 @@ Before image analysis, `main.js` prepares a safer API input while preserving the
 
 The first OpenAI image attempt uses `gpt-5.4-mini` to reduce normal-case cost. If semantic validation rejects the result, the repair call escalates to the configured stronger model, or to `gpt-5.5` when the configured model is mini/nano.
 
+Successful AI drawing result messages include a small secondary model line in the chat, such as `모델: gpt-5.4-mini`. If a request was repaired through escalation, the line shows the route, such as `모델: gpt-5.4-mini -> gpt-5.5`.
+
 ## 1.2.2 Scene Graph Reconstruction Direction
 
 The root architecture for image/PDF reconstruction is moving away from direct model-authored GraphA operations.

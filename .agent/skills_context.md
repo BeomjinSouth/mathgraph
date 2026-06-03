@@ -2,6 +2,43 @@
 
 ## Relevant Skills
 
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The UI is surfacing OpenAI model-routing metadata from the image analysis result without changing the underlying Responses API call.
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The feature sits in the AI diagram creation flow and must not change GraphA validation/application behavior.
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The model label is visible chat UI, so it should be verified in a rendered browser.
+
+## Current Task Notes
+
+- User request:
+  - Show which model was actually used somewhere small in the result.
+- Finding:
+  - `AIService.analyzeImage()` already returns `model` for accepted first attempts and `initialModel` plus `model` for repaired attempts.
+  - `AIService.processCommand()` can also return the model used for successful text-based API drawing requests.
+  - `addChatMessage()` currently renders only one text body and has no metadata slot.
+- Implementation direction:
+  - Extend `addChatMessage(content, type, options)` with an optional metadata line.
+  - Format successful AI drawing metadata as `모델: gpt-5.4-mini` or `모델: gpt-5.4-mini -> gpt-5.5`.
+  - Keep ordinary chat messages unchanged when no metadata is provided.
+- Verification target:
+  - Focused DOM/unit-style tests for metadata rendering and model label formatting.
+  - Browser smoke for the AI chat model badge.
+  - Full tests, build check, whitespace check, deploy/inspect/HTTP/production smoke.
+- Completed result:
+  - `AIService` records the actual request model for OpenAI and Gemini text calls and returns it on successful text drawing results.
+  - Image analysis result metadata is passed through the final applied-result chat message.
+  - `main.js` renders optional message metadata as a secondary line, and CSS keeps it small and low-emphasis.
+  - Repaired image analysis displays the route from initial model to accepted model, for example `모델: gpt-5.4-mini -> gpt-5.5`.
+  - Focused tests, full tests, local Browser/Playwright smoke, Vercel deployment, inspect, HTTP, and production Playwright smoke all passed.
+
+---
+
+## Relevant Skills
+
 - Skill: MathGraph Drawing
 - Why it matters:
   - Image preprocessing must preserve labels, axes, ticks, intersections, and relative geometry so the resulting GraphA operations remain faithful.

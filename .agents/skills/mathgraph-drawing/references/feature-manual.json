@@ -37,6 +37,7 @@
       "fullPhotoRecreateMode": "Image-only upload/paste treats a whole photo as recreate mode. The model should locate the visible math diagram/graph/figure, preserve geometry and short labels, and ignore dense problem prose unless needed for the figure.",
       "imagePreprocessing": "Before OpenAI image analysis, the browser trims only safe background-like margins and downscales oversized images to a readable long-edge budget. Small or already readable images are not shrunk, and suspicious tiny crops are rejected.",
       "imageModelRouting": "OpenAI image analysis uses gpt-5.4-mini for the first attempt, then escalates repair to the configured stronger model or gpt-5.5 when semantic intent validation rejects the first GraphA payload.",
+      "modelDisclosure": "Successful AI drawing result messages show a small chat metadata line with the model that produced the accepted patch, including first -> final model routing when repair escalation happened.",
       "imagePatchRepair": "OpenAI image analysis retries once when semantic intent validation rejects the first GraphA payload."
     },
     "toolSearchPattern": "For future API orchestration with many tool/function schemas, defer rarely used tool definitions and use tool_search or an app-owned retrieval step to load only relevant MathGraph schema chunks."

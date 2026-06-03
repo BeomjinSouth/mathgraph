@@ -1,5 +1,53 @@
 # Progress Log
 
+## 2026-06-03
+
+### AI result model disclosure in chat
+
+#### Work completed
+
+- Added optional chat-message metadata rendering so AI drawing results can show the actual model used as a small secondary line.
+- Connected successful text-command API results to the recorded request model.
+- Connected successful image-analysis results to the accepted model metadata, including `initialModel -> model` when semantic repair escalation happens.
+- Kept ordinary chat messages unchanged when no metadata is provided.
+- Added low-emphasis `.message-meta` styling.
+- Added focused coverage that `processCommand()` returns the actual OpenAI model on a successful API result.
+- Updated `docs/ai-reference.md`, the MathGraph drawing feature manual, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `.agents/skills/openai-vibecoding-context/SKILL.md`, `.agents/skills/mathgraph-drawing/SKILL.md`, and `docs/ai-reference.md`.
+- Browser testing context: `C:\Users\pbj95\.codex\plugins\cache\openai-bundled\browser\26.527.60818\skills\control-in-app-browser\SKILL.md`.
+- No OpenAI API schema or model-routing behavior was changed beyond surfacing the model metadata already returned by the app code.
+
+#### Verification
+
+- Ran `node --check js\main.js`; passed.
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 39 tests.
+- Ran JSON parse validation for `.agents\skills\mathgraph-drawing\references\feature-manual.json`; passed.
+- Ran in-app Browser smoke on `http://127.0.0.1:4187/`; page title was `그래프A Mk2.1`, the chat container was present, and console warning/error count was 0.
+- Ran Playwright local smoke on `http://127.0.0.1:4187/`; `모델: gpt-5.4-mini -> gpt-5.5` rendered as a 10px metadata line, ordinary messages did not get metadata, and there were 0 console issues and 0 failed requests.
+- Ran `npm.cmd test`; passed with 154 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_5heRB9Mp1k6aXCYdvnWjdp14jLFg` was created at `https://mathgraph-c46eexs7c-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-c46eexs7c-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Ran Playwright production smoke on `https://mathgraph-five.vercel.app/`; the model metadata line rendered, ordinary messages remained unchanged, and there were 0 console issues and 0 failed requests.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-c46eexs7c-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_5heRB9Mp1k6aXCYdvnWjdp14jLFg`.
+- No Vercel environment variables or project settings were changed.
+
+#### Git / GitHub
+
+- This entry is included in the implementation/docs commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ## 2026-06-02
 
 ### AI image preprocessing and model routing cost controls

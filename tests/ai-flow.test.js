@@ -354,6 +354,53 @@ test('AIService callOpenAI sends Structured Outputs request and extracts output 
         assert.equal(body.store, false);
         assert.equal(content, '{"operations":[{"op":"create","type":"point","x":1,"y":2}]}');
         assert.equal(service.lastResponseId, 'resp_next');
+        assert.equal(service.lastRequestModel, 'gpt-5.4-mini');
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('processCommand includes actual API model in successful OpenAI result', async () => {
+    const originalFetch = globalThis.fetch;
+
+    globalThis.fetch = async () => ({
+        ok: true,
+        async json() {
+            return {
+                id: 'resp_model_meta',
+                output: [
+                    {
+                        type: 'message',
+                        content: [
+                            {
+                                type: 'output_text',
+                                text: JSON.stringify({
+                                    operations: [
+                                        { op: 'create', id: 'A', type: 'point', x: 1, y: 2, label: 'A' }
+                                    ]
+                                })
+                            }
+                        ]
+                    }
+                ]
+            };
+        }
+    });
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            referenceManual: TEST_REFERENCE_MANUAL,
+            referenceIndex: TEST_REFERENCE_INDEX,
+            save() { }
+        });
+
+        const result = await service.processCommand('create point A', { objects: [] });
+
+        assert.equal(result.success, true);
+        assert.equal(result.model, 'gpt-5.4-mini');
     } finally {
         globalThis.fetch = originalFetch;
     }

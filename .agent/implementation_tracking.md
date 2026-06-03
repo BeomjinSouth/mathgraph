@@ -2,6 +2,65 @@
 
 ## Status
 
+- Task: AI result model disclosure in chat
+- State: Done
+- Last updated: 2026-06-03
+
+## Plan
+
+1. Record the scoped model-disclosure behavior before implementation.
+2. Add chat-message metadata support and styling for low-emphasis model labels.
+3. Use `AIService` text and image result metadata to show the accepted model, including repair escalation when present.
+4. Add focused tests and browser smoke for the rendered model label.
+5. Update docs, run verification, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Show model metadata on successful AI drawing result messages when model metadata is available.
+- Reason: The user asked to see which model was actually used in the result, and both text and image API paths can expose the accepted model without changing drawing behavior.
+- Decision: Render model information as a secondary line under the chat bubble.
+- Reason: It should help with trust/cost visibility without competing with the main result message.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\main.js`; passed.
+  - `node --check js\ai\AIService.js`; passed.
+  - `node --test tests\ai-flow.test.js`; passed with 39 tests.
+  - JSON parse check for `.agents\skills\mathgraph-drawing\references\feature-manual.json`; passed.
+  - In-app Browser loaded `http://127.0.0.1:4187/`, confirmed the app page loaded, and reported 0 console warnings/errors.
+  - Playwright local smoke on `http://127.0.0.1:4187/` confirmed `모델: gpt-5.4-mini -> gpt-5.5` renders as a 10px metadata line and ordinary messages do not get metadata.
+  - `npm.cmd test`; passed with 154 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - `npx.cmd vercel deploy --prod --yes`; deployed production `dpl_5heRB9Mp1k6aXCYdvnWjdp14jLFg` at `https://mathgraph-c46eexs7c-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-c46eexs7c-beomjinsouths-projects.vercel.app`; target `production`, status `Ready`, alias `https://mathgraph-five.vercel.app` attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Playwright production smoke on `https://mathgraph-five.vercel.app/` confirmed the model metadata line, ordinary-message behavior, 0 console issues, and 0 failed requests.
+
+## Handoff
+
+- Current status:
+  - Successful AI drawing result chat messages now show a small secondary model line when the API result includes model metadata.
+  - Image repair/escalation results display both models, for example `모델: gpt-5.4-mini -> gpt-5.5`.
+  - Ordinary chat messages remain unchanged when no metadata is passed.
+
+---
+
+## Status
+
 - Task: AI image token reduction through safe preprocessing and model routing
 - State: Done
 - Last updated: 2026-06-02

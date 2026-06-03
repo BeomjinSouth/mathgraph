@@ -1727,6 +1727,16 @@ body {
     border-bottom-left-radius: var(--radius-sm);
 }
 
+.message-meta {
+    margin-top: var(--spacing-xs);
+    padding: 0 var(--spacing-xs);
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--text-tertiary);
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0.78;
+}
+
 .chat-image-preview {
     display: block;
     max-width: 200px;

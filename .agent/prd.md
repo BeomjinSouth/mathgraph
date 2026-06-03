@@ -2,6 +2,50 @@
 
 ## Summary
 
+- Task: AI result model disclosure in chat
+- Owner: Codex
+- Date: 2026-06-03
+- Related files:
+  - `js/main.js`
+  - `js/ai/AIService.js`
+  - `css/styles.css`
+  - `tests/ai-flow.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/ai-reference.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- AI drawing requests can now use a configured model, a cheaper first-attempt model, or a stronger repair model depending on the path.
+- The user can see whether the drawing succeeded, but cannot see which model actually produced the accepted result.
+- For cost and trust, the final result message should expose the actual model used without making the chat noisy.
+
+## Goals
+
+- Show the actual model used for successful AI drawing results in a small, low-emphasis line under the result message.
+- If repair/escalation happened, show both the initial and final models compactly.
+- Keep the model display separate from the main response text so it does not distract from the drawing result.
+- Preserve existing GraphA application behavior and model routing.
+
+## Non-Goals
+
+- Do not add a full usage/cost dashboard in this pass.
+- Do not call provider billing or usage APIs.
+- Do not change model selection or fallback routing behavior.
+- Do not expose API keys or raw request bodies.
+
+## Acceptance Criteria
+
+- [x] Successful AI drawing result messages include a small model metadata line when model metadata is available.
+- [x] Repaired image analysis shows initial model -> final model.
+- [x] Ordinary chat messages remain unchanged when no model metadata is provided.
+- [x] Focused tests, browser smoke, docs, commit, push, and deployment verification pass or blockers are recorded.
+
+---
+
+## Summary
+
 - Task: AI image token reduction through safe preprocessing and model routing
 - Owner: Codex
 - Date: 2026-06-02
