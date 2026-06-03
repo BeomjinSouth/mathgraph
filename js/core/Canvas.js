@@ -317,7 +317,10 @@ export class Canvas {
 
                 if (this.showAxisNumbers) {
                     const label = this.formatAxisNumber(x, gap);
-                    ctx.fillText(label, screenX, labelY);
+                    this.drawAxisNumberLabel(label, screenX, labelY, {
+                        horizontal: 'center',
+                        vertical: 'top'
+                    });
                 }
             }
         }
@@ -343,7 +346,10 @@ export class Canvas {
 
                 if (this.showAxisNumbers) {
                     const label = this.formatAxisNumber(y, gap);
-                    ctx.fillText(label, labelX, screenY);
+                    this.drawAxisNumberLabel(label, labelX, screenY, {
+                        horizontal: 'right',
+                        vertical: 'middle'
+                    });
                 }
             }
         }
@@ -354,8 +360,39 @@ export class Canvas {
             bounds.minY <= 0 && bounds.maxY >= 0) {
             ctx.textAlign = 'right';
             ctx.textBaseline = 'top';
-            ctx.fillText('O', origin.x - 5, origin.y + 5);
+            this.drawAxisNumberLabel('O', origin.x - 5, origin.y + 5, {
+                horizontal: 'right',
+                vertical: 'top'
+            });
         }
+    }
+
+    drawAxisNumberLabel(text, x, y, options = {}) {
+        const {
+            fontSize = 11,
+            color = '#666666',
+            horizontal = 'center',
+            vertical = 'top'
+        } = options;
+
+        const parts = this.parseMathExpression(text);
+        const width = this.measureMathExpression(parts, this.ctx, fontSize);
+
+        let drawX = x;
+        if (horizontal === 'center') {
+            drawX -= width / 2;
+        } else if (horizontal === 'right') {
+            drawX -= width;
+        }
+
+        let baselineY = y;
+        if (vertical === 'top') {
+            baselineY += fontSize;
+        } else if (vertical === 'middle') {
+            baselineY += fontSize / 2;
+        }
+
+        this.renderMathExpression(parts, this.ctx, drawX, baselineY, fontSize, color);
     }
 
     getAxisNumberGap() {

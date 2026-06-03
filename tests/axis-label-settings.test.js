@@ -32,6 +32,9 @@ function createCanvasFacade() {
         fillText(text, x, y) {
             calls.push(['fillText', text, x, y]);
         },
+        measureText(text) {
+            return { width: String(text).length || 1 };
+        },
         set font(value) {
             calls.push(['font', value]);
         },
@@ -94,10 +97,16 @@ test('axis numbers render with the selected fixed interval', () => {
 
     canvas.drawAxisLabels();
 
-    const labels = canvas.ctx.calls
+    const renderedText = canvas.ctx.calls
         .filter(call => call[0] === 'fillText')
         .map(call => call[1]);
 
-    assert.ok(labels.includes('1'));
-    assert.ok(labels.includes('-1'));
+    const mathFonts = canvas.ctx.calls
+        .filter(call => call[0] === 'font')
+        .map(call => call[1]);
+
+    assert.ok(renderedText.includes('1'));
+    assert.ok(renderedText.includes('\u2212'));
+    assert.equal(renderedText.includes('-'), false);
+    assert.ok(mathFonts.some(font => font.includes('"Times New Roman"')));
 });
