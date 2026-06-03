@@ -28,16 +28,16 @@
 - Ran `git diff --check`; passed with line-ending warnings only.
 - Browser plugin workflow was checked, but the required Node REPL execution tool was not exposed in this session; Playwright was used as the fallback browser verification path.
 - Ran Playwright local smoke on `http://127.0.0.1:4188/`; the rendered function formula label moved from `(0, 0)` to `(2.4, 1.6)`, with 0 console issues and 0 failed requests.
-- Ran `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH` was created at `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
-- Ran `npx.cmd vercel inspect https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Ran `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad` was created at `https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
 - Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
 - Ran Playwright production smoke on `https://mathgraph-five.vercel.app/`; the rendered function formula label moved from `(0, 0)` to `(2.4, 1.6)`, with 0 console issues and 0 failed requests.
 
 #### Deployment / Vercel
 
 - Production alias: `https://mathgraph-five.vercel.app`.
-- Final production deployment URL: `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
-- Final Vercel deployment ID: `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH`.
+- Final production deployment URL: `https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`.
+- Final Vercel deployment ID: `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad`.
 - No Vercel environment variables or project settings were changed.
 
 #### Git / GitHub

@@ -130,8 +130,8 @@
   - `git diff --check`; passed with line-ending warnings only.
   - Browser plugin workflow was checked, but the required Node REPL execution tool was not exposed in this session.
   - Playwright local smoke on `http://127.0.0.1:4188/` created `2*x^2`, dragged the rendered formula label from `(0, 0)` to `(2.4, 1.6)`, saved `tmp/function-label-drag-smoke.png`, and reported 0 console issues and 0 failed requests.
-  - `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH` was created at `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
-  - `npx.cmd vercel inspect https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+  - `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad` was created at `https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
   - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
   - Playwright production smoke on `https://mathgraph-five.vercel.app/` created `2*x^2`, dragged the rendered formula label from `(0, 0)` to `(2.4, 1.6)`, saved `tmp/function-label-drag-production-smoke.png`, and reported 0 console issues and 0 failed requests.
 
