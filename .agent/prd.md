@@ -2,6 +2,134 @@
 
 ## Summary
 
+- Task: Function input accepts y=
+- Owner: Codex
+- Date: 2026-06-03
+- Related files:
+  - `index.html`
+  - `js/objects/Function.js`
+  - `js/ui/AlgebraInput.js`
+  - `tests/function-parser.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The function tool modal visually suggests users must enter only the right-hand side after `f(x) =`.
+- If a user types a full classroom-style equation such as `y=x^2` in that modal or in a function expression edit field, the runtime parser receives the literal `y=` and rejects it.
+- Teachers often think in `y=...` notation, so function entry should accept that form without weakening the AI/GraphA RHS-only operation contract.
+
+## Goals
+
+- Allow user-facing function input to accept `y=expression` and store the internal expression as the right-hand side.
+- Display a `y = expression` label for functions created from `y=...`.
+- Preserve existing `f(x)=...`, `g(x)=...`, and right-hand-side-only inputs.
+- Keep AI/GraphA schema validation RHS-only so model output remains constrained.
+
+## Non-Goals
+
+- Do not change the function object JSON schema or AI operation schema.
+- Do not add implicit equation solving for forms such as `2x + 3y = 6`.
+- Do not change Vercel project settings or environment variables.
+
+## Acceptance Criteria
+
+- [ ] The function modal accepts `y=x^2` and creates a valid function whose stored expression is `x^2`.
+- [ ] The created graph label displays as `y = x^2` rather than forcing `f(x) = ...`.
+- [ ] Existing `f(x)=...` / `g(x)=...` and RHS-only inputs still work.
+- [ ] Focused tests, full tests, build check, whitespace check, browser smoke, commit, push, and deployment outcome are recorded.
+
+---
+
+## Summary
+
+- Task: Drag-area export
+- Owner: Codex
+- Date: 2026-06-03
+- Related files:
+  - `index.html`
+  - `js/main.js`
+  - `js/tools/AreaExportTool.js`
+  - `js/ui/CommandPalette.js`
+  - `css/styles.css`
+  - `tests/area-export.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Current export saves the full visible canvas.
+- Users sometimes need only a cropped portion of a graph or diagram for worksheets, slides, or chat sharing.
+- A crop workflow should not disturb current object selection, object geometry, save/load data, or existing SVG/PNG export options.
+
+## Goals
+
+- Add a user-facing mode that lets users drag a rectangular area on the canvas and save only that area.
+- Reuse the existing export settings for format, PNG scale, background, grid, and axes.
+- Show clear drag feedback while choosing the area.
+- Return to the normal select tool after the area is saved or cancelled.
+- Verify the crop math with focused tests and render the interaction in a browser smoke test.
+
+## Non-Goals
+
+- Do not add arbitrary polygon/lasso crop support.
+- Do not change object geometry or MathGraph save/load serialization.
+- Do not change Vercel project settings or environment variables.
+
+## Acceptance Criteria
+
+- [ ] A toolbar action and command-palette action can enter area-export mode.
+- [ ] Dragging a canvas rectangle downloads only the selected rectangle as PNG by default.
+- [ ] Existing export modal options still apply to area export where relevant.
+- [ ] Very small drags do not download a broken file and show a useful message.
+- [ ] Focused tests, full tests, build check, whitespace check, local browser smoke, Vercel deployment checks, and production smoke pass or blockers are recorded.
+
+---
+
+## Summary
+
+- Task: Function formula label dragging on Vercel
+- Owner: Codex
+- Date: 2026-06-03
+- Related files:
+  - `js/objects/Function.js`
+  - `js/tools/SelectTool.js`
+  - `tests/function-label-drag.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Vercel production is deployed, but function formula labels can be hard or impossible to move after creating a function.
+- `FunctionGraph` supports label dragging, but the select tool can start a function drag even when the click was on the curve rather than the label.
+- Function label hit testing estimates text width from character count, which is brittle for rendered math labels such as fractions and exponents.
+
+## Goals
+
+- Let users drag the visible function formula label directly on the canvas.
+- Prevent clicks on the graph curve from starting a no-op function drag.
+- Keep the curve selectable and keep the existing reset-label-position control.
+- Verify the fix locally and redeploy to Vercel production.
+
+## Non-Goals
+
+- Do not add a new label-editing UI.
+- Do not change function parsing, plotting, or GraphA schema behavior.
+- Do not change Vercel project settings or environment variables.
+
+## Acceptance Criteria
+
+- [x] Clicking inside the formula label starts label dragging and updates the stored label math position.
+- [x] Clicking only on the function curve selects the function but does not start a no-op drag.
+- [x] Focused tests, full tests, build check, whitespace check, Vercel deploy/inspect, HTTP check, and production smoke pass or blockers are recorded.
+
+---
+
+## Summary
+
 - Task: AI result model disclosure in chat
 - Owner: Codex
 - Date: 2026-06-03

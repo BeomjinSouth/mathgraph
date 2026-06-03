@@ -2,6 +2,79 @@
 
 ## Relevant Skills
 
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The requested behavior is a rendered modal/input workflow and should be verified in the real app after focused tests.
+
+## Current Task Notes
+
+- User request:
+  - Functions currently feel limited to names like `f(x)` and `g(x)`; allow plain `y=...` input too.
+- Finding:
+  - `AlgebraInput` already accepts `y=...`, but the function modal and function expression edit path send raw text to `FunctionGraph`.
+  - `FunctionGraph` currently parses the expression exactly as stored, so a leading `y=` makes the function invalid.
+  - AI/GraphA validation intentionally rejects `y=` inside operation expressions and should stay RHS-only.
+- Implementation direction:
+  - Add a shared function-input normalizer near `FunctionGraph`.
+  - Strip leading `y=` before parsing/storing and set the visible label to `y = ...` when no explicit label is supplied.
+  - Also keep named inputs such as `g(x)=...` working by normalizing to label `g` plus RHS expression.
+- Verification target:
+  - Focused function tests, full test suite, build/whitespace checks, and a browser smoke through the function modal.
+
+---
+
+## Relevant Skills
+
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The requested feature is a canvas interaction that must be verified in a rendered browser flow.
+- Skill: Browser plugin / Playwright fallback
+- Why it matters:
+  - Area export needs drag input, download interception, and console-health checks in a real page.
+
+## Current Task Notes
+
+- User request:
+  - Add a feature to drag over only the desired area and save that area.
+- Implementation direction:
+  - Add a temporary area-export canvas tool with a dashed rectangle preview.
+  - Add a toolbar and command-palette entry to enter area-export mode.
+  - Reuse the existing export modal settings for format, scale, background, grid, and axes.
+  - Render the full scene to an offscreen canvas, then crop the selected screen rectangle into the downloaded output.
+- Verification target:
+  - Focused crop helper tests, full test suite, build/whitespace checks, local browser drag/download smoke, Vercel deploy/inspect, HTTP check, and production smoke.
+
+---
+
+## Relevant Skills
+
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The reported issue is a deployed canvas interaction: moving a rendered function formula label.
+- Skill: MathGraph Drawing
+- Why it matters:
+  - Function labels are part of the editable graph object behavior and should preserve GraphA/runtime semantics.
+
+## Current Task Notes
+
+- User request:
+  - Confirm whether the current work is deployed to Vercel.
+  - Fix the Vercel behavior where a function's displayed formula cannot be moved.
+- Finding:
+  - `npx.cmd vercel inspect https://mathgraph-five.vercel.app` reports production deployment `dpl_5heRB9Mp1k6aXCYdvnWjdp14jLFg` is `Ready`, with the primary alias attached.
+  - `FunctionGraph` has label dragging support, but `SelectTool` treats the function as draggable whenever it has a visible label. If `startDrag()` returns false because the click was on the curve instead of the label, the tool still enters dragging mode.
+  - `FunctionGraph.getLabelBounds()` estimates label width by character count instead of using the math-label renderer's measurement path.
+- Implementation direction:
+  - Measure label bounds through `canvas.parseMathExpression()` and `canvas.measureMathExpression()` when available.
+  - Let `SelectTool` begin object dragging only when `startDrag()` does not reject the clicked point.
+  - Add focused tests for label-click drag success and curve-click no-op prevention.
+- Verification target:
+  - Focused drag regression test, full tests, local browser smoke, Vercel production deploy and smoke.
+
+---
+
+## Relevant Skills
+
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:
   - The UI is surfacing OpenAI model-routing metadata from the image analysis result without changing the underlying Responses API call.

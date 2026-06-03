@@ -2,6 +2,149 @@
 
 ## Status
 
+- Task: Function input accepts y=
+- State: In progress
+- Last updated: 2026-06-03
+
+## Plan
+
+1. Record the scoped function-input behavior before implementation.
+2. Normalize user-facing function input that starts with `y=` while preserving RHS-only storage.
+3. Preserve named function inputs such as `f(x)=...` and `g(x)=...`.
+4. Add focused regression coverage and run browser/full verification.
+5. Update docs, deploy/record deployment outcome, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [ ] Step 2
+- [ ] Step 3
+- [ ] Step 4
+- [ ] Step 5
+
+## Decisions
+
+- Decision: Treat `y=...` as a user-input alias that normalizes to the existing right-hand-side function expression.
+- Reason: The function parser, saved object schema, and AI GraphA operation contract already expect RHS-only expressions.
+- Decision: Set the visible label to `y = ...` only when the user created or edited a function using `y=...`.
+- Reason: This matches classroom notation while preserving the existing auto labels for RHS-only entries.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Pending.
+
+## Handoff
+
+- Current status:
+  - Function modal input still needs implementation.
+
+---
+
+## Status
+
+- Task: Drag-area export
+- State: In progress
+- Last updated: 2026-06-03
+
+## Plan
+
+1. Record the scoped area-export feature before implementation.
+2. Add a dedicated drag-to-export tool and toolbar/command entry point.
+3. Add crop-aware PNG export that reuses the existing render pipeline and export settings.
+4. Add focused unit coverage for crop rectangle normalization and output sizing.
+5. Run rendered smoke testing, update docs, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [ ] Step 2
+- [ ] Step 3
+- [ ] Step 4
+- [ ] Step 5
+
+## Decisions
+
+- Decision: Implement area export as a temporary tool instead of overloading drag-box selection.
+- Reason: Selection drag and crop drag have different outcomes, and a separate tool avoids changing existing object-selection semantics.
+- Decision: Use screen-pixel crop rectangles while preserving the current math viewport.
+- Reason: The user is dragging over the rendered canvas, so the saved image should match exactly the visible area they framed.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Pending.
+
+## Handoff
+
+- Current status:
+  - Existing full-canvas export remains the baseline path.
+
+---
+
+## Status
+
+- Task: Function formula label dragging on Vercel
+- State: Done
+- Last updated: 2026-06-03
+
+## Plan
+
+1. Record the scoped function-label drag bug before implementation.
+2. Make function label hit testing use the rendered math-label measurement when possible.
+3. Make `SelectTool` start object dragging only when `startDrag()` accepts the click.
+4. Add focused regression coverage for label clicks versus curve clicks.
+5. Run verification, update docs, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Fix the existing canvas label-drag path instead of adding a separate label-position control.
+- Reason: The app already advertises direct formula-label dragging and has stored `labelMathPos`; the defect is in hit testing and drag-start handling.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\objects\Function.js`; passed.
+  - `node --check js\tools\SelectTool.js`; passed.
+  - `node --test tests\function-label-drag.test.js`; passed with 2 tests.
+  - `npm.cmd test`; passed with 156 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - Browser plugin workflow was checked, but the required Node REPL execution tool was not exposed in this session.
+  - Playwright local smoke on `http://127.0.0.1:4188/` created `2*x^2`, dragged the rendered formula label from `(0, 0)` to `(2.4, 1.6)`, saved `tmp/function-label-drag-smoke.png`, and reported 0 console issues and 0 failed requests.
+  - `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH` was created at `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Playwright production smoke on `https://mathgraph-five.vercel.app/` created `2*x^2`, dragged the rendered formula label from `(0, 0)` to `(2.4, 1.6)`, saved `tmp/function-label-drag-production-smoke.png`, and reported 0 console issues and 0 failed requests.
+
+## Handoff
+
+- Current status:
+  - Vercel production alias was inspected and is currently `Ready`.
+  - Function formula label dragging is fixed locally and in Vercel production, with focused tests plus rendered local/production smoke.
+
+---
+
+## Status
+
 - Task: AI result model disclosure in chat
 - State: Done
 - Last updated: 2026-06-03

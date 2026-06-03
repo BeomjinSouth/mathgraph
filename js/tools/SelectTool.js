@@ -486,6 +486,25 @@ export class SelectTool extends Tool {
         return true;
     }
 
+    beginSingleObjectDrag(object, mathPos, app) {
+        if (!object?.isDraggable?.()) {
+            return false;
+        }
+
+        if (object.startDrag) {
+            const accepted = object.startDrag(mathPos, app.canvas, app.objectManager);
+            if (accepted === false) {
+                return false;
+            }
+        }
+
+        this.draggedObjects = [object];
+        this.isDragging = true;
+        this.isMultiDrag = false;
+        app.historyManager.startDrag(this.draggedObjects);
+        return true;
+    }
+
     onMouseDown(mathPos, screenPos, event, app) {
         this.clickStartPos = screenPos.clone();
         this.clickStartMathPos = mathPos.clone();
@@ -536,16 +555,8 @@ export class SelectTool extends Tool {
                 if (clickedObj.selected && selectedObjects.length > 1) {
                     const pointsToMove = this.collectSelectionDragTargets(selectedObjects, app);
                     this.beginPointDrag(pointsToMove, mathPos, app);
-                } else if (clickedObj.isDraggable && clickedObj.isDraggable()) {
-                    // 단일 객체 드래그
-                    this.draggedObjects = [clickedObj];
-                    this.isDragging = true;
-                    this.isMultiDrag = false;
-
-                    if (clickedObj.startDrag) {
-                        clickedObj.startDrag(mathPos, app.canvas, app.objectManager);
-                    }
-                    app.historyManager.startDrag(this.draggedObjects);
+                } else if (this.beginSingleObjectDrag(clickedObj, mathPos, app)) {
+                    // Single-object drag started.
                 } else {
                     const dragTargets = this.getObjectDragTargets(clickedObj, app);
                     this.beginPointDrag(dragTargets, mathPos, app);

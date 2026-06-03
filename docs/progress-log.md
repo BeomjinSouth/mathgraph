@@ -2,6 +2,49 @@
 
 ## 2026-06-03
 
+### Function formula label dragging on Vercel
+
+#### Work completed
+
+- Confirmed the current Vercel production alias is deployed and `Ready`.
+- Fixed function formula label dragging so the select tool only starts object dragging when the clicked object accepts the drag start.
+- Updated function-label hit testing to use the rendered math-label measurement path when available, including fraction-aware bounds.
+- Added focused regression coverage for dragging a function formula label and for clicking only the curve without entering a no-op drag state.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+- Browser plugin skill: `C:\Users\pbj95\.codex\plugins\cache\openai-bundled\browser\26.527.60818\skills\control-in-app-browser\SKILL.md`.
+
+#### Verification
+
+- Ran `npx.cmd vercel inspect https://mathgraph-five.vercel.app`; current production deployment was `Ready` with the primary alias attached before the fix.
+- Ran `node --check js\objects\Function.js`; passed.
+- Ran `node --check js\tools\SelectTool.js`; passed.
+- Ran `node --test tests\function-label-drag.test.js`; passed with 2 tests.
+- Ran `npm.cmd test`; passed with 156 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Browser plugin workflow was checked, but the required Node REPL execution tool was not exposed in this session; Playwright was used as the fallback browser verification path.
+- Ran Playwright local smoke on `http://127.0.0.1:4188/`; the rendered function formula label moved from `(0, 0)` to `(2.4, 1.6)`, with 0 console issues and 0 failed requests.
+- Ran `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH` was created at `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Ran Playwright production smoke on `https://mathgraph-five.vercel.app/`; the rendered function formula label moved from `(0, 0)` to `(2.4, 1.6)`, with 0 console issues and 0 failed requests.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Final production deployment URL: `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
+- Final Vercel deployment ID: `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH`.
+- No Vercel environment variables or project settings were changed.
+
+#### Git / GitHub
+
+- This entry is included in the implementation/docs commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ### AI result model disclosure in chat
 
 #### Work completed

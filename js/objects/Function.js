@@ -176,19 +176,30 @@ export class FunctionGraph extends GeoObject {
         if (!pos) return null;
 
         const screenPos = canvas.toScreen(pos);
-        const offsetX = this.labelOffset.x;
-        const offsetY = this.labelOffset.y;
+        const offsetX = this._labelMathPos ? 0 : this.labelOffset.x;
+        const offsetY = this._labelMathPos ? 0 : this.labelOffset.y;
 
         // 라벨 텍스트 크기 추정
         const text = this.getLabelText();
-        const width = text.length * this.fontSize * 0.55;
-        const height = this.fontSize * 1.2;
+        let width = text.length * this.fontSize * 0.55;
+        let height = this.fontSize * 1.2;
+
+        if (canvas.ctx &&
+            typeof canvas.parseMathExpression === 'function' &&
+            typeof canvas.measureMathExpression === 'function') {
+            const parts = canvas.parseMathExpression(text, this.fontSize, this.color);
+            width = canvas.measureMathExpression(parts, canvas.ctx, this.fontSize);
+            const hasFraction = parts.some(part => part.type === 'fraction');
+            height = hasFraction ? this.fontSize * 1.8 : this.fontSize * 1.3;
+        }
+
+        const padding = 4;
 
         return {
-            x: screenPos.x + offsetX,
-            y: screenPos.y + offsetY - height,
-            width: width,
-            height: height
+            x: screenPos.x + offsetX - padding,
+            y: screenPos.y + offsetY - height - padding,
+            width: width + padding * 2,
+            height: height + padding * 2
         };
     }
 
