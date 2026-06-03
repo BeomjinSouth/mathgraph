@@ -2,6 +2,139 @@
 
 ## 2026-06-03
 
+### Drag-area export and textbook-style fixed-grid axes
+
+#### Work completed
+
+- Added a toolbar `영역 저장` action and export-modal `영역 지정` action.
+- Added `AreaExportTool`, which lets users drag a rectangle on the canvas and save only that screen area, then returns to the select tool.
+- Added crop helpers that normalize/clamp drag rectangles and scale them for high-resolution PNG export.
+- Reused the existing export settings for PNG/SVG format, PNG scale, background, grid, and axes.
+- Updated canvas and SVG axis rendering to use filled arrowheads and italic serif `x`/`y` labels near the arrow tips.
+- Changed fixed `축 숫자 간격` behavior so a numeric interval also fixes grid spacing while zooming; automatic mode remains zoom-adaptive.
+- Added focused tests for area-export rectangle math, area-export tool completion, fixed grid spacing, and axis arrow/label rendering.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `.agent/axis_number_math_labels.md`.
+- Runtime files: `js/core/Canvas.js`, `js/main.js`, `js/tools/Tool.js`, `js/tools/AreaExportTool.js`, `js/utils/ExportArea.js`, `js/ui/CommandPalette.js`, `js/ui/IconRenderer.js`, `index.html`, and `css/styles.css`.
+- Browser testing context: Browser plugin skill `control-in-app-browser`; Playwright fallback was used for download verification because Codex In-app Browser does not support download events.
+
+#### Verification
+
+- Ran `node --check js\core\Canvas.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --check js\tools\AreaExportTool.js`; passed.
+- Ran `node --check js\utils\ExportArea.js`; passed.
+- Ran `node --check js\tools\Tool.js`; passed.
+- Ran `node --check js\ui\CommandPalette.js`; passed.
+- Ran `node --check js\ui\IconRenderer.js`; passed.
+- Ran `node --test tests\axis-label-settings.test.js`; passed with 6 tests.
+- Ran `node --test tests\area-export.test.js`; passed with 5 tests.
+- Ran `node --test tests\function-label-drag.test.js tests\function-parser.test.js`; passed with 10 tests.
+- Ran `npm.cmd test`; passed with 167 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- In-app Browser loaded `http://127.0.0.1:4192/` with title `그래프A Mk2.1` and 0 console warning/error logs, but download events are not supported by Codex In-app Browser.
+- Playwright local smoke on `http://127.0.0.1:4192/` set `축 숫자 간격` to `1`, zoomed in/out, confirmed `gridGap=1` and `axisGap=1`, sampled filled x/y arrowhead pixels, downloaded a dragged-area crop PNG `185x157`, returned to select mode, and had 0 failed requests.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_5vtm66WoSiA1AZsYa241aPF6GnjB` was created at `https://mathgraph-1nitg9odn-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-1nitg9odn-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Playwright production smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, fixed interval `1`, `gridGap=1`, `axisGap=1`, area-export download `128x131`, return to select mode, 0 console issues, and 0 failed requests.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-1nitg9odn-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_5vtm66WoSiA1AZsYa241aPF6GnjB`.
+- No Vercel environment variables or project settings were changed.
+
+#### Git / GitHub
+
+- This entry is included in the implementation/docs commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
+### Function input accepts y=
+
+#### Work completed
+
+- Added user-facing function input normalization so `y=x^2` is accepted in the function modal, algebra input, and function expression edit path.
+- The runtime now stores the normalized right-hand-side expression such as `x^2`, while functions created from `y=...` display a `y = ...` label.
+- Preserved named function inputs such as `g(x)=2x+1` and ordinary RHS-only expressions.
+- Updated the function modal label, placeholder, and hint text so users can enter `y=...`, `f(x)=...`, or only the right-hand-side expression.
+- Kept the AI/GraphA schema rule that provider-generated function expressions must omit `y=`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+- Local workflow skills: Frontend Testing Debugging and Playwright.
+- No OpenAI API behavior, model routing, Vercel settings, or external source facts were changed.
+
+#### Verification
+
+- Ran `node --check js\objects\Function.js`; passed.
+- Ran `node --check js\ui\AlgebraInput.js`; passed.
+- Ran `node --test tests\function-parser.test.js`; passed with 8 tests.
+- Ran `npm.cmd test`; passed with 160 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Browser plugin tool discovery was attempted first, but the in-app Browser control tool was not exposed in this session; Playwright was used as fallback.
+- Ran Playwright local smoke on `http://127.0.0.1:4191/`; the function modal accepted `y=x^2`, created one valid function with stored expression `x^2`, visible label `y = x^2`, selected state true, value at `x=2` equal to 4, 0 console issues, and 0 failed requests.
+- Saved screenshot evidence at `C:\Users\pbj95\AppData\Local\Temp\mathgraph-y-equals-function-smoke.png`.
+
+#### Deployment / Vercel
+
+- Manual production deploy was not run from this dirty workspace because unrelated in-progress area-export/UI files are currently present and `npx.cmd vercel deploy --prod --yes` would deploy the full working tree, not only this scoped function-input fix.
+- No Vercel settings or environment variables were changed.
+
+#### Git / GitHub
+
+- This entry is included in the scoped function-input commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
+### Axis numbers render through math-label path
+
+#### Work completed
+
+- Changed coordinate-axis numeric labels and the origin `O` to render through the existing canvas math-label parser/renderer instead of plain `ctx.fillText()` UI text.
+- Preserved fixed/automatic axis-number interval behavior, axis-number show/hide behavior, and tick-mark rendering.
+- Added focused regression coverage that axis labels use the math font path and mathematical minus glyph rather than ASCII hyphen-minus.
+- Added `.agent/axis_number_math_labels.md` as the scoped planning/result note for this behavior fix.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+- Local workflow skills: Frontend Testing Debugging, Playwright, and Browser plugin guidance.
+- No OpenAI API behavior or external model facts were changed.
+
+#### Verification
+
+- Ran `node --check js\core\Canvas.js`; passed.
+- Ran `node --test tests\axis-label-settings.test.js`; passed with 4 tests.
+- Ran `node --test tests\math-label-rendering.test.js`; passed with 6 tests.
+- Browser plugin path was checked first, but the required Node REPL JavaScript execution tool was not exposed in this session; Playwright was used as fallback.
+- Ran Playwright local smoke on `http://127.0.0.1:4191/`; page title was `그래프A Mk2.1`, `window.app` was ready, axis labels rendered through the `Times New Roman` math font path, math minus code `8722` was present, ASCII hyphen code `45` was absent, origin `O` rendered through the math font path, and there were 0 console issues / 0 failed requests.
+- Saved screenshot evidence at `C:\Users\pbj95\AppData\Local\Temp\mathgraph-axis-math-labels.png`.
+- Ran `npm.cmd test`; passed with 160 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran `npx.cmd vercel inspect https://mathgraph-five.vercel.app`; production deployment `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad` was `Ready` with the primary alias attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Ran Playwright production smoke on `https://mathgraph-five.vercel.app/`; axis labels rendered through the math font path, math minus code `8722` was present, ASCII hyphen code `45` was absent, origin `O` rendered through the math font path, and there were 0 console issues / 0 failed requests.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Observed production deployment URL: `https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`.
+- Observed production deployment ID: `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad`.
+- Manual production deploy was not run from this task turn, but the Vercel production alias was inspected after the branch update and the live site contains the axis-number math-label behavior.
+- No Vercel settings or environment variables were changed.
+
+#### Git / GitHub
+
+- This entry is included in the scoped axis-number math-label commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ### Function formula label dragging on Vercel
 
 #### Work completed
@@ -28,16 +161,16 @@
 - Ran `git diff --check`; passed with line-ending warnings only.
 - Browser plugin workflow was checked, but the required Node REPL execution tool was not exposed in this session; Playwright was used as the fallback browser verification path.
 - Ran Playwright local smoke on `http://127.0.0.1:4188/`; the rendered function formula label moved from `(0, 0)` to `(2.4, 1.6)`, with 0 console issues and 0 failed requests.
-- Ran `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad` was created at `https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`.
-- Ran `npx.cmd vercel inspect https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Ran `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH` was created at `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
 - Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
 - Ran Playwright production smoke on `https://mathgraph-five.vercel.app/`; the rendered function formula label moved from `(0, 0)` to `(2.4, 1.6)`, with 0 console issues and 0 failed requests.
 
 #### Deployment / Vercel
 
 - Production alias: `https://mathgraph-five.vercel.app`.
-- Final production deployment URL: `https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`.
-- Final Vercel deployment ID: `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad`.
+- Final production deployment URL: `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
+- Final Vercel deployment ID: `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH`.
 - No Vercel environment variables or project settings were changed.
 
 #### Git / GitHub

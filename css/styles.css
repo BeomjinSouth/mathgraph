@@ -780,7 +780,8 @@ body {
     color: var(--text-primary);
 }
 
-.tool-btn.active {
+.tool-btn.active,
+.action-btn.active {
     background: var(--accent-primary);
     color: white;
     box-shadow: var(--shadow-glow);

@@ -47,3 +47,17 @@
 
 - Browser plugin use was attempted first, but the required Node REPL JavaScript execution tool was not exposed in this session. Playwright was used as the rendered-validation fallback.
 - Manual Vercel deploy was not run from this task turn, but the production alias was inspected after the branch update and the live site contains the axis-number math-label behavior.
+
+## Follow-up: Axis Arrows And Fixed Grid Interval
+
+- Date: 2026-06-03
+- User request:
+  - Make x/y axis arrowheads and labels look like the provided textbook-style reference: a solid arrowhead with italic serif `x` and `y` labels near the arrow tips.
+  - When `축 숫자 간격` is fixed to `1` or another numeric interval, keep the grid at that same math-unit interval while zooming in or out.
+
+## Follow-up Plan
+
+1. Add a shared grid-gap resolver so automatic mode keeps zoom-adaptive grid spacing and fixed axis-number mode also fixes the grid interval.
+2. Update canvas axis rendering to use filled arrowheads and italic serif axis labels.
+3. Keep SVG export grid/axis rendering aligned with the canvas behavior.
+4. Add focused tests for fixed grid spacing and axis arrow/label drawing calls.

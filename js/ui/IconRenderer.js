@@ -30,6 +30,13 @@ const ICONS = {
         <path ${STROKE} d="M5 18.8h14"/>
         <path ${STROKE_SOFT} d="M7 20.8h10"/>
     `),
+    crop_free: icon(`
+        <path ${STROKE} d="M4.5 9V4.5H9"/>
+        <path ${STROKE} d="M15 4.5h4.5V9"/>
+        <path ${STROKE} d="M19.5 15v4.5H15"/>
+        <path ${STROKE} d="M9 19.5H4.5V15"/>
+        <path ${STROKE_SOFT} d="M8 8h8v8H8Z"/>
+    `),
     fiber_manual_record: icon(`
         <circle cx="12" cy="12" r="4.6" ${FILL}/>
         <circle cx="12" cy="12" r="7.6" ${STROKE_SOFT}/>

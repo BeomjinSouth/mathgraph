@@ -34,9 +34,11 @@ import { AngleDimensionTool, LengthDimensionTool } from './tools/DimensionTool.j
 import { PolygonTool } from './tools/PolygonTool.js'; // Mk.2
 import { NumberLineTool } from './tools/NumberLineTool.js'; // Mk.4
 import { FillTool } from './tools/FillTool.js';
+import { AreaExportTool } from './tools/AreaExportTool.js';
 
 // 유틸리티
 import { Vec2 } from './utils/Geometry.js';
+import { MathUtils } from './utils/MathUtils.js';
 
 // Mk.2: AI 모듈
 import { SchemaValidator } from './ai/SchemaValidator.js';
@@ -55,6 +57,7 @@ import { AlgebraInput } from './ui/AlgebraInput.js';
 import { CommandPalette } from './ui/CommandPalette.js';
 import { getGeneratedIconName, hydrateGeneratedIcons, setGeneratedIcon } from './ui/IconRenderer.js';
 import { SettingsManager } from './core/SettingsManager.js';
+import { scaleExportAreaRect } from './utils/ExportArea.js';
 
 /**
  * 그래프A 애플리케이션
@@ -214,6 +217,7 @@ class GraphAApp {
         // Mk.2: 다각형 도구
         this.toolManager.registerTool('polygon', new PolygonTool());
         this.toolManager.registerTool('fill', new FillTool());
+        this.toolManager.registerTool('areaExport', new AreaExportTool());
 
         // Mk.4: 수직선 도구
         this.toolManager.registerTool('numberLine', new NumberLineTool());
@@ -633,6 +637,10 @@ class GraphAApp {
             this.showExportModal();
         });
 
+        document.getElementById('areaExportBtn')?.addEventListener('click', () => {
+            this.startAreaExport();
+        });
+
         // 함수 모달
         this.setupFunctionModal();
 
@@ -667,6 +675,7 @@ class GraphAApp {
 
         // 현재 도구 표시 업데이트
         const toolNames = {
+            areaExport: '영역 저장',
             select: '선택', point: '점', pointOnObject: '선 위의 점',
             intersection: '교점', midpoint: '중점', segment: '선분',
             line: '직선', ray: '반직선', vector: '벡터',
@@ -682,6 +691,7 @@ class GraphAApp {
         };
 
         const toolIcons = {
+            areaExport: 'crop_free',
             select: 'near_me',
             point: 'fiber_manual_record',
             pointOnObject: 'commit',
@@ -1812,6 +1822,7 @@ class GraphAApp {
     setupExportModal() {
         const modal = document.getElementById('exportModal');
         const doExport = document.getElementById('doExport');
+        const doAreaExport = document.getElementById('doAreaExport');
 
         modal?.querySelectorAll('.modal-close, .modal-cancel').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1839,6 +1850,11 @@ class GraphAApp {
             this.doExport();
             modal.classList.add('hidden');
         });
+
+        doAreaExport?.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            this.startAreaExport();
+        });
     }
 
     /**
@@ -1849,16 +1865,18 @@ class GraphAApp {
         modal?.classList.remove('hidden');
     }
 
+    startAreaExport() {
+        this.toolManager.setTool('areaExport');
+        this.showToast('저장할 영역을 드래그하세요.', 'info');
+        this.render();
+    }
+
     /**
      * 실제 내보내기 수행
      */
     doExport(options = {}) {
-        const format = options.format ?? document.querySelector('input[name="exportFormat"]:checked')?.value ?? 'png';
-        const requestedScale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
-        const scale = format === 'png' ? requestedScale : 1;
-        const includeBackground = options.includeBackground ?? document.getElementById('exportBackground')?.checked ?? true;
-        const includeGrid = options.includeGrid ?? document.getElementById('exportGrid')?.checked ?? false;
-        const includeAxes = options.includeAxes ?? document.getElementById('exportAxes')?.checked ?? true;
+        const exportOptions = this.getExportOptions(options);
+        const { format, scale, includeBackground, includeGrid, includeAxes } = exportOptions;
 
         // 임시 캔버스 생성
         const tempCanvas = document.createElement('canvas');
@@ -1907,10 +1925,7 @@ class GraphAApp {
 
         // 다운로드
         if (format === 'png') {
-            const link = document.createElement('a');
-            link.download = `graph_${Date.now()}.png`;
-            link.href = tempCanvas.toDataURL('image/png');
-            link.click();
+            this.downloadCanvas(tempCanvas, `graph_${Date.now()}.png`);
         } else {
             // SVG 내보내기 (간단 구현)
             this.exportSVG(includeBackground, includeGrid, includeAxes);
@@ -2040,16 +2055,7 @@ class GraphAApp {
 
     buildSVGGridMarkup() {
         const bounds = this.canvas.getVisibleBounds();
-        const possibleGaps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
-        const rawGap = 50 / this.canvas.scale;
-        let gap = possibleGaps[possibleGaps.length - 1];
-
-        for (const candidate of possibleGaps) {
-            if (candidate >= rawGap) {
-                gap = candidate;
-                break;
-            }
-        }
+        const gap = this.canvas.getGridGap ? this.canvas.getGridGap() : 1;
 
         const parts = ['<g id="grid" stroke="#e5e5e5" stroke-width="0.5" fill="none">'];
         const startX = Math.floor(bounds.minX / gap) * gap;
@@ -2076,23 +2082,36 @@ class GraphAApp {
     buildSVGAxesMarkup() {
         const bounds = this.canvas.getVisibleBounds();
         const origin = this.canvas.toScreen(new Vec2(0, 0));
-        const parts = ['<g id="axes" stroke="#333333" stroke-width="1.5" fill="none">'];
+        const color = this.escapeSVG(this.canvas.axisColor || '#333333');
+        const parts = [`<g id="axes" stroke="${color}" fill="${color}" stroke-width="1.5">`];
 
         if (bounds.minY <= 0 && bounds.maxY >= 0) {
-            parts.push(`<line x1="0" y1="${origin.y.toFixed(2)}" x2="${this.canvas.width}" y2="${origin.y.toFixed(2)}" />`);
+            parts.push(`<line x1="0" y1="${origin.y.toFixed(2)}" x2="${(this.canvas.width - 11).toFixed(2)}" y2="${origin.y.toFixed(2)}" />`);
             parts.push(
-                `<path d="M ${(this.canvas.width - 10).toFixed(2)} ${(origin.y - 5).toFixed(2)} ` +
-                `L ${this.canvas.width} ${origin.y.toFixed(2)} ` +
-                `L ${(this.canvas.width - 10).toFixed(2)} ${(origin.y + 5).toFixed(2)}" />`
+                `<path d="M ${(this.canvas.width - 2).toFixed(2)} ${origin.y.toFixed(2)} ` +
+                `L ${(this.canvas.width - 13).toFixed(2)} ${(origin.y - 5.5).toFixed(2)} ` +
+                `L ${(this.canvas.width - 13).toFixed(2)} ${(origin.y + 5.5).toFixed(2)} Z" />`
+            );
+            const labelY = MathUtils.clamp(origin.y + 10, 4, this.canvas.height - 26);
+            parts.push(
+                `<text x="${(this.canvas.width - 17).toFixed(2)}" y="${labelY.toFixed(2)}" ` +
+                `font-family="Times New Roman, serif" font-size="22" font-style="italic" ` +
+                `text-anchor="middle" dominant-baseline="hanging">${this.escapeSVG('x')}</text>`
             );
         }
 
         if (bounds.minX <= 0 && bounds.maxX >= 0) {
-            parts.push(`<line x1="${origin.x.toFixed(2)}" y1="0" x2="${origin.x.toFixed(2)}" y2="${this.canvas.height}" />`);
+            parts.push(`<line x1="${origin.x.toFixed(2)}" y1="11" x2="${origin.x.toFixed(2)}" y2="${this.canvas.height}" />`);
             parts.push(
-                `<path d="M ${(origin.x - 5).toFixed(2)} 10 ` +
-                `L ${origin.x.toFixed(2)} 0 ` +
-                `L ${(origin.x + 5).toFixed(2)} 10" />`
+                `<path d="M ${origin.x.toFixed(2)} 2 ` +
+                `L ${(origin.x - 5.5).toFixed(2)} 13 ` +
+                `L ${(origin.x + 5.5).toFixed(2)} 13 Z" />`
+            );
+            const labelX = MathUtils.clamp(origin.x - 10, 10, this.canvas.width - 10);
+            parts.push(
+                `<text x="${labelX.toFixed(2)}" y="22" ` +
+                `font-family="Times New Roman, serif" font-size="22" font-style="italic" ` +
+                `text-anchor="middle" dominant-baseline="text-after-edge">${this.escapeSVG('y')}</text>`
             );
         }
 
@@ -2474,21 +2493,34 @@ class GraphAApp {
         }
     }
 
-    buildSVGMarkup({ includeBackground = true, includeGrid = false, includeAxes = true, fallbackDataUrl = null } = {}) {
-        const width = this.canvas.width;
-        const height = this.canvas.height;
+    buildSVGMarkup({
+        includeBackground = true,
+        includeGrid = false,
+        includeAxes = true,
+        fallbackDataUrl = null,
+        cropRect = null
+    } = {}) {
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+        const width = cropRect ? cropRect.width : canvasWidth;
+        const height = cropRect ? cropRect.height : canvasHeight;
+        const viewBox = cropRect
+            ? `${cropRect.x} ${cropRect.y} ${cropRect.width} ${cropRect.height}`
+            : `0 0 ${canvasWidth} ${canvasHeight}`;
         const parts = [
             '<?xml version="1.0" encoding="UTF-8"?>',
-            `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${viewBox}">`
         ];
 
         if (includeBackground) {
-            parts.push(`<rect width="${width}" height="${height}" fill="${this.escapeSVG(this.canvas.backgroundColor || '#ffffff')}" />`);
+            parts.push(`<rect width="${canvasWidth}" height="${canvasHeight}" fill="${this.escapeSVG(this.canvas.backgroundColor || '#ffffff')}" />`);
         }
 
         if (fallbackDataUrl) {
+            const imageRect = cropRect || { x: 0, y: 0, width: canvasWidth, height: canvasHeight };
             parts.push(
-                `<image href="${fallbackDataUrl}" width="${width}" height="${height}" preserveAspectRatio="none" />`
+                `<image href="${fallbackDataUrl}" x="${imageRect.x}" y="${imageRect.y}" ` +
+                `width="${imageRect.width}" height="${imageRect.height}" preserveAspectRatio="none" />`
             );
         }
 
@@ -2514,13 +2546,60 @@ class GraphAApp {
         return parts.join('\n');
     }
 
-    doExport(options = {}) {
+    getExportOptions(options = {}) {
         const format = options.format ?? document.querySelector('input[name="exportFormat"]:checked')?.value ?? 'png';
         const requestedScale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
-        const scale = format === 'png' ? requestedScale : 1;
-        const includeBackground = options.includeBackground ?? document.getElementById('exportBackground')?.checked ?? true;
-        const includeGrid = options.includeGrid ?? document.getElementById('exportGrid')?.checked ?? false;
-        const includeAxes = options.includeAxes ?? document.getElementById('exportAxes')?.checked ?? true;
+
+        return {
+            format,
+            requestedScale,
+            scale: format === 'png' ? requestedScale : 1,
+            includeBackground: options.includeBackground ?? document.getElementById('exportBackground')?.checked ?? true,
+            includeGrid: options.includeGrid ?? document.getElementById('exportGrid')?.checked ?? false,
+            includeAxes: options.includeAxes ?? document.getElementById('exportAxes')?.checked ?? true
+        };
+    }
+
+    downloadCanvas(canvas, filename) {
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    renderSceneAreaToCanvas(screenRect, options = {}) {
+        const { scale, includeBackground, includeGrid, includeAxes } = options;
+        const sourceCanvas = document.createElement('canvas');
+        this.renderSceneToCanvas(sourceCanvas, {
+            scale,
+            includeBackground,
+            includeGrid,
+            includeAxes
+        });
+
+        const scaledRect = scaleExportAreaRect(screenRect, scale);
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = scaledRect.width;
+        cropCanvas.height = scaledRect.height;
+
+        cropCanvas.getContext('2d').drawImage(
+            sourceCanvas,
+            scaledRect.x,
+            scaledRect.y,
+            scaledRect.width,
+            scaledRect.height,
+            0,
+            0,
+            scaledRect.width,
+            scaledRect.height
+        );
+
+        return cropCanvas;
+    }
+
+    doExport(options = {}) {
+        const exportOptions = this.getExportOptions(options);
+        const { format, scale, includeBackground, includeGrid, includeAxes } = exportOptions;
 
         const tempCanvas = document.createElement('canvas');
         this.renderSceneToCanvas(tempCanvas, {
@@ -2531,10 +2610,7 @@ class GraphAApp {
         });
 
         if (format === 'png') {
-            const link = document.createElement('a');
-            link.download = `graph_${Date.now()}.png`;
-            link.href = tempCanvas.toDataURL('image/png');
-            link.click();
+            this.downloadCanvas(tempCanvas, `graph_${Date.now()}.png`);
         } else {
             this.exportSVG({
                 includeBackground,
@@ -2544,7 +2620,32 @@ class GraphAApp {
             });
         }
 
-        this.showToast(`${format.toUpperCase()} ?뚯씪濡??대낫?덉뒿?덈떎.`, 'success');
+        this.showToast(`${format.toUpperCase()} 파일로 내보냈습니다.`, 'success');
+    }
+
+    exportAreaFromScreenRect(screenRect, options = {}) {
+        const exportOptions = this.getExportOptions(options);
+        const { format, scale, includeBackground, includeGrid, includeAxes } = exportOptions;
+        const cropCanvas = this.renderSceneAreaToCanvas(screenRect, {
+            scale,
+            includeBackground,
+            includeGrid,
+            includeAxes
+        });
+
+        if (format === 'png') {
+            this.downloadCanvas(cropCanvas, `graph_area_${Date.now()}.png`);
+        } else {
+            this.exportSVG({
+                includeBackground,
+                includeGrid,
+                includeAxes,
+                sourceCanvas: cropCanvas,
+                cropRect: screenRect
+            });
+        }
+
+        this.showToast(`${format.toUpperCase()} 영역을 저장했습니다.`, 'success');
     }
 
     exportSVG(options = {}) {
@@ -2552,6 +2653,7 @@ class GraphAApp {
         const includeGrid = options.includeGrid ?? false;
         const includeAxes = options.includeAxes ?? true;
         const sourceCanvas = options.sourceCanvas ?? document.createElement('canvas');
+        const cropRect = options.cropRect ?? null;
 
         if (!options.sourceCanvas) {
             this.renderSceneToCanvas(sourceCanvas, {
@@ -2565,7 +2667,8 @@ class GraphAApp {
             includeBackground,
             includeGrid,
             includeAxes,
-            fallbackDataUrl: sourceCanvas.toDataURL('image/png')
+            fallbackDataUrl: sourceCanvas.toDataURL('image/png'),
+            cropRect
         });
 
         const blob = new Blob([svg], { type: 'image/svg+xml' });

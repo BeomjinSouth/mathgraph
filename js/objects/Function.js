@@ -16,13 +16,51 @@ function normalizeOptionalNumber(value) {
     return Number.isFinite(numeric) ? numeric : null;
 }
 
+export function normalizeFunctionInput(input) {
+    const raw = String(input ?? '').trim();
+    const yMatch = raw.match(/^y\s*=\s*(.+)$/i);
+    if (yMatch) {
+        const expression = yMatch[1].trim();
+        return {
+            expression,
+            label: `y = ${expression}`,
+            kind: 'yEquation'
+        };
+    }
+
+    const namedMatch = raw.match(/^([a-z])\s*\(\s*x\s*\)\s*=\s*(.+)$/i);
+    if (namedMatch) {
+        return {
+            expression: namedMatch[2].trim(),
+            label: namedMatch[1],
+            kind: 'namedFunction'
+        };
+    }
+
+    return {
+        expression: raw,
+        label: null,
+        kind: 'expression'
+    };
+}
+
 /**
  * 함수 그래프 (Function Graph)
  */
 export class FunctionGraph extends GeoObject {
     constructor(expression, params = {}) {
-        super(ObjectType.FUNCTION, params);
-        this.expression = expression;
+        const normalizedInput = normalizeFunctionInput(expression);
+        const normalizedParams = { ...params };
+        const hasExplicitLabel = normalizedParams.label !== undefined &&
+            normalizedParams.label !== null &&
+            normalizedParams.label !== '';
+
+        if (!hasExplicitLabel && normalizedInput.label) {
+            normalizedParams.label = normalizedInput.label;
+        }
+
+        super(ObjectType.FUNCTION, normalizedParams);
+        this.expression = normalizedInput.expression;
         this._fn = null;
         this._error = null;
 
@@ -53,7 +91,15 @@ export class FunctionGraph extends GeoObject {
     }
 
     setExpression(expression) {
-        this.expression = expression;
+        const normalizedInput = normalizeFunctionInput(expression);
+        this.expression = normalizedInput.expression;
+
+        if (normalizedInput.label) {
+            this.label = normalizedInput.label;
+        } else if (/^y\s*=/.test(String(this.label || ''))) {
+            this.label = `y = ${this.expression}`;
+        }
+
         this.parseExpression();
     }
 

@@ -59,6 +59,9 @@
                 <button class="action-btn" id="exportBtn" aria-label="내보내기" title="내보내기">
                     <span class="material-symbols-outlined">download</span>
                 </button>
+                <button class="action-btn" id="areaExportBtn" data-tool="areaExport" aria-label="영역 저장" title="영역 저장">
+                    <span class="material-symbols-outlined">crop_free</span>
+                </button>
             </div>
         </header>
 
@@ -684,12 +687,13 @@
                 </div>
                 <div class="modal-body">
                     <div class="input-group">
-                        <label>f(x) =</label>
-                        <input type="text" id="functionExpression" placeholder="예: x^2 - 2*x + 1">
+                        <label>함수식</label>
+                        <input type="text" id="functionExpression" placeholder="예: y=x^2 또는 x^2 - 2*x + 1">
                     </div>
                     <div class="input-hint">
                         <p>지원하는 표현:</p>
                         <ul>
+                            <li>입력: y=식, f(x)=식, 또는 오른쪽 식만</li>
                             <li>연산: +, -, *, /, ^</li>
                             <li>함수: sin, cos, tan, sqrt, abs, log, ln, exp</li>
                             <li>상수: pi, e</li>
@@ -763,6 +767,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary modal-cancel">취소</button>
+                    <button class="btn btn-secondary" id="doAreaExport">영역 지정</button>
                     <button class="btn btn-primary" id="doExport">다운로드</button>
                 </div>
             </div>

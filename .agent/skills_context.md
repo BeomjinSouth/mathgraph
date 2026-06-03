@@ -20,6 +20,31 @@
   - Also keep named inputs such as `g(x)=...` working by normalizing to label `g` plus RHS expression.
 - Verification target:
   - Focused function tests, full test suite, build/whitespace checks, and a browser smoke through the function modal.
+- Completed result:
+  - `FunctionGraph` now normalizes `y=...` and named `g(x)=...` style inputs before parsing.
+  - `y=...` functions store only the right-hand side internally and display `y = ...` as the visible label.
+  - The function modal copy now invites `y=...`, `f(x)=...`, or RHS-only input.
+  - Focused tests, full test suite, build check, whitespace check, and Playwright modal smoke passed.
+
+---
+
+## Relevant Skills
+
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The axis-arrow and grid-spacing request changes visible canvas rendering and must be checked in a browser.
+
+## Current Task Notes
+
+- User request:
+  - Change x/y axis arrowheads and labels to match the provided solid-arrow, italic-label reference.
+  - If the axis interval is fixed to `1`, the grid should also remain at one-unit spacing while zooming.
+- Implementation direction:
+  - Add `Canvas.getGridGap()` and let it reuse the fixed axis-number interval when present.
+  - Keep automatic mode using the old zoom-adaptive gap.
+  - Draw filled triangular axis arrowheads and italic serif `x`/`y` labels in both canvas and SVG export paths.
+- Verification target:
+  - Focused axis-label settings tests, full tests, local rendered smoke, Vercel deploy/inspect, and production smoke.
 
 ---
 

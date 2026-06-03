@@ -90,7 +90,7 @@ export class AlgebraInput {
         if (yMatch) {
             const funcExpr = yMatch[1].trim();
             try {
-                const func = this.objectManager.createFunction(funcExpr);
+                const func = this.objectManager.createFunction(expr);
                 return {
                     success: true,
                     message: `함수 y = ${funcExpr} 생성`,

@@ -72,6 +72,7 @@ export class CommandPalette {
             // 내보내기
             { name: 'PNG로 내보내기', category: '내보내기', action: () => this.app.exportPNG() },
             { name: 'SVG로 내보내기', category: '내보내기', action: () => this.app.exportSVG() },
+            { name: '영역 저장', category: '내보내기', action: () => this.app.startAreaExport() },
 
             // 기타
             { name: '전체 지우기', category: '기타', action: () => { this.app.objectManager.clear(); this.app.render(); this.app.updateSidebar(); } },

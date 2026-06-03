@@ -3,7 +3,7 @@
 ## Status
 
 - Task: Function input accepts y=
-- State: In progress
+- State: Done
 - Last updated: 2026-06-03
 
 ## Plan
@@ -17,10 +17,10 @@
 ## Progress Log
 
 - [x] Step 1
-- [ ] Step 2
-- [ ] Step 3
-- [ ] Step 4
-- [ ] Step 5
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
 
 ## Decisions
 
@@ -35,19 +35,85 @@
 
 ## Verification
 
-- Pending.
+- Completed:
+  - `node --check js\objects\Function.js`; passed.
+  - `node --check js\ui\AlgebraInput.js`; passed.
+  - `node --test tests\function-parser.test.js`; passed with 8 tests.
+  - `npm.cmd test`; passed with 160 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - Browser plugin tool discovery was attempted first, but the in-app Browser control tool was not exposed in this session; Playwright was used as fallback.
+  - Playwright local smoke on `http://127.0.0.1:4191/` opened the function modal, entered `y=x^2`, created one valid function with stored expression `x^2`, visible label `y = x^2`, value `f(2)=4`, 0 console issues, and 0 failed requests.
 
 ## Handoff
 
 - Current status:
-  - Function modal input still needs implementation.
+  - User-facing function inputs now accept `y=...` and normalize to the existing RHS-only function expression model.
+  - Functions created from `y=...` display a `y = ...` label, while named `f(x)=...` / `g(x)=...` inputs still map to ordinary function labels.
+
+---
+
+## Status
+
+- Task: Axis arrows and fixed grid interval
+- State: Done
+- Last updated: 2026-06-03
+
+## Plan
+
+1. Record the axis-arrow and fixed-grid behavior change before implementation.
+2. Add a shared fixed/automatic grid-gap resolver in `Canvas`.
+3. Update canvas and SVG axes to use filled arrowheads with italic `x`/`y` labels.
+4. Add focused tests for fixed grid spacing and axis-name rendering.
+5. Run rendered smoke testing, update docs, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Reuse `축 숫자 간격` as the fixed grid interval when it is numeric.
+- Reason: The user expects a fixed axis interval such as `1` to mean one-unit coordinate paper, so grid and tick spacing should stay aligned while zooming.
+- Decision: Keep automatic mode unchanged.
+- Reason: Automatic grid spacing remains useful for broad zoom exploration.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\core\Canvas.js`; passed.
+  - `node --check js\main.js`; passed.
+  - `node --test tests\axis-label-settings.test.js`; passed with 6 tests.
+  - `npm.cmd test`; passed with 167 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - In-app Browser loaded the local app with 0 console warning/error logs, but Codex In-app Browser does not support download events; Playwright was used for the download-specific smoke.
+  - Playwright local smoke on `http://127.0.0.1:4192/` set `축 숫자 간격` to `1`, zoomed in/out, confirmed `gridGap=1` and `axisGap=1`, sampled dark pixels at the filled x/y arrowheads, and reported 0 app console issues and 0 failed requests.
+  - `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_5vtm66WoSiA1AZsYa241aPF6GnjB` was created at `https://mathgraph-1nitg9odn-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-1nitg9odn-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Playwright production smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, fixed interval `1`, `gridGap=1`, `axisGap=1`, area-export download, 0 console issues, and 0 failed requests.
+
+## Handoff
+
+- Current status:
+  - Filled textbook-style x/y axis arrows and italic axis labels are live in production.
+  - Fixed axis-number intervals now also fix grid spacing during zoom.
 
 ---
 
 ## Status
 
 - Task: Drag-area export
-- State: In progress
+- State: Done
 - Last updated: 2026-06-03
 
 ## Plan
@@ -61,10 +127,10 @@
 ## Progress Log
 
 - [x] Step 1
-- [ ] Step 2
-- [ ] Step 3
-- [ ] Step 4
-- [ ] Step 5
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
 
 ## Decisions
 
@@ -79,12 +145,23 @@
 
 ## Verification
 
-- Pending.
+- Completed:
+  - `node --check js\main.js`; passed.
+  - `node --check js\tools\AreaExportTool.js`; passed.
+  - `node --check js\utils\ExportArea.js`; passed.
+  - `node --test tests\area-export.test.js`; passed with 5 tests.
+  - `npm.cmd test`; passed with 167 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - In-app Browser loaded the local app and confirmed page identity/console health; download-event verification required Playwright fallback because downloads are not supported by Codex In-app Browser.
+  - Playwright local smoke downloaded `graph_area_1780464691455.png` from a dragged canvas rectangle, confirmed the crop PNG dimensions were `185x157`, and returned to the select tool.
+  - Playwright production smoke downloaded `graph_area_1780464830549.png`, confirmed the crop PNG dimensions were `128x131`, and returned to the select tool.
 
 ## Handoff
 
 - Current status:
-  - Existing full-canvas export remains the baseline path.
+  - Users can save a dragged rectangular canvas area from the toolbar or export modal.
+  - Area export reuses current export settings and returns to the select tool after download.
 
 ---
 
@@ -130,8 +207,8 @@
   - `git diff --check`; passed with line-ending warnings only.
   - Browser plugin workflow was checked, but the required Node REPL execution tool was not exposed in this session.
   - Playwright local smoke on `http://127.0.0.1:4188/` created `2*x^2`, dragged the rendered formula label from `(0, 0)` to `(2.4, 1.6)`, saved `tmp/function-label-drag-smoke.png`, and reported 0 console issues and 0 failed requests.
-  - `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_14iiHaoC4MGXCYxbWNks5ptXj7ad` was created at `https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`.
-  - `npx.cmd vercel inspect https://mathgraph-bc3cnd4qq-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+  - `npx.cmd vercel deploy --prod --yes`; final production deployment `dpl_GsraWaC9WPUtvAKZm3jF8fbsB3uH` was created at `https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-cgnkase6s-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
   - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
   - Playwright production smoke on `https://mathgraph-five.vercel.app/` created `2*x^2`, dragged the rendered formula label from `(0, 0)` to `(2.4, 1.6)`, saved `tmp/function-label-drag-production-smoke.png`, and reported 0 console issues and 0 failed requests.
 

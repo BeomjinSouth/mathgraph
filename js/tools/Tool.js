@@ -107,6 +107,7 @@ export class ToolManager {
 
             // UI 업데이트
             this.updateToolbarUI(name);
+            this.app.updateToolPanelUI?.(name);
 
             // 커서 업데이트
             this.app.canvasElement.style.cursor = tool.getCursor();
@@ -142,7 +143,7 @@ export class ToolManager {
      */
     updateToolbarUI(activeName) {
         // 모든 도구 버튼에서 active 제거
-        document.querySelectorAll('.tool-btn').forEach(btn => {
+        document.querySelectorAll('.tool-btn, .action-btn[data-tool]').forEach(btn => {
             btn.classList.remove('active');
         });
 

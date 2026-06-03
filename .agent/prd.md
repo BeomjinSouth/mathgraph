@@ -35,10 +35,50 @@
 
 ## Acceptance Criteria
 
-- [ ] The function modal accepts `y=x^2` and creates a valid function whose stored expression is `x^2`.
-- [ ] The created graph label displays as `y = x^2` rather than forcing `f(x) = ...`.
-- [ ] Existing `f(x)=...` / `g(x)=...` and RHS-only inputs still work.
-- [ ] Focused tests, full tests, build check, whitespace check, browser smoke, commit, push, and deployment outcome are recorded.
+- [x] The function modal accepts `y=x^2` and creates a valid function whose stored expression is `x^2`.
+- [x] The created graph label displays as `y = x^2` rather than forcing `f(x) = ...`.
+- [x] Existing `f(x)=...` / `g(x)=...` and RHS-only inputs still work.
+- [x] Focused tests, full tests, build check, whitespace check, browser smoke, commit, push, and deployment outcome are recorded.
+
+---
+
+## Summary
+
+- Task: Axis arrows and fixed grid interval
+- Owner: Codex
+- Date: 2026-06-03
+- Related files:
+  - `js/core/Canvas.js`
+  - `js/main.js`
+  - `tests/axis-label-settings.test.js`
+  - `.agent/axis_number_math_labels.md`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The current x/y axis arrowheads are open strokes and do not match textbook-style solid arrow references.
+- Fixed `축 숫자 간격` currently fixes tick labels, but the grid still changes spacing as the user zooms.
+
+## Goals
+
+- Draw x/y axes with filled arrowheads and italic serif `x`/`y` labels near the arrow tips.
+- When axis-number interval is fixed, keep grid spacing fixed at the same math-unit interval during zoom.
+- Keep automatic mode zoom-adaptive.
+- Keep canvas rendering and SVG export aligned.
+
+## Non-Goals
+
+- Do not add a separate grid interval setting.
+- Do not change object geometry, AI schema, or save/load data.
+
+## Acceptance Criteria
+
+- [x] Fixed interval `1` keeps the grid at one math unit while zooming in or out.
+- [x] Automatic interval keeps the previous zoom-adaptive grid behavior.
+- [x] Canvas axes render filled arrowheads and italic `x`/`y` labels.
+- [x] SVG export uses the same fixed grid gap and axis arrow style.
 
 ---
 
@@ -80,11 +120,11 @@
 
 ## Acceptance Criteria
 
-- [ ] A toolbar action and command-palette action can enter area-export mode.
-- [ ] Dragging a canvas rectangle downloads only the selected rectangle as PNG by default.
-- [ ] Existing export modal options still apply to area export where relevant.
-- [ ] Very small drags do not download a broken file and show a useful message.
-- [ ] Focused tests, full tests, build check, whitespace check, local browser smoke, Vercel deployment checks, and production smoke pass or blockers are recorded.
+- [x] A toolbar action and command-palette action can enter area-export mode.
+- [x] Dragging a canvas rectangle downloads only the selected rectangle as PNG by default.
+- [x] Existing export modal options still apply to area export where relevant.
+- [x] Very small drags do not download a broken file and show a useful message.
+- [x] Focused tests, full tests, build check, whitespace check, local browser smoke, Vercel deployment checks, and production smoke pass or blockers are recorded.
 
 ---
 

@@ -179,19 +179,7 @@ export class Canvas {
         const bounds = this.getVisibleBounds();
         const ctx = this.ctx;
 
-        // 격자 간격 계산 (화면에서 적절한 간격 유지)
-        const targetPixelGap = 50;
-        const rawGap = targetPixelGap / this.scale;
-
-        // 1, 2, 5, 10, 20, 50... 중 적절한 값 선택
-        const possibleGaps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
-        let gap = possibleGaps[0];
-        for (const g of possibleGaps) {
-            if (g >= rawGap) {
-                gap = g;
-                break;
-            }
-        }
+        const gap = this.getGridGap();
 
         ctx.strokeStyle = this.gridColor;
         ctx.lineWidth = 0.5;
@@ -249,35 +237,54 @@ export class Canvas {
 
         ctx.strokeStyle = this.axisColor;
         ctx.lineWidth = 1.5;
+        ctx.fillStyle = this.axisColor;
 
         // X축
         if (this.showXAxis && bounds.minY <= 0 && bounds.maxY >= 0) {
             ctx.beginPath();
             ctx.moveTo(0, origin.y);
-            ctx.lineTo(this.width, origin.y);
+            ctx.lineTo(this.width - 11, origin.y);
             ctx.stroke();
 
             // 화살표
             ctx.beginPath();
-            ctx.moveTo(this.width - 10, origin.y - 5);
-            ctx.lineTo(this.width, origin.y);
-            ctx.lineTo(this.width - 10, origin.y + 5);
-            ctx.stroke();
+            ctx.moveTo(this.width - 2, origin.y);
+            ctx.lineTo(this.width - 13, origin.y - 5.5);
+            ctx.lineTo(this.width - 13, origin.y + 5.5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.save();
+            ctx.font = 'italic 22px "Times New Roman", serif';
+            ctx.fillStyle = this.axisColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('x', this.width - 17, MathUtils.clamp(origin.y + 10, 4, this.height - 26));
+            ctx.restore();
         }
 
         // Y축
         if (this.showYAxis && bounds.minX <= 0 && bounds.maxX >= 0) {
             ctx.beginPath();
-            ctx.moveTo(origin.x, 0);
+            ctx.moveTo(origin.x, 11);
             ctx.lineTo(origin.x, this.height);
             ctx.stroke();
 
             // 화살표
             ctx.beginPath();
-            ctx.moveTo(origin.x - 5, 10);
-            ctx.lineTo(origin.x, 0);
-            ctx.lineTo(origin.x + 5, 10);
-            ctx.stroke();
+            ctx.moveTo(origin.x, 2);
+            ctx.lineTo(origin.x - 5.5, 13);
+            ctx.lineTo(origin.x + 5.5, 13);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.save();
+            ctx.font = 'italic 22px "Times New Roman", serif';
+            ctx.fillStyle = this.axisColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('y', MathUtils.clamp(origin.x - 10, 10, this.width - 10), 22);
+            ctx.restore();
         }
 
         // 눈금 및 레이블
@@ -396,14 +403,38 @@ export class Canvas {
     }
 
     getAxisNumberGap() {
-        if (this.axisNumberInterval !== 'auto') {
-            const fixedGap = Number(this.axisNumberInterval);
-            if (Number.isFinite(fixedGap) && fixedGap > 0) {
-                return fixedGap;
-            }
+        const fixedGap = this.getFixedAxisNumberGap();
+        if (fixedGap !== null) {
+            return fixedGap;
         }
 
         const targetPixelGap = 100;
+        const rawGap = targetPixelGap / this.scale;
+        const possibleGaps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
+        for (const gap of possibleGaps) {
+            if (gap >= rawGap) {
+                return gap;
+            }
+        }
+        return possibleGaps[possibleGaps.length - 1];
+    }
+
+    getFixedAxisNumberGap() {
+        if (this.axisNumberInterval === 'auto') {
+            return null;
+        }
+
+        const fixedGap = Number(this.axisNumberInterval);
+        return Number.isFinite(fixedGap) && fixedGap > 0 ? fixedGap : null;
+    }
+
+    getGridGap() {
+        const fixedGap = this.getFixedAxisNumberGap();
+        if (fixedGap !== null) {
+            return fixedGap;
+        }
+
+        const targetPixelGap = 50;
         const rawGap = targetPixelGap / this.scale;
         const possibleGaps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
         for (const gap of possibleGaps) {

@@ -26,11 +26,23 @@ function createCanvasFacade() {
         lineTo(x, y) {
             calls.push(['lineTo', x, y]);
         },
+        closePath() {
+            calls.push(['closePath']);
+        },
         stroke() {
             calls.push(['stroke']);
         },
+        fill() {
+            calls.push(['fill']);
+        },
         fillText(text, x, y) {
             calls.push(['fillText', text, x, y]);
+        },
+        save() {
+            calls.push(['save']);
+        },
+        restore() {
+            calls.push(['restore']);
         },
         measureText(text) {
             return { width: String(text).length || 1 };
@@ -80,6 +92,20 @@ test('automatic axis number interval still follows zoom scale', () => {
     assert.equal(canvas.getAxisNumberGap(), 0.5);
 });
 
+test('fixed axis number interval also fixes grid spacing regardless of zoom', () => {
+    const canvas = createCanvasFacade();
+
+    canvas.axisNumberInterval = '1';
+    canvas.scale = 500;
+    assert.equal(canvas.getGridGap(), 1);
+
+    canvas.scale = 5;
+    assert.equal(canvas.getGridGap(), 1);
+
+    canvas.axisNumberInterval = '0.5';
+    assert.equal(canvas.getGridGap(), 0.5);
+});
+
 test('axis numbers can be hidden while axis tick marks remain', () => {
     const canvas = createCanvasFacade();
     canvas.axisNumberInterval = '1';
@@ -109,4 +135,22 @@ test('axis numbers render with the selected fixed interval', () => {
     assert.ok(renderedText.includes('\u2212'));
     assert.equal(renderedText.includes('-'), false);
     assert.ok(mathFonts.some(font => font.includes('"Times New Roman"')));
+});
+
+test('axes render filled arrowheads and italic axis-name labels', () => {
+    const canvas = createCanvasFacade();
+
+    canvas.drawAxes();
+
+    const fillTexts = canvas.ctx.calls
+        .filter(call => call[0] === 'fillText')
+        .map(call => call[1]);
+    const fonts = canvas.ctx.calls
+        .filter(call => call[0] === 'font')
+        .map(call => call[1]);
+
+    assert.ok(canvas.ctx.calls.filter(call => call[0] === 'fill').length >= 2);
+    assert.ok(fillTexts.includes('x'));
+    assert.ok(fillTexts.includes('y'));
+    assert.ok(fonts.some(font => font.includes('italic 22px')));
 });
