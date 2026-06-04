@@ -1,5 +1,46 @@
 # Progress Log
 
+## 2026-06-04
+
+### Vercel production alias access check
+
+#### Work completed
+
+- Investigated a report that the Vercel-hosted site did not open.
+- Confirmed the primary production alias `https://mathgraph-five.vercel.app/` returns HTTP 200 and serves `index.html`, `js/main.js`, `css/styles.css`, and `favicon.svg`.
+- Confirmed the in-app Browser can load the production alias, render the first screen, and show no console warnings or errors.
+- Identified that the latest direct deployment URL `https://mathgraph-1nitg9odn-beomjinsouths-projects.vercel.app/`, the project alias `https://mathgraph-beomjinsouths-projects.vercel.app/`, and the branch/team alias `https://mathgraph-beomjinsouth-beomjinsouths-projects.vercel.app/` return HTTP 401.
+- Conclusion: the public URL to use is the primary production alias, while direct/team deployment URLs currently require Vercel authorization.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, and `docs/progress-log.md`.
+- Local deployment files: `package.json`, `vercel.json`, and `.vercel/project.json`.
+- Workflow skills: Build Web Apps frontend testing/debugging, Browser plugin control, and Vercel deployment/verification guidance.
+
+#### Verification
+
+- Ran `Invoke-WebRequest https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Ran `Invoke-WebRequest https://mathgraph-five.vercel.app/js/main.js`; returned HTTP 200.
+- Ran `Invoke-WebRequest https://mathgraph-five.vercel.app/css/styles.css`; returned HTTP 200.
+- Ran `Invoke-WebRequest https://mathgraph-five.vercel.app/favicon.svg`; returned HTTP 200.
+- Ran `npx.cmd vercel inspect https://mathgraph-five.vercel.app`; deployment `dpl_5vtm66WoSiA1AZsYa241aPF6GnjB` was `Ready`, target `production`, with the primary alias attached.
+- Ran `npx.cmd vercel ls mathgraph`; recent deployments were listed as `Ready`.
+- Ran in-app Browser smoke on `https://mathgraph-five.vercel.app/`; title was `그래프A Mk2.1`, the first screen rendered, and console warning/error count was 0.
+- Ran `Invoke-WebRequest` against direct/project/branch Vercel URLs; each returned HTTP 401.
+- Attempted `npx.cmd vercel logs https://mathgraph-1nitg9odn-beomjinsouths-projects.vercel.app`; command timed out after 64 seconds without usable log output.
+
+#### Deployment / Vercel
+
+- No Vercel settings, environment variables, aliases, or deployments were changed.
+- Public production alias remains `https://mathgraph-five.vercel.app/`.
+- Direct/team Vercel URLs currently require authorization and should not be used as the public access URL unless deployment protection settings are changed in Vercel.
+
+#### Git / GitHub
+
+- This entry records the Vercel access diagnosis for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ## 2026-06-03
 
 ### Drag-area export and textbook-style fixed-grid axes
