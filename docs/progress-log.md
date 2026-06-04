@@ -27,6 +27,7 @@
 - Ran `npx.cmd vercel inspect https://mathgraph-five.vercel.app`; deployment `dpl_5vtm66WoSiA1AZsYa241aPF6GnjB` was `Ready`, target `production`, with the primary alias attached.
 - Ran `npx.cmd vercel ls mathgraph`; recent deployments were listed as `Ready`.
 - Ran in-app Browser smoke on `https://mathgraph-five.vercel.app/`; title was `그래프A Mk2.1`, the first screen rendered, and console warning/error count was 0.
+- Ran standalone Playwright production smoke on `https://mathgraph-five.vercel.app/`; confirmed `window.app`, `prepareImageForAI`, canvas presence, 0 failed requests, and 0 console issues.
 - Ran `Invoke-WebRequest` against direct/project/branch Vercel URLs; each returned HTTP 401.
 - Attempted `npx.cmd vercel logs https://mathgraph-1nitg9odn-beomjinsouths-projects.vercel.app`; command timed out after 64 seconds without usable log output.
 
