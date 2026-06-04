@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    getAreaExportAxisOverlayGeometry,
     normalizeExportAreaRect,
     scaleExportAreaRect
 } from '../js/utils/ExportArea.js';
@@ -60,6 +61,32 @@ test('scales export rectangles for high-resolution PNG output', () => {
         width: 301,
         height: 152
     });
+});
+
+test('positions crop-edge axis arrows when axes cross an exported area', () => {
+    const geometry = getAreaExportAxisOverlayGeometry(
+        { x: 100, y: 80, width: 200, height: 160 },
+        new Vec2(150, 120),
+        2
+    );
+
+    assert.equal(geometry.xAxis.arrow[0].x, 396);
+    assert.equal(geometry.xAxis.arrow[0].y, 80);
+    assert.equal(geometry.xAxis.label.text, 'x');
+    assert.equal(geometry.yAxis.arrow[0].x, 100);
+    assert.equal(geometry.yAxis.arrow[0].y, 4);
+    assert.equal(geometry.yAxis.label.text, 'y');
+});
+
+test('omits crop-edge axis arrows for axes outside an exported area', () => {
+    const geometry = getAreaExportAxisOverlayGeometry(
+        { x: 100, y: 80, width: 200, height: 160 },
+        new Vec2(20, 40),
+        1
+    );
+
+    assert.equal(geometry.xAxis, null);
+    assert.equal(geometry.yAxis, null);
 });
 
 test('area export tool saves a dragged screen rectangle and returns to select', () => {

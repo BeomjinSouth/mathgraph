@@ -4,6 +4,38 @@
 
 - Skill: Frontend Testing Debugging
 - Why it matters:
+  - The reported issue is a rendered canvas/export workflow and needs real browser drag/download verification.
+- Skill: Browser plugin / Playwright fallback
+- Why it matters:
+  - Page health can be checked in the in-app Browser, while download interception may require Playwright if the in-app Browser cannot capture downloads.
+
+## Current Task Notes
+
+- User request:
+  - When saving only a dragged area, coordinate-axis arrows are missing.
+  - If an axis crosses the dragged area, the axis arrowhead should appear at the edge of that selected area.
+- Finding:
+  - PNG area export currently renders the full scene, then crops it.
+  - The full-scene axis arrowheads sit at the full canvas right/top edges, so they are cropped out unless the user selects those exact edges.
+  - SVG area export uses a cropped viewBox but still builds axis endpoints from the full canvas dimensions.
+- Implementation direction:
+  - Add a small helper that computes x/y crop-relative axis endpoint geometry from `screenRect`, origin screen position, and export scale.
+  - After PNG cropping, draw a final axis overlay only for axes that cross the selected rectangle.
+  - Pass `cropRect` into SVG axis markup so vector axes terminate at the crop viewBox right/top edges.
+- Verification target:
+  - Focused area-export geometry tests, full test suite, build/whitespace checks, local browser health check, Playwright drag/download smoke, production deploy and smoke.
+- Completed result:
+  - PNG area export now overlays x/y axis arrowheads and italic labels at the selected crop's right/top edges when those axes cross the crop.
+  - SVG area export now passes `cropRect` into axis markup so vector x/y arrowheads terminate at the crop viewBox edges.
+  - The geometry helper omits crop-edge arrows for axes outside the selected rectangle.
+  - Focused tests, full tests, local Browser health check, local/prod Playwright drag-download smokes, and Vercel production deployment passed.
+
+---
+
+## Relevant Skills
+
+- Skill: Frontend Testing Debugging
+- Why it matters:
   - The requested behavior is a rendered modal/input workflow and should be verified in the real app after focused tests.
 
 ## Current Task Notes

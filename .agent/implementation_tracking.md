@@ -2,6 +2,64 @@
 
 ## Status
 
+- Task: Drag-area export axis arrowheads
+- State: Done
+- Last updated: 2026-06-04
+
+## Plan
+
+1. Record the crop-edge axis-arrow behavior before implementation.
+2. Add a shared area-export axis geometry helper.
+3. Overlay crop-edge axis arrows for PNG area export when axes cross the selected rectangle.
+4. Make SVG area export draw axes to the crop viewBox edges.
+5. Run focused/full/rendered verification, update docs, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Treat the dragged rectangle as the visual viewport for area export axis endpoints.
+- Reason: The exported crop should be usable as a standalone worksheet image even when the full-canvas arrow tip was outside the dragged area.
+- Decision: Only draw a crop-edge arrow for an axis that actually crosses the crop.
+- Reason: A crop away from the x-axis or y-axis should not introduce misleading axis marks.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\utils\ExportArea.js`; passed.
+  - `node --check js\main.js`; passed.
+  - `node --test tests\area-export.test.js`; passed with 7 tests.
+  - `npm.cmd test`; passed with 169 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - In-app Browser loaded `http://127.0.0.1:4193/`, confirmed the app shell/title, captured a screenshot, and reported 0 console warning/error logs.
+  - Playwright local drag/download smoke on `http://127.0.0.1:4193/` downloaded a `230x236` PNG with x/y crop-edge arrow evidence, returned to select mode, confirmed SVG crop-edge arrow paths, and reported 0 console issues / 0 failed requests.
+  - `npx.cmd vercel deploy --prod --yes`; deployed production `dpl_8kRi1ww7qGnRZqBAqjbRy4Tj8ePe` at `https://mathgraph-56oywn7xo-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-56oywn7xo-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Playwright production drag/download smoke on `https://mathgraph-five.vercel.app/` downloaded a `230x236` PNG with x/y crop-edge arrow evidence, returned to select mode, confirmed SVG crop-edge arrow paths, and reported 0 console issues / 0 failed requests.
+
+## Handoff
+
+- Current status:
+  - PNG area export overlays crop-edge x/y arrows for axes that cross the selected rectangle.
+  - SVG area export draws x/y axis endpoints against the crop viewBox edges.
+  - The behavior is deployed to Vercel production.
+
+---
+
+## Status
+
 - Task: Function input accepts y=
 - State: Done
 - Last updated: 2026-06-03

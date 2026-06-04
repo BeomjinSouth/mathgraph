@@ -2,6 +2,49 @@
 
 ## 2026-06-04
 
+### Drag-area export axis arrowheads
+
+#### Work completed
+
+- Fixed drag-area export so cropped PNGs redraw x/y axis arrowheads and italic axis labels at the selected area's right/top edges when those axes cross the selected rectangle.
+- Updated SVG area export so vector x/y axis endpoints are calculated against the crop viewBox instead of the full canvas bounds.
+- Added a shared crop-axis geometry helper that omits crop-edge arrows for axes outside the exported area.
+- Added focused regression coverage for crop-edge axis-arrow geometry.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `.agent/axis_number_math_labels.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `.agent/axis_number_math_labels.md`.
+- Runtime files: `js/main.js`, `js/utils/ExportArea.js`, `tests/area-export.test.js`, `index.html`, and `js/tools/AreaExportTool.js`.
+- Browser testing context: Browser plugin skill `control-in-app-browser`; Playwright was used for download verification because Codex In-app Browser does not support download-event interception.
+
+#### Verification
+
+- Ran `node --check js\utils\ExportArea.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --test tests\area-export.test.js`; passed with 7 tests.
+- Ran `npm.cmd test`; passed with 169 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- In-app Browser loaded `http://127.0.0.1:4193/`, confirmed title `그래프A Mk2.1`, confirmed the app shell was present, captured screenshot evidence, and reported 0 console warning/error logs.
+- Playwright local smoke on `http://127.0.0.1:4193/` dragged an export area, downloaded a `230x236` PNG, confirmed crop-edge x/y arrow pixels, confirmed SVG crop-edge arrow paths, returned to select mode, and reported 0 console issues / 0 failed requests.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_8kRi1ww7qGnRZqBAqjbRy4Tj8ePe` was created at `https://mathgraph-56oywn7xo-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-56oywn7xo-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Playwright production smoke on `https://mathgraph-five.vercel.app/` dragged an export area, downloaded a `230x236` PNG, confirmed crop-edge x/y arrow pixels, confirmed SVG crop-edge arrow paths, returned to select mode, and reported 0 console issues / 0 failed requests.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-56oywn7xo-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_8kRi1ww7qGnRZqBAqjbRy4Tj8ePe`.
+- No Vercel environment variables or project settings were changed.
+
+#### Git / GitHub
+
+- This entry is included in the implementation/docs commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ### Vercel production alias access check
 
 #### Work completed

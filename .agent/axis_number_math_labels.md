@@ -61,3 +61,14 @@
 2. Update canvas axis rendering to use filled arrowheads and italic serif axis labels.
 3. Keep SVG export grid/axis rendering aligned with the canvas behavior.
 4. Add focused tests for fixed grid spacing and axis arrow/label drawing calls.
+
+## Follow-up: Drag-Area Export Axis Arrowheads
+
+- Date: 2026-06-04
+- User request:
+  - When saving only a dragged area, the x/y axis arrowheads should still appear.
+  - If an axis crosses the selected area, its arrowhead should be drawn at the selected area's edge.
+- Result:
+  - PNG area export overlays crop-edge axis arrows only for axes that cross the selected rectangle.
+  - SVG area export draws vector x/y arrowheads at the crop viewBox right/top edges.
+  - Local and production drag/download smokes confirmed the saved crop contains the new axis-end arrows.

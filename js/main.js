@@ -57,7 +57,10 @@ import { AlgebraInput } from './ui/AlgebraInput.js';
 import { CommandPalette } from './ui/CommandPalette.js';
 import { getGeneratedIconName, hydrateGeneratedIcons, setGeneratedIcon } from './ui/IconRenderer.js';
 import { SettingsManager } from './core/SettingsManager.js';
-import { scaleExportAreaRect } from './utils/ExportArea.js';
+import {
+    getAreaExportAxisOverlayGeometry,
+    scaleExportAreaRect
+} from './utils/ExportArea.js';
 
 /**
  * 그래프A 애플리케이션
@@ -2079,37 +2082,58 @@ class GraphAApp {
         return parts.join('\n');
     }
 
-    buildSVGAxesMarkup() {
-        const bounds = this.canvas.getVisibleBounds();
+    buildSVGAxesMarkup(cropRect = null) {
         const origin = this.canvas.toScreen(new Vec2(0, 0));
         const color = this.escapeSVG(this.canvas.axisColor || '#333333');
+        const axisRect = cropRect || {
+            x: 0,
+            y: 0,
+            width: this.canvas.width,
+            height: this.canvas.height
+        };
+        const left = axisRect.x;
+        const top = axisRect.y;
+        const right = axisRect.x + axisRect.width;
+        const bottom = axisRect.y + axisRect.height;
+        const clamp = (value, min, max) => {
+            if (max < min) return min;
+            return MathUtils.clamp(value, min, max);
+        };
         const parts = [`<g id="axes" stroke="${color}" fill="${color}" stroke-width="1.5">`];
 
-        if (bounds.minY <= 0 && bounds.maxY >= 0) {
-            parts.push(`<line x1="0" y1="${origin.y.toFixed(2)}" x2="${(this.canvas.width - 11).toFixed(2)}" y2="${origin.y.toFixed(2)}" />`);
+        if (origin.y >= top && origin.y <= bottom) {
+            const lineEndX = Math.max(left, right - 11);
+            const arrowTipX = Math.max(left, right - 2);
+            const arrowBaseX = Math.max(left, right - 13);
+            parts.push(`<line x1="${left.toFixed(2)}" y1="${origin.y.toFixed(2)}" x2="${lineEndX.toFixed(2)}" y2="${origin.y.toFixed(2)}" />`);
             parts.push(
-                `<path d="M ${(this.canvas.width - 2).toFixed(2)} ${origin.y.toFixed(2)} ` +
-                `L ${(this.canvas.width - 13).toFixed(2)} ${(origin.y - 5.5).toFixed(2)} ` +
-                `L ${(this.canvas.width - 13).toFixed(2)} ${(origin.y + 5.5).toFixed(2)} Z" />`
+                `<path d="M ${arrowTipX.toFixed(2)} ${origin.y.toFixed(2)} ` +
+                `L ${arrowBaseX.toFixed(2)} ${(origin.y - 5.5).toFixed(2)} ` +
+                `L ${arrowBaseX.toFixed(2)} ${(origin.y + 5.5).toFixed(2)} Z" />`
             );
-            const labelY = MathUtils.clamp(origin.y + 10, 4, this.canvas.height - 26);
+            const labelX = clamp(right - 17, left, right);
+            const labelY = clamp(origin.y + 10, top + 4, bottom - 26);
             parts.push(
-                `<text x="${(this.canvas.width - 17).toFixed(2)}" y="${labelY.toFixed(2)}" ` +
+                `<text x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" ` +
                 `font-family="Times New Roman, serif" font-size="22" font-style="italic" ` +
                 `text-anchor="middle" dominant-baseline="hanging">${this.escapeSVG('x')}</text>`
             );
         }
 
-        if (bounds.minX <= 0 && bounds.maxX >= 0) {
-            parts.push(`<line x1="${origin.x.toFixed(2)}" y1="11" x2="${origin.x.toFixed(2)}" y2="${this.canvas.height}" />`);
+        if (origin.x >= left && origin.x <= right) {
+            const lineStartY = Math.min(bottom, top + 11);
+            const arrowTipY = Math.min(bottom, top + 2);
+            const arrowBaseY = Math.min(bottom, top + 13);
+            parts.push(`<line x1="${origin.x.toFixed(2)}" y1="${lineStartY.toFixed(2)}" x2="${origin.x.toFixed(2)}" y2="${bottom.toFixed(2)}" />`);
             parts.push(
-                `<path d="M ${origin.x.toFixed(2)} 2 ` +
-                `L ${(origin.x - 5.5).toFixed(2)} 13 ` +
-                `L ${(origin.x + 5.5).toFixed(2)} 13 Z" />`
+                `<path d="M ${origin.x.toFixed(2)} ${arrowTipY.toFixed(2)} ` +
+                `L ${(origin.x - 5.5).toFixed(2)} ${arrowBaseY.toFixed(2)} ` +
+                `L ${(origin.x + 5.5).toFixed(2)} ${arrowBaseY.toFixed(2)} Z" />`
             );
-            const labelX = MathUtils.clamp(origin.x - 10, 10, this.canvas.width - 10);
+            const labelX = clamp(origin.x - 10, left, right);
+            const labelY = clamp(top + 22, top, bottom);
             parts.push(
-                `<text x="${labelX.toFixed(2)}" y="22" ` +
+                `<text x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" ` +
                 `font-family="Times New Roman, serif" font-size="22" font-style="italic" ` +
                 `text-anchor="middle" dominant-baseline="text-after-edge">${this.escapeSVG('y')}</text>`
             );
@@ -2528,7 +2552,7 @@ class GraphAApp {
             parts.push(this.buildSVGGridMarkup());
         }
         if (includeAxes) {
-            parts.push(this.buildSVGAxesMarkup());
+            parts.push(this.buildSVGAxesMarkup(cropRect));
         }
 
         const objectMarkup = this.getRenderOrderedObjects()
@@ -2567,8 +2591,55 @@ class GraphAApp {
         link.click();
     }
 
+    drawAreaExportAxisOverlay(targetCtx, screenRect, scale = 1) {
+        const geometry = getAreaExportAxisOverlayGeometry(
+            screenRect,
+            this.canvas.toScreen(new Vec2(0, 0)),
+            scale
+        );
+        if (!geometry.xAxis && !geometry.yAxis) return;
+
+        const drawAxis = (axis) => {
+            if (!axis) return;
+
+            targetCtx.beginPath();
+            targetCtx.moveTo(axis.line.x1, axis.line.y1);
+            targetCtx.lineTo(axis.line.x2, axis.line.y2);
+            targetCtx.stroke();
+
+            targetCtx.beginPath();
+            targetCtx.moveTo(axis.arrow[0].x, axis.arrow[0].y);
+            targetCtx.lineTo(axis.arrow[1].x, axis.arrow[1].y);
+            targetCtx.lineTo(axis.arrow[2].x, axis.arrow[2].y);
+            targetCtx.closePath();
+            targetCtx.fill();
+
+            targetCtx.save();
+            targetCtx.font = `italic ${axis.label.fontSize}px "Times New Roman", serif`;
+            targetCtx.fillStyle = this.canvas.axisColor || '#333333';
+            targetCtx.textAlign = 'center';
+            targetCtx.textBaseline = axis.label.baseline;
+            targetCtx.fillText(axis.label.text, axis.label.x, axis.label.y);
+            targetCtx.restore();
+        };
+
+        targetCtx.save();
+        targetCtx.strokeStyle = this.canvas.axisColor || '#333333';
+        targetCtx.fillStyle = this.canvas.axisColor || '#333333';
+        targetCtx.lineWidth = Math.max(1, 1.5 * geometry.scale);
+        drawAxis(geometry.xAxis);
+        drawAxis(geometry.yAxis);
+        targetCtx.restore();
+    }
+
     renderSceneAreaToCanvas(screenRect, options = {}) {
-        const { scale, includeBackground, includeGrid, includeAxes } = options;
+        const {
+            scale,
+            includeBackground,
+            includeGrid,
+            includeAxes,
+            overlayAreaAxes = true
+        } = options;
         const sourceCanvas = document.createElement('canvas');
         this.renderSceneToCanvas(sourceCanvas, {
             scale,
@@ -2593,6 +2664,10 @@ class GraphAApp {
             scaledRect.width,
             scaledRect.height
         );
+
+        if (includeAxes && overlayAreaAxes) {
+            this.drawAreaExportAxisOverlay(cropCanvas.getContext('2d'), screenRect, scale);
+        }
 
         return cropCanvas;
     }
@@ -2630,7 +2705,8 @@ class GraphAApp {
             scale,
             includeBackground,
             includeGrid,
-            includeAxes
+            includeAxes,
+            overlayAreaAxes: format === 'png'
         });
 
         if (format === 'png') {

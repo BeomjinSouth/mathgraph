@@ -2,6 +2,48 @@
 
 ## Summary
 
+- Task: Drag-area export axis arrowheads
+- Owner: Codex
+- Date: 2026-06-04
+- Related files:
+  - `js/main.js`
+  - `js/utils/ExportArea.js`
+  - `tests/area-export.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- Drag-area export crops the already-rendered full canvas.
+- Coordinate-axis arrowheads live at the full canvas edges, so they disappear when the dragged crop contains an axis line but not the original full-canvas arrow tip.
+- The saved crop should read as a standalone graph image: when an axis crosses the selected area, its arrowhead should appear at that selected area's edge.
+
+## Goals
+
+- For PNG area export, redraw visible x/y axis endpoints at the cropped image's right/top edges when the corresponding axis crosses the crop.
+- For SVG area export, align the vector axis endpoints with the crop viewBox edges.
+- Preserve full-canvas export behavior and ordinary on-canvas rendering.
+- Keep the existing export settings for axes, grid, background, and scale.
+
+## Non-Goals
+
+- Do not change normal canvas panning, zooming, or object geometry.
+- Do not add a separate crop-coordinate system or new saved-data schema.
+- Do not change Vercel project settings or environment variables.
+
+## Acceptance Criteria
+
+- [x] A dragged crop containing the x-axis shows the x-axis arrow at the crop's right edge.
+- [x] A dragged crop containing the y-axis shows the y-axis arrow at the crop's top edge.
+- [x] Crops that do not contain a given axis do not invent that axis arrow.
+- [x] PNG and SVG area exports use the same crop-edge axis endpoint logic.
+- [x] Focused tests, full tests, build check, whitespace check, browser/download smoke, deploy, commit, and push are recorded.
+
+---
+
+## Summary
+
 - Task: Function input accepts y=
 - Owner: Codex
 - Date: 2026-06-03
