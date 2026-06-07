@@ -4,6 +4,36 @@
 
 - Skill: Frontend Testing Debugging
 - Why it matters:
+  - The user is reacting to a visual canvas/export mismatch, so code changes need rendered evidence and download verification.
+- Skill: Browser plugin / Playwright fallback
+- Why it matters:
+  - The in-app Browser is preferred for page health and screenshots; Playwright may still be needed for download interception.
+
+## Current Task Notes
+
+- User request:
+  - The coordinate-axis arrowheads are still visually different from the provided reference.
+- Finding:
+  - Existing arrows are filled, but the head is broad and the tip is inset from the outer edge.
+  - Canvas axes, SVG axes, and area-export PNG overlays currently repeat the arrow metrics separately.
+- Implementation direction:
+  - Introduce shared axis-arrow metrics.
+  - Use a slimmer, longer arrowhead whose tip sits closer to the canvas/crop edge.
+  - Apply the same metrics to canvas, SVG, and dragged-area export overlays.
+- Verification target:
+  - Focused geometry/rendering tests, full test suite, build/whitespace checks, local rendered smoke with download inspection, Vercel deploy/inspect, and production smoke.
+- Completed result:
+  - Added shared axis-arrow metrics for canvas, SVG, and crop-edge PNG overlays.
+  - Changed the arrowhead to a slimmer, longer filled shape with the tip closer to the canvas/crop edge.
+  - Moved the `y` label slightly farther left so it does not sit on the arrowhead.
+  - Local and production Playwright smokes confirmed refined arrow pixels and cropped PNG edge arrows.
+
+---
+
+## Relevant Skills
+
+- Skill: Frontend Testing Debugging
+- Why it matters:
   - The reported issue is a rendered canvas/export workflow and needs real browser drag/download verification.
 - Skill: Browser plugin / Playwright fallback
 - Why it matters:

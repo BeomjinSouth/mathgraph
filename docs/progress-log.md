@@ -1,5 +1,58 @@
 # Progress Log
 
+## 2026-06-07
+
+### Axis arrow reference-style refinement
+
+#### Work completed
+
+- Refined x/y coordinate-axis arrowheads to better match the user's textbook-style reference.
+- Added `js/utils/AxisArrowStyle.js` so canvas axes, SVG export axes, and drag-area PNG overlay axes share one arrow metric set.
+- Changed the arrowhead shape to a slimmer, longer filled tip placed one CSS pixel from the canvas or crop edge.
+- Stopped each axis shaft at the arrowhead base so the line does not visually protrude through the filled head.
+- Moved the `y` label slightly farther left to avoid crowding the arrowhead.
+- Updated focused tests for canvas arrow draw calls and crop-edge export geometry.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `.agent/axis_number_math_labels.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `.agent/axis_number_math_labels.md`.
+- Runtime files: `js/core/Canvas.js`, `js/main.js`, `js/utils/ExportArea.js`, `js/utils/AxisArrowStyle.js`, `tests/area-export.test.js`, and `tests/axis-label-settings.test.js`.
+- Browser testing context: Browser plugin skill `control-in-app-browser`; Playwright was used for screenshot/download proof after the in-app Browser page-health check succeeded but tab screenshot capture timed out.
+
+#### Verification
+
+- Ran `node --check js\utils\AxisArrowStyle.js`; passed.
+- Ran `node --check js\utils\ExportArea.js`; passed.
+- Ran `node --check js\core\Canvas.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --test tests\area-export.test.js tests\axis-label-settings.test.js`; passed with 13 tests.
+- Ran `npm.cmd test`; passed with 169 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- In-app Browser loaded `http://127.0.0.1:4194/`, confirmed title `그래프A Mk2.1`, app shell, canvas metrics, and 0 console warning/error logs; tab screenshot capture timed out.
+- Playwright local smoke on `http://127.0.0.1:4194/` captured refined x/y arrow crops, dragged an area, downloaded a `230x235` PNG, confirmed crop-edge x/y arrow pixels, and reported 0 relevant console issues / 0 failed requests.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_GKw1cKu2vVLjKe3NpUkoNwCBMbyD` was created at `https://mathgraph-ovoenuvao-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-ovoenuvao-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Playwright production smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, canvas presence, refined x/y arrow pixels, downloaded a `230x235` PNG with crop-edge arrow pixels, and reported 0 console issues / 0 failed requests.
+- On 2026-06-07, reran `node --test tests\area-export.test.js tests\axis-label-settings.test.js`; passed with 13 tests.
+- On 2026-06-07, reran `git diff --check`; passed with line-ending warnings only.
+- On 2026-06-07, reran `npx.cmd vercel inspect https://mathgraph-five.vercel.app`; alias still resolved to production deployment `dpl_GKw1cKu2vVLjKe3NpUkoNwCBMbyD`, target `production`, status `Ready`.
+- On 2026-06-07, rechecked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-ovoenuvao-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_GKw1cKu2vVLjKe3NpUkoNwCBMbyD`.
+- No Vercel environment variables or project settings were changed.
+
+#### Git / GitHub
+
+- This entry is included in the implementation/docs commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ## 2026-06-04
 
 ### Drag-area export axis arrowheads

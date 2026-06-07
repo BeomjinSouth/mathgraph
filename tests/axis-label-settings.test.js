@@ -148,8 +148,40 @@ test('axes render filled arrowheads and italic axis-name labels', () => {
     const fonts = canvas.ctx.calls
         .filter(call => call[0] === 'font')
         .map(call => call[1]);
+    const xAxisLineIndex = canvas.ctx.calls.findIndex(call => (
+        call[0] === 'moveTo' &&
+        call[1] === 0 &&
+        call[2] === 100
+    ));
+    const xArrowIndex = canvas.ctx.calls.findIndex(call => (
+        call[0] === 'moveTo' &&
+        call[1] === 199 &&
+        call[2] === 100
+    ));
+    const yAxisLineIndex = canvas.ctx.calls.findIndex(call => (
+        call[0] === 'moveTo' &&
+        call[1] === 100 &&
+        call[2] === 14
+    ));
+    const yArrowIndex = canvas.ctx.calls.findIndex(call => (
+        call[0] === 'moveTo' &&
+        call[1] === 100 &&
+        call[2] === 1
+    ));
 
     assert.ok(canvas.ctx.calls.filter(call => call[0] === 'fill').length >= 2);
+    assert.deepEqual(canvas.ctx.calls[xAxisLineIndex + 1], ['lineTo', 186, 100]);
+    assert.deepEqual(canvas.ctx.calls.slice(xArrowIndex, xArrowIndex + 3), [
+        ['moveTo', 199, 100],
+        ['lineTo', 186, 95.8],
+        ['lineTo', 186, 104.2]
+    ]);
+    assert.deepEqual(canvas.ctx.calls[yAxisLineIndex + 1], ['lineTo', 100, 200]);
+    assert.deepEqual(canvas.ctx.calls.slice(yArrowIndex, yArrowIndex + 3), [
+        ['moveTo', 100, 1],
+        ['lineTo', 95.8, 14],
+        ['lineTo', 104.2, 14]
+    ]);
     assert.ok(fillTexts.includes('x'));
     assert.ok(fillTexts.includes('y'));
     assert.ok(fonts.some(font => font.includes('italic 22px')));

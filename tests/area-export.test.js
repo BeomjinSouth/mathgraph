@@ -70,12 +70,21 @@ test('positions crop-edge axis arrows when axes cross an exported area', () => {
         2
     );
 
-    assert.equal(geometry.xAxis.arrow[0].x, 396);
+    assert.equal(geometry.xAxis.arrow[0].x, 398);
     assert.equal(geometry.xAxis.arrow[0].y, 80);
+    assert.equal(geometry.xAxis.line.x2, geometry.xAxis.arrow[1].x);
+    assert.equal(geometry.xAxis.arrow[1].x, 372);
+    assert.equal(geometry.xAxis.arrow[1].y, 71.6);
+    assert.equal(geometry.xAxis.arrow[2].y, 88.4);
     assert.equal(geometry.xAxis.label.text, 'x');
+    assert.equal(geometry.xAxis.label.x, 374);
     assert.equal(geometry.yAxis.arrow[0].x, 100);
-    assert.equal(geometry.yAxis.arrow[0].y, 4);
+    assert.equal(geometry.yAxis.arrow[0].y, 2);
+    assert.equal(geometry.yAxis.line.y1, geometry.yAxis.arrow[1].y);
+    assert.equal(geometry.yAxis.arrow[1].x, 91.6);
+    assert.equal(geometry.yAxis.arrow[2].x, 108.4);
     assert.equal(geometry.yAxis.label.text, 'y');
+    assert.equal(geometry.yAxis.label.x, 70);
 });
 
 test('omits crop-edge axis arrows for axes outside an exported area', () => {

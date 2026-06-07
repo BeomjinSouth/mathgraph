@@ -61,6 +61,7 @@ import {
     getAreaExportAxisOverlayGeometry,
     scaleExportAreaRect
 } from './utils/ExportArea.js';
+import { getScaledAxisArrowStyle } from './utils/AxisArrowStyle.js';
 
 /**
  * 그래프A 애플리케이션
@@ -2099,20 +2100,21 @@ class GraphAApp {
             if (max < min) return min;
             return MathUtils.clamp(value, min, max);
         };
+        const axisArrow = getScaledAxisArrowStyle();
         const parts = [`<g id="axes" stroke="${color}" fill="${color}" stroke-width="1.5">`];
 
         if (origin.y >= top && origin.y <= bottom) {
-            const lineEndX = Math.max(left, right - 11);
-            const arrowTipX = Math.max(left, right - 2);
-            const arrowBaseX = Math.max(left, right - 13);
+            const arrowTipX = Math.max(left, right - axisArrow.tipInset);
+            const arrowBaseX = Math.max(left, right - axisArrow.baseInset);
+            const lineEndX = arrowBaseX;
             parts.push(`<line x1="${left.toFixed(2)}" y1="${origin.y.toFixed(2)}" x2="${lineEndX.toFixed(2)}" y2="${origin.y.toFixed(2)}" />`);
             parts.push(
                 `<path d="M ${arrowTipX.toFixed(2)} ${origin.y.toFixed(2)} ` +
-                `L ${arrowBaseX.toFixed(2)} ${(origin.y - 5.5).toFixed(2)} ` +
-                `L ${arrowBaseX.toFixed(2)} ${(origin.y + 5.5).toFixed(2)} Z" />`
+                `L ${arrowBaseX.toFixed(2)} ${(origin.y - axisArrow.halfWidth).toFixed(2)} ` +
+                `L ${arrowBaseX.toFixed(2)} ${(origin.y + axisArrow.halfWidth).toFixed(2)} Z" />`
             );
-            const labelX = clamp(right - 17, left, right);
-            const labelY = clamp(origin.y + 10, top + 4, bottom - 26);
+            const labelX = clamp(right - axisArrow.xLabelInset, left, right);
+            const labelY = clamp(origin.y + axisArrow.xLabelGap, top + axisArrow.xLabelMinGap, bottom - axisArrow.xLabelBottomInset);
             parts.push(
                 `<text x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" ` +
                 `font-family="Times New Roman, serif" font-size="22" font-style="italic" ` +
@@ -2121,17 +2123,17 @@ class GraphAApp {
         }
 
         if (origin.x >= left && origin.x <= right) {
-            const lineStartY = Math.min(bottom, top + 11);
-            const arrowTipY = Math.min(bottom, top + 2);
-            const arrowBaseY = Math.min(bottom, top + 13);
+            const arrowTipY = Math.min(bottom, top + axisArrow.tipInset);
+            const arrowBaseY = Math.min(bottom, top + axisArrow.baseInset);
+            const lineStartY = arrowBaseY;
             parts.push(`<line x1="${origin.x.toFixed(2)}" y1="${lineStartY.toFixed(2)}" x2="${origin.x.toFixed(2)}" y2="${bottom.toFixed(2)}" />`);
             parts.push(
                 `<path d="M ${origin.x.toFixed(2)} ${arrowTipY.toFixed(2)} ` +
-                `L ${(origin.x - 5.5).toFixed(2)} ${arrowBaseY.toFixed(2)} ` +
-                `L ${(origin.x + 5.5).toFixed(2)} ${arrowBaseY.toFixed(2)} Z" />`
+                `L ${(origin.x - axisArrow.halfWidth).toFixed(2)} ${arrowBaseY.toFixed(2)} ` +
+                `L ${(origin.x + axisArrow.halfWidth).toFixed(2)} ${arrowBaseY.toFixed(2)} Z" />`
             );
-            const labelX = clamp(origin.x - 10, left, right);
-            const labelY = clamp(top + 22, top, bottom);
+            const labelX = clamp(origin.x - axisArrow.yLabelInset, left, right);
+            const labelY = clamp(top + axisArrow.yLabelBaseline, top, bottom);
             parts.push(
                 `<text x="${labelX.toFixed(2)}" y="${labelY.toFixed(2)}" ` +
                 `font-family="Times New Roman, serif" font-size="22" font-style="italic" ` +

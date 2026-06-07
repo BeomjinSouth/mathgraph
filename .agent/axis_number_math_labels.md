@@ -48,6 +48,20 @@
 - Browser plugin use was attempted first, but the required Node REPL JavaScript execution tool was not exposed in this session. Playwright was used as the rendered-validation fallback.
 - Manual Vercel deploy was not run from this task turn, but the production alias was inspected after the branch update and the live site contains the axis-number math-label behavior.
 
+## Follow-up: Axis Arrow Reference-Style Refinement
+
+- Date: 2026-06-05
+- User request:
+  - The previous filled arrowheads are present, but the shape still differs from the provided reference.
+- Plan:
+  - Centralize axis-arrow metrics.
+  - Make the arrowheads slimmer, longer, and closer to the canvas or crop edge.
+  - Keep canvas, SVG, and drag-area export overlays visually aligned.
+- Result:
+  - Canvas, SVG, and drag-area PNG overlays now share one refined axis-arrow metric set.
+  - Arrowheads are slimmer and closer to the selected area's edge or canvas edge.
+  - Local and production download smokes confirmed the refined edge-arrow behavior.
+
 ## Follow-up: Axis Arrows And Fixed Grid Interval
 
 - Date: 2026-06-03

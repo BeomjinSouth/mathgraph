@@ -5,6 +5,7 @@
 
 import { Vec2, Geometry } from '../utils/Geometry.js';
 import { MathUtils } from '../utils/MathUtils.js';
+import { getScaledAxisArrowStyle } from '../utils/AxisArrowStyle.js';
 
 export class Canvas {
     constructor(canvasElement) {
@@ -234,6 +235,7 @@ export class Canvas {
         const ctx = this.ctx;
         const origin = this.toScreen(new Vec2(0, 0));
         const bounds = this.getVisibleBounds();
+        const axisArrow = getScaledAxisArrowStyle();
 
         ctx.strokeStyle = this.axisColor;
         ctx.lineWidth = 1.5;
@@ -243,14 +245,14 @@ export class Canvas {
         if (this.showXAxis && bounds.minY <= 0 && bounds.maxY >= 0) {
             ctx.beginPath();
             ctx.moveTo(0, origin.y);
-            ctx.lineTo(this.width - 11, origin.y);
+            ctx.lineTo(Math.max(0, this.width - axisArrow.baseInset), origin.y);
             ctx.stroke();
 
             // 화살표
             ctx.beginPath();
-            ctx.moveTo(this.width - 2, origin.y);
-            ctx.lineTo(this.width - 13, origin.y - 5.5);
-            ctx.lineTo(this.width - 13, origin.y + 5.5);
+            ctx.moveTo(Math.max(0, this.width - axisArrow.tipInset), origin.y);
+            ctx.lineTo(Math.max(0, this.width - axisArrow.baseInset), origin.y - axisArrow.halfWidth);
+            ctx.lineTo(Math.max(0, this.width - axisArrow.baseInset), origin.y + axisArrow.halfWidth);
             ctx.closePath();
             ctx.fill();
 
@@ -259,22 +261,26 @@ export class Canvas {
             ctx.fillStyle = this.axisColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.fillText('x', this.width - 17, MathUtils.clamp(origin.y + 10, 4, this.height - 26));
+            ctx.fillText(
+                'x',
+                MathUtils.clamp(this.width - axisArrow.xLabelInset, 0, this.width),
+                MathUtils.clamp(origin.y + axisArrow.xLabelGap, axisArrow.xLabelMinGap, this.height - axisArrow.xLabelBottomInset)
+            );
             ctx.restore();
         }
 
         // Y축
         if (this.showYAxis && bounds.minX <= 0 && bounds.maxX >= 0) {
             ctx.beginPath();
-            ctx.moveTo(origin.x, 11);
+            ctx.moveTo(origin.x, Math.min(this.height, axisArrow.baseInset));
             ctx.lineTo(origin.x, this.height);
             ctx.stroke();
 
             // 화살표
             ctx.beginPath();
-            ctx.moveTo(origin.x, 2);
-            ctx.lineTo(origin.x - 5.5, 13);
-            ctx.lineTo(origin.x + 5.5, 13);
+            ctx.moveTo(origin.x, Math.max(0, axisArrow.tipInset));
+            ctx.lineTo(origin.x - axisArrow.halfWidth, Math.min(this.height, axisArrow.baseInset));
+            ctx.lineTo(origin.x + axisArrow.halfWidth, Math.min(this.height, axisArrow.baseInset));
             ctx.closePath();
             ctx.fill();
 
@@ -283,7 +289,7 @@ export class Canvas {
             ctx.fillStyle = this.axisColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            ctx.fillText('y', MathUtils.clamp(origin.x - 10, 10, this.width - 10), 22);
+            ctx.fillText('y', MathUtils.clamp(origin.x - axisArrow.yLabelInset, 10, this.width - 10), axisArrow.yLabelBaseline);
             ctx.restore();
         }
 

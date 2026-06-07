@@ -2,6 +2,66 @@
 
 ## Status
 
+- Task: Axis arrow reference-style refinement
+- State: Done
+- Last updated: 2026-06-07
+
+## Plan
+
+1. Record the visual refinement before implementation.
+2. Centralize axis-arrow shape metrics.
+3. Apply the refined style to canvas, SVG, and cropped PNG area-export overlays.
+4. Add focused regression coverage for the new arrow geometry.
+5. Run focused/full/rendered verification, update docs, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Make the arrowhead longer and narrower than the previous filled triangle.
+- Reason: The provided reference uses a sharper textbook-like arrowhead rather than a broad triangular marker.
+- Decision: Put the arrow tip one CSS pixel from the outer edge and stop the shaft at the arrow base.
+- Reason: This keeps the endpoint visually at the canvas/crop edge while avoiding a shaft that protrudes through the filled head.
+
+## Blockers
+
+- Blocker: None currently.
+
+## Verification
+
+- Completed:
+  - `node --check js\utils\AxisArrowStyle.js`; passed.
+  - `node --check js\utils\ExportArea.js`; passed.
+  - `node --check js\core\Canvas.js`; passed.
+  - `node --check js\main.js`; passed.
+  - `node --test tests\area-export.test.js tests\axis-label-settings.test.js`; passed with 13 tests.
+  - `npm.cmd test`; passed with 169 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - In-app Browser loaded `http://127.0.0.1:4194/`, confirmed title `그래프A Mk2.1`, app shell, canvas metrics, and 0 console warning/error logs; tab screenshot capture timed out, so Playwright was used for image/download proof.
+  - Playwright local smoke on `http://127.0.0.1:4194/` captured refined x/y arrow crops, dragged an area, downloaded a `230x235` PNG, confirmed crop-edge x/y arrow pixels, and reported 0 relevant console issues / 0 failed requests.
+  - `npx.cmd vercel deploy --prod --yes`; deployed production `dpl_GKw1cKu2vVLjKe3NpUkoNwCBMbyD` at `https://mathgraph-ovoenuvao-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-ovoenuvao-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Playwright production smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, canvas presence, refined x/y arrow pixels, downloaded a `230x235` PNG with crop-edge arrow pixels, and reported 0 console issues / 0 failed requests.
+  - On 2026-06-07, reran focused tests, `git diff --check`, `npx.cmd vercel inspect https://mathgraph-five.vercel.app`, and HTTP 200 check; alias still resolved to production deployment `dpl_GKw1cKu2vVLjKe3NpUkoNwCBMbyD`.
+
+## Handoff
+
+- Current status:
+  - Refined slimmer x/y axis arrowheads are implemented and deployed to Vercel production.
+  - Canvas, SVG, and drag-area PNG overlays share the same arrow metrics.
+
+---
+
+## Status
+
 - Task: Drag-area export axis arrowheads
 - State: Done
 - Last updated: 2026-06-04

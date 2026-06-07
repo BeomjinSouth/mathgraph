@@ -2,6 +2,50 @@
 
 ## Summary
 
+- Task: Axis arrow reference-style refinement
+- Owner: Codex
+- Date: 2026-06-05
+- Related files:
+  - `js/core/Canvas.js`
+  - `js/main.js`
+  - `js/utils/AxisArrowStyle.js`
+  - `js/utils/ExportArea.js`
+  - `tests/area-export.test.js`
+  - `tests/axis-label-settings.test.js`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+  - `.agent/axis_number_math_labels.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The current axis arrowheads are present, but their shape is wider and more triangular than the provided textbook-style reference.
+- The same arrow look must stay consistent across the live canvas, full SVG export, cropped SVG export, and cropped PNG overlay.
+
+## Goals
+
+- Make x/y axis arrowheads slimmer and longer, with the tip closer to the canvas or crop edge.
+- Make each axis shaft meet the arrowhead base cleanly.
+- Keep the italic serif `x` and `y` labels near the arrow tips.
+- Centralize the arrow metrics so canvas, SVG, and area-export overlays do not drift.
+
+## Non-Goals
+
+- Do not change grid spacing, zoom behavior, object geometry, or save/load data.
+- Do not add new user-facing settings.
+- Do not change Vercel project settings or environment variables.
+
+## Acceptance Criteria
+
+- [x] Canvas x/y axes use the refined slimmer arrowhead style.
+- [x] Full and cropped SVG export use the same refined arrowhead metrics.
+- [x] Cropped PNG area export overlays the same refined crop-edge arrowheads when axes cross the crop.
+- [x] Focused tests, full tests, build check, whitespace check, rendered/download smoke, deploy, commit, and push are recorded.
+
+---
+
+## Summary
+
 - Task: Drag-area export axis arrowheads
 - Owner: Codex
 - Date: 2026-06-04
