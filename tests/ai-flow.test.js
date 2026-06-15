@@ -299,7 +299,15 @@ test('AIService builds OpenAI Responses request with strict Structured Outputs',
     assert.equal(body.text.format.strict, true);
     assert.equal(body.text.format.schema.additionalProperties, false);
     assert.deepEqual(body.text.format.schema.required, ['operations']);
-    assert.equal(body.previous_response_id, 'resp_previous');
+    assert.equal(body.previous_response_id, undefined);
+
+    const chainedBody = service.buildOpenAIRequestBody([
+        { role: 'system', content: 'system rules' },
+        { role: 'user', content: 'draw triangle' }
+    ], {
+        previousResponseId: 'resp_previous'
+    });
+    assert.equal(chainedBody.previous_response_id, 'resp_previous');
 });
 
 test('AIService callOpenAI sends Structured Outputs request and extracts output text', async () => {
@@ -401,6 +409,75 @@ test('processCommand includes actual API model in successful OpenAI result', asy
 
         assert.equal(result.success, true);
         assert.equal(result.model, 'gpt-5.4-mini');
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('processCommand repairs OpenAI text output with stale update ids', async () => {
+    const originalFetch = globalThis.fetch;
+    const capturedBodies = [];
+
+    globalThis.fetch = async (url, options) => {
+        capturedBodies.push(JSON.parse(options.body));
+        const firstCall = capturedBodies.length === 1;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: firstCall ? 'resp_stale_ids' : 'resp_repaired_ids',
+                    output: [
+                        {
+                            type: 'message',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: firstCall
+                                        ? JSON.stringify({
+                                            operations: [
+                                                { op: 'update', id: 'obj_1781506409729_1', label: 'A' }
+                                            ]
+                                        })
+                                        : JSON.stringify({
+                                            operations: [
+                                                { op: 'create', id: 'A', type: 'point', x: 0, y: 0, label: 'A' }
+                                            ]
+                                        })
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            referenceManual: TEST_REFERENCE_MANUAL,
+            referenceIndex: TEST_REFERENCE_INDEX,
+            save() { }
+        });
+        service.lastResponseId = 'resp_old_canvas';
+
+        const result = await service.processCommand('새 점 A를 그려줘', { objects: [] });
+
+        assert.equal(result.success, true);
+        assert.equal(result.repaired, true);
+        assert.equal(result.initialModel, 'gpt-5.4-mini');
+        assert.equal(result.model, 'gpt-5.4-mini');
+        assert.equal(result.json.operations[0].op, 'create');
+        assert.equal(result.json.operations[0].id, 'A');
+        assert.match(result.repairErrors.join('\n'), /obj_1781506409729_1/);
+        assert.equal(capturedBodies.length, 2);
+        assert.equal(capturedBodies[0].previous_response_id, undefined);
+        assert.equal(capturedBodies[1].previous_response_id, undefined);
+        assert.match(capturedBodies[1].input[0].content, /failed local validation/);
+        assert.match(capturedBodies[1].input[0].content, /op:"create"/);
+        assert.match(capturedBodies[1].input[0].content, /obj_1781506409729_1/);
     } finally {
         globalThis.fetch = originalFetch;
     }

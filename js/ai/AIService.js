@@ -596,7 +596,7 @@ export class AIService {
             // JSON 파싱
             const json = this.extractJSON(response);
             if (json) {
-                return this.enhanceProcessResult(
+                const enhancedResult = this.enhanceProcessResult(
                     {
                         success: true,
                         json,
@@ -607,6 +607,20 @@ export class AIService {
                     context,
                     'command'
                 );
+                const validation = this.validateCommandResult(enhancedResult.json, context);
+
+                if (!validation.valid && this.config.provider === 'openai') {
+                    return await this.repairOpenAICommandResult(
+                        messages,
+                        normalizedMessage,
+                        context,
+                        enhancedResult.json,
+                        validation.errors,
+                        enhancedResult.model
+                    );
+                }
+
+                return enhancedResult;
             } else {
                 return this.enhanceProcessResult(
                     this.fallbackProcess(normalizedMessage, context),
@@ -629,6 +643,101 @@ export class AIService {
     /**
      * 메시지 배열 구성
      */
+    validateCommandResult(json, context = null) {
+        const schemaResult = this.schemaValidator.validate(json);
+        if (!schemaResult.valid) {
+            return schemaResult;
+        }
+
+        const existingIds = new Set(
+            (Array.isArray(context?.objects) ? context.objects : [])
+                .map(object => object?.id)
+                .filter(id => typeof id === 'string' && id.trim())
+        );
+        return this.schemaValidator.validateReferences(json, existingIds);
+    }
+
+    buildCommandRepairMessages(originalMessages, originalUserMessage, context, failedJson, errors) {
+        const systemMessages = (Array.isArray(originalMessages) ? originalMessages : [])
+            .filter(message => message?.role === 'system');
+        const contextPrompt = this.buildCanvasContextPrompt(context);
+        const repairPrompt = [
+            'The previous GraphA JSON failed local validation before it could be applied.',
+            `Validation errors:\n- ${errors.join('\n- ')}`,
+            'Repair rules:',
+            '- Return only corrected {"operations":[...]} JSON.',
+            '- If the user asked for a new drawing, use op:"create" for new objects.',
+            '- Use update/delete only for ids that appear in the current canvas context.',
+            '- Do not invent obj_* ids for update/delete operations.',
+            '- If an operation references a new object from the same batch, create that object earlier in operations[].',
+            contextPrompt ? `Current canvas context:\n${contextPrompt}` : 'Current canvas context: no existing object ids.',
+            'Previous JSON to repair:',
+            JSON.stringify(failedJson).slice(0, 8000)
+        ].join('\n\n');
+
+        return [
+            ...systemMessages,
+            { role: 'system', content: repairPrompt },
+            {
+                role: 'user',
+                content: `Original user request:\n${originalUserMessage}\n\nReturn corrected GraphA operations only.`
+            }
+        ];
+    }
+
+    async repairOpenAICommandResult(originalMessages, originalUserMessage, context, failedJson, errors, initialModel) {
+        try {
+            const repairMessages = this.buildCommandRepairMessages(
+                originalMessages,
+                originalUserMessage,
+                context,
+                failedJson,
+                errors
+            );
+            const repairedResponse = await this.callOpenAI(repairMessages);
+            const repairedJson = this.extractJSON(repairedResponse);
+
+            if (!repairedJson) {
+                return {
+                    success: false,
+                    error: `AI reference validation failed and repair returned invalid JSON: ${errors.join(' ')}`
+                };
+            }
+
+            const enhancedJson = this.enhanceDiagramQuality(
+                repairedJson,
+                originalUserMessage,
+                context,
+                'command'
+            );
+            const repairedValidation = this.validateCommandResult(enhancedJson, context);
+            if (!repairedValidation.valid) {
+                return {
+                    success: false,
+                    error: `AI reference validation failed after repair: ${repairedValidation.errors.join(' ')}`,
+                    json: enhancedJson,
+                    validationErrors: repairedValidation.errors
+                };
+            }
+
+            return {
+                success: true,
+                json: enhancedJson,
+                message: repairedResponse,
+                repaired: true,
+                repairErrors: errors,
+                initialModel,
+                model: this.lastRequestModel || this.config.model
+            };
+        } catch (error) {
+            console.error('AI command repair failed:', error);
+            return {
+                success: false,
+                error: `AI reference validation failed and repair could not complete: ${errors.join(' ')}`
+            };
+        }
+    }
+
     buildMessages(userMessage, context) {
         const messages = [
             { role: 'system', content: SYSTEM_PROMPT }
@@ -944,8 +1053,8 @@ export class AIService {
      * OpenAI Responses API 호출
      * Uses Structured Outputs so the model response matches the GraphA operations schema.
      */
-    async callOpenAI(messages) {
-        const requestBody = this.buildOpenAIRequestBody(messages);
+    async callOpenAI(messages, overrides = {}) {
+        const requestBody = this.buildOpenAIRequestBody(messages, overrides);
         this.lastRequestModel = requestBody.model;
 
         const response = await fetch('https://api.openai.com/v1/responses', {
@@ -984,7 +1093,9 @@ export class AIService {
             .join('\n\n');
 
         // 이전 응답 ID (대화 연속성을 위해)
-        const previousResponseId = overrides.previousResponseId ?? this.lastResponseId ?? undefined;
+        const previousResponseId = Object.prototype.hasOwnProperty.call(overrides, 'previousResponseId')
+            ? overrides.previousResponseId
+            : undefined;
 
         return this.buildOpenAIRequestBodyFromInput([
             { role: 'developer', content: systemContent },

@@ -2,6 +2,43 @@
 
 ## 2026-06-15
 
+### AI text reference validation retry
+
+#### Work completed
+
+- Diagnosed the visible reference validation failure warning as GraphA operations using `update`/`delete` ids that do not exist on the current canvas.
+- Changed normal OpenAI text drawing requests so they no longer automatically send stale `previous_response_id`; explicit previous ids are still supported for repair-style calls.
+- Added pre-UI schema/reference validation in `AIService.processCommand()`.
+- Added one OpenAI text repair pass that resubmits the validation errors and failed JSON, instructing the model to use `create` for new drawings and `update/delete` only for current canvas ids.
+- Added regression coverage for stale `obj_*` update ids being repaired into valid create operations.
+- Added `.agent/ai_reference_validation_retry.md` for this scoped behavior change and verification record.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `docs/ai-reference.md`, and `.agents/skills/mathgraph-drawing/SKILL.md`.
+- Runtime/test files: `js/ai/AIService.js`, `js/ai/SchemaValidator.js`, `js/ai/PatchApplier.js`, `js/main.js`, and `tests/ai-flow.test.js`.
+
+#### Verification
+
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 42 tests.
+- Ran `npm.cmd test`; passed with 172 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- No live OpenAI request was made; the repair behavior was verified with mocked Responses API payloads.
+
+#### Deployment / Vercel
+
+- No Vercel settings or environment variables were changed.
+- Manual production deploy was not run from this dirty workspace because unrelated in-progress local solid fallback changes are present and a direct deploy would include the whole working tree.
+
+#### Git / GitHub
+
+- Push target: `codex/ai-fallback-recovery`.
+- Existing unrelated dirty changes were left unstaged for separate handling.
+
+## 2026-06-15
+
 ### Local solid fallback for nested rectangular prism request
 
 #### Work completed
