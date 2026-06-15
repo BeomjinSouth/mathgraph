@@ -1425,6 +1425,7 @@ export class AIService {
             () => this.buildMidpointOperations(normalizedMessage, state),
             () => this.buildTangentFunctionOperations(normalizedMessage, state),
             () => this.buildBasicFunctionOperations(normalizedMessage),
+            () => this.buildBasicSolidOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
             () => this.buildBasicCircleOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
             () => this.buildEquationCircleOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
             () => this.buildEquationLineOperations(normalizedMessage, lower, state.usedLabels, state.layoutOrigin)
@@ -1676,6 +1677,118 @@ export class AIService {
                 { op: 'create', type: 'function', expression }
             ]
         };
+    }
+
+    buildBasicSolidOperations(message, usedLabels, layoutOrigin = { x: 0, y: 0 }) {
+        const text = String(message ?? '');
+        if (!/(직육면체|정육면체|rectangular\s+prism|cuboid|cube|box)/i.test(text)) {
+            return null;
+        }
+
+        const requestedLabels = this.extractRectangularPrismLabels(text, usedLabels);
+        const wantsNestedSolid =
+            /(내부|안에|안쪽|속|inside|within|nested)/i.test(text) &&
+            /(작은|작게|정육면체|cube|small)/i.test(text);
+
+        const outerWidth = /정육면체|cube/i.test(text) && !/직육면체|rectangular|cuboid/i.test(text) ? 4.6 : 6.4;
+        const outerHeight = /정육면체|cube/i.test(text) && !/직육면체|rectangular|cuboid/i.test(text) ? 3.6 : 3.2;
+        const operations = this.createRectangularPrismOperations({
+            prefix: 'outer_box',
+            labels: requestedLabels,
+            origin: layoutOrigin,
+            width: outerWidth,
+            height: outerHeight,
+            shiftX: 1.3,
+            shiftY: 1.2,
+            showPointLabels: true,
+            visiblePoints: true,
+            prismId: 'outer_prism'
+        });
+
+        if (wantsNestedSolid) {
+            operations.push(...this.createRectangularPrismOperations({
+                prefix: 'inner_cube',
+                labels: [],
+                origin: {
+                    x: layoutOrigin.x - 0.25,
+                    y: layoutOrigin.y - 0.25
+                },
+                width: 1.8,
+                height: 1.35,
+                shiftX: 0.55,
+                shiftY: 0.65,
+                showPointLabels: false,
+                visiblePoints: false,
+                prismId: 'inner_prism'
+            }));
+        }
+
+        return { operations };
+    }
+
+    extractRectangularPrismLabels(message, usedLabels) {
+        const labelMatch = String(message ?? '').match(/([A-Z]{4})\s*[-–—]?\s*([A-Z]{4})/i);
+        if (labelMatch) {
+            return [...labelMatch[1].toUpperCase(), ...labelMatch[2].toUpperCase()];
+        }
+
+        return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+            .map(label => this.getNextLabel(label, usedLabels));
+    }
+
+    createRectangularPrismOperations({
+        prefix,
+        labels = [],
+        origin = { x: 0, y: 0 },
+        width,
+        height,
+        shiftX,
+        shiftY,
+        showPointLabels,
+        visiblePoints,
+        prismId
+    }) {
+        const halfWidth = width / 2;
+        const halfHeight = height / 2;
+        const basePoints = [
+            { x: origin.x - halfWidth, y: origin.y - halfHeight },
+            { x: origin.x + halfWidth, y: origin.y - halfHeight },
+            { x: origin.x + halfWidth, y: origin.y + halfHeight },
+            { x: origin.x - halfWidth, y: origin.y + halfHeight }
+        ];
+        const topPoints = basePoints.map(point => ({
+            x: point.x + shiftX,
+            y: point.y + shiftY
+        }));
+        const pointSpecs = [...basePoints, ...topPoints];
+        const pointIds = pointSpecs.map((_, index) => `${prefix}_${index + 1}`);
+        const pointOperations = pointSpecs.map((point, index) => {
+            const operation = {
+                op: 'create',
+                type: 'point',
+                id: pointIds[index],
+                x: Math.round(point.x * 100) / 100,
+                y: Math.round(point.y * 100) / 100,
+                showLabel: showPointLabels,
+                visible: visiblePoints
+            };
+            if (labels[index]) {
+                operation.label = labels[index];
+            }
+            return operation;
+        });
+
+        return [
+            ...pointOperations,
+            {
+                op: 'create',
+                type: 'prism',
+                id: prismId,
+                baseVertexIds: pointIds.slice(0, 4),
+                topVertexIds: pointIds.slice(4, 8),
+                showLabel: false
+            }
+        ];
     }
 
     buildBasicCircleOperations(message, usedLabels, layoutOrigin = { x: 0, y: 0 }) {

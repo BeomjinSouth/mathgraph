@@ -2,6 +2,46 @@
 
 ## Summary
 
+- Task: Local solid fallback for nested rectangular prism request
+- Owner: Codex
+- Date: 2026-06-15
+- Related files:
+  - `js/ai/AIService.js`
+  - `tests/ai-flow.test.js`
+  - `.agent/local_solid_fallback.md`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `docs/ai-reference.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- The AI chat can show `요청을 이해하지 못했습니다` for `직육면체 ABCD EFGH 내부에 정육면체가 작게 있는거 그려줘` when the app is using local/API-free fallback.
+- The runtime already supports first-class `prism` objects, but the deterministic fallback only handled functions, circles, equations, number lines, and a few legacy generic shape words.
+
+## Goals
+
+- Recognize rectangular-prism/cube wording in deterministic fallback.
+- Preserve requested outer labels `A` through `H`.
+- Create a smaller inner cube as a second `prism` when the prompt asks for a nested solid.
+- Keep the implementation inside existing GraphA `point` and `prism` operations.
+
+## Non-Goals
+
+- Do not add new solid primitives.
+- Do not approximate curved solids such as cylinders, cones, or spheres.
+- Do not change provider-backed OpenAI/Gemini request schemas.
+
+## Acceptance Criteria
+
+- [x] The exact Korean prompt succeeds in local fallback mode.
+- [x] The exact prompt creates two prism objects and sixteen dependency points.
+- [x] A single `직육면체 ABCD EFGH 그려줘` prompt creates one labeled rectangular prism.
+- [x] Full tests, Vercel build, whitespace check, local browser smoke, and production smoke pass.
+
+---
+
+## Summary
+
 - Task: Axis arrow reference-style refinement
 - Owner: Codex
 - Date: 2026-06-05

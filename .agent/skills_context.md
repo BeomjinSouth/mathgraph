@@ -2,6 +2,38 @@
 
 ## Relevant Skills
 
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The request is a Korean natural-language solid drawing prompt and should compile to valid GraphA `operations[]` using existing `prism` support.
+- Skill: Playwright
+- Why it matters:
+  - The fix affects the AI chat runtime path, so local and production browser smokes should confirm the visible app no longer returns the fallback failure text.
+- Skill: Vercel Deployments & CI/CD
+- Why it matters:
+  - Project rules require production deployment verification after completed runtime behavior changes.
+
+## Current Task Notes
+
+- User request:
+  - Screenshot showed `요청을 이해하지 못했습니다` after asking: `직육면체 ABCD EFGH 내부에 정육면체가 작게 있는거 그려줘`.
+- Finding:
+  - The provider/API-free path reached `AIService.fallbackProcess()`.
+  - Deterministic fallback did not recognize `직육면체`/`정육면체`; legacy solid fallback only caught generic `기둥/각기둥`.
+- Implementation result:
+  - Added `buildBasicSolidOperations()` before circle/equation fallback builders.
+  - `직육면체 ABCD EFGH 그려줘` creates one labeled rectangular `prism`.
+  - Nested prompts create an outer labeled `prism` plus a smaller inner `prism` with hidden helper points/labels.
+- Verification target:
+  - Focused AI flow tests, full tests, build/whitespace checks, local Playwright smoke, Vercel deploy/inspect, production Playwright smoke.
+- Completed result:
+  - Full tests passed with 171 tests.
+  - Production deployment `dpl_Dtrvq375pkY1kES3g1626ESmr2vG` is `Ready` and aliased to `https://mathgraph-five.vercel.app`.
+  - Production smoke confirmed the exact prompt creates 16 points and 2 prisms with visible outer labels `A` through `H` and no failure text.
+
+---
+
+## Relevant Skills
+
 - Skill: Frontend Testing Debugging
 - Why it matters:
   - The user is reacting to a visual canvas/export mismatch, so code changes need rendered evidence and download verification.

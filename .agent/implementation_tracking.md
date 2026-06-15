@@ -2,6 +2,62 @@
 
 ## Status
 
+- Task: Local solid fallback for nested rectangular prism request
+- State: Done
+- Last updated: 2026-06-15
+
+## Plan
+
+1. Confirm the failing path from the screenshot prompt.
+2. Add deterministic rectangular-prism/cube fallback before legacy fallback examples.
+3. Add focused regression tests for the exact nested prompt and a single labeled rectangular prism.
+4. Update AI reference docs and project task notes.
+5. Run focused/full/browser/deployment verification, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Represent both the outer rectangular prism and inner cube with first-class `prism` objects.
+- Reason: `prism` is the existing supported solid primitive and owns hidden-edge rendering.
+- Decision: Hide helper labels/points for the inner cube while keeping the outer `A` through `H` labels visible.
+- Reason: The user asked for a small inner solid, not a second labeled vertex set; visible labels should stay readable.
+- Decision: Keep the fix in local fallback rather than changing provider prompts.
+- Reason: The screenshot failure happens when the API path is unavailable or falls back locally.
+
+## Verification
+
+- Completed:
+  - `node --check js\ai\AIService.js`; passed.
+  - `node --test tests\ai-flow.test.js`; passed with 41 tests.
+  - `npm.cmd test`; passed with 171 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - Local Playwright smoke on `http://127.0.0.1:4195/`; exact prompt created 16 points and 2 prisms with no failure text, console issues, or failed requests.
+  - `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_Dtrvq375pkY1kES3g1626ESmr2vG` created.
+  - `npx.cmd vercel inspect https://mathgraph-q5vqpqww0-beomjinsouths-projects.vercel.app`; target `production`, status `Ready`, primary alias attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Production Playwright smoke on `https://mathgraph-five.vercel.app/`; exact prompt created 16 points and 2 prisms, visible outer labels `A` through `H`, no failure text, console issues, or failed requests.
+
+## Handoff
+
+- What changed:
+  - Added deterministic solid fallback generation for rectangular-prism/cube prompts.
+  - Added nested-solid handling for a small cube inside a labeled outer rectangular prism.
+  - Updated AI reference/manual notes and focused regression tests.
+- What remains:
+  - Curved solids still require future first-class primitives or explicit approximation.
+
+---
+
+## Status
+
 - Task: Axis arrow reference-style refinement
 - State: Done
 - Last updated: 2026-06-07

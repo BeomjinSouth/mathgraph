@@ -1,5 +1,50 @@
 # Progress Log
 
+## 2026-06-15
+
+### Local solid fallback for nested rectangular prism request
+
+#### Work completed
+
+- Diagnosed why the AI chat returned `요청을 이해하지 못했습니다` for `직육면체 ABCD EFGH 내부에 정육면체가 작게 있는거 그려줘`.
+- Added deterministic local fallback support for rectangular-prism/cube wording in `AIService`.
+- Added nested-solid handling so an outer labeled rectangular prism plus a smaller inner cube are created as first-class `prism` objects.
+- Added focused tests for the exact Korean prompt and a single labeled rectangular prism prompt.
+- Updated `.agent/local_solid_fallback.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, and `docs/ai-reference.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+- Workflow skills: `.agents/skills/mathgraph-drawing/SKILL.md`, Playwright CLI skill, and Vercel deployments/verification guidance.
+- Runtime/reference files: `js/ai/AIService.js`, `tests/ai-flow.test.js`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, and `docs/ai-reference.md`.
+
+#### Verification
+
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node -e` JSON parse check for `.agents/skills/mathgraph-drawing/references/feature-manual.json`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 41 tests.
+- Ran `npm.cmd test`; passed with 171 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Local Playwright smoke on `http://127.0.0.1:4195/` confirmed the exact prompt creates 16 points and 2 prisms with no fallback failure text, console issues, or failed requests.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_Dtrvq375pkY1kES3g1626ESmr2vG` was created at `https://mathgraph-q5vqpqww0-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-q5vqpqww0-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Playwright production smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, the exact prompt creates 16 points and 2 prisms, visible outer labels are `A` through `H`, and there are 0 console issues / 0 failed requests.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-q5vqpqww0-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_Dtrvq375pkY1kES3g1626ESmr2vG`.
+- No Vercel environment variables or project settings were changed.
+
+#### Git / GitHub
+
+- This entry is included in the local solid fallback commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+- Existing untracked `.agent/ai_reference_validation_retry.md` was left untouched.
+
 ## 2026-06-07
 
 ### Axis arrow reference-style refinement

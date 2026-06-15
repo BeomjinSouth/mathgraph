@@ -623,6 +623,12 @@ For complex live OpenAI drawing prompts, include the following context when it m
 
 ## 9. Maintenance Notes
 
+### 2026-06-15 Local Solid Fallback
+
+- Deterministic local fallback now handles rectangular-prism/cube prompts such as `직육면체 ABCD EFGH 그려줘`.
+- Nested solid prompts such as `직육면체 ABCD EFGH 내부에 정육면체가 작게 있는거 그려줘` create an outer `prism` plus a smaller inner `prism` with hidden helper points.
+- This remains within current first-class solid support: cubes and rectangular prisms are represented as `prism`; curved solids are still future/approximation work.
+
 ### 2026-04-13 Recovery And Fallback Revalidation
 
 - `js/ai/AIService.js` was restored to a parse-valid baseline after a broken intermediate edit and reconnected to the shared `parseAIJSONPayload()` helper.

@@ -956,6 +956,56 @@ test('legacy fallback strips graph suffix from function expressions', () => {
     assert.equal(result.json.operations[0].expression, 'x^2');
 });
 
+test('local fallback draws nested rectangular prism and small cube prompt', () => {
+    const service = createAIService();
+    const result = service.fallbackProcess('직육면체 ABCD EFGH 내부에 정육면체가 작게 있는거 그려줘');
+
+    assert.equal(result.success, true);
+
+    const validation = new SchemaValidator().validate(result.json);
+    assert.equal(validation.valid, true, validation.errors.join('\n'));
+
+    const prismOps = result.json.operations.filter(operation => operation.type === 'prism');
+    const pointOps = result.json.operations.filter(operation => operation.type === 'point');
+    assert.equal(prismOps.length, 2);
+    assert.equal(pointOps.length, 16);
+    assert.deepEqual(
+        pointOps.slice(0, 8).map(operation => operation.label),
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    );
+
+    const outerBounds = boundsForIds(result.json.operations, [
+        ...prismOps[0].baseVertexIds,
+        ...prismOps[0].topVertexIds
+    ]);
+    const innerBounds = boundsForIds(result.json.operations, [
+        ...prismOps[1].baseVertexIds,
+        ...prismOps[1].topVertexIds
+    ]);
+
+    assert.ok(innerBounds.minX > outerBounds.minX);
+    assert.ok(innerBounds.maxX < outerBounds.maxX);
+    assert.ok(innerBounds.minY > outerBounds.minY);
+    assert.ok(innerBounds.maxY < outerBounds.maxY);
+    assert.ok((innerBounds.maxX - innerBounds.minX) < (outerBounds.maxX - outerBounds.minX) / 2);
+});
+
+test('deterministic fallback draws a labeled rectangular prism', () => {
+    const service = createAIService();
+    const result = service.fallbackProcessDeterministic('직육면체 ABCD EFGH 그려줘', { objects: [] });
+
+    assert.equal(result.success, true);
+
+    const prism = result.json.operations.find(operation => operation.type === 'prism');
+    assert.ok(prism);
+    assert.deepEqual(prism.baseVertexIds, ['outer_box_1', 'outer_box_2', 'outer_box_3', 'outer_box_4']);
+    assert.deepEqual(prism.topVertexIds, ['outer_box_5', 'outer_box_6', 'outer_box_7', 'outer_box_8']);
+    assert.deepEqual(
+        result.json.operations.filter(operation => operation.type === 'point').map(operation => operation.label),
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    );
+});
+
 test('processCommand uses local fallback when no API key is configured', async () => {
     const service = createAIService();
     const result = await service.processCommand('y = x^2 graph', { objects: [] });

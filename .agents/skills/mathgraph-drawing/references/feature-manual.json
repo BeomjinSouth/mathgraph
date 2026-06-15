@@ -503,6 +503,7 @@
       "midpoint from coordinates or existing named endpoints",
       "function tangent at x=value",
       "basic function expressions",
+      "rectangular prism/cube prompts, including a nested small cube inside an outer rectangular prism",
       "circle center/radius and circle equations",
       "linear equations into lines"
     ],
@@ -512,7 +513,7 @@
       "basic circle",
       "square/quadrilateral",
       "single point coordinate",
-      "regular prism and pyramid defaults"
+      "regular prism and pyramid defaults for non-rectangular solids"
     ]
   },
   "interactionAndEditing": {
