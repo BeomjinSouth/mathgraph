@@ -2,6 +2,42 @@
 
 ## 2026-06-16
 
+### Production OpenAI environment setup
+
+#### Work completed
+
+- Added the provided OpenAI project API key to Vercel as encrypted Production `OPENAI_API_KEY`.
+- Reset `MATHGRAPH_LOGIN_SECRET` to a separate generated random encrypted Production value so login-token signing is independent from the OpenAI key.
+- Redeployed Production after environment changes.
+- Updated `AGENTS.md` and `.agent/landing_login_api_proxy.md` to reflect the current Vercel env state.
+
+#### Verification
+
+- Ran `npx.cmd vercel env ls`; confirmed encrypted Production values for `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET`.
+- Ran `npm.cmd test`; passed with 176 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed before documentation edits.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_52qVdoMroUm7vBGMmkQMdE2qRDhm` was created at `https://mathgraph-20uo4h79r-beomjinsouths-projects.vercel.app`.
+- Reset `MATHGRAPH_LOGIN_SECRET` and redeployed again; latest Ready production deployment inspected through the alias is `dpl_ipoA54hhFpYHjCL8cF2skduuKiBg` at `https://mathgraph-nimib0ygm-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-five.vercel.app`; target was `production`, status was `Ready`, the primary alias was attached, and `api/login` plus `api/openai-responses` functions were present.
+- Ran `vercel curl` against the latest deployment for `api/login` and `api/openai-responses`; owner login succeeded and the OpenAI proxy returned output `OK`.
+- External web fetch could open `https://mathgraph-five.vercel.app/`.
+- Direct `curl.exe` / Node / PowerShell requests from the local execution environment to `https://mathgraph-five.vercel.app/` timed out after the env redeploy, but Vercel inspect and external fetch resolved the alias. Direct deployment URLs remain Vercel-protected.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Latest Ready production deployment URL: `https://mathgraph-nimib0ygm-beomjinsouths-projects.vercel.app`.
+- Latest Ready deployment ID: `dpl_ipoA54hhFpYHjCL8cF2skduuKiBg`.
+- Production env configured: `OPENAI_API_KEY`, `MATHGRAPH_LOGIN_SECRET`.
+- Preview branch env setup was blocked because the Vercel project has no connected Git repository.
+- Development Sensitive env setup was skipped because Vercel does not allow Sensitive variables in Development.
+
+#### Git / GitHub
+
+- This entry is included in the environment-status docs commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ### Landing login and default OpenAI proxy
 
 #### Work completed

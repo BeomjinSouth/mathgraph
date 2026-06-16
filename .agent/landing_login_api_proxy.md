@@ -95,7 +95,15 @@
 
 ## Deployment Notes
 
-- `npx.cmd vercel env ls` currently reports no Vercel environment variables for `beomjinsouths-projects/mathgraph`.
-- Owner mode is deployed-ready, but live default OpenAI calls require adding `OPENAI_API_KEY` to the Vercel project.
+- `npx.cmd vercel env ls` currently reports encrypted Production values for `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET`.
+- Owner mode default OpenAI calls are now enabled on Production.
 - Production alias: `https://mathgraph-five.vercel.app`.
 - Production deployment URL: `https://mathgraph-qsc02lwab-beomjinsouths-projects.vercel.app`.
+
+## 2026-06-16 Environment Update
+
+- Added `OPENAI_API_KEY` as an encrypted Production Vercel environment variable.
+- Added `MATHGRAPH_LOGIN_SECRET` as an encrypted Production Vercel environment variable with a separate generated random value.
+- Redeployed production after the env changes; latest Ready deployment inspected through the production alias is `dpl_ipoA54hhFpYHjCL8cF2skduuKiBg` at `https://mathgraph-nimib0ygm-beomjinsouths-projects.vercel.app`.
+- Verified owner login and `/api/openai-responses` through `vercel curl`; the proxy returned an OpenAI response with output `OK`.
+- Preview branch env setup was blocked because the Vercel project has no connected Git repository. Development sensitive env setup was skipped because Vercel does not allow Sensitive variables in Development.

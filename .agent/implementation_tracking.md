@@ -55,7 +55,8 @@
 
 - Current status:
   - Login landing, owner proxy routing, guest BYOK mode, local verification, production deployment, and production smoke are complete.
-  - `npx.cmd vercel env ls` reports no Vercel environment variables; live owner OpenAI calls require `OPENAI_API_KEY` to be added in Vercel.
+  - `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` are now configured as encrypted Production Vercel environment variables.
+  - Owner login plus `/api/openai-responses` was verified through `vercel curl`; the proxy returned an OpenAI `OK` response.
 
 ---
 

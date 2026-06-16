@@ -50,7 +50,7 @@
 - Added `api/login.js` and `api/openai-responses.js` so the owner path can use a server-side OpenAI key without exposing it to the browser.
 - Added local session mode handling in `js/main.js`; owner mode locks OpenAI provider settings and hides the API-key field, while guest mode keeps direct key entry available.
 - Added `AIService` transport selection so owner OpenAI text/image calls use the same-origin proxy and guest calls preserve the existing BYOK path.
-- Current Vercel environment check found no configured variables; live owner OpenAI calls require adding `OPENAI_API_KEY` to the Vercel project.
+- Current Vercel Production environment has encrypted `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` values, so live owner OpenAI calls are enabled on Production.
 - Production deployment `dpl_9DFsZijPBTySUu7MY1sdYJ9KdfBR` is `Ready` and aliased to `https://mathgraph-five.vercel.app`.
 
 ---
