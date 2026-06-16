@@ -45,6 +45,7 @@ import { SchemaValidator } from './ai/SchemaValidator.js';
 import { PatchApplier } from './ai/PatchApplier.js';
 import {
     AIService,
+    DEFAULT_OPENAI_MODEL,
     OPENAI_MODEL_OPTIONS,
     GEMINI_MODEL_OPTIONS,
     AI_IMAGE_PREPROCESS_JPEG_QUALITY,
@@ -81,6 +82,8 @@ class GraphAApp {
         this.patchApplier = new PatchApplier(this.objectManager, this.historyManager);
         this.aiService = new AIService();
         this.lastImageReference = null;
+        this.authSession = this.loadAuthSession();
+        this.applyAuthSession(this.authSession, { persist: false, syncUi: false });
 
         // Mk.2: UI 모듈 초기화
         this.algebraInput = new AlgebraInput(this.objectManager);
@@ -113,6 +116,186 @@ class GraphAApp {
     syncCanvasViewSettings() {
         this.canvas.showAxisNumbers = this.settingsManager.showAxisNumbers;
         this.canvas.axisNumberInterval = this.settingsManager.axisNumberInterval;
+    }
+
+    getAuthSessionStorageKey() {
+        return 'graphA_auth_session';
+    }
+
+    loadAuthSession() {
+        try {
+            const saved = sessionStorage.getItem(this.getAuthSessionStorageKey());
+            if (!saved) return null;
+
+            const session = JSON.parse(saved);
+            if (session?.mode === 'owner') {
+                const expiresAt = Number(session.expiresAt) || 0;
+                if (!session.token || expiresAt <= Date.now()) {
+                    sessionStorage.removeItem(this.getAuthSessionStorageKey());
+                    return null;
+                }
+                return {
+                    mode: 'owner',
+                    displayName: session.displayName || '박범진',
+                    token: session.token,
+                    expiresAt
+                };
+            }
+
+            if (session?.mode === 'guest') {
+                return { mode: 'guest', displayName: '게스트' };
+            }
+        } catch (error) {
+            console.warn('Auth session load failed:', error);
+        }
+
+        return null;
+    }
+
+    saveAuthSession(session) {
+        if (!session) {
+            sessionStorage.removeItem(this.getAuthSessionStorageKey());
+            return;
+        }
+
+        sessionStorage.setItem(this.getAuthSessionStorageKey(), JSON.stringify(session));
+    }
+
+    applyAuthSession(session, options = {}) {
+        const { persist = true, syncUi = true } = options;
+        this.authSession = session || null;
+
+        if (persist) {
+            this.saveAuthSession(this.authSession);
+        }
+
+        if (this.authSession?.mode === 'owner') {
+            this.aiService.setAuthSession({
+                mode: 'owner',
+                token: this.authSession.token,
+                expiresAt: this.authSession.expiresAt
+            });
+        } else {
+            this.aiService.setAuthSession({ mode: 'guest' });
+        }
+
+        if (syncUi) {
+            this.syncAuthModeUI();
+            this.syncAISettingsControls();
+        }
+    }
+
+    isOwnerMode() {
+        return this.authSession?.mode === 'owner'
+            && this.aiService.config.authMode === 'owner'
+            && Boolean(this.aiService.config.proxyToken);
+    }
+
+    syncAuthModeUI() {
+        const landing = document.getElementById('authLanding');
+        const badge = document.getElementById('authModeBadge');
+        const isAuthenticated = Boolean(this.authSession);
+
+        document.body.classList.toggle('auth-locked', !isAuthenticated);
+        landing?.classList.toggle('hidden', isAuthenticated);
+
+        if (badge) {
+            if (this.isOwnerMode()) {
+                badge.textContent = '박범진 · 기본 API';
+                badge.className = 'auth-mode-badge owner';
+            } else if (this.authSession?.mode === 'guest') {
+                badge.textContent = '게스트 · 직접 API';
+                badge.className = 'auth-mode-badge guest';
+            } else {
+                badge.textContent = '로그인 필요';
+                badge.className = 'auth-mode-badge';
+            }
+        }
+
+        if (!isAuthenticated) {
+            requestAnimationFrame(() => document.getElementById('ownerNameInput')?.focus());
+        }
+    }
+
+    setAuthMessage(message = '', type = 'info') {
+        const messageEl = document.getElementById('authLoginMessage');
+        if (!messageEl) return;
+        messageEl.textContent = message;
+        messageEl.dataset.type = type;
+    }
+
+    async loginAsOwner(name) {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch {
+            payload = null;
+        }
+
+        if (!response.ok) {
+            throw new Error(payload?.error || '로그인 요청에 실패했습니다.');
+        }
+
+        if (!payload?.token || !payload?.expiresAt) {
+            throw new Error('로그인 토큰을 받지 못했습니다.');
+        }
+
+        return {
+            mode: 'owner',
+            displayName: payload.displayName || '박범진',
+            token: payload.token,
+            expiresAt: payload.expiresAt
+        };
+    }
+
+    setupAuthLanding() {
+        const landing = document.getElementById('authLanding');
+        const form = document.getElementById('ownerLoginForm');
+        const input = document.getElementById('ownerNameInput');
+        const guestButton = document.getElementById('guestLoginButton');
+        const ownerButton = document.getElementById('ownerLoginButton');
+
+        if (!landing || !form || !input || !guestButton) {
+            return;
+        }
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const name = input.value.trim();
+            if (!name) {
+                this.setAuthMessage('이름을 입력하세요.', 'warning');
+                input.focus();
+                return;
+            }
+
+            ownerButton.disabled = true;
+            this.setAuthMessage('로그인 확인 중...', 'info');
+
+            try {
+                const session = await this.loginAsOwner(name);
+                this.applyAuthSession(session);
+                this.setAuthMessage('');
+                this.showToast('박범진 모드로 시작합니다. OpenAI 기본 API를 사용합니다.', 'success');
+            } catch (error) {
+                this.setAuthMessage(error?.message || '로그인에 실패했습니다.', 'error');
+            } finally {
+                ownerButton.disabled = false;
+            }
+        });
+
+        guestButton.addEventListener('click', () => {
+            this.applyAuthSession({ mode: 'guest', displayName: '게스트' });
+            this.setAuthMessage('');
+            this.showToast('게스트 모드입니다. AI 설정에서 API 키를 직접 입력하세요.', 'info');
+        });
+
+        this.syncAuthModeUI();
     }
 
     isPointLikeObject(obj) {
@@ -659,6 +842,7 @@ class GraphAApp {
 
         // 호환을 위해 모달도 유지합니다. HTML에서 제거되면 이 함수는 조용히 무시됩니다.
         this.setupAISettingsModal();
+        this.setupAuthLanding();
 
         // Mk.4: 수직선 모달
         this.setupNumberLineModal();
@@ -2801,6 +2985,100 @@ class GraphAApp {
     /**
      * AI 설정 모달 설정
      */
+    populateAIModelOptions(provider, modelSelect) {
+        if (!modelSelect) return;
+
+        modelSelect.innerHTML = '';
+        if (provider === 'openai') {
+            OPENAI_MODEL_OPTIONS.forEach(({ label, value }) => {
+                modelSelect.add(new Option(label, value));
+            });
+        } else if (provider === 'gemini') {
+            GEMINI_MODEL_OPTIONS.forEach(({ label, value }) => {
+                modelSelect.add(new Option(label, value));
+            });
+        } else {
+            modelSelect.add(new Option('로컬 (패턴 매칭)', 'local'));
+        }
+    }
+
+    updateAISettingsAuthState({ providerSelect, apiKeyInput, modelSelect, apiKeyGroup, authHint } = {}) {
+        const ownerMode = this.isOwnerMode();
+        const provider = ownerMode ? 'openai' : (providerSelect?.value || this.aiService.config.provider || 'local');
+
+        if (providerSelect) {
+            providerSelect.value = provider;
+            providerSelect.disabled = ownerMode;
+        }
+
+        this.populateAIModelOptions(provider, modelSelect);
+        if (modelSelect) {
+            const model = ownerMode
+                ? (this.aiService.config.model || DEFAULT_OPENAI_MODEL)
+                : (this.aiService.config.model || modelSelect.value);
+            modelSelect.value = model;
+            if (!modelSelect.value && modelSelect.options.length > 0) {
+                modelSelect.selectedIndex = 0;
+            }
+        }
+
+        if (apiKeyInput) {
+            apiKeyInput.value = ownerMode ? '' : (this.aiService.config.apiKey || '');
+            apiKeyInput.disabled = ownerMode;
+        }
+
+        if (apiKeyGroup) {
+            apiKeyGroup.style.display = (ownerMode || provider === 'local') ? 'none' : 'block';
+        }
+
+        if (authHint) {
+            authHint.textContent = ownerMode
+                ? '박범진 모드: OpenAI는 서버 기본 API를 사용합니다.'
+                : '게스트 모드: OpenAI/Gemini 사용 시 API 키를 직접 입력하세요.';
+        }
+    }
+
+    syncAISettingsControls() {
+        this.updateAISettingsAuthState({
+            providerSelect: document.getElementById('aiProviderPanel'),
+            apiKeyInput: document.getElementById('aiApiKeyPanel'),
+            modelSelect: document.getElementById('aiModelPanel'),
+            apiKeyGroup: document.getElementById('apiKeyGroupPanel'),
+            authHint: document.getElementById('aiAuthHintPanel')
+        });
+
+        this.updateAISettingsAuthState({
+            providerSelect: document.getElementById('aiProvider'),
+            apiKeyInput: document.getElementById('aiApiKey'),
+            modelSelect: document.getElementById('aiModel'),
+            apiKeyGroup: document.getElementById('apiKeyGroup'),
+            authHint: document.getElementById('aiAuthHint')
+        });
+    }
+
+    saveAISettingsFromControls({ providerSelect, apiKeyInput, modelSelect } = {}) {
+        const ownerMode = this.isOwnerMode();
+        const provider = ownerMode ? 'openai' : (providerSelect?.value || 'local');
+        const apiKey = ownerMode ? '' : (apiKeyInput?.value || '');
+        const model = modelSelect?.value || (provider === 'openai' ? DEFAULT_OPENAI_MODEL : provider);
+
+        if (ownerMode) {
+            this.aiService.config.provider = 'openai';
+            this.aiService.config.apiKey = '';
+            this.aiService.config.model = model || DEFAULT_OPENAI_MODEL;
+            this.aiService.config.authMode = 'owner';
+            this.aiService.config.save();
+        } else {
+            this.aiService.setProvider(provider);
+            this.aiService.setApiKey(apiKey);
+            this.aiService.config.model = model;
+            this.aiService.config.authMode = 'guest';
+            this.aiService.config.save();
+        }
+
+        this.syncAISettingsControls();
+    }
+
     setupAISettingsModal() {
         const modal = document.getElementById('aiSettingsModal');
         const providerSelect = document.getElementById('aiProvider');
@@ -2838,28 +3116,13 @@ class GraphAApp {
 
         // 프로바이더 변경 시 모델 옵션 업데이트
         providerSelect?.addEventListener('change', () => {
-            const provider = providerSelect.value;
-
-            // API 키 그룹 표시/숨김
-            if (apiKeyGroup) {
-                apiKeyGroup.style.display = provider === 'local' ? 'none' : 'block';
-            }
-
-            // 모델 옵션 업데이트
-            if (modelSelect) {
-                modelSelect.innerHTML = '';
-                if (provider === 'openai') {
-                    OPENAI_MODEL_OPTIONS.forEach(({ label, value }) => {
-                        modelSelect.add(new Option(label, value));
-                    });
-                } else if (provider === 'gemini') {
-                    GEMINI_MODEL_OPTIONS.forEach(({ label, value }) => {
-                        modelSelect.add(new Option(label, value));
-                    });
-                } else {
-                    modelSelect.add(new Option('로컬 (패턴 매칭)', 'local'));
-                }
-            }
+            this.updateAISettingsAuthState({
+                providerSelect,
+                apiKeyInput,
+                modelSelect,
+                apiKeyGroup,
+                authHint: document.getElementById('aiAuthHint')
+            });
         });
 
         // API 키 보기/숨기기 토글
@@ -2873,17 +3136,8 @@ class GraphAApp {
 
         // 저장 버튼
         saveBtn?.addEventListener('click', () => {
-            const provider = providerSelect?.value || 'local';
-            const apiKey = apiKeyInput?.value || '';
-            const model = modelSelect?.value || '';
-
-            // AIService에 설정 적용
-            this.aiService.setProvider(provider);
-            this.aiService.setApiKey(apiKey);
-            this.aiService.config.model = model;
-            this.aiService.config.save();
-
-            modal.classList.add('hidden');
+            this.saveAISettingsFromControls({ providerSelect, apiKeyInput, modelSelect });
+            modal?.classList.add('hidden');
             this.showToast('AI 설정이 저장되었습니다.', 'success');
         });
     }
@@ -2908,26 +3162,13 @@ class GraphAApp {
 
         // 프로바이더 변경 시 모델 옵션 업데이트
         providerSelect.addEventListener('change', () => {
-            const provider = providerSelect.value;
-
-            // API 키 그룹 표시와 숨김
-            if (apiKeyGroup) {
-                apiKeyGroup.style.display = provider === 'local' ? 'none' : 'block';
-            }
-
-            // 모델 옵션 업데이트
-            modelSelect.innerHTML = '';
-            if (provider === 'openai') {
-                OPENAI_MODEL_OPTIONS.forEach(({ label, value }) => {
-                    modelSelect.add(new Option(label, value));
-                });
-            } else if (provider === 'gemini') {
-                GEMINI_MODEL_OPTIONS.forEach(({ label, value }) => {
-                    modelSelect.add(new Option(label, value));
-                });
-            } else {
-                modelSelect.add(new Option('로컬 (패턴 매칭)', 'local'));
-            }
+            this.updateAISettingsAuthState({
+                providerSelect,
+                apiKeyInput,
+                modelSelect,
+                apiKeyGroup,
+                authHint: document.getElementById('aiAuthHintPanel')
+            });
         });
 
         // API 키 보기 토글
@@ -2939,15 +3180,7 @@ class GraphAApp {
 
         // 저장
         saveBtn.addEventListener('click', () => {
-            const provider = providerSelect.value || 'local';
-            const apiKey = apiKeyInput.value || '';
-            const model = modelSelect.value || '';
-
-            this.aiService.setProvider(provider);
-            this.aiService.setApiKey(apiKey);
-            this.aiService.config.model = model;
-            this.aiService.config.save();
-
+            this.saveAISettingsFromControls({ providerSelect, apiKeyInput, modelSelect });
             this.showToast('AI 설정이 저장되었습니다.', 'success');
         });
 
@@ -2962,6 +3195,7 @@ class GraphAApp {
         if (apiKeyGroup) {
             apiKeyGroup.style.display = this.aiService.config.provider === 'local' ? 'none' : 'block';
         }
+        this.syncAISettingsControls();
     }
 
     /**
@@ -2990,6 +3224,7 @@ class GraphAApp {
             apiKeyGroup.style.display = this.aiService.config.provider === 'local' ? 'none' : 'block';
         }
 
+        this.syncAISettingsControls();
         modal?.classList.remove('hidden');
     }
 

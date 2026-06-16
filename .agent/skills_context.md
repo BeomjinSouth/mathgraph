@@ -2,6 +2,44 @@
 
 ## Relevant Skills
 
+- Skill: Frontend App Builder
+- Why it matters:
+  - The request adds a first-load login screen and should follow the generated concept before code.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - Owner mode changes how OpenAI Responses API calls are authenticated and routed.
+- Skill: Playwright / Browser
+- Why it matters:
+  - The landing gate, guest path, settings visibility, and app shell need rendered browser verification.
+
+## Current Task Notes
+
+- User request:
+  - Add a landing login screen.
+  - If the user enters `박범진`, use OpenAI API by default without manual key entry.
+  - Provide a `게스트로 진행` button; guest mode requires direct API key entry.
+- Design target:
+  - Generated 16:9 UI concept at `C:\Users\pbj95\.codex\generated_images\019ecdfa-bb79-75a1-b4bb-6c25c7bb9c7d\ig_069803515c5bfc08016a30a320d4188191a9dad7573f1f8a5f.png`.
+- Implementation direction:
+  - Add an overlay-style landing screen in front of the current editor.
+  - Store only a local session mode/token, never an API key.
+  - Add Vercel API endpoints:
+    - `api/login.js` signs owner-session tokens.
+    - `api/openai-responses.js` validates owner tokens and forwards to OpenAI using server `OPENAI_API_KEY`.
+  - Owner OpenAI calls use proxy mode; guest OpenAI/Gemini calls use existing BYOK direct mode.
+- Verification target:
+  - Syntax checks, focused AI flow tests, full tests, Vercel build, whitespace check, browser smoke, production deploy/inspect/HTTP/runtime smoke.
+- Completed local result:
+  - Generated concept was visually compared against the implemented landing screen.
+  - Owner mode hides direct API-key entry, locks OpenAI provider selection, and routes OpenAI calls through `/api/openai-responses`.
+  - Guest mode enters the editor with provider/API-key controls enabled for direct BYOK use.
+  - Local smoke found 0 console errors and 0 failed requests across initial, owner, guest, and 390px mobile layouts.
+  - Vercel currently has no environment variables configured; owner default OpenAI calls require adding `OPENAI_API_KEY`.
+
+---
+
+## Relevant Skills
+
 - Skill: MathGraph Drawing
 - Why it matters:
   - The failing production prompts are Korean natural-language CSAT-style drawing requests that must compile to valid GraphA `operations[]`.

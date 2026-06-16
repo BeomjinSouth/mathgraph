@@ -2,6 +2,61 @@
 
 ## Summary
 
+- Task: Landing login and default OpenAI proxy
+- Owner: Codex
+- Date: 2026-06-16
+- Related files:
+  - `index.html`
+  - `css/styles.css`
+  - `js/main.js`
+  - `js/ai/AIService.js`
+  - `api/login.js`
+  - `api/openai-responses.js`
+  - `.agent/landing_login_api_proxy.md`
+  - `docs/ai-reference.md`
+
+## Problem
+
+- The app currently opens directly into the editor and requires API-key entry for provider-backed AI use.
+- The user wants a first-run login landing screen where entering `박범진` enables OpenAI usage without direct key entry.
+- Guest users should still be able to continue, but they must provide their own API key for OpenAI/Gemini.
+- A default API key cannot be embedded in the static frontend without exposing it.
+
+## Goals
+
+- Add a polished first-load login landing screen.
+- Add an owner session mode for `박범진`.
+- Route owner OpenAI requests through a same-origin Vercel API proxy that reads `OPENAI_API_KEY` server-side.
+- Preserve existing guest BYOK settings and local deterministic fallback.
+
+## Non-Goals
+
+- Do not store or hardcode an OpenAI API key in the repository.
+- Do not add a full account system, password flow, database, or billing controls in this pass.
+- Do not change GraphA operation schemas or drawing semantics.
+- Do not change Gemini behavior beyond keeping it BYOK for guests.
+
+## Acceptance Criteria
+
+- [x] First load shows a landing login before the editor is available.
+- [x] `박범진` login starts owner mode with OpenAI default proxy usage.
+- [x] `게스트로 진행` starts guest mode and keeps direct API-key input required.
+- [x] OpenAI text and image calls in owner mode use `/api/openai-responses`.
+- [x] Missing server `OPENAI_API_KEY` produces a clear error instead of falling back silently.
+- [x] Focused tests, full tests/build, browser smoke, deploy, commit, and push are recorded.
+
+## Implementation Notes
+
+- Added `api/login.js` and `api/openai-responses.js` so the owner path can use a server-side OpenAI key without exposing it to the browser.
+- Added local session mode handling in `js/main.js`; owner mode locks OpenAI provider settings and hides the API-key field, while guest mode keeps direct key entry available.
+- Added `AIService` transport selection so owner OpenAI text/image calls use the same-origin proxy and guest calls preserve the existing BYOK path.
+- Current Vercel environment check found no configured variables; live owner OpenAI calls require adding `OPENAI_API_KEY` to the Vercel project.
+- Production deployment `dpl_9DFsZijPBTySUu7MY1sdYJ9KdfBR` is `Ready` and aliased to `https://mathgraph-five.vercel.app`.
+
+---
+
+## Summary
+
 - Task: Vercel direct prompt fallback for prior CSAT prompts
 - Owner: Codex
 - Date: 2026-06-16

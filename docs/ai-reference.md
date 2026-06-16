@@ -53,6 +53,15 @@ Current request defaults:
 
 The strict schema represents optional graph fields as nullable values because Structured Outputs requires all schema fields to be required. The app strips `null` fields before running `SchemaValidator` and `PatchApplier`.
 
+## 1.1.0 OpenAI Authentication Modes
+
+The first-load landing screen chooses the OpenAI authentication path for the browser session:
+
+- Owner mode starts when the name input is `박범진`. `api/login.js` issues a short-lived signed token, and OpenAI text/image requests are sent to the same-origin `/api/openai-responses` endpoint. That endpoint validates the token, reads `OPENAI_API_KEY` server-side, adds the OpenAI `Authorization` header, and forwards the existing Responses API request body with `store:false`.
+- Guest mode starts from `게스트로 진행`. Guests keep the existing BYOK path: OpenAI and Gemini require a directly entered API key in AI settings, while local deterministic fallback still works without a key.
+- No OpenAI API key should be stored in client JavaScript, HTML, localStorage/sessionStorage, tests, or repository files.
+- If the server `OPENAI_API_KEY` is missing, owner-mode proxy calls fail with a clear setup error so deployment configuration is visible.
+
 ## 1.1.1 Problem Situation Graphing
 
 Whole problem statements pasted into the AI chat are treated as diagram-generation input, not as answer requests.

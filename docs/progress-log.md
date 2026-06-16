@@ -2,6 +2,60 @@
 
 ## 2026-06-16
 
+### Landing login and default OpenAI proxy
+
+#### Work completed
+
+- Added a first-load login landing overlay matching the generated MathGraph concept direction.
+- Added owner mode for `박범진`; this mode locks the provider to OpenAI, hides direct API-key input, and routes OpenAI text/image calls through `/api/openai-responses`.
+- Added guest mode through `게스트로 진행`; this mode keeps direct OpenAI/Gemini API-key entry available and preserves local fallback without a key.
+- Added `api/login.js` for signed owner-session tokens and `api/openai-responses.js` for server-side OpenAI Responses API forwarding.
+- Updated `AIService` transport selection and added focused owner-proxy routing coverage.
+- Updated `README.md`, `AGENTS.md`, `docs/ai-reference.md`, `.agent/landing_login_api_proxy.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
+- Official docs:
+  - `https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety`
+  - `https://developers.openai.com/api/docs/guides/production-best-practices`
+  - `https://developers.openai.com/api/reference/overview/`
+  - `https://vercel.com/docs/environment-variables`
+  - `https://vercel.com/docs/functions`
+  - `https://vercel.com/docs/functions/runtimes/node-js/advanced-node-configuration`
+
+#### Verification
+
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --check api\login.js`; passed.
+- Ran `node --check api\openai-responses.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 46 tests.
+- Ran `npm.cmd test`; passed with 176 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- In-app Browser smoke on `http://127.0.0.1:4196/` confirmed initial landing and owner-mode UI state.
+- Isolated Playwright smoke on `http://127.0.0.1:4196/` confirmed initial, owner, guest, and 390px mobile layouts with 0 console errors and 0 failed requests.
+- Local owner proxy check confirmed missing `OPENAI_API_KEY` returns a clear 500 setup error.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_9DFsZijPBTySUu7MY1sdYJ9KdfBR` was created at `https://mathgraph-qsc02lwab-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-qsc02lwab-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, the primary alias was attached, and `api/login` plus `api/openai-responses` functions were present.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Production Playwright smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, initial landing, owner mode, guest mode, 0 console errors, and 0 failed requests.
+- Production owner proxy check confirmed the documented 500 setup error while Vercel has no `OPENAI_API_KEY`.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-qsc02lwab-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_9DFsZijPBTySUu7MY1sdYJ9KdfBR`.
+- `npx.cmd vercel env ls` reports no Vercel environment variables for `beomjinsouths-projects/mathgraph`.
+- Owner mode is deployed-ready, but live default OpenAI calls require adding `OPENAI_API_KEY` to the Vercel project.
+
+#### Git / GitHub
+
+- This entry is included in the implementation/docs commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ### Vercel direct prompt fallback for prior CSAT prompts
 
 #### Work completed

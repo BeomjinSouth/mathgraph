@@ -2,6 +2,65 @@
 
 ## Status
 
+- Task: Landing login and default OpenAI proxy
+- State: Done
+- Last updated: 2026-06-16
+
+## Plan
+
+1. Record the login/proxy behavior change before implementation.
+2. Add first-load login state and a polished landing overlay.
+3. Add Vercel API proxy endpoints for owner OpenAI calls.
+4. Route `AIService` OpenAI text/image requests through the proxy in owner mode while preserving guest BYOK.
+5. Add focused tests, update docs, verify in browser, deploy, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Use a same-origin Vercel API proxy for the `박범진` flow.
+- Reason: The app is a public static frontend and must not expose a default OpenAI API key in shipped client assets.
+- Decision: Keep guest mode on the existing BYOK flow.
+- Reason: The user explicitly requested direct API entry for guest use, and this preserves the current provider configuration surface.
+- Decision: Treat name login as a convenience gate rather than strong authentication.
+- Reason: The requested input is only a name; a true private/public boundary would need a real auth secret or account system.
+
+## Verification
+
+- Completed:
+  - `node --check js\ai\AIService.js`; passed.
+  - `node --check js\main.js`; passed.
+  - `node --check api\login.js`; passed.
+  - `node --check api\openai-responses.js`; passed.
+  - `node --test tests\ai-flow.test.js`; passed with 46 tests.
+  - `npm.cmd test`; passed with 176 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - In-app Browser owner-flow smoke on `http://127.0.0.1:4196/`; passed.
+  - Isolated Playwright initial/owner/guest/mobile smoke on `http://127.0.0.1:4196/`; passed with 0 console errors and 0 failed requests.
+  - Local owner proxy missing-env check; returned a clear 500 setup error.
+  - `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_9DFsZijPBTySUu7MY1sdYJ9KdfBR` created at `https://mathgraph-qsc02lwab-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-qsc02lwab-beomjinsouths-projects.vercel.app`; target `production`, status `Ready`, primary alias attached, and `api/login` plus `api/openai-responses` functions present.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Production Playwright smoke on `https://mathgraph-five.vercel.app/`; initial, owner, and guest flows passed with `window.app`, 0 console errors, and 0 failed requests.
+  - Production owner proxy missing-env check; returned a clear 500 setup error because Vercel has no `OPENAI_API_KEY`.
+
+## Handoff
+
+- Current status:
+  - Login landing, owner proxy routing, guest BYOK mode, local verification, production deployment, and production smoke are complete.
+  - `npx.cmd vercel env ls` reports no Vercel environment variables; live owner OpenAI calls require `OPENAI_API_KEY` to be added in Vercel.
+
+---
+
+## Status
+
 - Task: Vercel direct prompt fallback for prior CSAT prompts
 - State: Done
 - Last updated: 2026-06-16

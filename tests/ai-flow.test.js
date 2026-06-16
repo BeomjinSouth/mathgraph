@@ -368,6 +368,63 @@ test('AIService callOpenAI sends Structured Outputs request and extracts output 
     }
 });
 
+test('AIService callOpenAI can route through the owner OpenAI proxy', async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedUrl = null;
+    let capturedOptions = null;
+
+    globalThis.fetch = async (url, options) => {
+        capturedUrl = url;
+        capturedOptions = options;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: 'resp_owner_proxy',
+                    output: [
+                        {
+                            type: 'message',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: '{"operations":[{"op":"create","type":"point","x":3,"y":4}]}'
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: '',
+            authMode: 'owner',
+            proxyToken: 'signed-owner-token',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+
+        const content = await service.callOpenAI([
+            { role: 'system', content: 'system rules' },
+            { role: 'user', content: 'owner proxy point' }
+        ]);
+
+        const body = JSON.parse(capturedOptions.body);
+        assert.equal(capturedUrl, '/api/openai-responses');
+        assert.equal(capturedOptions.headers.Authorization, 'Bearer signed-owner-token');
+        assert.equal(capturedOptions.headers['Content-Type'], 'application/json');
+        assert.equal(body.store, false);
+        assert.equal(body.text.format.type, 'json_schema');
+        assert.equal(content, '{"operations":[{"op":"create","type":"point","x":3,"y":4}]}');
+        assert.equal(service.lastResponseId, 'resp_owner_proxy');
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('processCommand includes actual API model in successful OpenAI result', async () => {
     const originalFetch = globalThis.fetch;
 

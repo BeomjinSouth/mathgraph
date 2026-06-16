@@ -484,6 +484,9 @@ export class AIServiceConfig {
         this.model = DEFAULT_OPENAI_MODEL;
         this.reasoningEffort = 'low'; // none, minimal, low, medium, high, xhigh
         this.verbosity = 'low'; // low, medium, high
+        this.authMode = 'guest'; // 'guest' | 'owner'
+        this.proxyToken = '';
+        this.proxyTokenExpiresAt = 0;
     }
 
     static fromStorage() {
@@ -502,7 +505,8 @@ export class AIServiceConfig {
 
     save() {
         try {
-            localStorage.setItem('graphA_ai_config', JSON.stringify(this));
+            const { proxyToken, proxyTokenExpiresAt, ...persistedConfig } = this;
+            localStorage.setItem('graphA_ai_config', JSON.stringify(persistedConfig));
         } catch (e) {
             console.warn('AI 설정 저장 실패:', e);
         }
@@ -531,6 +535,58 @@ export class AIService {
     setApiKey(apiKey) {
         this.config.apiKey = apiKey;
         this.config.save();
+    }
+
+    setAuthSession({ mode = 'guest', token = '', expiresAt = 0 } = {}) {
+        this.config.authMode = mode === 'owner' ? 'owner' : 'guest';
+        this.config.proxyToken = token || '';
+        this.config.proxyTokenExpiresAt = Number(expiresAt) || 0;
+
+        if (this.config.authMode === 'owner') {
+            this.config.provider = 'openai';
+            this.config.apiKey = '';
+            this.config.model = this.config.model || DEFAULT_OPENAI_MODEL;
+        }
+
+        this.config.save();
+    }
+
+    usesOpenAIProxy() {
+        return this.config.provider === 'openai'
+            && this.config.authMode === 'owner'
+            && Boolean(this.config.proxyToken);
+    }
+
+    hasProviderCredentials() {
+        if (this.config.provider === 'local') {
+            return false;
+        }
+
+        if (this.config.provider === 'openai') {
+            return this.usesOpenAIProxy() || Boolean(this.config.apiKey);
+        }
+
+        return Boolean(this.config.apiKey);
+    }
+
+    buildOpenAITransport() {
+        if (this.usesOpenAIProxy()) {
+            return {
+                url: '/api/openai-responses',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.proxyToken}`
+                }
+            };
+        }
+
+        return {
+            url: 'https://api.openai.com/v1/responses',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.apiKey}`
+            }
+        };
     }
 
     /**
@@ -567,7 +623,7 @@ export class AIService {
             this.conversationHistory = this.conversationHistory.slice(-10);
         }
 
-        if (!this.config.apiKey || this.config.provider === 'local') {
+        if (!this.hasProviderCredentials()) {
             return this.enhanceProcessResult(
                 this.fallbackProcess(normalizedMessage, context),
                 normalizedMessage,
@@ -1056,13 +1112,11 @@ export class AIService {
     async callOpenAI(messages, overrides = {}) {
         const requestBody = this.buildOpenAIRequestBody(messages, overrides);
         this.lastRequestModel = requestBody.model;
+        const transport = this.buildOpenAITransport();
 
-        const response = await fetch('https://api.openai.com/v1/responses', {
+        const response = await fetch(transport.url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.config.apiKey}`
-            },
+            headers: transport.headers,
             body: JSON.stringify(requestBody)
         });
 
@@ -2446,13 +2500,11 @@ export class AIService {
             previousResponseId: requestOptions.previousResponseId
         });
         this.lastRequestModel = requestBody.model;
+        const transport = this.buildOpenAITransport();
 
-        const response = await fetch('https://api.openai.com/v1/responses', {
+        const response = await fetch(transport.url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.config.apiKey}`
-            },
+            headers: transport.headers,
             body: JSON.stringify(requestBody)
         });
 
@@ -2475,7 +2527,7 @@ export class AIService {
      * @param {string|object} promptOrOptions - 분석 지시 또는 { instruction, mode, context }
      */
     async analyzeImage(imageDataUrl, promptOrOptions = DEFAULT_IMAGE_RECREATE_INSTRUCTION) {
-        if (!this.config.apiKey) {
+        if (!this.hasProviderCredentials()) {
             return {
                 success: false,
                 error: 'AI API 키가 설정되지 않았습니다. 설정에서 API 키를 입력해주세요.'

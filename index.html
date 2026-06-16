@@ -29,6 +29,30 @@
 
 <body>
     <div id="app">
+        <section id="authLanding" class="auth-landing" aria-labelledby="authTitle">
+            <div class="auth-visual" aria-hidden="true">
+                <div class="auth-graph-line auth-line-one"></div>
+                <div class="auth-graph-line auth-line-two"></div>
+                <div class="auth-node auth-node-a"></div>
+                <div class="auth-node auth-node-b"></div>
+                <div class="auth-node auth-node-c"></div>
+            </div>
+            <div class="auth-panel">
+                <div class="auth-brand">
+                    <img class="auth-logo-icon" src="favicon.svg" alt="">
+                    <span>MathGraph</span>
+                </div>
+                <h1 id="authTitle">이름으로 시작</h1>
+                <form id="ownerLoginForm" class="auth-form">
+                    <label class="auth-label" for="ownerNameInput">이름</label>
+                    <input id="ownerNameInput" type="text" autocomplete="name" placeholder="박범진" inputmode="text">
+                    <button class="btn btn-primary auth-primary" id="ownerLoginButton" type="submit">시작하기</button>
+                </form>
+                <button class="btn btn-secondary auth-guest" id="guestLoginButton" type="button">게스트로 진행</button>
+                <p class="auth-note">게스트는 API 키 입력이 필요합니다.</p>
+                <p class="auth-error" id="authLoginMessage" role="status" aria-live="polite"></p>
+            </div>
+        </section>
         <!-- 상단 도구막대 -->
         <header id="toolbar">
             <div class="toolbar-section toolbar-left">
@@ -37,6 +61,7 @@
                     <img class="logo-icon" src="favicon.svg" alt="">
                     <span class="logo-text">그래프A</span>
                     <span class="version">Mk2.1</span>
+                    <span class="auth-mode-badge" id="authModeBadge">로그인 필요</span>
                 </div>
             </div>
 
@@ -607,6 +632,7 @@
                             </p>
                             <div class="input-group">
                                 <label>AI 프로바이더</label>
+                                <p class="auth-mode-hint" id="aiAuthHintPanel"></p>
                                 <select id="aiProviderPanel">
                                     <option value="openai">OpenAI</option>
                                     <option value="gemini">Google Gemini</option>
@@ -813,6 +839,7 @@
                     </p>
                     <div class="input-group">
                         <label>AI 프로바이더</label>
+                        <p class="auth-mode-hint" id="aiAuthHint"></p>
                         <select id="aiProvider">
                             <option value="openai">OpenAI</option>
                             <option value="gemini">Google Gemini</option>

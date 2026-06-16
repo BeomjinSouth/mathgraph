@@ -96,7 +96,12 @@ This repository is a local context hub for OpenAI developer documentation. Use i
 - Vercel org/team ID: `team_IisUu66EBjsNE4JkX4qO2UAZ`.
 - Primary production alias: `https://mathgraph-five.vercel.app`.
 - Current direct-deploy branch used by Codex: `codex/ai-fallback-recovery`.
-- Environment variables: none required for the static app deployment at this time.
+- Environment variables:
+  - `OPENAI_API_KEY` is required for the `박범진` owner default OpenAI proxy to call OpenAI.
+  - `MATHGRAPH_OWNER_NAME` is optional and defaults to `박범진`.
+  - `MATHGRAPH_LOGIN_SECRET` is optional but recommended so owner-session token signing is independent from the OpenAI key.
+  - `MATHGRAPH_OWNER_TOKEN_TTL_MS` is optional and controls owner-session token lifetime.
+- Current Vercel environment check on 2026-06-16: no environment variables are configured, so owner-mode OpenAI calls return the documented setup error until `OPENAI_API_KEY` is added.
 - Production deploy command: `npx.cmd vercel deploy --prod --yes`.
 - Deployment verification steps:
   - Run `npm.cmd test`.
