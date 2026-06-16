@@ -104,6 +104,6 @@
 
 - Added `OPENAI_API_KEY` as an encrypted Production Vercel environment variable.
 - Added `MATHGRAPH_LOGIN_SECRET` as an encrypted Production Vercel environment variable with a separate generated random value.
-- Redeployed production after the env changes; latest Ready deployment inspected through the production alias is `dpl_ipoA54hhFpYHjCL8cF2skduuKiBg` at `https://mathgraph-nimib0ygm-beomjinsouths-projects.vercel.app`.
+- Redeployed production after the env changes; latest Ready deployment inspected through the production alias is `dpl_DWWGxucahW8ffQfH5BVbFD7tFe9L` at `https://mathgraph-pge0mlrn2-beomjinsouths-projects.vercel.app`.
 - Verified owner login and `/api/openai-responses` through `vercel curl`; the proxy returned an OpenAI response with output `OK`.
 - Preview branch env setup was blocked because the Vercel project has no connected Git repository. Development sensitive env setup was skipped because Vercel does not allow Sensitive variables in Development.
