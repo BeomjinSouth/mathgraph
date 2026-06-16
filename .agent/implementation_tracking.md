@@ -2,6 +2,64 @@
 
 ## Status
 
+- Task: Live Vercel OpenAI proxy diagram QA
+- State: Done
+- Last updated: 2026-06-16
+
+## Plan
+
+1. Configure Vercel Production secrets without committing values.
+2. Verify owner login and `/api/openai-responses` on the production alias.
+3. Compare live OpenAI-rendered outputs for the prior 9/10-style prompts and nested-prism prompt.
+4. Fix recurring prompt/result mismatches in app-owned cleanup code.
+5. Run focused/full/deploy/browser verification, update docs, commit, and push.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Keep `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` only as encrypted Vercel Production environment variables.
+- Reason: Owner-mode OpenAI calls need a server-side key, but the client bundle and repository must not contain secret values.
+- Decision: Do not configure `MATHGRAPH_OWNER_NAME` in Vercel Production.
+- Reason: A shell-injected Korean env value can be encoding-mangled; the source default owner name is already UTF-8 safe.
+- Decision: Serve runtime copies of drawing reference files from `runtime/mathgraph-drawing/references/`.
+- Reason: `.agents/` is not served in Vercel production, so the AI prompt reference fetch needs a public runtime path.
+- Decision: Fix the 9/10-style visual issues in `DiagramQualityEnhancer`.
+- Reason: Live OpenAI can create the right object families while still leaving helper dots or labels visible; the app should normalize those recurring exam-diagram presentation issues.
+
+## Verification
+
+- Completed:
+  - `npx.cmd vercel env ls`; confirmed encrypted Production `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET`.
+  - `node --check js\ai\DiagramQualityEnhancer.js`; passed.
+  - `node --test tests\ai-flow.test.js`; passed with 49 tests.
+  - `npm.cmd test`; passed with 179 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_HUdQoHPYE7KNQNRqLPYX5owaR7Cw` created at `https://mathgraph-4bsjzbe51-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-4bsjzbe51-beomjinsouths-projects.vercel.app`; target `production`, status `Ready`, primary alias attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Production Playwright live OpenAI smoke confirmed runtime references 200, owner login 200, all three proxy calls 200, no console issues, no failed requests, and visually correct outputs for three-circle lenses, square-pyramid midsection, and nested prism.
+
+## Handoff
+
+- Current status:
+  - The production site can call OpenAI through the owner proxy.
+  - The latest production alias is `https://mathgraph-five.vercel.app`.
+  - The final deployment is `dpl_HUdQoHPYE7KNQNRqLPYX5owaR7Cw`.
+  - 9번 and 10번 were both rechecked visually after the cleanup; the previously suspicious helper dots/labels are no longer visible.
+  - Secret values are not stored in the repository.
+
+---
+
+## Status
+
 - Task: Landing login and default OpenAI proxy
 - State: Done
 - Last updated: 2026-06-16

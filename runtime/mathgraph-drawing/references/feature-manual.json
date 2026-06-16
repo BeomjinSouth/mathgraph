@@ -1,0 +1,581 @@
+{
+  "manualVersion": 1,
+  "project": "MathGraph",
+  "updatedAt": "2026-06-02",
+  "language": "ko",
+  "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
+  "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
+  "sourceOfTruth": {
+    "runtime": ["js/core/ObjectManager.js", "js/objects/*.js", "js/tools/*.js", "js/main.js"],
+    "aiContract": ["js/ai/SchemaValidator.js", "js/ai/PatchApplier.js", "js/ai/AIService.js", "js/ai/SceneGraphCompiler.js", "js/ai/DiagramQualityEnhancer.js", "docs/ai-reference.md"],
+    "ui": ["index.html", "js/ui/CommandPalette.js", "js/ui/AlgebraInput.js", "js/core/EventHandler.js"],
+    "officialOpenAISourcesChecked": [
+      "https://developers.openai.com/api/docs/guides/structured-outputs",
+      "https://developers.openai.com/api/reference/resources/responses/methods/create",
+      "https://developers.openai.com/api/docs/guides/images-vision",
+      "https://developers.openai.com/api/docs/guides/tools-skills",
+      "https://developers.openai.com/api/docs/guides/tools-tool-search"
+    ],
+    "importantRule": "This manual describes the current local runtime. If SchemaValidator, PatchApplier, AIService, or ObjectManager changes, update this file and the synthetic examples together."
+  },
+  "apiPrompting": {
+    "defaultFlow": [
+      "Classify the Korean request into tags such as plane, circle, solid, graph, number_line, or chart_approximation.",
+      "Read retrieval-index.json and load only matching manual chunks and examples.",
+      "If the request is a full math problem, extract diagram-relevant conditions and draw a supporting graph/diagram instead of solving the problem.",
+      "Plan dependency order: support points first, base primitives second, derived construction objects third, markers/dimensions/styles last.",
+      "Return only valid JSON when the caller needs a MathGraph patch."
+    ],
+    "responsesApiNotes": {
+      "recommendedContract": "Use the existing strict Structured Outputs schema named graph_operations from AIService.js.",
+      "rootShape": "{ \"operations\": [...] }",
+      "statePolicy": "Use current canvas objects as compact context with id, type, label, coordinates, expressions, number-line fields, and dependencies.",
+      "tokenPolicy": "Keep stable reusable instructions and selected schema chunks before request-specific prompt text. Do not include the full synthetic dataset unless retrieval selects it.",
+      "storagePolicy": "Current local OpenAI path sets store: false.",
+      "runtimeReferenceLoading": "AIService tries to fetch retrieval-index.json and feature-manual.json in browser API calls, selects relevant object types from the prompt/context, and injects a compact manual summary before the request-specific instruction.",
+      "problemSituationMode": "Long textbook-style problem text receives problem-situation graphing guidance. The model should not solve or answer; it should extract variables, axes, functions, relations, labels, and regions useful for the diagram.",
+      "fullPhotoRecreateMode": "Image-only upload/paste treats a whole photo as recreate mode. The model should locate the visible math diagram/graph/figure, preserve geometry and short labels, and ignore dense problem prose unless needed for the figure.",
+      "imagePreprocessing": "Before OpenAI image analysis, the browser trims only safe background-like margins and downscales oversized images to a readable long-edge budget. Small or already readable images are not shrunk, and suspicious tiny crops are rejected.",
+      "imageModelRouting": "OpenAI image analysis uses gpt-5.4-mini for the first attempt, then escalates repair to the configured stronger model or gpt-5.5 when semantic intent validation rejects the first GraphA payload.",
+      "modelDisclosure": "Successful AI drawing result messages show a small chat metadata line with the model that produced the accepted patch, including first -> final model routing when repair escalation happened.",
+      "imagePatchRepair": "OpenAI image analysis retries once when semantic intent validation rejects the first GraphA payload."
+    },
+    "toolSearchPattern": "For future API orchestration with many tool/function schemas, defer rarely used tool definitions and use tool_search or an app-owned retrieval step to load only relevant MathGraph schema chunks."
+  },
+  "visualGuardrails": [
+    "For construction-only polygons that should look like outlines, set fillOpacity:0; omit positive fill unless a shaded region is requested.",
+    "For two-circle lens overlaps, use lensRegion with circle1Id and circle2Id instead of polygon approximations.",
+    "For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough from the vertex to render a visible non-degenerate arc.",
+    "When a right-angle mark sits on a crowded point or radial center, add a larger angleDimension with arcRadius at least 0.7 and showValue:false instead of relying only on the default small rightAngleMarker.",
+    "Use labelOffset on required labels near tangency points, angle markers, collinear construction points, or crowded intersections; hiding helper labels is not enough when requested labels remain close to geometry.",
+    "For focus/directrix, tangent-from-point, feasible-region, and named construction-point prompts, create the named points at the exact requested coordinates and create reference lines from support points on the exact equation.",
+    "For concentric circles and fixed-radius tangency diagrams, reuse the same center id and place radius points at the requested numeric distance.",
+    "For annular-sector-like requests, current GraphA has no first-class annularSector. Use a normal sector plus inner circle outline only when approximation is acceptable.",
+    "For function-bounded curved fills, approximate with a polygon through explicit boundary/sample points and hide helper vertices unless a future first-class region exists.",
+    "For whole-problem text prompts, do not create objects for the full problem prose or answer choices; create only the graph, figure, labels, functions, and shaded regions needed to visualize the situation.",
+    "For full-photo recreation, prioritize the diagram area inside the photo and preserve relative positions of axes, ticks, labels, intersections, tangencies, solid/dashed strokes, and shaded regions.",
+    "For solid prompts, make the outer prism/pyramid projection large enough to read; cross-section polygons should span a substantial middle portion of the outer solid instead of becoming a tiny internal square.",
+    "For nested solids, use prism/pyramid objects, keep inner solid vertices inside the outer projection, leave visible margins from the outer edges, and keep projected centers visually separated instead of piling them on the same screen area.",
+    "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
+    "Hide construction helper points with visible:false when they are only used to shape regions or guide construction."
+  ],
+  "runtimeQualityEnhancement": {
+    "file": "js/ai/DiagramQualityEnhancer.js",
+    "pipelinePosition": "After AI JSON parsing and before command results are returned or recreate-mode image results are semantically accepted.",
+    "appliesTo": ["text command AI output", "local fallback command output", "image recreate output"],
+    "skips": ["selected-object patch mode", "projection rewriting for coordinate-heavy prompts"],
+    "rules": [
+      "Add screen-space labelOffset values for crowded visible point labels, tangent labels such as T1/T2, and Euler-line labels O/G/H.",
+      "Add a larger hidden-label angleDimension aid for right-angle requests when a rightAngleMarker alone may be visually weak.",
+      "Expand prism cross-section prompts so the outer projection is broad and the section polygon spans a substantial middle portion.",
+      "Expand and recenter triangular-pyramid-inside-triangular-prism prompts so the inner solid has visible projection margins."
+    ]
+  },
+  "sceneGraphPipeline": {
+    "purpose": "Root architecture for image/PDF recreation: ask the model for a high-level math scene, then compile it deterministically into GraphA operations.",
+    "recommendedFor": ["pasted image recreation", "whole-photo diagram recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
+    "sceneRootShape": {
+      "sceneType": "diagram",
+      "nodes": "Array of math entities such as point, segment, circle, arc, sector, lensRegion, polygon, function, numberLine, prism, pyramid.",
+      "relations": "Array of constraints or annotations such as intersection, midpoint, parallel, perpendicular, rightAngle, equalLength, angleDimension, lengthDimension, tangentFunction.",
+      "unsupported": "Array of unsupported first-class requests such as cylinder, cone, sphere, native histogram, scatterPlot, boxPlot, table, or textLabel.",
+      "notes": "Optional source evidence, uncertainty, or crop notes."
+    },
+    "compiler": {
+      "file": "js/ai/SceneGraphCompiler.js",
+      "outputRoot": "{ \"operations\": [...] }",
+      "rule": "The compiler creates support points first, then base primitives, then relation/annotation objects.",
+      "warningPolicy": "Unsupported scene nodes must become warnings, not guessed invalid GraphA operations.",
+      "validation": ["SchemaValidator.validate", "SchemaValidator.validateReferences", "SemanticValidator where category metadata exists", "browser render smoke checks"]
+    },
+    "promptingRule": "For image/PDF recreate mode, the model should preserve visible mathematical structure and relations in the scene graph. It should not directly invent low-level GraphA operations when a scene graph path is available."
+  },
+  "operationContract": {
+    "root": "operations",
+    "rootType": "array",
+    "validOperations": ["create", "update", "delete"],
+    "createRules": [
+      "type is required.",
+      "id is optional but strongly recommended for references inside the same payload.",
+      "Referenced objects must already exist on the canvas or be created earlier in the operations array."
+    ],
+    "updateRules": [
+      "id is required.",
+      "Only supported mutable fields are applied by PatchApplier.",
+      "Position update with x/y applies to point-like objects with position."
+    ],
+    "deleteRules": [
+      "id is required.",
+      "Dependent objects are cascade-deleted by ObjectManager."
+    ],
+    "strictStructuredOutputs": {
+      "nullableFields": "The OpenAI strict schema represents optional fields as nullable and then stripNullFields removes nulls before local validation.",
+      "additionalProperties": false
+    },
+    "supportedCreateTypes": [
+      "point",
+      "pointOnLine",
+      "pointOnCircle",
+      "circleCenterPoint",
+      "segment",
+      "line",
+      "ray",
+      "circle",
+      "circleThreePoints",
+      "intersection",
+      "midpoint",
+      "parallel",
+      "perpendicular",
+      "perpendicularBisector",
+      "angleBisector",
+      "tangentCircle",
+      "tangentFunction",
+      "function",
+      "vector",
+      "rightAngleMarker",
+      "equalLengthMarker",
+      "angleDimension",
+      "lengthDimension",
+      "arc",
+      "sector",
+      "circularSegment",
+      "lensRegion",
+      "polygon",
+      "prism",
+      "pyramid",
+      "numberLine"
+    ]
+  },
+  "commonFields": {
+    "createAndUpdate": [
+      { "name": "id", "type": "string", "scope": "create/update/delete", "note": "Stable temporary ID for within-batch references or existing ID for mutation." },
+      { "name": "label", "type": "string", "scope": "create/update", "note": "Human-readable label such as A, B, f, c." },
+      { "name": "color", "type": "hex color string", "scope": "create/update", "note": "Stroke or primary object color. Default output is #000000; omit unless explicitly needed." },
+      { "name": "visible", "type": "boolean", "scope": "create/update", "note": "Whether object renders and can be selected without show-hidden mode." },
+      { "name": "lineWidth", "type": "number", "scope": "create/update", "note": "Stroke width." },
+      { "name": "pointSize", "type": "number", "scope": "create/update", "note": "Point radius/size." },
+      { "name": "fontSize", "type": "number", "scope": "create/update", "note": "Label size." },
+      { "name": "dashed", "type": "boolean", "scope": "create/update", "note": "Dashed stroke toggle." },
+      { "name": "fillColor", "type": "hex color string", "scope": "create/update", "note": "Area fill color for circle, polygon, sector, circularSegment, and lensRegion. Default fill is #000000 with opacity." },
+      { "name": "fillOpacity", "type": "number 0..1", "scope": "create/update", "note": "Area opacity." },
+      { "name": "showLabel", "type": "boolean", "scope": "create/update", "note": "Label visibility." },
+      { "name": "locked", "type": "boolean", "scope": "create/update", "note": "Prevents direct dragging when supported." },
+      { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels." }
+    ],
+    "updateOnlyOrObjectSpecific": ["x", "y", "expression", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
+  },
+  "aiCreatableObjects": [
+    {
+      "type": "point",
+      "koreanName": "자유점",
+      "tags": ["plane", "support"],
+      "requiredFields": ["x", "y"],
+      "optionalFields": ["label", "color", "pointSize", "fontSize", "showLabel", "locked"],
+      "template": { "op": "create", "id": "A", "type": "point", "x": 0, "y": 0, "label": "A" },
+      "notes": ["Use points as dependencies for almost every geometric construction."]
+    },
+    {
+      "type": "pointOnLine",
+      "koreanName": "선 위의 점",
+      "tags": ["plane", "construction"],
+      "requiredFields": ["lineId"],
+      "optionalFields": ["t", "label"],
+      "template": { "op": "create", "id": "M", "type": "pointOnLine", "lineId": "AB", "t": 0.5, "label": "M" },
+      "notes": ["t defaults to 0.5. Use an existing segment/line/ray-like object ID."]
+    },
+    {
+      "type": "pointOnCircle",
+      "koreanName": "원 위의 점",
+      "tags": ["circle", "construction"],
+      "requiredFields": ["circleId"],
+      "optionalFields": ["angle", "label"],
+      "template": { "op": "create", "id": "P", "type": "pointOnCircle", "circleId": "c1", "angle": 0, "label": "P" },
+      "notes": ["angle is in radians and defaults to 0."]
+    },
+    {
+      "type": "circleCenterPoint",
+      "koreanName": "원의 중심점",
+      "tags": ["circle", "construction"],
+      "requiredFields": ["circleId"],
+      "optionalFields": ["label"],
+      "template": { "op": "create", "id": "O", "type": "circleCenterPoint", "circleId": "c1", "label": "O" },
+      "notes": ["Use when a circle already exists and a visible/dependent center point is needed."]
+    },
+    {
+      "type": "segment",
+      "koreanName": "선분",
+      "tags": ["plane", "line"],
+      "requiredFields": ["point1Id", "point2Id"],
+      "optionalFields": ["label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "AB", "type": "segment", "point1Id": "A", "point2Id": "B" },
+      "notes": ["Use for finite sides, bars, axes segments, and dimension anchors."]
+    },
+    {
+      "type": "line",
+      "koreanName": "직선",
+      "tags": ["plane", "line", "graph"],
+      "requiredFields": ["point1Id", "point2Id"],
+      "optionalFields": ["label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "l1", "type": "line", "point1Id": "A", "point2Id": "B", "label": "l" },
+      "notes": ["Renders across visible bounds. Use for equations and construction lines."]
+    },
+    {
+      "type": "ray",
+      "koreanName": "반직선",
+      "tags": ["plane", "line"],
+      "requiredFields": ["originId", "directionPointId"],
+      "optionalFields": ["label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "ray_AB", "type": "ray", "originId": "A", "directionPointId": "B" },
+      "notes": ["Starts at originId and extends through directionPointId."]
+    },
+    {
+      "type": "circle",
+      "koreanName": "중심과 한 점으로 정한 원",
+      "tags": ["circle"],
+      "requiredFields": ["centerId", "pointOnCircleId"],
+      "optionalFields": ["label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "c1", "type": "circle", "centerId": "O", "pointOnCircleId": "A" },
+      "notes": ["Create center and radius point first."]
+    },
+    {
+      "type": "circleThreePoints",
+      "koreanName": "세 점을 지나는 원",
+      "tags": ["circle", "triangle"],
+      "requiredFields": ["point1Id", "point2Id", "point3Id"],
+      "optionalFields": ["label", "color", "lineWidth"],
+      "template": { "op": "create", "id": "circumcircle", "type": "circleThreePoints", "point1Id": "A", "point2Id": "B", "point3Id": "C", "label": "외접원" },
+      "notes": ["Use for circumcircles. Points must not be collinear."]
+    },
+    {
+      "type": "intersection",
+      "koreanName": "교점",
+      "tags": ["construction", "graph"],
+      "requiredFields": ["object1Id", "object2Id"],
+      "optionalFields": ["label", "color", "pointSize"],
+      "template": { "op": "create", "id": "P", "type": "intersection", "object1Id": "l1", "object2Id": "l2", "label": "P" },
+      "notes": ["For multiple intersections, current AI schema has no anchor field. Prefer unambiguous pairs or add explanatory limitation."]
+    },
+    {
+      "type": "midpoint",
+      "koreanName": "중점",
+      "tags": ["construction"],
+      "requiredFields": ["segmentId"],
+      "optionalFields": ["label", "color", "pointSize"],
+      "template": { "op": "create", "id": "M", "type": "midpoint", "segmentId": "AB", "label": "M" },
+      "notes": ["Create or identify the segment first."]
+    },
+    {
+      "type": "parallel",
+      "koreanName": "평행선",
+      "tags": ["construction"],
+      "requiredFields": ["baseLineId", "throughPointId"],
+      "optionalFields": ["label", "color", "dashed"],
+      "template": { "op": "create", "id": "parallel_C_AB", "type": "parallel", "baseLineId": "AB", "throughPointId": "C" },
+      "notes": ["Creates a line through the point parallel to the base line-like object."]
+    },
+    {
+      "type": "perpendicular",
+      "koreanName": "수선",
+      "tags": ["construction"],
+      "requiredFields": ["baseLineId", "throughPointId"],
+      "optionalFields": ["label", "color", "dashed"],
+      "template": { "op": "create", "id": "perp_C_AB", "type": "perpendicular", "baseLineId": "AB", "throughPointId": "C" },
+      "notes": ["Use with intersection plus rightAngleMarker for altitude diagrams."]
+    },
+    {
+      "type": "perpendicularBisector",
+      "koreanName": "수직이등분선",
+      "tags": ["construction"],
+      "requiredFields": ["segmentId"],
+      "optionalFields": ["label", "color", "dashed"],
+      "template": { "op": "create", "id": "bisector_AB", "type": "perpendicularBisector", "segmentId": "AB" },
+      "notes": ["Create the segment first."]
+    },
+    {
+      "type": "angleBisector",
+      "koreanName": "각의 이등분선",
+      "tags": ["construction"],
+      "requiredFields": ["line1Id", "line2Id"],
+      "optionalFields": ["label", "color", "dashed"],
+      "template": { "op": "create", "id": "angle_bisector", "type": "angleBisector", "line1Id": "BA", "line2Id": "BC" },
+      "notes": ["Use two line-like objects that meet at the angle vertex."]
+    },
+    {
+      "type": "tangentCircle",
+      "koreanName": "원의 접선",
+      "tags": ["circle", "tangent"],
+      "requiredFields": ["circleId", "tangentPointId"],
+      "optionalFields": ["label", "color", "dashed"],
+      "template": { "op": "create", "id": "tan_c_T", "type": "tangentCircle", "circleId": "c1", "tangentPointId": "T" },
+      "notes": ["tangentPointId should be on the circle for visual correctness."]
+    },
+    {
+      "type": "tangentFunction",
+      "koreanName": "함수의 접선",
+      "tags": ["graph", "function", "tangent"],
+      "requiredFields": ["functionId", "x"],
+      "optionalFields": ["label", "color", "dashed"],
+      "template": { "op": "create", "id": "tan_f_1", "type": "tangentFunction", "functionId": "f", "x": 1 },
+      "notes": ["x is the tangent x-coordinate."]
+    },
+    {
+      "type": "function",
+      "koreanName": "함수 그래프",
+      "tags": ["graph", "function"],
+      "requiredFields": ["expression"],
+      "optionalFields": ["label", "color", "lineWidth", "fontSize", "showLabel"],
+      "template": { "op": "create", "id": "f", "type": "function", "label": "f", "expression": "x^2 - 2*x + 1" },
+      "notes": ["Use * for multiplication. Parser supports sin, cos, tan, sqrt, abs, log, ln, exp, min, max, pow, pi, e. Runtime UI supports domain edits, but the AI schema does not currently accept xMin/xMax."]
+    },
+    {
+      "type": "vector",
+      "koreanName": "벡터",
+      "tags": ["plane", "vector"],
+      "requiredFields": ["startPointId", "endPointId"],
+      "optionalFields": ["label", "color", "lineWidth"],
+      "template": { "op": "create", "id": "vec_AB", "type": "vector", "startPointId": "A", "endPointId": "B" },
+      "notes": ["Use for directed segments and translation arrows."]
+    },
+    {
+      "type": "rightAngleMarker",
+      "koreanName": "직각 표시",
+      "tags": ["marker", "dimension"],
+      "requiredFields": ["vertexId", "line1Id", "line2Id"],
+      "optionalFields": ["color", "lineWidth"],
+      "template": { "op": "create", "id": "right_A", "type": "rightAngleMarker", "vertexId": "A", "line1Id": "AB", "line2Id": "AD" },
+      "notes": ["Create the vertex point and both line-like objects first."]
+    },
+    {
+      "type": "equalLengthMarker",
+      "koreanName": "같은 길이 표시",
+      "tags": ["marker"],
+      "requiredFields": ["segment1Id", "segment2Id"],
+      "optionalFields": ["color", "lineWidth"],
+      "template": { "op": "create", "id": "eq_AB_CD", "type": "equalLengthMarker", "segment1Id": "AB", "segment2Id": "CD" },
+      "notes": ["Use for congruent sides or symmetric lengths."]
+    },
+    {
+      "type": "angleDimension",
+      "koreanName": "각도 치수",
+      "tags": ["dimension"],
+      "requiredFields": ["vertexId", "point1Id", "point2Id"],
+      "optionalFields": ["label", "color", "fontSize", "arcRadius", "showValue", "markerCount", "customText", "labelFontSize", "labelOffset"],
+      "template": { "op": "create", "id": "angle_ABC", "type": "angleDimension", "vertexId": "B", "point1Id": "A", "point2Id": "C" },
+      "notes": ["Use three points; vertexId is the middle/angle vertex.", "When multiple angle markers share the same vertex, use different arcRadius values and consider showValue:false to avoid overlapping labels."]
+    },
+    {
+      "type": "lengthDimension",
+      "koreanName": "길이 치수",
+      "tags": ["dimension"],
+      "requiredFields": ["segmentId"],
+      "optionalFields": ["label", "color", "fontSize"],
+      "template": { "op": "create", "id": "len_AB", "type": "lengthDimension", "segmentId": "AB" },
+      "notes": ["Create the segment first."]
+    },
+    {
+      "type": "arc",
+      "koreanName": "호",
+      "tags": ["circle", "arc"],
+      "requiredFields": ["circleId", "startPointId", "endPointId"],
+      "optionalFields": ["mode", "label", "color", "lineWidth"],
+      "template": { "op": "create", "id": "arc_AB", "type": "arc", "circleId": "c1", "startPointId": "A", "endPointId": "B", "mode": "minor" },
+      "notes": ["mode is minor or major."]
+    },
+    {
+      "type": "sector",
+      "koreanName": "부채꼴",
+      "tags": ["circle", "sector", "area"],
+      "requiredFields": ["circleId", "startPointId", "endPointId"],
+      "optionalFields": ["mode", "fillColor", "fillOpacity", "label"],
+      "template": { "op": "create", "id": "sector_AOB", "type": "sector", "circleId": "c1", "startPointId": "A", "endPointId": "B", "mode": "minor", "fillColor": "#000000", "fillOpacity": 0.25 },
+      "notes": ["Use for central-angle shaded regions."]
+    },
+    {
+      "type": "circularSegment",
+      "koreanName": "활꼴",
+      "tags": ["circle", "area"],
+      "requiredFields": ["circleId", "startPointId", "endPointId"],
+      "optionalFields": ["mode", "fillColor", "fillOpacity", "label"],
+      "template": { "op": "create", "id": "segment_arc_AB", "type": "circularSegment", "circleId": "c1", "startPointId": "A", "endPointId": "B", "mode": "minor", "fillColor": "#000000", "fillOpacity": 0.2 },
+      "notes": ["Use for area between a chord and an arc."]
+    },
+    {
+      "type": "lensRegion",
+      "koreanName": "two-circle lens region",
+      "tags": ["circle", "area", "lens"],
+      "requiredFields": ["circle1Id", "circle2Id"],
+      "optionalFields": ["fillColor", "fillOpacity", "label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "lens_c1_c2", "type": "lensRegion", "circle1Id": "c1", "circle2Id": "c2", "fillColor": "#000000", "fillOpacity": 0.24 },
+      "validationRules": ["The two circles must intersect in two points to produce a visible filled lens."],
+      "notes": ["Use this for the exact overlap of two circles. It renders two circular-arc boundaries without internal chord lines."]
+    },
+    {
+      "type": "polygon",
+      "koreanName": "다각형/채운 영역",
+      "tags": ["plane", "polygon", "area"],
+      "requiredFields": ["vertexIds"],
+      "optionalFields": ["fillColor", "fillOpacity", "label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "poly_ABC", "type": "polygon", "vertexIds": ["A", "B", "C"], "fillColor": "#000000", "fillOpacity": 0.12 },
+      "validationRules": ["vertexIds must contain at least 3 point IDs."],
+      "notes": ["Best current primitive for triangles, quadrilaterals, filled graph regions, and histogram bars."]
+    },
+    {
+      "type": "prism",
+      "koreanName": "각기둥",
+      "tags": ["solid"],
+      "requiredFields": ["baseVertexIds", "topVertexIds"],
+      "optionalFields": ["label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "prism_1", "type": "prism", "baseVertexIds": ["A", "B", "C"], "topVertexIds": ["A1", "B1", "C1"] },
+      "validationRules": ["baseVertexIds must contain at least 3 point IDs.", "topVertexIds length must match baseVertexIds length."],
+      "notes": ["Uses oblique projection and hidden-edge dashed rendering. Create all base and top points first.", "For textbook-style prisms, baseVertexIds is the near/front face and topVertexIds is the shifted rear face, so front/base edges stay solid while hidden rear/top edges are dashed."]
+    },
+    {
+      "type": "pyramid",
+      "koreanName": "각뿔",
+      "tags": ["solid"],
+      "requiredFields": ["baseVertexIds", "apexId"],
+      "optionalFields": ["label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "pyramid_1", "type": "pyramid", "baseVertexIds": ["A", "B", "C", "D"], "apexId": "V" },
+      "validationRules": ["baseVertexIds must contain at least 3 point IDs."],
+      "notes": ["Uses oblique projection and hidden-edge dashed rendering. Create base points and apex first."]
+    },
+    {
+      "type": "numberLine",
+      "koreanName": "수직선",
+      "tags": ["number_line", "axis"],
+      "requiredFields": ["start", "end", "step", "y"],
+      "optionalFields": ["showArrows", "tickHeight", "customMarks", "color", "lineWidth", "fontSize"],
+      "template": { "op": "create", "id": "nl_1", "type": "numberLine", "start": -5, "end": 5, "step": 1, "y": 0, "showArrows": true },
+      "validationRules": ["start must be less than end.", "step must be greater than 0.", "customMarks must be an array of {value,label} objects when supplied."],
+      "notes": ["Use customMarks for radical, special, or named marks."]
+    }
+  ],
+  "runtimeUiTools": [
+    { "tool": "select", "koreanName": "선택/이동", "shortcut": "V", "aiCreateType": null },
+    { "tool": "point", "koreanName": "점", "shortcut": "D", "aiCreateType": "point" },
+    { "tool": "pointOnObject", "koreanName": "대상 위의 점", "shortcut": null, "aiCreateType": "pointOnLine or pointOnCircle" },
+    { "tool": "intersection", "koreanName": "교점", "shortcut": "I", "aiCreateType": "intersection" },
+    { "tool": "midpoint", "koreanName": "중점", "shortcut": "M", "aiCreateType": "midpoint" },
+    { "tool": "segment", "koreanName": "선분", "shortcut": "S", "aiCreateType": "segment" },
+    { "tool": "line", "koreanName": "직선", "shortcut": "L", "aiCreateType": "line" },
+    { "tool": "ray", "koreanName": "반직선", "shortcut": "R", "aiCreateType": "ray" },
+    { "tool": "vector", "koreanName": "벡터", "shortcut": "W", "aiCreateType": "vector" },
+    { "tool": "circle", "koreanName": "원", "shortcut": "C", "aiCreateType": "circle" },
+    { "tool": "circleThreePoints", "koreanName": "세 점 원", "shortcut": null, "aiCreateType": "circleThreePoints" },
+    { "tool": "arc", "koreanName": "호", "shortcut": null, "aiCreateType": "arc" },
+    { "tool": "sector", "koreanName": "부채꼴", "shortcut": null, "aiCreateType": "sector" },
+    { "tool": "circularSegment", "koreanName": "활꼴", "shortcut": null, "aiCreateType": "circularSegment" },
+    { "tool": "polygon", "koreanName": "다각형", "shortcut": "P", "aiCreateType": "polygon" },
+    { "tool": "fill", "koreanName": "벡터 채우기", "shortcut": null, "aiCreateType": null },
+    { "tool": "prism", "koreanName": "각기둥", "shortcut": null, "aiCreateType": "prism" },
+    { "tool": "pyramid", "koreanName": "각뿔", "shortcut": null, "aiCreateType": "pyramid" },
+    { "tool": "parallel", "koreanName": "평행선", "shortcut": null, "aiCreateType": "parallel" },
+    { "tool": "perpendicular", "koreanName": "수선", "shortcut": null, "aiCreateType": "perpendicular" },
+    { "tool": "perpendicularBisector", "koreanName": "수직이등분선", "shortcut": null, "aiCreateType": "perpendicularBisector" },
+    { "tool": "angleBisector", "koreanName": "각의 이등분선", "shortcut": null, "aiCreateType": "angleBisector" },
+    { "tool": "tangentCircle", "koreanName": "원의 접선", "shortcut": null, "aiCreateType": "tangentCircle" },
+    { "tool": "tangentFunction", "koreanName": "함수 접선", "shortcut": null, "aiCreateType": "tangentFunction" },
+    { "tool": "angleDimension", "koreanName": "각도", "shortcut": "A", "aiCreateType": "angleDimension" },
+    { "tool": "lengthDimension", "koreanName": "길이", "shortcut": "E", "aiCreateType": "lengthDimension" },
+    { "tool": "rightAngle", "koreanName": "직각 표시", "shortcut": null, "aiCreateType": "rightAngleMarker" },
+    { "tool": "equalLength", "koreanName": "같은 길이", "shortcut": null, "aiCreateType": "equalLengthMarker" },
+    { "tool": "numberLine", "koreanName": "수직선", "shortcut": "N", "aiCreateType": "numberLine" },
+    { "tool": "function", "koreanName": "함수 그래프", "shortcut": "F", "aiCreateType": "function" }
+  ],
+  "algebraInput": {
+    "entryPoint": "Command palette fallback when no command matches",
+    "supportedExpressions": [
+      "A=(2,0)",
+      "(2,0)",
+      "y=x^2",
+      "f(x)=x^2-2*x",
+      "center=(2,3), r=5",
+      "(x-2)^2+(y-3)^2=25",
+      "x^2+y^2=9"
+    ],
+    "notes": ["Algebra input creates runtime objects directly, not AI operations."]
+  },
+  "naturalLanguageFallback": {
+    "trigger": "Used when provider is local, no API key exists, or API parsing fails.",
+    "safeDeletePolicy": "Delete-like requests are rejected unless handled by direct JSON/update/delete flow.",
+    "deterministicPatterns": [
+      "number line ranges and steps",
+      "midpoint from coordinates or existing named endpoints",
+      "function tangent at x=value",
+      "basic function expressions",
+      "rectangular prism/cube prompts, including a nested small cube inside an outer rectangular prism",
+      "circle center/radius and circle equations",
+      "linear equations into lines"
+    ],
+    "legacyPatternFallbacks": [
+      "triangle with optional labels and coordinates",
+      "triangle circumcircle",
+      "basic circle",
+      "square/quadrilateral",
+      "single point coordinate",
+      "regular prism and pyramid defaults for non-rectangular solids"
+    ]
+  },
+  "interactionAndEditing": {
+    "keyboard": ["Ctrl+Z undo", "Ctrl+Y redo", "Delete/Backspace delete selected", "Esc cancel/clear selection", "Ctrl+A select all", "Ctrl+C copy", "Ctrl+V paste", "Space+drag pan"],
+    "selection": ["single select", "shift multi-select", "box select", "hidden-object visibility mode"],
+    "properties": ["label", "color", "lineWidth", "point coordinates", "function expression", "function domain through UI", "label reset", "object visibility", "copy/paste/delete"],
+    "history": ["create", "delete", "propertyChange", "batch", "drag", "rollback on AI patch failure"]
+  },
+  "settingsAndView": {
+    "viewToggles": ["grid", "x-axis", "y-axis", "show hidden objects"],
+    "snapModes": ["integer", "decimal1", "decimal2"],
+    "magnet": "Optional 0.5-step coordinate snap.",
+    "styleControls": ["default color", "default line width", "bulk color", "bulk width", "hide/show all points"],
+    "zoom": ["zoom in", "zoom out", "reset view", "mouse wheel zoom"]
+  },
+  "aiPanelFeatures": {
+    "providers": ["OpenAI", "Google Gemini", "local fallback"],
+    "textCommand": "Korean natural language or direct JSON can be submitted through the chat panel.",
+    "directJson": "Messages beginning with {, [, or code fences are parsed directly as GraphA operations.",
+    "imageAnalysis": "Image upload sends a vision request when API key/provider support is configured.",
+    "configStorage": "Provider, API key, model, reasoning effort, and verbosity are stored in localStorage."
+  },
+  "exportAndPersistence": {
+    "exportFormats": ["PNG", "SVG"],
+    "exportOptions": ["scale 1x/2x/3x for PNG", "include background", "include grid", "include axes"],
+    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "functions", "arc", "sector", "circularSegment", "lensRegion", "polygon", "numberLine", "grid", "axes", "fallback embedded PNG"],
+    "localSave": "Saves canvas offset, scale, and ObjectManager JSON to localStorage key graphA_save.",
+    "localLoad": "Loads saved object graph and clears history baseline."
+  },
+  "validationWorkflow": [
+    "Parse JSON with parseAIJSONPayload.",
+    "Validate operation and required fields with SchemaValidator.",
+    "Validate references against existing IDs plus earlier create IDs.",
+    "Validate intent constraints for image patch/recreate workflows, including selected-object mutation and recreate operation budget.",
+    "Apply operations sequentially with PatchApplier.",
+    "Rollback object/history/selection state if any operation fails.",
+    "Render and update sidebar after success."
+  ],
+  "knownGapsAndApproximations": [
+    {
+      "gap": "Statistical chart primitives are not first-class objects.",
+      "currentApproximation": "Use numberLine, segment axes, and polygon bars/regions. State approximation for histogram, frequency polygon, box plot, dot plot, scatter plot."
+    },
+    {
+      "gap": "Curved solid primitives are not first-class objects.",
+      "currentApproximation": "Use prism/pyramid where possible. Cylinders, cones, spheres, nets, and revolution diagrams require composed points/segments/arcs or future primitives."
+    },
+    {
+      "gap": "Function domain xMin/xMax is runtime/UI-supported but not in current AI JSON schema.",
+      "currentApproximation": "Use visible segments, points, labels, or update manually through UI until schema expands."
+    },
+    {
+      "gap": "Multiple intersections cannot be disambiguated by anchor in the current AI schema.",
+      "currentApproximation": "Use unambiguous object pairs or create explanatory support points/lines. Avoid promising both roots from one intersection operation."
+    },
+    {
+      "gap": "Annular sectors and exact function-bounded curved regions are not first-class objects.",
+      "currentApproximation": "Use sectors, circles, polygons, and hidden helper points only when approximation is acceptable. State that exact ring-sector cutouts or exact fill-between-functions need future primitives."
+    },
+    {
+      "gap": "Generic text labels independent of objects are not first-class objects.",
+      "currentApproximation": "Use object labels and dimensions where possible."
+    }
+  ]
+}

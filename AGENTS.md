@@ -101,7 +101,7 @@ This repository is a local context hub for OpenAI developer documentation. Use i
   - `MATHGRAPH_OWNER_NAME` is optional and defaults to `박범진`.
   - `MATHGRAPH_LOGIN_SECRET` is optional but recommended so owner-session token signing is independent from the OpenAI key.
   - `MATHGRAPH_OWNER_TOKEN_TTL_MS` is optional and controls owner-session token lifetime.
-- Current Vercel environment check on 2026-06-16: `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` are configured as encrypted Production environment variables. Preview branch env setup is unavailable until the Vercel project is connected to a Git repository, and Vercel does not allow Sensitive variables in Development.
+- Current Vercel environment check on 2026-06-16: `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` are configured as encrypted Production environment variables. `MATHGRAPH_OWNER_NAME` is intentionally not configured in Production, so the UTF-8 source default owner name is used. Preview branch env setup is unavailable until the Vercel project is connected to a Git repository, and Vercel does not allow Sensitive variables in Development.
 - Production deploy command: `npx.cmd vercel deploy --prod --yes`.
 - Deployment verification steps:
   - Run `npm.cmd test`.

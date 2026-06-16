@@ -30,6 +30,9 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     applyGeneralLabelDecluttering(ctx);
     applyPromptSpecificLabelOffsets(ctx, text);
     addLargeRightAngleAids(ctx, text);
+    normalizeThreeCircleLensLayout(ctx, text);
+    normalizeSquarePyramidMidsectionLayout(ctx, text);
+    normalizeNestedRectangularPrismLayout(ctx, text);
     normalizePrismCrossSectionLayout(ctx, text);
     normalizeNestedTriangularSolidLayout(ctx, text);
 
@@ -143,6 +146,122 @@ function addLargeRightAngleAids(ctx, text) {
         };
         ctx.operations.push(aid);
         ctx.byId.set(id, aid);
+    }
+}
+
+function normalizeThreeCircleLensLayout(ctx, text) {
+    const mentionsThreeCircles = /(세\s*원|three\s*circles|three-circle|O\s*,\s*P\s*,\s*Q|O\s*P\s*Q)/i.test(text);
+    const mentionsLens = /(렌즈|공통부분|겹치|lens|overlap|intersection)/i.test(text);
+    if (!mentionsThreeCircles || !mentionsLens) return;
+
+    const circles = ctx.byType('circle');
+    const lenses = ctx.byType('lensRegion');
+    if (circles.length < 3 || lenses.length < 3) return;
+
+    for (const lens of lenses) {
+        lens.showLabel = false;
+        if (lens.fillOpacity === undefined || Number(lens.fillOpacity) < 0.16) {
+            lens.fillOpacity = 0.22;
+        }
+    }
+
+    const records = circles
+        .slice(0, 3)
+        .map((circle, index) => {
+            circle.showLabel = false;
+            return circleRecord(ctx, circle, ['O', 'P', 'Q'][index]);
+        })
+        .filter(Boolean);
+    if (records.length < 3) return;
+
+    const center = averagePoint(records.map(record => record.center));
+    for (const record of records) {
+        hidePointLike(record.centerOp);
+        if (record.radiusOp) hidePointLike(record.radiusOp);
+
+        const direction = normalize(subtract(record.center, center)) || fallbackDirection(records.indexOf(record));
+        const anchorDistance = Math.max(record.radius * 1.22, record.radius + 0.7);
+        const anchor = {
+            x: roundCoordinate(record.center.x + direction.x * anchorDistance),
+            y: roundCoordinate(record.center.y + direction.y * anchorDistance)
+        };
+        ensureExternalLabelAnchor(ctx, record.label, anchor);
+    }
+}
+
+function normalizeSquarePyramidMidsectionLayout(ctx, text) {
+    const mentionsSquarePyramid = /(정사각뿔|square\s*pyramid)/i.test(text);
+    const mentionsSection = /(중간\s*단면|단면|mid.?section|cross.?section)/i.test(text);
+    if (!mentionsSquarePyramid || !mentionsSection) return;
+
+    const pyramid = ctx.byType('pyramid').find(item =>
+        Array.isArray(item.baseVertexIds) &&
+        item.baseVertexIds.length === 4 &&
+        item.apexId
+    );
+    if (!pyramid) return;
+
+    pyramid.showLabel = false;
+
+    const structuralIds = new Set([...(pyramid.baseVertexIds || []), pyramid.apexId].filter(Boolean));
+    for (const polygon of ctx.byType('polygon')) {
+        polygon.showLabel = false;
+        const isSection = Array.isArray(polygon.vertexIds) &&
+            polygon.vertexIds.length >= 4 &&
+            !polygon.vertexIds.every(id => structuralIds.has(id));
+        if (isSection && (polygon.fillOpacity === undefined || Number(polygon.fillOpacity) < 0.16)) {
+            polygon.fillOpacity = 0.2;
+        }
+    }
+
+    for (const point of ctx.byType('point')) {
+        if (!structuralIds.has(point.id)) {
+            hidePointLike(point);
+        }
+    }
+
+    const apex = ctx.byId.get(pyramid.apexId);
+    if (apex?.type === 'point') {
+        apex.label = apex.label || 'V';
+        apex.showLabel = true;
+    }
+
+    const heightSegments = ctx.byType('segment').filter(segment => {
+        if (segment.point1Id === pyramid.apexId || segment.point2Id === pyramid.apexId) return true;
+        const p1 = ctx.byId.get(segment.point1Id);
+        const p2 = ctx.byId.get(segment.point2Id);
+        return p1?.type === 'point' && p2?.type === 'point' && Math.abs(Number(p1.x) - Number(p2.x)) < 0.1;
+    });
+    for (const segment of heightSegments) {
+        segment.dashed = true;
+        segment.showLabel = false;
+    }
+}
+
+function normalizeNestedRectangularPrismLayout(ctx, text) {
+    const mentionsRectangularPrism = /(직육면체|rectangular\s*prism|cuboid|box)/i.test(text);
+    const mentionsInnerCube = /(정육면체|작은|안에|inside|inner|cube)/i.test(text);
+    if (!mentionsRectangularPrism || !mentionsInnerCube) return;
+
+    const prisms = ctx.byType('prism').filter(prism =>
+        Array.isArray(prism.baseVertexIds) &&
+        Array.isArray(prism.topVertexIds) &&
+        prism.baseVertexIds.length === 4 &&
+        prism.topVertexIds.length === 4
+    );
+    if (prisms.length < 2) return;
+
+    for (const prism of prisms) {
+        prism.showLabel = false;
+    }
+
+    const innerPrism = prisms[1];
+    const innerPointIds = new Set([...(innerPrism.baseVertexIds || []), ...(innerPrism.topVertexIds || [])]);
+    for (const pointId of innerPointIds) {
+        const point = ctx.byId.get(pointId);
+        if (point?.type === 'point') {
+            hidePointLike(point);
+        }
     }
 }
 
@@ -278,6 +397,65 @@ function solidPointOperations(ctx, solid) {
         .filter(operation => operation?.type === 'point')
         .map(operation => ({ operation, point: { x: operation.x, y: operation.y } }))
         .filter(item => Number.isFinite(item.point.x) && Number.isFinite(item.point.y));
+}
+
+function circleRecord(ctx, circle, fallbackLabel) {
+    const centerOp = ctx.byId.get(circle.centerId);
+    const radiusOp = ctx.byId.get(circle.pointOnCircleId);
+    const center = resolvePoint(ctx, circle.centerId);
+    const radiusPoint = resolvePoint(ctx, circle.pointOnCircleId);
+    if (!centerOp || !center || !radiusPoint) return null;
+    return {
+        circle,
+        centerOp,
+        radiusOp,
+        center,
+        radius: distance(center, radiusPoint),
+        label: String(centerOp.label || fallbackLabel || circle.label || circle.id || '').trim()
+    };
+}
+
+function hidePointLike(operation) {
+    if (!operation) return;
+    operation.visible = false;
+    operation.showLabel = false;
+    operation.pointSize = 0;
+}
+
+function ensureExternalLabelAnchor(ctx, label, point) {
+    const normalizedLabel = normalizeName(label);
+    if (!normalizedLabel) return null;
+
+    const existing = ctx.operations.find(operation =>
+        operation.type === 'point' &&
+        normalizeName(operation.label) === normalizedLabel &&
+        /_label$/.test(String(operation.id || ''))
+    );
+    if (existing) {
+        existing.x = point.x;
+        existing.y = point.y;
+        existing.visible = true;
+        existing.showLabel = true;
+        existing.pointSize = Math.min(Number(existing.pointSize) || 0, 0.1);
+        existing.label = label;
+        return existing;
+    }
+
+    const id = uniqueId(ctx, `${normalizedLabel}_label`);
+    const anchor = {
+        op: 'create',
+        id,
+        type: 'point',
+        x: point.x,
+        y: point.y,
+        label,
+        pointSize: 0,
+        showLabel: true,
+        visible: true
+    };
+    ctx.operations.push(anchor);
+    ctx.byId.set(id, anchor);
+    return anchor;
 }
 
 function visiblePointRecords(ctx) {

@@ -2,6 +2,44 @@
 
 ## Relevant Skills
 
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The task verifies the production OpenAI Responses API proxy and must keep API-key handling aligned with project rules.
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The live prompts are Korean exam-style drawing requests that need valid GraphA operations and visual semantic checks.
+- Skill: Playwright
+- Why it matters:
+  - The user asked for actual Vercel-site behavior, so the result had to be checked in the rendered production UI, not just by API status.
+- Skill: Vercel Environment Variables / Deployments
+- Why it matters:
+  - The owner proxy depends on encrypted Production env vars and a redeployed Vercel runtime.
+
+## Current Task Notes
+
+- User request:
+  - Put the provided OpenAI API key where the app needs it and test actual OpenAI requests from the Vercel site.
+  - Check whether prior 9번 and 10번 outputs are truly correct by comparing the prompt intent with the rendered result.
+- Security boundary:
+  - The key was configured only as encrypted Vercel Production `OPENAI_API_KEY`.
+  - No secret value should be committed, printed, or stored in local project files.
+  - `MATHGRAPH_LOGIN_SECRET` is also configured as a separate encrypted Production value.
+- Production finding:
+  - Owner login and `/api/openai-responses` work on `https://mathgraph-five.vercel.app`.
+  - Runtime drawing references must be served from `runtime/mathgraph-drawing/references/` because `.agents/` is not public in Vercel deployments.
+- Implementation result:
+  - `AIService` loads runtime drawing references first and falls back to `.agents/` locally.
+  - `DiagramQualityEnhancer` now removes recurring live OpenAI helper clutter for three-circle lenses, square-pyramid midsections, and nested prisms.
+  - Focused regression tests cover the cleanup behavior.
+- Verification result:
+  - Full tests passed with 179 tests.
+  - Production deployment `dpl_HUdQoHPYE7KNQNRqLPYX5owaR7Cw` is `Ready` and attached to `https://mathgraph-five.vercel.app`.
+  - Live OpenAI production smoke returned 200 for all three prompts and screenshots were visually reviewed.
+
+---
+
+## Relevant Skills
+
 - Skill: Frontend App Builder
 - Why it matters:
   - The request adds a first-load login screen and should follow the generated concept before code.
@@ -34,7 +72,7 @@
   - Owner mode hides direct API-key entry, locks OpenAI provider selection, and routes OpenAI calls through `/api/openai-responses`.
   - Guest mode enters the editor with provider/API-key controls enabled for direct BYOK use.
   - Local smoke found 0 console errors and 0 failed requests across initial, owner, guest, and 390px mobile layouts.
-  - Vercel currently has no environment variables configured; owner default OpenAI calls require adding `OPENAI_API_KEY`.
+  - Vercel Production now has encrypted `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET`, and owner default OpenAI calls were verified from the production alias.
 
 ---
 

@@ -2,6 +2,62 @@
 
 ## 2026-06-16
 
+### Live Vercel OpenAI proxy diagram QA
+
+#### Work completed
+
+- Verified the production owner flow on `https://mathgraph-five.vercel.app` using the real same-origin `/api/openai-responses` proxy backed by encrypted Vercel `OPENAI_API_KEY`.
+- Kept secret values out of repository files, screenshots, and logs; only Vercel encrypted environment variable names are documented.
+- Removed the temporary Production `MATHGRAPH_OWNER_NAME` override and relied on the UTF-8 source default owner name because shell-injected Korean environment values can be mangled.
+- Added production-served runtime copies of the drawing reference files under `runtime/mathgraph-drawing/references/` and changed `AIService` to load those before the local `.agents/` fallback.
+- Added deterministic `DiagramQualityEnhancer` cleanup for recurring live OpenAI output issues:
+  - three-circle pairwise lens layouts hide center/radius helper dots and circle labels while keeping external `O/P/Q` labels;
+  - square-pyramid midsection layouts hide helper labels, auto polygon labels, and keep the height dashed;
+  - nested rectangular-prism layouts hide inner helper labels while keeping outer `A` through `H`.
+- Added focused regression coverage for the three live-QA cleanup paths.
+- Added `output/` to `.gitignore` so Playwright screenshot artifacts stay local.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
+- Workflow skills: `.agents/skills/openai-vibecoding-context/SKILL.md`, `.agents/skills/mathgraph-drawing/SKILL.md`, the Playwright skill, Vercel environment-variable guidance, and Vercel deployment/CI guidance.
+- Runtime/test files: `js/ai/AIService.js`, `js/ai/DiagramQualityEnhancer.js`, and `tests/ai-flow.test.js`.
+
+#### Verification
+
+- Ran `npx.cmd vercel env ls`; confirmed encrypted Production values for `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` only.
+- Ran `node --check js\ai\DiagramQualityEnhancer.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 49 tests.
+- Ran `npm.cmd test`; passed with 179 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_HUdQoHPYE7KNQNRqLPYX5owaR7Cw` was created at `https://mathgraph-4bsjzbe51-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-4bsjzbe51-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Production Playwright live OpenAI smoke on `https://mathgraph-five.vercel.app/` confirmed:
+  - runtime drawing references returned `[200, 200]`;
+  - owner login returned 200 and produced an owner token;
+  - all three `/api/openai-responses` calls returned 200 with model `gpt-5.5-2026-04-23`;
+  - response ids were observed for all prompts, including `resp_0d8e238db03debb3016a30b3e0ad80819db09dcb1893c9ccb7`, `resp_04e8b2f3553ee9d2016a30b4055a0c819e95ea8e555bac8edb`, and `resp_082603ea8c6ea8e7016a30b42c003081a2a4f8587709673496`;
+  - three-circle prompt produced 15 objects with 3 circles, 3 `lensRegion` objects, external `O/P/Q` labels, and no visible center dots;
+  - square-pyramid prompt produced 13 objects with 1 `pyramid`, 1 shaded `polygon`, 1 dashed height `segment`, and visible `A/B/C/D/V` labels only;
+  - nested-prism prompt produced 18 objects with 2 `prism` objects and visible outer labels `A` through `H` only;
+  - console issues and failed requests were both empty.
+- Reviewed the saved Playwright screenshots in `output/playwright/`; the 9번, 10번, and nested-prism outputs visually match the prompt intent after cleanup.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-4bsjzbe51-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_HUdQoHPYE7KNQNRqLPYX5owaR7Cw`.
+- Production env configured: `OPENAI_API_KEY`, `MATHGRAPH_LOGIN_SECRET`.
+- `MATHGRAPH_OWNER_NAME` is intentionally not configured in Production; the source default owner name is used.
+
+#### Git / GitHub
+
+- This entry is included in the live OpenAI proxy QA commit for the task.
+- Push target: `codex/ai-fallback-recovery`.
+
 ### Production OpenAI environment setup
 
 #### Work completed

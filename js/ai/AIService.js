@@ -40,6 +40,19 @@ const OPENAI_MODEL_ROUTING_RANK = {
     'gpt-5.5-pro': 5
 };
 
+const DRAWING_REFERENCE_PATH_SETS = [
+    {
+        source: 'runtime/mathgraph-drawing/references',
+        index: 'runtime/mathgraph-drawing/references/retrieval-index.json',
+        manual: 'runtime/mathgraph-drawing/references/feature-manual.json'
+    },
+    {
+        source: '.agents/skills/mathgraph-drawing/references',
+        index: '.agents/skills/mathgraph-drawing/references/retrieval-index.json',
+        manual: '.agents/skills/mathgraph-drawing/references/feature-manual.json'
+    }
+];
+
 function clampNumber(value, min, max) {
     return Math.min(max, Math.max(min, value));
 }
@@ -933,24 +946,30 @@ export class AIService {
             return null;
         }
 
-        this.drawingReferenceLoadPromise = Promise.all([
-            fetch('.agents/skills/mathgraph-drawing/references/retrieval-index.json'),
-            fetch('.agents/skills/mathgraph-drawing/references/feature-manual.json')
-        ])
-            .then(async ([indexResponse, manualResponse]) => {
-                if (!indexResponse.ok || !manualResponse.ok) {
-                    throw new Error('MathGraph drawing reference files are not available.');
+        this.drawingReferenceLoadPromise = (async () => {
+            const errors = [];
+            for (const pathSet of DRAWING_REFERENCE_PATH_SETS) {
+                try {
+                    const [indexResponse, manualResponse] = await Promise.all([
+                        fetch(pathSet.index),
+                        fetch(pathSet.manual)
+                    ]);
+                    if (!indexResponse.ok || !manualResponse.ok) {
+                        errors.push(`${pathSet.source}: ${indexResponse.status}/${manualResponse.status}`);
+                        continue;
+                    }
+                    const index = await indexResponse.json();
+                    const manual = await manualResponse.json();
+                    this.drawingReferenceIndex = index;
+                    this.drawingFeatureManual = manual;
+                    return { index, manual };
+                } catch (error) {
+                    errors.push(`${pathSet.source}: ${error?.message || error}`);
                 }
-                const index = await indexResponse.json();
-                const manual = await manualResponse.json();
-                this.drawingReferenceIndex = index;
-                this.drawingFeatureManual = manual;
-                return { index, manual };
-            })
-            .catch(error => {
-                console.warn('MathGraph drawing reference load failed:', error);
-                return null;
-            });
+            }
+            console.warn('MathGraph drawing reference load failed:', errors.join('; '));
+            return null;
+        })();
 
         return this.drawingReferenceLoadPromise;
     }

@@ -15,7 +15,7 @@ For future GPT/OpenAI API orchestration, start with the project-local skill:
 
 Load `retrieval-index.json` first, then fetch only the feature chunks and synthetic examples matching the user's Korean request. This keeps complex drawing prompts from carrying every schema and example on every API call.
 
-The browser AI service now uses the same idea at runtime: before OpenAI text/image requests, it tries to load `retrieval-index.json` and `feature-manual.json`, selects the relevant object types from the user instruction and selected canvas objects, and injects a compact manual summary into the prompt. If those files are unavailable in a deployment, the API call still runs with the built-in prompt, but fidelity may be weaker.
+The browser AI service now uses the same idea at runtime: before OpenAI text/image requests, it tries to load `runtime/mathgraph-drawing/references/retrieval-index.json` and `runtime/mathgraph-drawing/references/feature-manual.json`, then falls back to the local `.agents/` copies for development. It selects the relevant object types from the user instruction and selected canvas objects, and injects a compact manual summary into the prompt. If those files are unavailable in a deployment, the API call still runs with the built-in prompt, but fidelity may be weaker.
 
 ## 1. Runtime Contract
 
@@ -150,6 +150,9 @@ Current deterministic corrections:
 - add a larger `angleDimension` aid with `arcRadius` at least `0.7` and `showValue:false` when a right-angle request would otherwise rely only on a small `rightAngleMarker`;
 - expand weak rectangular-prism cross-section layouts and make the section polygon span a substantial middle portion of the prism;
 - expand and recenter triangular-pyramid-inside-triangular-prism layouts so the inner solid has visible projection margins.
+- normalize three-circle pairwise-lens layouts by hiding center/radius helper dots and circle labels while keeping external `O/P/Q` label anchors;
+- normalize square-pyramid midsection layouts by hiding helper/auto labels, preserving only structural vertex labels, and rendering the height as dashed;
+- normalize nested rectangular-prism layouts by hiding inner helper labels and prism labels while preserving the outer `A` through `H` labels.
 
 The enhancer deliberately skips selected-object patch mode and skips projection rewriting when a prompt supplies several explicit coordinates.
 

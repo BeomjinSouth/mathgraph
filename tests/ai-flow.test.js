@@ -648,6 +648,126 @@ test('AIService expands weak prism cross-section layouts before application', ()
     assert.ok(sectionHeight / outerHeight >= 0.4);
 });
 
+test('AIService hides visible center dots in three-circle lens layouts', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: [
+            { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O', pointSize: 3 },
+            { op: 'create', id: 'O_edge', type: 'point', x: 3, y: 0, showLabel: false },
+            { op: 'create', id: 'P', type: 'point', x: 4, y: 0, label: 'P', pointSize: 3 },
+            { op: 'create', id: 'P_edge', type: 'point', x: 7, y: 0, showLabel: false },
+            { op: 'create', id: 'Q', type: 'point', x: 2, y: 3, label: 'Q', pointSize: 3 },
+            { op: 'create', id: 'Q_edge', type: 'point', x: 5, y: 3, showLabel: false },
+            { op: 'create', id: 'cO', type: 'circle', centerId: 'O', pointOnCircleId: 'O_edge' },
+            { op: 'create', id: 'cP', type: 'circle', centerId: 'P', pointOnCircleId: 'P_edge' },
+            { op: 'create', id: 'cQ', type: 'circle', centerId: 'Q', pointOnCircleId: 'Q_edge' },
+            { op: 'create', id: 'lensOP', type: 'lensRegion', circle1Id: 'cO', circle2Id: 'cP' },
+            { op: 'create', id: 'lensOQ', type: 'lensRegion', circle1Id: 'cO', circle2Id: 'cQ' },
+            { op: 'create', id: 'lensPQ', type: 'lensRegion', circle1Id: 'cP', circle2Id: 'cQ' }
+        ]
+    }, 'draw three circles O, P, Q with pairwise lens overlap regions');
+
+    for (const id of ['O', 'P', 'Q']) {
+        const center = enhanced.operations.find(operation => operation.id === id);
+        assert.equal(center.visible, false);
+        assert.equal(center.showLabel, false);
+        assert.equal(center.pointSize, 0);
+    }
+
+    const anchors = enhanced.operations.filter(operation => /_label$/.test(operation.id));
+    assert.deepEqual(anchors.map(operation => operation.label).sort(), ['O', 'P', 'Q']);
+    assert.ok(anchors.every(operation => operation.visible === true));
+    assert.ok(anchors.every(operation => operation.showLabel === true));
+    assert.ok(anchors.every(operation => operation.pointSize <= 0.1));
+    assert.ok(enhanced.operations
+        .filter(operation => operation.type === 'lensRegion')
+        .every(operation => operation.showLabel === false && operation.fillOpacity >= 0.16));
+    assert.ok(enhanced.operations
+        .filter(operation => operation.type === 'circle')
+        .every(operation => operation.showLabel === false));
+});
+
+test('AIService declutters square pyramid midsection layouts', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -3, y: -1, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 3, y: -1, label: 'B' },
+            { op: 'create', id: 'C', type: 'point', x: 4, y: 1, label: 'C' },
+            { op: 'create', id: 'D', type: 'point', x: -2, y: 1, label: 'D' },
+            { op: 'create', id: 'V', type: 'point', x: 0.5, y: 5, label: 'V' },
+            { op: 'create', id: 'O', type: 'point', x: 0.5, y: 0, label: 'O' },
+            { op: 'create', id: 'M1', type: 'point', x: -1.2, y: 2, label: 'M1' },
+            { op: 'create', id: 'M2', type: 'point', x: 1.8, y: 2, label: 'M2' },
+            { op: 'create', id: 'M3', type: 'point', x: 2.5, y: 2.7, label: 'M3' },
+            { op: 'create', id: 'M4', type: 'point', x: -0.5, y: 2.7, label: 'M4' },
+            { op: 'create', id: 'base_poly', type: 'polygon', vertexIds: ['A', 'B', 'C', 'D'], label: 'c7' },
+            { op: 'create', id: 'midsection', type: 'polygon', vertexIds: ['M1', 'M2', 'M3', 'M4'], label: '중간 단면', fillOpacity: 0.08 },
+            { op: 'create', id: 'pyr', type: 'pyramid', baseVertexIds: ['A', 'B', 'C', 'D'], apexId: 'V', label: '정사각뿔' },
+            { op: 'create', id: 'height', type: 'segment', point1Id: 'V', point2Id: 'O', label: '높이' }
+        ]
+    }, 'draw a square pyramid midsection cross-section');
+
+    const center = enhanced.operations.find(operation => operation.id === 'O');
+    const midsection = enhanced.operations.find(operation => operation.id === 'midsection');
+    const base = enhanced.operations.find(operation => operation.id === 'base_poly');
+    const pyramid = enhanced.operations.find(operation => operation.id === 'pyr');
+    const height = enhanced.operations.find(operation => operation.id === 'height');
+
+    assert.equal(center.visible, false);
+    assert.equal(center.showLabel, false);
+    assert.ok(['M1', 'M2', 'M3', 'M4'].every(id => {
+        const point = enhanced.operations.find(operation => operation.id === id);
+        return point.visible === false && point.showLabel === false;
+    }));
+    assert.equal(base.showLabel, false);
+    assert.equal(midsection.showLabel, false);
+    assert.ok(midsection.fillOpacity >= 0.16);
+    assert.equal(pyramid.showLabel, false);
+    assert.equal(height.dashed, true);
+    assert.equal(height.showLabel, false);
+});
+
+test('AIService hides inner labels in nested rectangular prism layouts', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -4, y: -2, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 2, y: -2, label: 'B' },
+            { op: 'create', id: 'C', type: 'point', x: 4, y: 0, label: 'C' },
+            { op: 'create', id: 'D', type: 'point', x: -2, y: 0, label: 'D' },
+            { op: 'create', id: 'E', type: 'point', x: -4, y: 2, label: 'E' },
+            { op: 'create', id: 'F', type: 'point', x: 2, y: 2, label: 'F' },
+            { op: 'create', id: 'G', type: 'point', x: 4, y: 4, label: 'G' },
+            { op: 'create', id: 'H', type: 'point', x: -2, y: 4, label: 'H' },
+            { op: 'create', id: 'outer_prism', type: 'prism', baseVertexIds: ['A', 'B', 'C', 'D'], topVertexIds: ['E', 'F', 'G', 'H'], label: '직육면체 ABCD EFGH' },
+            { op: 'create', id: 'a', type: 'point', x: -1, y: -1, label: 'a' },
+            { op: 'create', id: 'b', type: 'point', x: 1, y: -1, label: 'b' },
+            { op: 'create', id: 'c', type: 'point', x: 2, y: 0, label: 'c' },
+            { op: 'create', id: 'd', type: 'point', x: 0, y: 0, label: 'd' },
+            { op: 'create', id: 'e', type: 'point', x: -1, y: 1, label: 'e' },
+            { op: 'create', id: 'f', type: 'point', x: 1, y: 1, label: 'f' },
+            { op: 'create', id: 'g', type: 'point', x: 2, y: 2, label: 'g' },
+            { op: 'create', id: 'h', type: 'point', x: 0, y: 2, label: 'h' },
+            { op: 'create', id: 'inner_prism', type: 'prism', baseVertexIds: ['a', 'b', 'c', 'd'], topVertexIds: ['e', 'f', 'g', 'h'], label: '작은 정육면체' }
+        ]
+    }, 'draw rectangular prism ABCD EFGH with a small cube inside');
+
+    assert.ok(enhanced.operations
+        .filter(operation => operation.type === 'prism')
+        .every(operation => operation.showLabel === false));
+    assert.ok(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].every(id => {
+        const point = enhanced.operations.find(operation => operation.id === id);
+        return point.visible === false && point.showLabel === false && point.pointSize === 0;
+    }));
+    assert.deepEqual(
+        enhanced.operations
+            .filter(operation => /^[A-H]$/.test(operation.id))
+            .map(operation => operation.label),
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    );
+});
+
 test('AIService recenters cramped triangular pyramid inside triangular prism layouts', () => {
     const service = createAIService();
     const enhanced = service.enhanceDiagramQuality({
