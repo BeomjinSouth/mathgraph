@@ -2,6 +2,56 @@
 
 ## Status
 
+- Task: Vercel direct prompt fallback for prior CSAT prompts
+- State: Done
+- Last updated: 2026-06-16
+
+## Plan
+
+1. Reproduce direct production UI behavior for representative prior prompts.
+2. Add narrowly scoped deterministic fallback builders for the failed prompt families.
+3. Add regression tests for object types, labels, and hidden helper points.
+4. Run focused/full verification and production UI smoke.
+5. Deploy, commit, push, and record remaining limits.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Keep this in local fallback instead of changing OpenAI prompts.
+- Reason: The reproduced failure is the API-free production UI path.
+- Decision: Add exact builders for the previously audited CSAT prompt families rather than a broad parser.
+- Reason: The goal is reliable production behavior for known representative prompts without widening unintended fallback matches.
+
+## Verification
+
+- Completed:
+  - `node --check js\ai\AIService.js`; passed.
+  - `node --test tests\ai-flow.test.js`; passed with 45 tests.
+  - `npm.cmd test`; passed with 175 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_5J2eAU3WZbAzGK2tSRuGqAGQbo6f` created at `https://mathgraph-dqu3op50k-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-dqu3op50k-beomjinsouths-projects.vercel.app`; target `production`, status `Ready`, primary alias attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Production UI direct prompt smoke on `https://mathgraph-five.vercel.app/`; nested prism, hyperbola/asymptotes, three-circle lenses, and square-pyramid midsection all created the requested object families with no failed requests.
+
+## Handoff
+
+- Current status:
+  - Direct production UI now handles the prior representative prompts in local/no-key mode.
+  - The three-circle prompt renders labels `O,P,Q` outside the circles without visible anchor dots.
+
+---
+
+## Status
+
 - Task: Local solid fallback for nested rectangular prism request
 - State: Done
 - Last updated: 2026-06-15

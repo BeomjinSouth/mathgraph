@@ -64,6 +64,19 @@ When text looks like a full textbook-style problem, `AIService` adds a problem-s
 - do not solve the problem, state the answer, copy full prose, or recreate answer choices as standalone text objects;
 - keep the final output in the same strict GraphA `operations[]` contract.
 
+## 1.1.2 Local Deterministic Fallback
+
+When no API key is configured, `AIService` uses deterministic local fallback builders. This path is intentionally narrower than the OpenAI-backed path, but it should not claim success with misleading generic output for known representative requests.
+
+Current guaranteed exam-style local templates include:
+
+- rectangular prism/cube prompts, including a small cube inside a labeled outer rectangular prism;
+- `2/x` hyperbola prompts with dashed `x=0` and `y=0` asymptotes plus labeled points `A,B,C,D`;
+- three radius-2.4 circle pairwise-lens prompts using three `circle` objects, three `lensRegion` objects, hidden centers/radius points, and small external `O,P,Q` label anchors;
+- square-pyramid midsection prompts using a first-class `pyramid`, a shaded midsection `polygon`, and a dashed height `segment`.
+
+Requests outside these deterministic templates should use the OpenAI/Gemini BYOK path for reliable natural-language interpretation.
+
 ## 1.2 Image Reference And Targeted Patching
 
 The chat image workflow uses the same Responses API and strict `operations[]` output contract. Images are sent as `input_image` content with a text instruction. The app then validates and applies the returned graph-object patch through `SchemaValidator` and `PatchApplier`.

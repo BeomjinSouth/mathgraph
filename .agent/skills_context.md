@@ -4,6 +4,35 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The failing production prompts are Korean natural-language CSAT-style drawing requests that must compile to valid GraphA `operations[]`.
+- Skill: Playwright
+- Why it matters:
+  - The problem only becomes clear in the deployed UI: the chat reports success even when the rendered canvas is semantically wrong.
+- Skill: Vercel Deployments & CI/CD
+- Why it matters:
+  - The fix changes production fallback behavior and must be deployed and smoke-tested on the Vercel alias.
+
+## Current Task Notes
+
+- User question:
+  - What happens if the prior requested prompts are entered directly on the Vercel site?
+- Production finding before fix:
+  - Recent nested rectangular prism/cube prompt works: 16 points, 2 prisms, visible `A` through `H`.
+  - Prior hyperbola/asymptote prompt degrades to one weak/invalid function instead of the requested graph with asymptotes and points.
+  - Prior three-circle pairwise lens prompt degrades to one circle and visible center dots.
+  - Prior square-pyramid midsection prompt degrades to a filled quadrilateral instead of a first-class pyramid.
+- Implementation direction:
+  - Add targeted local fallback builders for these prior audited prompt families before generic fallback.
+  - Keep OpenAI/BYOK behavior unchanged.
+- Verification target:
+  - Focused tests, full tests/build, local or production browser smoke, Vercel deploy/inspect/HTTP checks.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The request is a Korean natural-language solid drawing prompt and should compile to valid GraphA `operations[]` using existing `prism` support.
 - Skill: Playwright
 - Why it matters:

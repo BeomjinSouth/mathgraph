@@ -1,41 +1,58 @@
 # Progress Log
 
-## 2026-06-15
+## 2026-06-16
 
-### AI text reference validation retry
+### Vercel direct prompt fallback for prior CSAT prompts
 
 #### Work completed
 
-- Diagnosed the visible reference validation failure warning as GraphA operations using `update`/`delete` ids that do not exist on the current canvas.
-- Changed normal OpenAI text drawing requests so they no longer automatically send stale `previous_response_id`; explicit previous ids are still supported for repair-style calls.
-- Added pre-UI schema/reference validation in `AIService.processCommand()`.
-- Added one OpenAI text repair pass that resubmits the validation errors and failed JSON, instructing the model to use `create` for new drawings and `update/delete` only for current canvas ids.
-- Added regression coverage for stale `obj_*` update ids being repaired into valid create operations.
-- Added `.agent/ai_reference_validation_retry.md` for this scoped behavior change and verification record.
+- Tested direct production UI prompts on `https://mathgraph-five.vercel.app/` with provider set to local/no API key.
+- Confirmed the recent nested rectangular-prism prompt already worked in production, creating 16 points and 2 prisms.
+- Confirmed prior CSAT prompts degraded in production local fallback:
+  - the `2/x` hyperbola/asymptote prompt produced only one weak function path;
+  - the three-circle pairwise-lens prompt produced only one circle and two visible points;
+  - the square-pyramid midsection prompt produced only a filled quadrilateral.
+- Added targeted deterministic fallback builders for:
+  - `2/x` hyperbola with dashed `x=0` and `y=0` asymptotes and labeled points `A,B,C,D`;
+  - three radius-2.4 circles with three `lensRegion` objects and small external `O,P,Q` label anchors;
+  - square pyramid with first-class `pyramid`, shaded midsection `polygon`, and dashed height `segment`.
+- Added focused regression coverage in `tests/ai-flow.test.js`.
+- Hid the three-circle external label anchors with `pointSize:0` so the labels remain visible but no extra anchor dots appear.
+- Updated `.agent/vercel_direct_prompt_fallback.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
 
 #### Sources checked
 
-- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `docs/ai-reference.md`, and `.agents/skills/mathgraph-drawing/SKILL.md`.
-- Runtime/test files: `js/ai/AIService.js`, `js/ai/SchemaValidator.js`, `js/ai/PatchApplier.js`, `js/main.js`, and `tests/ai-flow.test.js`.
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
+- Workflow skills: `.agents/skills/mathgraph-drawing/SKILL.md` plus `references/retrieval-index.json`, relevant `feature-manual.json` object schemas, and the Playwright skill.
+- Runtime/test files: `js/ai/AIService.js` and `tests/ai-flow.test.js`.
 
 #### Verification
 
 - Ran `node --check js\ai\AIService.js`; passed.
-- Ran `node --test tests\ai-flow.test.js`; passed with 42 tests.
-- Ran `npm.cmd test`; passed with 172 tests.
+- Ran `node --test tests\ai-flow.test.js`; passed with 45 tests.
+- Ran `npm.cmd test`; passed with 175 tests.
 - Ran `npm.cmd run vercel-build`; passed.
 - Ran `git diff --check`; passed with line-ending warnings only.
-- No live OpenAI request was made; the repair behavior was verified with mocked Responses API payloads.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_5J2eAU3WZbAzGK2tSRuGqAGQbo6f` was created at `https://mathgraph-dqu3op50k-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-dqu3op50k-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Production UI direct prompt smoke on `https://mathgraph-five.vercel.app/` with provider set to local/no API key confirmed:
+  - nested rectangular prism/cube prompt: 18 objects, 16 points, 2 prisms, visible labels `A` through `H`;
+  - hyperbola/asymptote prompt: 11 objects, 1 function, 2 dashed lines, 8 points, visible labels `A,B,C,D`;
+  - three-circle lens prompt: 15 objects, 3 circles, 3 `lensRegion` objects, 9 points, visible labels `O,P,Q`, no visible anchor dots in screenshot review;
+  - square-pyramid midsection prompt: 13 objects, 1 pyramid, 1 polygon, 1 segment, 10 helper points, no visible labels.
+- Production UI smoke reported no failed network requests and only the expected canvas readback performance warning.
 
 #### Deployment / Vercel
 
-- No Vercel settings or environment variables were changed.
-- Manual production deploy was not run from this dirty workspace because unrelated in-progress local solid fallback changes are present and a direct deploy would include the whole working tree.
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-dqu3op50k-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_5J2eAU3WZbAzGK2tSRuGqAGQbo6f`.
+- No Vercel settings or environment variables changed.
 
 #### Git / GitHub
 
-- Push target: `codex/ai-fallback-recovery`.
-- Existing unrelated dirty changes were left unstaged for separate handling.
+- Pending commit and push.
 
 ## 2026-06-15
 
@@ -81,6 +98,43 @@
 - This entry is included in the local solid fallback commit for the task.
 - Push target: `codex/ai-fallback-recovery`.
 - Existing untracked `.agent/ai_reference_validation_retry.md` was left untouched.
+
+## 2026-06-15
+
+### AI text reference validation retry
+
+#### Work completed
+
+- Diagnosed the visible `참조 검증 실패` warning as GraphA operations using `update`/`delete` ids that do not exist on the current canvas.
+- Changed normal OpenAI text drawing requests so they no longer automatically send stale `previous_response_id`; explicit previous ids are still supported for repair-style calls.
+- Added pre-UI schema/reference validation in `AIService.processCommand()`.
+- Added one OpenAI text repair pass that resubmits the validation errors and failed JSON, instructing the model to use `create` for new drawings and `update/delete` only for current canvas ids.
+- Added regression coverage for stale `obj_*` update ids being repaired into valid create operations.
+- Added `.agent/ai_reference_validation_retry.md` for this scoped behavior change and verification record.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `docs/ai-reference.md`, and `.agents/skills/mathgraph-drawing/SKILL.md`.
+- Runtime/test files: `js/ai/AIService.js`, `js/ai/SchemaValidator.js`, `js/ai/PatchApplier.js`, `js/main.js`, and `tests/ai-flow.test.js`.
+
+#### Verification
+
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --test tests\ai-flow.test.js`; passed with 42 tests.
+- Ran `npm.cmd test`; passed with 172 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- No live OpenAI request was made; the repair behavior was verified with mocked Responses API payloads.
+
+#### Deployment / Vercel
+
+- No Vercel settings or environment variables were changed.
+- Manual production deploy was not run from this dirty workspace because unrelated in-progress local solid fallback changes are present and a direct deploy would include the whole working tree.
+
+#### Git / GitHub
+
+- Push target: `codex/ai-fallback-recovery`.
+- Existing unrelated dirty changes were left unstaged for separate handling.
 
 ## 2026-06-07
 

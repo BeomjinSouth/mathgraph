@@ -2,6 +2,47 @@
 
 ## Summary
 
+- Task: Vercel direct prompt fallback for prior CSAT prompts
+- Owner: Codex
+- Date: 2026-06-16
+- Related files:
+  - `js/ai/AIService.js`
+  - `tests/ai-flow.test.js`
+  - `.agent/vercel_direct_prompt_fallback.md`
+  - `.agent/implementation_tracking.md`
+  - `.agent/skills_context.md`
+
+## Problem
+
+- Direct production UI testing showed a split between "objects were created" and "the requested diagram was created."
+- The recent nested rectangular-prism prompt works on Vercel without an API key, but prior audited CSAT prompts fall through to generic local fallback:
+  - the `2/x` hyperbola prompt creates only a weak function object and can render blank after parser errors;
+  - the three-circle lens prompt creates only one circle instead of three pairwise lenses;
+  - the square-pyramid midsection prompt creates only a quadrilateral instead of a first-class pyramid.
+
+## Goals
+
+- Make those prior representative prompts deterministic in API-free production mode.
+- Preserve the OpenAI-backed path and BYOK settings unchanged.
+- Use existing GraphA primitives only.
+
+## Non-Goals
+
+- Do not add broad natural-language parsing for every CSAT-style prompt.
+- Do not add new chart, Venn, or solid primitives.
+- Do not move API keys to a server-side proxy in this pass.
+
+## Acceptance Criteria
+
+- [x] Hyperbola/asymptote prompt creates `function`, dashed `line` asymptotes, and labeled points `A` through `D`.
+- [x] Three-circle lens prompt creates three `circle` objects, three `lensRegion` objects, hidden centers/radius points, and only external `O,P,Q` labels with no visible anchor dots.
+- [x] Square-pyramid midsection prompt creates a first-class `pyramid`, a shaded `polygon` midsection, and a dashed height `segment`.
+- [x] Focused tests, full tests/build, production deploy, and production UI smoke are recorded.
+
+---
+
+## Summary
+
 - Task: Local solid fallback for nested rectangular prism request
 - Owner: Codex
 - Date: 2026-06-15

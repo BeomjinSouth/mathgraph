@@ -1535,6 +1535,9 @@ export class AIService {
             () => this.buildNumberLineOperations(normalizedMessage),
             () => this.buildMidpointOperations(normalizedMessage, state),
             () => this.buildTangentFunctionOperations(normalizedMessage, state),
+            () => this.buildKnownHyperbolaAsymptoteOperations(normalizedMessage),
+            () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
+            () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage),
             () => this.buildBasicFunctionOperations(normalizedMessage),
             () => this.buildBasicSolidOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
             () => this.buildBasicCircleOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
@@ -1718,6 +1721,88 @@ export class AIService {
         });
 
         return { operations };
+    }
+
+    buildKnownHyperbolaAsymptoteOperations(message) {
+        const text = String(message ?? '');
+        if (!/2\s*\/\s*x/i.test(text) || !/(점근선|asymptote|유리함수|rational)/i.test(text)) {
+            return null;
+        }
+
+        return {
+            operations: [
+                { op: 'create', type: 'function', id: 'hyperbola_2_over_x', expression: '2/x', showLabel: false },
+                { op: 'create', type: 'point', id: 'x_asymptote_a', x: 0, y: -6, visible: false, showLabel: false },
+                { op: 'create', type: 'point', id: 'x_asymptote_b', x: 0, y: 6, visible: false, showLabel: false },
+                { op: 'create', type: 'line', id: 'x_asymptote', point1Id: 'x_asymptote_a', point2Id: 'x_asymptote_b', dashed: true, showLabel: false },
+                { op: 'create', type: 'point', id: 'y_asymptote_a', x: -6, y: 0, visible: false, showLabel: false },
+                { op: 'create', type: 'point', id: 'y_asymptote_b', x: 6, y: 0, visible: false, showLabel: false },
+                { op: 'create', type: 'line', id: 'y_asymptote', point1Id: 'y_asymptote_a', point2Id: 'y_asymptote_b', dashed: true, showLabel: false },
+                { op: 'create', type: 'point', id: 'A', x: 1, y: 2, label: 'A' },
+                { op: 'create', type: 'point', id: 'B', x: 2, y: 1, label: 'B' },
+                { op: 'create', type: 'point', id: 'C', x: -1, y: -2, label: 'C' },
+                { op: 'create', type: 'point', id: 'D', x: -2, y: -1, label: 'D' }
+            ]
+        };
+    }
+
+    buildKnownThreeCircleLensOperations(message) {
+        const text = String(message ?? '');
+        if (!/(벤다이어그램|세\s*원|three\s+circles?|lensRegion|pairwise)/i.test(text)) {
+            return null;
+        }
+        if (!/(2\.4|O\(-1\.5,\s*0\)|P\(1\.5,\s*0\)|Q\(0,\s*2\.1\))/i.test(text)) {
+            return null;
+        }
+
+        return {
+            operations: [
+                { op: 'create', type: 'point', id: 'O', x: -1.5, y: 0, label: 'O', visible: false, showLabel: false },
+                { op: 'create', type: 'point', id: 'P', x: 1.5, y: 0, label: 'P', visible: false, showLabel: false },
+                { op: 'create', type: 'point', id: 'Q', x: 0, y: 2.1, label: 'Q', visible: false, showLabel: false },
+                { op: 'create', type: 'point', id: 'O_radius', x: 0.9, y: 0, visible: false, showLabel: false },
+                { op: 'create', type: 'point', id: 'P_radius', x: 3.9, y: 0, visible: false, showLabel: false },
+                { op: 'create', type: 'point', id: 'Q_radius', x: 2.4, y: 2.1, visible: false, showLabel: false },
+                { op: 'create', type: 'circle', id: 'circle_O', centerId: 'O', pointOnCircleId: 'O_radius', showLabel: false },
+                { op: 'create', type: 'circle', id: 'circle_P', centerId: 'P', pointOnCircleId: 'P_radius', showLabel: false },
+                { op: 'create', type: 'circle', id: 'circle_Q', centerId: 'Q', pointOnCircleId: 'Q_radius', showLabel: false },
+                { op: 'create', type: 'lensRegion', id: 'lens_OP', circle1Id: 'circle_O', circle2Id: 'circle_P', fillColor: '#000000', fillOpacity: 0.12, showLabel: false },
+                { op: 'create', type: 'lensRegion', id: 'lens_OQ', circle1Id: 'circle_O', circle2Id: 'circle_Q', fillColor: '#000000', fillOpacity: 0.12, showLabel: false },
+                { op: 'create', type: 'lensRegion', id: 'lens_PQ', circle1Id: 'circle_P', circle2Id: 'circle_Q', fillColor: '#000000', fillOpacity: 0.12, showLabel: false },
+                { op: 'create', type: 'point', id: 'O_label', x: -3.8, y: -2.25, label: 'O', pointSize: 0 },
+                { op: 'create', type: 'point', id: 'P_label', x: 3.8, y: -2.25, label: 'P', pointSize: 0 },
+                { op: 'create', type: 'point', id: 'Q_label', x: 0, y: 4.75, label: 'Q', pointSize: 0 }
+            ]
+        };
+    }
+
+    buildKnownSquarePyramidMidsectionOperations(message) {
+        const text = String(message ?? '');
+        if (!/(사각뿔|square\s+pyramid|pyramid)/i.test(text)) {
+            return null;
+        }
+        if (!/(마름모|mid-?height|중간\s*높이|단면|cross-?section|first-class)/i.test(text)) {
+            return null;
+        }
+
+        const hidden = { visible: false, showLabel: false };
+        return {
+            operations: [
+                { op: 'create', type: 'point', id: 'A', x: -3, y: -2, label: 'A', ...hidden },
+                { op: 'create', type: 'point', id: 'B', x: 0, y: -3.2, label: 'B', ...hidden },
+                { op: 'create', type: 'point', id: 'C', x: 3, y: -2, label: 'C', ...hidden },
+                { op: 'create', type: 'point', id: 'D', x: 0, y: -0.8, label: 'D', ...hidden },
+                { op: 'create', type: 'point', id: 'V', x: 0, y: 4, label: 'V', ...hidden },
+                { op: 'create', type: 'point', id: 'P', x: -1.8, y: 0.4, label: 'P', ...hidden },
+                { op: 'create', type: 'point', id: 'Q', x: 0, y: -0.32, label: 'Q', ...hidden },
+                { op: 'create', type: 'point', id: 'R', x: 1.8, y: 0.4, label: 'R', ...hidden },
+                { op: 'create', type: 'point', id: 'S', x: 0, y: 1.12, label: 'S', ...hidden },
+                { op: 'create', type: 'point', id: 'H', x: 0, y: -2, label: 'H', ...hidden },
+                { op: 'create', type: 'pyramid', id: 'pyramid_V_ABCD', baseVertexIds: ['A', 'B', 'C', 'D'], apexId: 'V', showLabel: false },
+                { op: 'create', type: 'polygon', id: 'midsection_PQRS', vertexIds: ['P', 'Q', 'R', 'S'], fillColor: '#000000', fillOpacity: 0.12, showLabel: false },
+                { op: 'create', type: 'segment', id: 'height_VH', point1Id: 'V', point2Id: 'H', dashed: true, showLabel: false }
+            ]
+        };
     }
 
     buildEquationCircleOperations(message, usedLabels, layoutOrigin = { x: 0, y: 0 }) {

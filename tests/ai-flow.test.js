@@ -1083,6 +1083,70 @@ test('deterministic fallback draws a labeled rectangular prism', () => {
     );
 });
 
+test('local fallback draws prior CSAT hyperbola asymptote prompt', () => {
+    const service = createAIService();
+    const prompt = '\uC88C\uD45C\uD3C9\uBA74\uC5D0 \uC720\uB9AC\uD568\uC218 2/x\uB97C \uADF8\uB9AC\uACE0 \uC810\uADFC\uC120 x=0\uACFC y=0\uC744 \uD45C\uC2DC\uD574\uC918.';
+    const result = service.fallbackProcess(prompt);
+
+    assert.equal(result.success, true);
+
+    const validation = new SchemaValidator().validate(result.json);
+    assert.equal(validation.valid, true, validation.errors.join('\n'));
+
+    assert.equal(result.json.operations.filter(operation => operation.type === 'function').length, 1);
+    assert.equal(result.json.operations.find(operation => operation.type === 'function').expression, '2/x');
+    assert.equal(result.json.operations.filter(operation => operation.type === 'line' && operation.dashed).length, 2);
+    assert.deepEqual(
+        result.json.operations.filter(operation => operation.type === 'point' && operation.visible !== false).map(operation => operation.label),
+        ['A', 'B', 'C', 'D']
+    );
+});
+
+test('local fallback draws prior CSAT three-circle lens prompt', () => {
+    const service = createAIService();
+    const prompt = '\uBC18\uC9C0\uB984 2.4\uC778 \uC138 \uC6D0\uC744 \uC911\uC2EC O(-1.5,0), P(1.5,0), Q(0,2.1)\uC5D0 \uB450\uACE0 lensRegion \uC138 \uAC1C\uB85C \uACB9\uCE68\uC744 \uD45C\uC2DC\uD574\uC918.';
+    const result = service.fallbackProcess(prompt);
+
+    assert.equal(result.success, true);
+
+    const validation = new SchemaValidator().validate(result.json);
+    assert.equal(validation.valid, true, validation.errors.join('\n'));
+
+    assert.equal(result.json.operations.filter(operation => operation.type === 'circle').length, 3);
+    assert.equal(result.json.operations.filter(operation => operation.type === 'lensRegion').length, 3);
+    assert.deepEqual(
+        result.json.operations.filter(operation => operation.type === 'point' && operation.visible !== false).map(operation => operation.label),
+        ['O', 'P', 'Q']
+    );
+    assert.ok(
+        result.json.operations
+            .filter(operation => operation.id?.endsWith('_label'))
+            .every(operation => operation.pointSize <= 0.5)
+    );
+});
+
+test('local fallback draws prior CSAT square-pyramid midsection prompt', () => {
+    const service = createAIService();
+    const prompt = '\uC0AC\uAC01\uBFD4 pyramid\uB97C \uC218\uB2A5 \uB3C4\uC2DD\uCC98\uB7FC \uADF8\uB824\uC918. \uB9C8\uB984\uBAA8 \uD22C\uC601\uC758 \uBC11\uBA74\uACFC \uC911\uAC04 \uB192\uC774\uC758 \uB2E8\uBA74\uC744 \uD45C\uC2DC\uD574\uC918.';
+    const result = service.fallbackProcess(prompt);
+
+    assert.equal(result.success, true);
+
+    const validation = new SchemaValidator().validate(result.json);
+    assert.equal(validation.valid, true, validation.errors.join('\n'));
+
+    const pyramid = result.json.operations.find(operation => operation.type === 'pyramid');
+    const section = result.json.operations.find(operation => operation.type === 'polygon');
+    const height = result.json.operations.find(operation => operation.type === 'segment');
+    assert.ok(pyramid);
+    assert.deepEqual(pyramid.baseVertexIds, ['A', 'B', 'C', 'D']);
+    assert.equal(pyramid.apexId, 'V');
+    assert.deepEqual(section.vertexIds, ['P', 'Q', 'R', 'S']);
+    assert.equal(section.fillOpacity, 0.12);
+    assert.equal(height.dashed, true);
+    assert.equal(result.json.operations.filter(operation => operation.type === 'point' && operation.visible !== false).length, 0);
+});
+
 test('processCommand uses local fallback when no API key is configured', async () => {
     const service = createAIService();
     const result = await service.processCommand('y = x^2 graph', { objects: [] });
