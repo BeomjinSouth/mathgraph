@@ -93,7 +93,7 @@ test('SettingsManager controls default and bulk point size without touching non-
     });
 });
 
-test('drawPoint does not draw a point body or border for radius zero', () => {
+function createDrawPointRecorder() {
     const calls = [];
     const fakeContext = {
         set fillStyle(value) {
@@ -114,6 +114,37 @@ test('drawPoint does not draw a point body or border for radius zero', () => {
     canvas.ctx = fakeContext;
     canvas.toScreen = (point) => point;
 
+    return { canvas, calls };
+}
+
+test('drawPoint does not draw a point body, border, or selection halo for radius zero', () => {
+    const { canvas, calls } = createDrawPointRecorder();
+
     canvas.drawPoint(new Vec2(1, 2), { radius: 0, color: '#000000' });
     assert.deepEqual(calls, []);
+
+    canvas.drawPoint(new Vec2(1, 2), {
+        radius: 0,
+        color: '#000000',
+        selected: true,
+        highlighted: true
+    });
+    assert.deepEqual(calls, []);
+});
+
+test('drawPoint keeps selected feedback for positive point sizes', () => {
+    const { canvas, calls } = createDrawPointRecorder();
+
+    canvas.drawPoint(new Vec2(1, 2), {
+        radius: 4,
+        color: '#000000',
+        selected: true
+    });
+
+    assert.deepEqual(calls.slice(0, 4), [
+        ['fillStyle', 'rgba(99, 102, 241, 0.2)'],
+        ['beginPath'],
+        ['arc', 1, 2, 10, 0, Math.PI * 2],
+        ['fill']
+    ]);
 });

@@ -503,6 +503,10 @@ export class Canvas {
         } = options;
 
         const baseRadius = Math.max(0, Number(radius) || 0);
+        if (baseRadius <= 0) {
+            return;
+        }
+
         const r = highlighted ? baseRadius + 2 : baseRadius;
 
         // 선택 표시
@@ -511,10 +515,6 @@ export class Canvas {
             ctx.beginPath();
             ctx.arc(screen.x, screen.y, r + 6, 0, Math.PI * 2);
             ctx.fill();
-        }
-
-        if (baseRadius <= 0) {
-            return;
         }
 
         // 테두리

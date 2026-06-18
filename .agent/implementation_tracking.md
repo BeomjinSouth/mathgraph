@@ -2,6 +2,58 @@
 
 ## Status
 
+- Task: Zero-size point invisibility
+- State: Done
+- Last updated: 2026-06-18
+
+## Plan
+
+1. Record the zero-size point behavior before implementation.
+2. Move `drawPoint()` zero-radius exit ahead of selected/highlight rendering.
+3. Strengthen focused tests for selected zero-size and selected positive-size points.
+4. Update docs/progress notes and run focused/full verification.
+5. Commit, push, and deploy or record any blocker.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+
+## Decisions
+
+- Decision: Keep using `pointSize: 0` as the invisible point-body contract.
+- Reason: Existing UI controls, AI output, save/load, and label-only behavior already rely on `pointSize`.
+- Decision: Suppress selected/highlight point feedback only when the point body radius is zero.
+- Reason: The user wants zero-size points fully invisible, while positive-size points should still show normal editing feedback.
+
+## Verification
+
+- Completed:
+  - `node --check js\core\Canvas.js`; passed.
+  - `node --test tests\point-label-only.test.js`; passed with 6 tests.
+  - `npm.cmd test`; passed with 180 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - Local Playwright pixel smoke confirmed selected `pointSize:0` produced `zeroDelta:0`, while a selected positive-size point produced `positiveDelta:323`; no failed requests.
+  - `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_3RcgUBszAPN7mfKumVAJLLZPdRx1` created at `https://mathgraph-j4oo5i9qa-beomjinsouths-projects.vercel.app`.
+  - `npx.cmd vercel inspect https://mathgraph-j4oo5i9qa-beomjinsouths-projects.vercel.app`; target `production`, status `Ready`, primary alias attached.
+  - `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+  - Production Playwright pixel smoke on `https://mathgraph-five.vercel.app/` confirmed `zeroDelta:0`, `positiveDelta:323`, `window.app`, and no failed requests.
+
+## Handoff
+
+- Current status:
+  - `pointSize:0` now suppresses the point body, border, selected halo, and highlighted expansion.
+  - Labels still render through each point object's normal `showLabel` path.
+  - Positive-size points retain normal selected feedback.
+
+---
+
+## Status
+
 - Task: Live Vercel OpenAI proxy diagram QA
 - State: Done
 - Last updated: 2026-06-16

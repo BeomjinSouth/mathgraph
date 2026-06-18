@@ -2,6 +2,31 @@
 
 ## Relevant Skills
 
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The request is a rendered canvas bug where `pointSize:0` still displayed selected-point feedback.
+- Skill: Playwright
+- Why it matters:
+  - The final acceptance depends on real canvas pixels, so local and production browser smokes sampled the actual rendered canvas.
+
+## Current Task Notes
+
+- User request:
+  - When the point size is set to `0`, a purple selected-point halo was still visible; the desired behavior is for the point to be completely invisible.
+- Finding:
+  - `Canvas.drawPoint()` drew the selected halo before checking whether the base radius was zero.
+  - SVG export already skipped zero-size points, so the runtime canvas draw path was the visible leak.
+- Implementation result:
+  - `drawPoint()` now returns immediately when `baseRadius <= 0`, before selected/highlighted drawing.
+  - Positive-size selected points still draw their editing feedback.
+- Verification result:
+  - Focused tests, full tests, Vercel build, local Playwright pixel smoke, production deployment, Vercel inspect, HTTP 200, and production Playwright pixel smoke passed.
+  - Local and production browser smokes both measured `zeroDelta:0` for selected `pointSize:0` and `positiveDelta:323` for selected positive-size points.
+
+---
+
+## Relevant Skills
+
 - Skill: OpenAI Vibe Coding Context
 - Why it matters:
   - The task verifies the production OpenAI Responses API proxy and must keep API-key handling aligned with project rules.

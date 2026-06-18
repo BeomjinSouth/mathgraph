@@ -256,7 +256,7 @@ Most object types accept the following optional properties:
 | `color` | string | Hex color string. Default drawing output should use `#000000` unless the user explicitly asks for another color. |
 | `visible` | boolean | Visibility flag |
 | `lineWidth` | number | Stroke width |
-| `pointSize` | number | Point radius/size |
+| `pointSize` | number | Point radius/size. Use `0` to hide the point body completely, including selected/highlight feedback; labels can still render when `showLabel` is true. |
 | `fontSize` | number | Label size |
 | `labelOffset` | object | Screen-space label offset such as `{ "x": 14, "y": -12 }` |
 | `dashed` | boolean | Dashed stroke toggle |

@@ -2,6 +2,41 @@
 
 ## Summary
 
+- Task: Zero-size point invisibility
+- Owner: Codex
+- Date: 2026-06-18
+- Related files:
+  - `js/core/Canvas.js`
+  - `tests/point-label-only.test.js`
+  - `docs/ai-reference.md`
+  - `docs/progress-log.md`
+
+## Problem
+
+- When a point's size is set to `0`, the point body is hidden but the selected-point halo can still render as a visible purple circle.
+- Users expect a point size of `0` to make the point itself completely invisible, especially for helper points and label-only diagrams.
+
+## Goals
+
+- Make `pointSize: 0` suppress the point body, border, selected halo, and highlighted radius expansion.
+- Preserve labels when `showLabel` is enabled.
+- Keep visible points with positive `pointSize` unchanged.
+
+## Non-Goals
+
+- Do not change graph geometry, object schemas, saved-data fields, or label rendering.
+- Do not hide selected outlines for non-point objects.
+
+## Acceptance Criteria
+
+- [x] A selected point with `pointSize: 0` draws no point-body pixels or selection halo.
+- [x] A point with positive `pointSize` still draws selected feedback normally.
+- [x] Focused tests, full tests/build, docs, commit, push, and deployment outcome are recorded.
+
+---
+
+## Summary
+
 - Task: Landing login and default OpenAI proxy
 - Owner: Codex
 - Date: 2026-06-16

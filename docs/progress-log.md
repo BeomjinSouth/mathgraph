@@ -1,5 +1,47 @@
 # Progress Log
 
+## 2026-06-18
+
+### Zero-size point invisibility
+
+#### Work completed
+
+- Fixed `Canvas.drawPoint()` so `pointSize:0` returns before drawing selected/highlighted feedback.
+- Preserved labels through the existing point-object `showLabel` rendering path.
+- Added focused regression coverage so selected zero-size points draw no body, border, or selection halo, while positive-size selected points still show normal feedback.
+- Clarified the `pointSize:0` contract in `docs/ai-reference.md`.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, and `.agent/skills_context.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, `docs/progress-log.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
+- Runtime/test files: `js/core/Canvas.js`, `js/objects/Point.js`, `js/objects/GeoObject.js`, `js/core/ObjectManager.js`, `js/core/SettingsManager.js`, `js/main.js`, and `tests/point-label-only.test.js`.
+- Workflow skill: Playwright skill for real browser canvas-pixel smoke checks.
+
+#### Verification
+
+- Ran `node --check js\core\Canvas.js`; passed.
+- Ran `node --test tests\point-label-only.test.js`; passed with 6 tests.
+- Ran `npm.cmd test`; passed with 180 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Local Playwright pixel smoke confirmed selected `pointSize:0` produced `zeroDelta:0`, while a selected positive-size point produced `positiveDelta:323`; no failed requests. The only console warning was the expected canvas readback performance warning from `getImageData`.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_3RcgUBszAPN7mfKumVAJLLZPdRx1` was created at `https://mathgraph-j4oo5i9qa-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-j4oo5i9qa-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Production Playwright pixel smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, selected `pointSize:0` `zeroDelta:0`, positive selected point `positiveDelta:323`, and no failed requests. The only console warning was the expected canvas readback performance warning.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-j4oo5i9qa-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_3RcgUBszAPN7mfKumVAJLLZPdRx1`.
+- No Vercel settings or environment variables changed.
+
+#### Git / GitHub
+
+- Pending commit and push.
+
 ## 2026-06-16
 
 ### Live Vercel OpenAI proxy diagram QA
