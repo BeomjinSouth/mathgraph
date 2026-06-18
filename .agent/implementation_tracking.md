@@ -2,6 +2,60 @@
 
 ## Status
 
+- Task: Textbook arrow and image recreation fidelity
+- State: Done
+- Last updated: 2026-06-18
+
+## Plan
+
+1. Confirm the current difference between vector, ray, and axis arrow rendering.
+2. Record a scoped implementation plan before changing behavior.
+3. Reuse the existing filled triangular vector arrowhead for ray canvas rendering.
+4. Export ray objects with SVG arrowheads.
+5. Teach image/scene-graph references to map standalone arrows to vector and preserve coordinate graph functions.
+6. Add focused tests and run project verification.
+7. Update logs, commit, push, and deploy or record blockers.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+- [x] Step 6 narrow tests
+- [x] Step 6 full verification
+- [x] Step 7
+
+## Decisions
+
+- Decision: Do not add a new first-class `arrow` object in this pass.
+- Reason: Existing `vector` already represents a finite directed segment and can serve textbook annotation arrows with hidden helper endpoints.
+- Decision: Give `ray` the same filled triangular arrowhead style as `vector`.
+- Reason: The current ray looked like a plain line, while mathematical rays and textbook direction marks should read as directed.
+- Decision: Keep graph-photo recreation inside the GraphA object model.
+- Reason: The desired output should remain editable as points, functions, segments, labels, and vectors rather than becoming a raster copy.
+
+## Verification
+
+- Completed:
+  - `node --check js\core\Canvas.js`; passed.
+  - `node --check js\main.js`; passed.
+  - `node --check js\ai\AIService.js`; passed.
+  - `node --check js\ai\SceneGraphCompiler.js`; passed.
+  - JSON parse check for both MathGraph drawing feature manuals; passed.
+  - `node --test tests\arrow-rendering.test.js`; passed with 3 tests.
+  - `npm.cmd test`; passed with 183 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - Local Playwright canvas-pixel smoke confirmed visible filled arrowheads for both `ray` and `vector`.
+  - Production deploy `dpl_GNBiQiPFDqjMpsdCxWEsfUvWd4GX` reached `Ready` and attached `https://mathgraph-five.vercel.app`.
+  - Production Playwright canvas-pixel smoke confirmed `window.app`, visible ray/vector arrowhead pixels, and 0 failed requests / 0 console errors.
+
+---
+
+## Status
+
 - Task: Zero-size point invisibility
 - State: Done
 - Last updated: 2026-06-18

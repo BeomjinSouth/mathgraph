@@ -136,7 +136,7 @@ Preferred pipeline for recreate-mode image/PDF work:
 2. Compile that scene graph into GraphA operations with app-owned deterministic code.
 3. Validate the compiled operations with `SchemaValidator`, reference checks, semantic validators, and rendered canvas checks.
 
-The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `circle`, `arc`, `sector`, `lensRegion`, `polygon`, `function`, `numberLine`, `prism`, and `pyramid`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
+The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `vector`, `circle`, `arc`, `sector`, `lensRegion`, `polygon`, `function`, `numberLine`, `prism`, and `pyramid`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
 
 Unsupported scene nodes such as `cylinder`, `cone`, `sphere`, native `histogram`, native `scatterPlot`, and independent `textLabel` are returned as warnings instead of invalid GraphA. That is intentional: exact textbook parity for those features requires new first-class runtime primitives.
 
@@ -235,6 +235,7 @@ Important:
 - Use `polygon` for triangles, quadrilaterals, and straight-edged filled plane regions that are defined by existing point IDs.
 - `prism` and `pyramid` are supported in the current runtime.
 - `numberLine` is supported in the validated AI patch flow with numeric `start`, `end`, `step`, and `y` fields.
+- There is no separate first-class `arrow` create type. Use `vector` for standalone textbook arrows, direction arrows, and directed annotation segments.
 
 ## 4. Runtime Features Outside The AI Schema
 
@@ -481,6 +482,8 @@ Function expressions must be right-hand-side expressions only. Use `"x^2 - 4"`, 
 }
 ```
 
+Use `vector` for visible arrow annotations as well as mathematical vectors. Create its endpoints first; when the endpoints are only helpers for an arrow, set those point objects to `visible:false` or `pointSize:0` so only the arrow remains visible.
+
 ### 6.10 Markers And Dimensions
 
 ```json
@@ -587,10 +590,12 @@ For `prism`, treat `baseVertexIds` as the near/front face and `topVertexIds` as 
 For complex live OpenAI drawing prompts, include the following context when it matches the request:
 
 - Function expressions must be right-hand-side only, with no `y=`.
+- Coordinate graph photos should preserve smooth visible curves as `function` objects rather than polygon/segment approximations. For example, use expression `"x+2"` for `y=x+2` and `"2*sqrt(x)"` for `y=2√x`, while keeping the visible equation as the function label when possible.
 - Hide helper labels with `showLabel:false`; dense graph families and nested solids should use a small explicit visible-label budget. Use `labelOffset` on required labels near tangency points, angle markers, collinear construction points, or crowded intersections.
 - Hide helper points with `visible:false` when they only shape a region or construction and should not appear as extra dots.
 - For two-circle lens regions, use `lensRegion` for the filled overlap. Add direct upper/lower point objects only when A and B must be distinct visible lens endpoints.
 - For construction-only polygons that should look like outlines, set `fillOpacity:0`; use positive `fillOpacity` only when the prompt requests a shaded region.
+- For standalone arrows in textbook-style figures, use `vector` with hidden helper endpoints. Do not emit an unsupported `arrow` type.
 - For `angleDimension`, make `point1Id` and `point2Id` distinct from `vertexId`, far enough from the vertex to render an arc, and non-collinear. If a right-angle mark would be too small at a crowded vertex, add a larger `angleDimension` with `arcRadius` at least `0.7` and `showValue:false`.
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, include exact coordinates for the intended visible points and the exact equations for reference lines.
 - For concentric circles or fixed-radius tangency diagrams, state the shared center id and numeric radii. Current GraphA has no first-class `annularSector`; use a normal `sector` plus an inner circle outline unless a future primitive is added.

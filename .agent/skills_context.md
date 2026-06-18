@@ -2,6 +2,39 @@
 
 ## Relevant Skills
 
+- Skill: MathGraph Drawing
+- Why it matters:
+  - The request checks which GraphA primitives can represent textbook arrows and how image-only diagram reconstruction should map visible graph elements into editable operations.
+- Skill: Frontend Testing Debugging
+- Why it matters:
+  - The visible issue is rendered canvas/SVG behavior: `ray` needed a real arrowhead, not just schema support.
+- Skill: Playwright
+- Why it matters:
+  - Full acceptance should include a rendered browser smoke after the canvas/SVG changes.
+
+## Current Task Notes
+
+- User request:
+  - Check whether arrows really exist, whether their shape matches the reference, and improve image-only recreation for screenshots like the `y=x+2` and `y=2sqrt(x)` graph.
+- Finding:
+  - `vector` already had a filled triangular arrowhead.
+  - `ray` rendered only an extended line, so it did not visually function as an arrow.
+  - There is no first-class `arrow` GraphA type; standalone textbook arrows should be represented as `vector`.
+  - Image-only recreation exists, but graph-photo guidance needed to explicitly preserve functions as `function` objects and arrows as `vector` objects.
+- Implementation result:
+  - `Canvas.drawRay()` now draws a filled triangular arrowhead at the ray end.
+  - SVG export routes `ray` through the vector arrowhead markup.
+  - Scene graph `arrow` aliases compile to `vector`.
+  - AI prompts/manuals now tell image recreation to preserve coordinate graph functions and map direction arrows to `vector`.
+- Verification result:
+  - Syntax checks, JSON checks, `tests/arrow-rendering.test.js`, full `npm.cmd test`, `npm.cmd run vercel-build`, and `git diff --check` passed.
+  - Local and production Playwright canvas-pixel smokes confirmed visible filled arrowheads for both `ray` and `vector`.
+  - Vercel production deployment `dpl_GNBiQiPFDqjMpsdCxWEsfUvWd4GX` is ready and attached to `https://mathgraph-five.vercel.app`.
+
+---
+
+## Relevant Skills
+
 - Skill: Frontend Testing Debugging
 - Why it matters:
   - The request is a rendered canvas bug where `pointSize:0` still displayed selected-point feedback.

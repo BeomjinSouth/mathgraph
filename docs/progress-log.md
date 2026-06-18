@@ -2,6 +2,51 @@
 
 ## 2026-06-18
 
+### Textbook arrow and image recreation fidelity
+
+#### Work completed
+
+- Confirmed the current shape support: `vector` already used a filled triangular arrowhead, `ray` rendered as a plain extended line, and there was no first-class `arrow` object type.
+- Added shared canvas arrowhead drawing so `ray` now renders with a filled triangular arrowhead at the visible viewport edge.
+- Updated SVG export so `ray` exports with the same polygon arrowhead markup used for directed vector-style objects.
+- Taught scene graph aliases such as `arrow`, `directedSegment`, `directionArrow`, and `annotationArrow` to compile to `vector`.
+- Strengthened image recreation guidance so coordinate graph photos preserve functions as editable `function` objects, labels as labels, connector strokes as segments/vectors, and standalone direction arrows as `vector`.
+- Updated `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, `.agent/textbook_arrow_image_recreation.md`, `docs/ai-reference.md`, and the MathGraph drawing feature manuals.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, and `docs/progress-log.md`.
+- Workflow skill: `.agents/skills/mathgraph-drawing/SKILL.md`.
+- Runtime/test files: `js/core/Canvas.js`, `js/main.js`, `js/ai/AIService.js`, `js/ai/SceneGraphCompiler.js`, `.agents/skills/mathgraph-drawing/references/feature-manual.json`, `runtime/mathgraph-drawing/references/feature-manual.json`, and `tests/arrow-rendering.test.js`.
+
+#### Verification
+
+- Ran `node --check js\core\Canvas.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check js\ai\SceneGraphCompiler.js`; passed.
+- Ran JSON parse checks for both MathGraph drawing feature manuals; passed.
+- Ran `node --test tests\arrow-rendering.test.js`; passed with 3 tests.
+- Ran `npm.cmd test`; passed with 183 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Local Playwright canvas-pixel smoke confirmed `rayDarkPixels:70`, `vectorDarkPixels:56`, a visible ray endpoint at the canvas edge, and no rendering issues. Screenshot: `output/playwright/arrow-rendering-smoke.png`.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_GNBiQiPFDqjMpsdCxWEsfUvWd4GX` was created at `https://mathgraph-em3vs6fe9-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-em3vs6fe9-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Production Playwright canvas-pixel smoke on `https://mathgraph-five.vercel.app/` confirmed `window.app`, canvas size `560x696`, `rayDarkPixels:60`, `vectorDarkPixels:57`, and 0 failed requests / 0 console errors.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-em3vs6fe9-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_GNBiQiPFDqjMpsdCxWEsfUvWd4GX`.
+- No Vercel settings or environment variables changed.
+
+#### Git / GitHub
+
+- Pending commit and push.
+
 ### Zero-size point invisibility
 
 #### Work completed

@@ -2,6 +2,51 @@
 
 ## Summary
 
+- Task: Textbook arrow and image recreation fidelity
+- Owner: Codex
+- Date: 2026-06-18
+- Related files:
+  - `.agent/textbook_arrow_image_recreation.md`
+  - `js/core/Canvas.js`
+  - `js/main.js`
+  - `js/ai/AIService.js`
+  - `js/ai/SceneGraphCompiler.js`
+  - `tests/arrow-rendering.test.js`
+  - `docs/ai-reference.md`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `runtime/mathgraph-drawing/references/feature-manual.json`
+
+## Problem
+
+- `vector` had a filled triangular arrowhead, but `ray` rendered as an extended line with no arrowhead.
+- The AI/schema path did not expose a separate `arrow` type, so textbook direction arrows from images needed clearer guidance to become `vector` objects.
+- Image-only graph recreation needed stronger guidance for coordinate graph screenshots such as functions `y=x+2` and `y=2sqrt(x)`.
+
+## Goals
+
+- Render `ray` with the same filled triangular arrowhead style used by vectors and axes.
+- Export `ray` to SVG with an arrowhead.
+- Compile scene graph `arrow` aliases to `vector`.
+- Strengthen image recreation prompts/manuals for function graphs, point labels, connecting segments, and direction arrows.
+
+## Non-Goals
+
+- Do not add a new first-class `arrow` object type.
+- Do not promise pixel-perfect OCR or exact typography.
+- Do not change Vercel environment variables.
+
+## Acceptance Criteria
+
+- [x] Canvas `ray` rendering includes a filled triangular arrowhead.
+- [x] SVG export for `ray` includes a polygon arrowhead.
+- [x] Scene graph `arrow` aliases compile to `vector` operations.
+- [x] AI references explain that standalone textbook arrows use `vector`.
+- [x] Full verification and deployment outcome are recorded.
+
+---
+
+## Summary
+
 - Task: Zero-size point invisibility
 - Owner: Codex
 - Date: 2026-06-18

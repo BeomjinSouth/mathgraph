@@ -374,6 +374,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
    - For prism objects, use baseVertexIds for the near/front face and topVertexIds for the shifted rear face so visible front edges stay solid and hidden rear edges become dashed.
    - For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.
    - For nested solids, keep inner vertices inside the outer projection and separate multiple inner solids so they do not overlap visually.
+   - For standalone textbook arrows or direction arrows, create a vector with hidden helper endpoint points. Do not invent an unsupported arrow type.
    - Hide helper points with visible:false when they only shape a region.
 
 ## JSON 스키마
@@ -406,7 +407,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - tangentFunction: functionId, x
 - function: expression (예: "x^2 - 2*x + 1")
 - function expression is the right-hand side only. Never include "y=".
-- vector: startPointId, endPointId
+- vector: startPointId, endPointId. Use vector for standalone arrows and direction arrows.
 - rightAngleMarker: vertexId, line1Id, line2Id
 - equalLengthMarker: segment1Id, segment2Id
 - angleDimension: vertexId, point1Id, point2Id (optional arcRadius, showValue, markerCount, customText, labelOffset)
@@ -1058,14 +1059,14 @@ export class AIService {
             for (const type of types) objectTypes.add(type);
         };
 
-        const addPlane = () => add('point', 'segment', 'line', 'ray', 'polygon');
+        const addPlane = () => add('point', 'segment', 'line', 'ray', 'vector', 'polygon');
         const addCircle = () => add('point', 'circle', 'circleThreePoints', 'pointOnCircle', 'circleCenterPoint', 'arc', 'sector', 'circularSegment', 'lensRegion', 'tangentCircle');
         const addConstruction = () => add('intersection', 'midpoint', 'parallel', 'perpendicular', 'perpendicularBisector', 'angleBisector', 'rightAngleMarker', 'equalLengthMarker', 'angleDimension', 'lengthDimension');
         const addSolid = () => {
             add('point', 'segment', 'polygon', 'prism', 'pyramid');
             includeKnownGaps = true;
         };
-        const addGraph = () => add('point', 'segment', 'line', 'function', 'tangentFunction', 'intersection', 'polygon');
+        const addGraph = () => add('point', 'segment', 'line', 'vector', 'function', 'tangentFunction', 'intersection', 'polygon');
         const addNumberLine = () => add('numberLine', 'point', 'segment');
         const addChart = () => {
             add('point', 'segment', 'polygon', 'numberLine', 'line');
@@ -1092,6 +1093,11 @@ export class AIService {
         if (/graph|function|parabola|linear|quadratic|intersection|tangent/.test(text) ||
             /그래프|함수|직선|이차|일차|교점|접점|접선/.test(text)) {
             addGraph();
+        }
+
+        if (/arrow|directed|direction|vector/.test(text) ||
+            /화살표|방향|벡터/.test(text)) {
+            addPlane();
         }
 
         if (/number line|numberline|radical/.test(text) ||
@@ -2457,6 +2463,10 @@ export class AIService {
                 '사진이 문제 전체 페이지이거나 주변 여백이 많아도, 그 안의 수학 도식/그래프/그림 영역을 찾아 GraphA 객체로 새로 재구성하세요.',
                 '참조 이미지의 주요 점, 선, 곡선, 축, 눈금, 교점, 접점, 평행/수직 관계, 음영, 점선/실선, 짧은 라벨의 상대 위치를 최대한 보존하세요.',
                 '점, 선분, 직선, 원, 호, 다각형, 함수, 수직선, 치수, 입체 도형 등 현재 스키마가 지원하는 객체만 사용하세요.',
+                '좌표평면 함수 그래프 사진은 매끄러운 곡선을 polygon이나 짧은 선분 묶음으로 만들지 말고 function 객체로 복원하세요.',
+                '보이는 식이 y=x+2이면 function expression은 "x+2", y=2√x이면 "2*sqrt(x)"처럼 오른쪽 식만 사용하고, 라벨에는 보이는 수식을 보존하세요.',
+                '함수 그래프 위의 점, 축 위의 점, 두 점을 잇는 선분, 중간 점 라벨은 별도 point/segment 객체로 만들고 helper 점은 visible:false 또는 pointSize:0을 사용하세요.',
+                '방향 표시나 교과서식 주석 화살표는 unsupported arrow 객체를 만들지 말고 vector 객체로 표현하세요.',
                 '문제 본문, 보기, 긴 설명, 장식 격자, 페이지 여백은 복사하지 말고 도식 이해에 필요한 라벨과 수식만 남기세요.',
                 '지원되지 않는 차트/입체/독립 텍스트는 현재 지원 객체로 가능한 범위만 재구성하고, 보이는 구조를 왜곡하는 가짜 객체를 만들지 마세요.',
                 '이미지의 픽셀 자체를 생성하지 말고 GraphA operations[]만 반환하세요.',

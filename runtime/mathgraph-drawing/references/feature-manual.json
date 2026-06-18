@@ -54,6 +54,7 @@
     "For function-bounded curved fills, approximate with a polygon through explicit boundary/sample points and hide helper vertices unless a future first-class region exists.",
     "For whole-problem text prompts, do not create objects for the full problem prose or answer choices; create only the graph, figure, labels, functions, and shaded regions needed to visualize the situation.",
     "For full-photo recreation, prioritize the diagram area inside the photo and preserve relative positions of axes, ticks, labels, intersections, tangencies, solid/dashed strokes, and shaded regions.",
+    "For coordinate graph photos, use function objects for smooth visible graphs and preserve short equation labels; use vector objects for standalone direction arrows.",
     "For solid prompts, make the outer prism/pyramid projection large enough to read; cross-section polygons should span a substantial middle portion of the outer solid instead of becoming a tiny internal square.",
     "For nested solids, use prism/pyramid objects, keep inner solid vertices inside the outer projection, leave visible margins from the outer edges, and keep projected centers visually separated instead of piling them on the same screen area.",
     "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
@@ -76,7 +77,7 @@
     "recommendedFor": ["pasted image recreation", "whole-photo diagram recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
     "sceneRootShape": {
       "sceneType": "diagram",
-      "nodes": "Array of math entities such as point, segment, circle, arc, sector, lensRegion, polygon, function, numberLine, prism, pyramid.",
+      "nodes": "Array of math entities such as point, segment, vector, circle, arc, sector, lensRegion, polygon, function, numberLine, prism, pyramid.",
       "relations": "Array of constraints or annotations such as intersection, midpoint, parallel, perpendicular, rightAngle, equalLength, angleDimension, lengthDimension, tangentFunction.",
       "unsupported": "Array of unsupported first-class requests such as cylinder, cone, sphere, native histogram, scatterPlot, boxPlot, table, or textLabel.",
       "notes": "Optional source evidence, uncertainty, or crop notes."
@@ -334,7 +335,7 @@
       "requiredFields": ["startPointId", "endPointId"],
       "optionalFields": ["label", "color", "lineWidth"],
       "template": { "op": "create", "id": "vec_AB", "type": "vector", "startPointId": "A", "endPointId": "B" },
-      "notes": ["Use for directed segments and translation arrows."]
+      "notes": ["Use for directed segments, standalone textbook arrows, direction arrows, and translation arrows. There is no separate first-class arrow type in the GraphA schema."]
     },
     {
       "type": "rightAngleMarker",

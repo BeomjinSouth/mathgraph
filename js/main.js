@@ -2353,7 +2353,9 @@ class GraphAApp {
         }
 
         if (obj.type === 'ray') {
-            const rayEnd = point1.add(direction.normalize().mul(maxDist));
+            const rayEnd = typeof this.canvas.getRayEndPoint === 'function'
+                ? this.canvas.getRayEndPoint(point1, direction.normalize(), bounds)
+                : point1.add(direction.normalize().mul(maxDist));
             return {
                 start: this.canvas.toScreen(point1),
                 end: this.canvas.toScreen(rayEnd)
@@ -2669,7 +2671,6 @@ class GraphAApp {
                 return this.buildSVGPointMarkup(obj);
             case 'segment':
             case 'line':
-            case 'ray':
             case 'parallel':
             case 'perpendicular':
             case 'perpendicularBisector':
@@ -2677,6 +2678,7 @@ class GraphAApp {
             case 'tangentCircle':
             case 'tangentFunction':
                 return this.buildSVGLineMarkup(obj);
+            case 'ray':
             case 'vector':
                 return this.buildSVGVectorMarkup(obj);
             case 'circle':

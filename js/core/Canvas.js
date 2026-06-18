@@ -599,10 +599,45 @@ export class Canvas {
         const bounds = this.getVisibleBounds();
         const dir = direction.normalize();
 
-        const maxDist = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 2;
-        const endPoint = origin.add(dir.mul(maxDist));
+        const endPoint = this.getRayEndPoint(origin, dir, bounds);
 
         this.drawSegment(origin, endPoint, options);
+        this.drawArrowHead(origin, endPoint, options);
+    }
+
+    /**
+     * 반직선의 보이는 끝점을 현재 뷰포트 경계로 계산
+     */
+    getRayEndPoint(origin, dir, bounds = this.getVisibleBounds()) {
+        if (!dir || dir.length() < MathUtils.EPSILON) {
+            return origin.clone();
+        }
+
+        const normalized = dir.normalize();
+        const candidates = [];
+
+        if (Math.abs(normalized.x) > MathUtils.EPSILON) {
+            const xBound = normalized.x > 0 ? bounds.maxX : bounds.minX;
+            const t = (xBound - origin.x) / normalized.x;
+            if (t >= 0) candidates.push(t);
+        }
+
+        if (Math.abs(normalized.y) > MathUtils.EPSILON) {
+            const yBound = normalized.y > 0 ? bounds.maxY : bounds.minY;
+            const t = (yBound - origin.y) / normalized.y;
+            if (t >= 0) candidates.push(t);
+        }
+
+        const finiteCandidates = candidates
+            .filter(t => Number.isFinite(t))
+            .sort((a, b) => a - b);
+
+        if (finiteCandidates.length > 0) {
+            return origin.add(normalized.mul(finiteCandidates[0]));
+        }
+
+        const maxDist = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 2;
+        return origin.add(normalized.mul(maxDist));
     }
 
     /**
@@ -656,22 +691,32 @@ export class Canvas {
      * 벡터 그리기 (화살표)
      */
     drawVector(from, to, options = {}) {
-        const ctx = this.ctx;
-        const s1 = this.toScreen(from);
-        const s2 = this.toScreen(to);
-
         const {
             color = '#000000',
             width = 2,
-            arrowSize = 10,
-            highlighted = false,
-            selected = false
+            arrowSize = 10
         } = options;
 
         // 선
         this.drawSegment(from, to, { ...options, color, width });
 
         // 화살표 머리
+        this.drawArrowHead(from, to, { ...options, color, arrowSize });
+    }
+
+    /**
+     * 채워진 삼각형 화살표 머리 그리기
+     */
+    drawArrowHead(from, to, options = {}) {
+        const ctx = this.ctx;
+        const s1 = this.toScreen(from);
+        const s2 = this.toScreen(to);
+
+        const {
+            color = '#000000',
+            arrowSize = 10
+        } = options;
+
         const dir = new Vec2(s2.x - s1.x, s2.y - s1.y);
         const len = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
         if (len < 1) return;
