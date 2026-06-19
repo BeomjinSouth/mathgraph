@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import { parseAIJSONPayload } from '../js/ai/JSONUtils.js';
 import {
+    AI_COMMAND_MODE,
     AIService,
     DEFAULT_OPENAI_MODEL,
     GRAPH_OPERATIONS_RESPONSE_FORMAT,
@@ -16,6 +17,7 @@ import {
     extractOpenAIResponseText
 } from '../js/ai/AIService.js';
 import { SchemaValidator } from '../js/ai/SchemaValidator.js';
+import { SemanticValidator } from '../js/ai/SemanticValidator.js';
 import { PatchApplier } from '../js/ai/PatchApplier.js';
 
 const manual = JSON.parse(
@@ -849,6 +851,206 @@ test('AIService adds problem-situation graphing guidance for full problem text',
     assert.match(joined, /문제 상황 그래프 생성/);
     assert.match(joined, /문제를 풀거나 정답을 말하지 말고/);
     assert.match(joined, /조건을 설명하는 데 가장 유용한/);
+});
+
+test('AIService detects full Korean problems as problem_diagram mode', () => {
+    const service = createAIService();
+    const problemText = [
+        '다음은 좌표평면에서 이차함수 y = x^2 - 4x + 3 과 직선 y = x + 1 이 만나는 상황에 대한 문제이다.',
+        '두 교점을 A, B라 하고, 선분 AB와 x축으로 둘러싸인 부분을 그림으로 나타내어라.',
+        '보기 ① 1 ② 2 ③ 3 ④ 4 ⑤ 5 중에서 알맞은 값을 구하여라.'
+    ].join('\n');
+
+    assert.equal(service.detectCommandMode(problemText), AI_COMMAND_MODE.PROBLEM_DIAGRAM);
+    assert.equal(service.detectCommandMode('삼각형 ABC를 그려줘'), AI_COMMAND_MODE.COMMAND);
+
+    const messages = service.buildMessages(problemText, { objects: [] });
+    const joined = messages.map(message => message.content).join('\n\n');
+    assert.match(joined, /problem_diagram/);
+    assert.match(joined, /Do not solve/);
+    assert.match(joined, /Do not copy problem body text/);
+});
+
+test('problem_diagram prompt references prioritize broad exam diagram objects and known gaps', () => {
+    const service = createAIService();
+    const referencePrompt = service.buildDrawingReferencePromptFromManual(
+        manual,
+        retrievalIndex,
+        [
+            '다음 입체도형과 좌표평면 그래프, 원의 접선, 수직선 조건을 모두 포함한 문제이다.',
+            '원기둥은 현재 지원 객체로 근사하고 필요한 길이와 각만 표시하여라.'
+        ].join('\n'),
+        null,
+        AI_COMMAND_MODE.PROBLEM_DIAGRAM
+    );
+
+    assert.match(referencePrompt, /Problem diagram mode/);
+    assert.match(referencePrompt, /Current manual gaps\/approximations/);
+    assert.match(referencePrompt, /function/);
+    assert.match(referencePrompt, /numberLine/);
+    assert.match(referencePrompt, /prism|pyramid/);
+});
+
+test('processCommand requires provider for unsupported whole-problem interpretation', async () => {
+    const service = createAIService();
+    const problemText = [
+        '다음은 좌표평면에서 이차함수 y = x^2 - 4x + 3 과 직선 y = x + 1 이 만나는 상황에 대한 문제이다.',
+        '두 교점을 A, B라 하고, 선분 AB와 x축으로 둘러싸인 부분을 그림으로 나타내어라.',
+        '보기 ① 1 ② 2 ③ 3 ④ 4 ⑤ 5 중에서 알맞은 값을 구하여라.'
+    ].join('\n');
+
+    const result = await service.processCommand(problemText, { objects: [] });
+
+    assert.equal(result.success, false);
+    assert.equal(result.mode, AI_COMMAND_MODE.PROBLEM_DIAGRAM);
+    assert.match(result.error, /OpenAI 연결/);
+});
+
+test('processCommand returns problem_diagram mode for valid OpenAI whole-problem output', async () => {
+    const originalFetch = globalThis.fetch;
+    const capturedBodies = [];
+    const problemText = [
+        '다음은 좌표평면에서 이차함수 y = x^2 - 4x + 3 과 직선 y = x + 1 이 만나는 상황에 대한 문제이다.',
+        '두 교점을 A, B라 하고, 선분 AB와 x축으로 둘러싸인 부분을 그림으로 나타내어라.',
+        '구하여라.'
+    ].join('\n');
+
+    globalThis.fetch = async (url, options) => {
+        capturedBodies.push(JSON.parse(options.body));
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: 'resp_problem_diagram',
+                    output: [
+                        {
+                            type: 'message',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: JSON.stringify({
+                                        operations: [
+                                            { op: 'create', id: 'f', type: 'function', expression: 'x^2 - 4*x + 3', label: 'y=x^2-4x+3' },
+                                            { op: 'create', id: 'g', type: 'function', expression: 'x + 1', label: 'y=x+1' },
+                                            { op: 'create', id: 'A', type: 'point', x: -0.45, y: 0.55, label: 'A' },
+                                            { op: 'create', id: 'B', type: 'point', x: 4.45, y: 5.45, label: 'B' },
+                                            { op: 'create', id: 'AB', type: 'segment', point1Id: 'A', point2Id: 'B' }
+                                        ]
+                                    })
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            referenceManual: TEST_REFERENCE_MANUAL,
+            referenceIndex: TEST_REFERENCE_INDEX,
+            save() { }
+        });
+
+        const result = await service.processCommand(problemText, { objects: [] });
+
+        assert.equal(result.success, true);
+        assert.equal(result.mode, AI_COMMAND_MODE.PROBLEM_DIAGRAM);
+        assert.equal(result.model, 'gpt-5.4-mini');
+        assert.match(capturedBodies[0].input[0].content, /Problem diagram mode/);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('processCommand repairs problem_diagram output that copies prose instead of drawing core objects', async () => {
+    const originalFetch = globalThis.fetch;
+    const capturedBodies = [];
+    const problemText = [
+        '다음은 원과 접선에 대한 문제이다.',
+        '원 O 위의 점 A에서의 접선을 그리고, 반지름 OA와 접선이 수직임을 나타내어라.',
+        '옳은 것을 구하여라.'
+    ].join('\n');
+
+    globalThis.fetch = async (url, options) => {
+        capturedBodies.push(JSON.parse(options.body));
+        const firstCall = capturedBodies.length === 1;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: firstCall ? 'resp_problem_bad' : 'resp_problem_repaired',
+                    output: [
+                        {
+                            type: 'message',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: JSON.stringify(firstCall
+                                        ? {
+                                            operations: [
+                                                { op: 'create', id: 'note', type: 'point', x: 0, y: 0, label: '다음은 원과 접선에 대한 문제이다' }
+                                            ]
+                                        }
+                                        : {
+                                            operations: [
+                                                { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+                                                { op: 'create', id: 'A', type: 'point', x: 2, y: 0, label: 'A' },
+                                                { op: 'create', id: 'c', type: 'circle', centerId: 'O', pointOnCircleId: 'A' },
+                                                { op: 'create', id: 'T', type: 'point', x: 2, y: 2, visible: false, pointSize: 0 },
+                                                { op: 'create', id: 'tan', type: 'line', point1Id: 'A', point2Id: 'T', label: 't' },
+                                                { op: 'create', id: 'r', type: 'segment', point1Id: 'O', point2Id: 'A' },
+                                                { op: 'create', id: 'ra', type: 'rightAngleMarker', vertexId: 'A', line1Id: 'r', line2Id: 'tan' }
+                                            ]
+                                        })
+                                }
+                            ]
+                        }
+                    ]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            referenceManual: TEST_REFERENCE_MANUAL,
+            referenceIndex: TEST_REFERENCE_INDEX,
+            save() { }
+        });
+
+        const result = await service.processCommand(problemText, { objects: [] });
+
+        assert.equal(result.success, true);
+        assert.equal(result.mode, AI_COMMAND_MODE.PROBLEM_DIAGRAM);
+        assert.equal(result.repaired, true);
+        assert.equal(capturedBodies.length, 2);
+        assert.match(result.repairErrors.join('\n'), /problem prose|answer choices|labels/);
+        assert.match(capturedBodies[1].input[0].content, /Problem diagram mode/);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('SemanticValidator rejects copied solution and answer-choice text in problem diagrams', () => {
+    const validator = new SemanticValidator();
+    const result = validator.validateProblemDiagramIntent({
+        operations: [
+            { op: 'create', id: 'bad', type: 'point', x: 0, y: 0, label: '정답은 ③이고 풀이 과정은 다음과 같다' }
+        ]
+    }, {
+        prompt: '다음 좌표평면 문제를 구하여라.'
+    });
+
+    assert.equal(result.valid, false);
+    assert.match(result.errors.join('\n'), /must not copy problem prose/);
 });
 
 test('AIService builds compact prompt references from the JSON feature manual', async () => {

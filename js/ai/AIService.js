@@ -7,9 +7,17 @@
 
 import { parseAIJSONPayload } from './JSONUtils.js';
 import { SchemaValidator } from './SchemaValidator.js';
+import { SemanticValidator } from './SemanticValidator.js';
 import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-5.5';
+
+export const AI_COMMAND_MODE = Object.freeze({
+    COMMAND: 'command',
+    PROBLEM_DIAGRAM: 'problem_diagram',
+    IMAGE_RECREATE: 'image_recreate',
+    PATCH: 'patch'
+});
 
 export const IMAGE_RECREATE_OPERATION_BUDGET = 45;
 export const OPENAI_IMAGE_FAST_MODEL = 'gpt-5.4-mini';
@@ -491,6 +499,21 @@ export const PROBLEM_SITUATION_GRAPH_GUIDANCE = [
 /**
  * AI 서비스 설정
  */
+export const PROBLEM_DIAGRAM_GRAPH_GUIDANCE = [
+    'Task mode: problem_diagram. The user pasted a complete math exam problem; create only the mock-exam diagram that should accompany the problem.',
+    'Do not solve the problem, state the answer, or include reasoning. The final output must be only GraphA {"operations":[...]} JSON.',
+    'Do not copy problem body text, answer choices, or long explanation sentences into labels. Use only point names, axis names, short length/angle labels, formulas, and region names.',
+    'Extract drawable structure: coordinate axes, functions, equations, inequalities, number lines, plane figures, circles, tangents, intersections, similarity conditions, length/angle markers, and shaded regions.',
+    'If no figure is explicitly provided, choose the most useful coordinate graph, function graph, number line, plane-geometry diagram, solid diagram, or region diagram for understanding the conditions.',
+    'Default visual style is monochrome Korean exam paper style: thin black lines, sparse hatching or light shading when needed, no decoration, no heavy colors.',
+    'Hide helper points with visible:false or pointSize:0. Keep labels sparse and avoid overlap.',
+    'For histogram, scatter, box plot, cylinder, cone, or sphere prompts, approximate with supported GraphA objects when reasonable; otherwise avoid inventing unsupported text-heavy objects.',
+    'When a condition is ambiguous, draw exact numeric elements first and arrange the rest in a mathematically natural representative layout.'
+].join('\n');
+
+const PROBLEM_DIAGRAM_PROVIDER_REQUIRED_ERROR =
+    '전체 문제문을 모의고사식 도식으로 해석하려면 OpenAI 연결이 필요합니다. 박범진 모드로 로그인하거나 AI 설정에서 API 키를 입력해주세요.';
+
 export class AIServiceConfig {
     constructor() {
         this.provider = 'openai'; // 'openai' | 'gemini' | 'local'
@@ -538,6 +561,7 @@ export class AIService {
         this.conversationHistory = [];
         this.lastResponseId = null;
         this.schemaValidator = new SchemaValidator();
+        this.semanticValidator = new SemanticValidator();
         this.drawingReferenceIndex = this.config.drawingReferenceIndex || this.config.referenceIndex || null;
         this.drawingFeatureManual = this.config.drawingFeatureManual || this.config.referenceManual || null;
         this.drawingReferenceLoadPromise = null;
@@ -625,6 +649,7 @@ export class AIService {
      */
     async processCommand(userMessage, context = null) {
         const normalizedMessage = typeof userMessage === 'string' ? userMessage.trim() : '';
+        const commandMode = this.detectCommandMode(normalizedMessage);
         if (!normalizedMessage) {
             return { success: false, error: '명령이 비어 있습니다.' };
         }
@@ -638,16 +663,13 @@ export class AIService {
         }
 
         if (!this.hasProviderCredentials()) {
-            return this.enhanceProcessResult(
-                this.fallbackProcess(normalizedMessage, context),
-                normalizedMessage,
-                context,
-                'command'
-            );
+            return this.buildFallbackCommandResult(normalizedMessage, context, commandMode, {
+                noProvider: true
+            });
         }
 
         try {
-            const messages = await this.buildMessagesWithReferences(normalizedMessage, context);
+            const messages = await this.buildMessagesWithReferences(normalizedMessage, context, commandMode);
 
             let response;
             if (this.config.provider === 'openai') {
@@ -655,12 +677,9 @@ export class AIService {
             } else if (this.config.provider === 'gemini') {
                 response = await this.callGemini(messages);
             } else {
-                return this.enhanceProcessResult(
-                    this.fallbackProcess(normalizedMessage, context),
-                    normalizedMessage,
-                    context,
-                    'command'
-                );
+                return this.buildFallbackCommandResult(normalizedMessage, context, commandMode, {
+                    noProvider: true
+                });
             }
 
             // JSON 파싱
@@ -671,49 +690,75 @@ export class AIService {
                         success: true,
                         json,
                         message: response,
-                        model: this.lastRequestModel || this.config.model
+                        model: this.lastRequestModel || this.config.model,
+                        mode: commandMode
                     },
                     normalizedMessage,
                     context,
-                    'command'
+                    commandMode
                 );
-                const validation = this.validateCommandResult(enhancedResult.json, context);
+                const validation = this.validateCommandResult(enhancedResult.json, context, {
+                    mode: commandMode,
+                    userMessage: normalizedMessage
+                });
 
-                if (!validation.valid && this.config.provider === 'openai') {
-                    return await this.repairOpenAICommandResult(
-                        messages,
-                        normalizedMessage,
-                        context,
-                        enhancedResult.json,
-                        validation.errors,
-                        enhancedResult.model
-                    );
+                if (!validation.valid) {
+                    if (this.config.provider === 'openai') {
+                        return await this.repairOpenAICommandResult(
+                            messages,
+                            normalizedMessage,
+                            context,
+                            enhancedResult.json,
+                            validation.errors,
+                            enhancedResult.model,
+                            commandMode
+                        );
+                    }
+
+                    return {
+                        success: false,
+                        error: `AI validation failed: ${validation.errors.join(' ')}`,
+                        json: enhancedResult.json,
+                        validationErrors: validation.errors,
+                        mode: commandMode
+                    };
                 }
 
                 return enhancedResult;
             } else {
-                return this.enhanceProcessResult(
-                    this.fallbackProcess(normalizedMessage, context),
-                    normalizedMessage,
-                    context,
-                    'command'
-                );
+                return this.buildFallbackCommandResult(normalizedMessage, context, commandMode);
             }
         } catch (error) {
             console.error('AI 처리 오류:', error);
-            return this.enhanceProcessResult(
-                this.fallbackProcess(normalizedMessage, context),
-                normalizedMessage,
-                context,
-                'command'
-            );
+            return this.buildFallbackCommandResult(normalizedMessage, context, commandMode);
         }
     }
 
     /**
      * 메시지 배열 구성
      */
-    validateCommandResult(json, context = null) {
+    buildFallbackCommandResult(message, context = null, mode = AI_COMMAND_MODE.COMMAND, options = {}) {
+        const fallback = this.fallbackProcess(message, context, {
+            mode,
+            deterministicOnly: mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM
+        });
+
+        if (!fallback.success && mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM && options.noProvider) {
+            return {
+                ...fallback,
+                success: false,
+                error: PROBLEM_DIAGRAM_PROVIDER_REQUIRED_ERROR,
+                mode
+            };
+        }
+
+        const result = this.enhanceProcessResult(fallback, message, context, mode);
+        return result?.success
+            ? { ...result, mode: result.mode || mode }
+            : { ...result, mode: result?.mode || mode };
+    }
+
+    validateCommandResult(json, context = null, options = {}) {
         const schemaResult = this.schemaValidator.validate(json);
         if (!schemaResult.valid) {
             return schemaResult;
@@ -724,13 +769,27 @@ export class AIService {
                 .map(object => object?.id)
                 .filter(id => typeof id === 'string' && id.trim())
         );
-        return this.schemaValidator.validateReferences(json, existingIds);
+        const referenceResult = this.schemaValidator.validateReferences(json, existingIds);
+        if (!referenceResult.valid) {
+            return referenceResult;
+        }
+
+        if (options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
+            return this.semanticValidator.validateProblemDiagramIntent(json, {
+                prompt: options.userMessage
+            });
+        }
+
+        return referenceResult;
     }
 
-    buildCommandRepairMessages(originalMessages, originalUserMessage, context, failedJson, errors) {
+    buildCommandRepairMessages(originalMessages, originalUserMessage, context, failedJson, errors, mode = AI_COMMAND_MODE.COMMAND) {
         const systemMessages = (Array.isArray(originalMessages) ? originalMessages : [])
             .filter(message => message?.role === 'system');
         const contextPrompt = this.buildCanvasContextPrompt(context);
+        const problemDiagramRepairRule = mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM
+            ? '- Problem diagram mode: do not solve, do not copy problem prose or answer choices, and include the core drawable graph/geometry/number-line objects.'
+            : '';
         const repairPrompt = [
             'The previous GraphA JSON failed local validation before it could be applied.',
             `Validation errors:\n- ${errors.join('\n- ')}`,
@@ -740,10 +799,11 @@ export class AIService {
             '- Use update/delete only for ids that appear in the current canvas context.',
             '- Do not invent obj_* ids for update/delete operations.',
             '- If an operation references a new object from the same batch, create that object earlier in operations[].',
+            problemDiagramRepairRule,
             contextPrompt ? `Current canvas context:\n${contextPrompt}` : 'Current canvas context: no existing object ids.',
             'Previous JSON to repair:',
             JSON.stringify(failedJson).slice(0, 8000)
-        ].join('\n\n');
+        ].filter(Boolean).join('\n\n');
 
         return [
             ...systemMessages,
@@ -755,14 +815,15 @@ export class AIService {
         ];
     }
 
-    async repairOpenAICommandResult(originalMessages, originalUserMessage, context, failedJson, errors, initialModel) {
+    async repairOpenAICommandResult(originalMessages, originalUserMessage, context, failedJson, errors, initialModel, mode = AI_COMMAND_MODE.COMMAND) {
         try {
             const repairMessages = this.buildCommandRepairMessages(
                 originalMessages,
                 originalUserMessage,
                 context,
                 failedJson,
-                errors
+                errors,
+                mode
             );
             const repairedResponse = await this.callOpenAI(repairMessages);
             const repairedJson = this.extractJSON(repairedResponse);
@@ -778,9 +839,12 @@ export class AIService {
                 repairedJson,
                 originalUserMessage,
                 context,
-                'command'
+                mode
             );
-            const repairedValidation = this.validateCommandResult(enhancedJson, context);
+            const repairedValidation = this.validateCommandResult(enhancedJson, context, {
+                mode,
+                userMessage: originalUserMessage
+            });
             if (!repairedValidation.valid) {
                 return {
                     success: false,
@@ -797,7 +861,8 @@ export class AIService {
                 repaired: true,
                 repairErrors: errors,
                 initialModel,
-                model: this.lastRequestModel || this.config.model
+                model: this.lastRequestModel || this.config.model,
+                mode
             };
         } catch (error) {
             console.error('AI command repair failed:', error);
@@ -808,7 +873,7 @@ export class AIService {
         }
     }
 
-    buildMessages(userMessage, context) {
+    buildMessages(userMessage, context, mode = this.detectCommandMode(userMessage)) {
         const messages = [
             { role: 'system', content: SYSTEM_PROMPT }
         ];
@@ -819,7 +884,7 @@ export class AIService {
             messages.push({ role: 'system', content: contextStr });
         }
 
-        const problemSituationPrompt = this.buildProblemSituationPrompt(userMessage);
+        const problemSituationPrompt = this.buildProblemSituationPrompt(userMessage, mode);
         if (problemSituationPrompt) {
             messages.push({ role: 'system', content: problemSituationPrompt });
         }
@@ -834,24 +899,33 @@ export class AIService {
         return messages;
     }
 
-    async buildMessagesWithReferences(userMessage, context) {
-        const messages = this.buildMessages(userMessage, context);
-        const referenceRequestText = this.isLikelyProblemStatement(userMessage)
+    async buildMessagesWithReferences(userMessage, context, mode = this.detectCommandMode(userMessage)) {
+        const messages = this.buildMessages(userMessage, context, mode);
+        const referenceRequestText = mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM
             ? `problem_situation\n${userMessage}`
             : userMessage;
-        const referencePrompt = await this.buildDrawingReferencePrompt(referenceRequestText, context, 'command');
+        const referencePrompt = await this.buildDrawingReferencePrompt(referenceRequestText, context, mode);
         if (referencePrompt) {
             messages.splice(1, 0, { role: 'system', content: referencePrompt });
         }
         return messages;
     }
 
-    buildProblemSituationPrompt(userMessage) {
-        if (!this.isLikelyProblemStatement(userMessage)) {
+    buildProblemSituationPrompt(userMessage, mode = this.detectCommandMode(userMessage)) {
+        if (mode !== AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
             return '';
         }
 
-        return PROBLEM_SITUATION_GRAPH_GUIDANCE;
+        return [
+            PROBLEM_SITUATION_GRAPH_GUIDANCE,
+            PROBLEM_DIAGRAM_GRAPH_GUIDANCE
+        ].join('\n\n');
+    }
+
+    detectCommandMode(userMessage) {
+        return this.isLikelyProblemStatement(userMessage)
+            ? AI_COMMAND_MODE.PROBLEM_DIAGRAM
+            : AI_COMMAND_MODE.COMMAND;
     }
 
     isLikelyProblemStatement(userMessage) {
@@ -865,7 +939,11 @@ export class AIService {
         const sentenceBreakCount = (text.match(/[.?!。？！]|[가-힣]\)|\d+[.)]/g) || []).length;
         const longEnough = compact.length >= 80 || lineCount >= 3 || sentenceBreakCount >= 3;
         if (!longEnough) {
-            return false;
+            const koreanSentenceBreakCount = (text.match(/[\u3131-\uD7A3][.)]|[①②③④⑤]/g) || []).length;
+            const readableProblemLength = compact.length >= 60 && koreanSentenceBreakCount >= 1;
+            if (!readableProblemLength) {
+                return false;
+            }
         }
 
         const markerPatterns = [
@@ -875,8 +953,17 @@ export class AIService {
             /[xy]\s*[=+\-^]|[<>]=?|√|제곱근|근호|\b\d+\s*차\b/
         ];
         const markerScore = markerPatterns.reduce((score, pattern) => score + (pattern.test(compact) ? 1 : 0), 0);
+        const readableKoreanPatterns = [
+            /[\uBB38]\uC81C|[\uB2E4]\uC74C|[\uC544]\uB798|[\uADF8]\uB9BC|[\uC870]\uAC74|[\uBCF4]\uAE30|[\uC120]\uD0DD\uC9C0|[\uC88C]\uD45C\uD3C9\uBA74/,
+            /[\uAD6C]\uD558|[\uCC3E]\uC73C|[\uC124]\uBA85|[\uC62C]\uC740|[\uC62C]\uC9C0|[\uCD5C]\uB300|[\uCD5C]\uC18C|[\uAD50]\uC810|[\uC811]\uC810|[\uB113]\uC774|[\uB458]\uB808/,
+            /[\uD568]\uC218|[\uC77C]\uCC28|[\uC774]\uCC28|[\uC9C1]\uC120|[\uC6D0]|[\uC0BC]\uAC01\uD615|[\uC0AC]\uAC01\uD615|[\uC218]\uC9C1\uC120|[\uBD80]\uB4F1\uC2DD|[\uBC29]\uC815\uC2DD|[\uD655]\uB960|[\uD1B5]\uACC4/
+        ];
+        const readableMarkerScore = readableKoreanPatterns.reduce(
+            (score, pattern) => score + (pattern.test(compact) ? 1 : 0),
+            0
+        );
 
-        return markerScore >= 2;
+        return markerScore + readableMarkerScore >= 2;
     }
 
     buildCanvasContextPrompt(context) {
@@ -997,9 +1084,10 @@ export class AIService {
 
         const selection = this.selectDrawingReferenceTypes(requestText, context, mode);
         const supportedTypes = manual.operationContract?.supportedCreateTypes || GRAPH_OPERATION_TYPES;
+        const objectEntryLimit = mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? 20 : 12;
         const objectEntries = (manual.aiCreatableObjects || [])
             .filter(entry => selection.objectTypes.has(entry.type))
-            .slice(0, 12);
+            .slice(0, objectEntryLimit);
 
         const lines = [
             'MathGraph reference manual context:',
@@ -1011,9 +1099,15 @@ export class AIService {
             `- Recreate operation budget: keep image recreation at or below ${IMAGE_RECREATE_OPERATION_BUDGET} operations; simplify dense grids/page decoration.`
         ];
 
+        if (mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
+            lines.push('- Problem diagram mode: create the exam figure only; do not solve, copy prose, copy answer choices, or draw long text.');
+            lines.push('- Problem diagram mode: prefer monochrome black lines, hidden helper points, concise labels, and non-overlapping layout.');
+        }
+
         if (Array.isArray(manual.visualGuardrails) && manual.visualGuardrails.length > 0) {
             lines.push('- Visual fidelity guardrails:');
-            for (const rule of manual.visualGuardrails.slice(0, 8)) {
+            const guardrailLimit = mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? 12 : 8;
+            for (const rule of manual.visualGuardrails.slice(0, guardrailLimit)) {
                 lines.push(`  - ${rule}`);
             }
         }
@@ -1053,7 +1147,7 @@ export class AIService {
     selectDrawingReferenceTypes(requestText = '', context = null, mode = 'command') {
         const text = String(requestText || '').toLowerCase();
         const objectTypes = new Set();
-        let includeKnownGaps = mode === 'recreate';
+        let includeKnownGaps = mode === 'recreate' || mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM;
 
         const add = (...types) => {
             for (const type of types) objectTypes.add(type);
@@ -1072,6 +1166,16 @@ export class AIService {
             add('point', 'segment', 'polygon', 'numberLine', 'line');
             includeKnownGaps = true;
         };
+
+        if (mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
+            addPlane();
+            addCircle();
+            addConstruction();
+            addSolid();
+            addGraph();
+            addNumberLine();
+            addChart();
+        }
 
         if (/triangle|quadrilateral|polygon|angle|parallel|perpendicular|similar|plane/.test(text) ||
             /삼각|사각|다각|각|평행|수선|직각|닮음|평면/.test(text)) {
@@ -1315,7 +1419,7 @@ export class AIService {
     /**
      * 폴백 처리 (API 없이 컨텍스트 인식 패턴 매칭)
      */
-    fallbackProcess(message, context = null) {
+    fallbackProcess(message, context = null, options = {}) {
         const destructiveRequest = /(삭제|지워|지우|remove|delete|erase|없애)/i;
         if (destructiveRequest.test(String(message))) {
             return {
@@ -1324,8 +1428,13 @@ export class AIService {
             };
         }
 
-        const deterministicResult = this.fallbackProcessDeterministic(message, context);
+        const deterministicResult = options.deterministicOnly && options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM
+            ? this.fallbackProcessKnownProblemDiagram(message, context)
+            : this.fallbackProcessDeterministic(message, context);
         if (deterministicResult.success) {
+            return deterministicResult;
+        }
+        if (options.deterministicOnly) {
             return deterministicResult;
         }
 
@@ -1600,6 +1709,35 @@ export class AIService {
                 '• "y = x^2 그래프"\n' +
                 '• "점 A (2, 3)"'
         };
+    }
+
+    fallbackProcessKnownProblemDiagram(message, context = null) {
+        const normalizedMessage = typeof message === 'string' ? message.trim() : '';
+        if (!normalizedMessage) {
+            return { success: false, error: 'Command is empty.' };
+        }
+
+        const builders = [
+            () => this.buildKnownHyperbolaAsymptoteOperations(normalizedMessage),
+            () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
+            () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage)
+        ];
+
+        for (const builder of builders) {
+            const result = builder();
+            if (!result) {
+                continue;
+            }
+            if (result.error) {
+                return { success: false, error: result.error };
+            }
+            if (Array.isArray(result.operations) && result.operations.length > 0) {
+                this.addToHistory(result.operations);
+                return { success: true, json: { operations: result.operations } };
+            }
+        }
+
+        return { success: false, error: 'No deterministic whole-problem diagram fallback matched.' };
     }
 
     fallbackProcessDeterministic(message, context = null) {

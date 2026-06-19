@@ -1,5 +1,58 @@
 # Progress Log
 
+## 2026-06-19
+
+### Full problem text to exam-style MathGraph diagram
+
+#### Work completed
+
+- Added internal `problem_diagram` mode detection for full Korean problem text pasted into the existing AI chat.
+- Added a problem-diagram prompt that tells the model to create only the exam figure, avoid solving, avoid copied prose/choices, use concise labels, hide helper points, and keep monochrome exam styling.
+- Routed problem mode through the existing OpenAI Responses API, owner proxy, strict GraphA structured output, and one-shot repair flow.
+- Added `SemanticValidator.validateProblemDiagramIntent()` for non-empty diagrams, copied prose/choice rejection, and core object-family checks by problem type.
+- Restricted no-provider whole-problem behavior to known deterministic templates; unsupported whole-problem interpretation now returns a clear OpenAI-connection-required message.
+- Updated chat result metadata so accepted outputs show `문제그림 모드로 생성됨`.
+- Updated MathGraph drawing feature manuals and synthetic examples, plus `.agent/problem_text_exam_diagram_mode.md`, `.agent/prd.md`, `.agent/implementation_tracking.md`, `.agent/skills_context.md`, and `docs/ai-reference.md`.
+
+#### Sources checked
+
+- Local context: `AGENTS.md`, `docs/openai-url-inventory.yaml`, `docs/openai-context-map.md`, `docs/openai-core-summaries.md`, `docs/openai-docs-map.yaml`, `docs/vibecoding-openai-guide.md`, and `docs/progress-log.md`.
+- Workflow skills: `.agents/skills/mathgraph-drawing/SKILL.md`, `.agents/skills/openai-vibecoding-context/SKILL.md`, and Playwright skill for production browser smoke.
+- Official OpenAI docs checked for current model/API assumptions: `https://developers.openai.com/api/docs/models`, `https://developers.openai.com/api/docs/models/compare`, and `https://developers.openai.com/api/reference/resources/responses/methods/create`.
+
+#### Verification
+
+- Ran `node --check js\ai\AIService.js`; passed.
+- Ran `node --check js\ai\SemanticValidator.js`; passed.
+- Ran `node --check js\main.js`; passed.
+- Ran `node --check tests\ai-flow.test.js`; passed.
+- Ran `node --check tests\problem-diagram-fixtures.test.js`; passed.
+- Ran `node --test tests\ai-flow.test.js tests\problem-diagram-fixtures.test.js`; passed with 56 tests.
+- Ran JSON parse checks for `.agents` and `runtime` MathGraph drawing feature manuals; passed.
+- Ran JSONL parse check for `.agents/skills/mathgraph-drawing/references/synthetic-drawing-data.jsonl`; passed with 13 rows.
+- Ran `npm.cmd test`; passed with 190 tests.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `git diff --check`; passed with line-ending warnings only.
+- Ran `npx.cmd vercel deploy --prod --yes`; production deployment `dpl_AhwVQqr8Zvv1whSgoSobUxwHmJNG` was created at `https://mathgraph-ldba5q0nq-beomjinsouths-projects.vercel.app`.
+- Ran `npx.cmd vercel inspect https://mathgraph-ldba5q0nq-beomjinsouths-projects.vercel.app`; target was `production`, status was `Ready`, and `https://mathgraph-five.vercel.app` was attached.
+- Checked `https://mathgraph-five.vercel.app/`; returned HTTP 200.
+- Production Playwright owner-mode smoke confirmed `window.app`, owner auth token, `/api/login` 200, `/api/openai-responses` 200, 9 GraphA objects created for a full coordinate-plane problem, chat metadata `문제그림 모드로 생성됨 · 모델: gpt-5.5`, and 0 failed requests / 0 console errors for that successful run.
+
+#### Known verification limitation
+
+- The requested production owner-mode smoke of 3 live problem prompts was attempted, but only 1 prompt completed within the automation window. Additional live prompts reached the 150-180 second timeout while waiting on the OpenAI response, including attempts with the configurable model set to `gpt-5.4-mini`. No failed browser requests were observed before timeout. The deterministic/unit/mock/fixture coverage above still verifies the full 3+ category behavior locally.
+
+#### Deployment / Vercel
+
+- Production alias: `https://mathgraph-five.vercel.app`.
+- Production deployment URL: `https://mathgraph-ldba5q0nq-beomjinsouths-projects.vercel.app`.
+- Vercel deployment ID: `dpl_AhwVQqr8Zvv1whSgoSobUxwHmJNG`.
+- No Vercel settings or environment variables changed.
+
+#### Git / GitHub
+
+- Commit and push performed for this task on `codex/ai-fallback-recovery` after verification.
+
 ## 2026-06-18
 
 ### Textbook arrow and image recreation fidelity

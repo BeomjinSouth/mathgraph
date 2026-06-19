@@ -3277,13 +3277,19 @@ class GraphAApp {
     }
 
     getAIModelResultMeta(result) {
-        if (!result?.model) return '';
+        const parts = [];
+        if (result?.mode === 'problem_diagram') {
+            parts.push('문제그림 모드로 생성됨');
+        }
+        if (!result?.model) return parts.join(' · ');
         const initialModel = result.initialModel;
         const finalModel = result.model;
         if (initialModel && initialModel !== finalModel) {
-            return `모델: ${initialModel} -> ${finalModel}`;
+            parts.push(`모델: ${initialModel} -> ${finalModel}`);
+            return parts.join(' · ');
         }
-        return `모델: ${finalModel}`;
+        parts.push(`모델: ${finalModel}`);
+        return parts.join(' · ');
     }
 
     addChatImagePreview(imageDataUrl) {

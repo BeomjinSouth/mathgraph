@@ -2,6 +2,61 @@
 
 ## Status
 
+- Task: Full problem text to exam-style MathGraph diagram
+- State: Done
+- Last updated: 2026-06-19
+
+## Plan
+
+1. Record the feature scope and acceptance criteria before code changes.
+2. Add `problem_diagram` mode detection and prompt/reference routing in `AIService`.
+3. Add semantic validation for problem diagrams and wire it into repair.
+4. Update UI model metadata for problem-diagram success.
+5. Update MathGraph drawing manuals and examples.
+6. Add focused and fixture tests.
+7. Run verification, update logs, commit, push, and deploy or record blockers.
+
+## Progress Log
+
+- [x] Step 1
+- [x] Step 2
+- [x] Step 3
+- [x] Step 4
+- [x] Step 5
+- [x] Step 6
+- [x] Step 7
+
+## Decisions
+
+- Decision: Keep the current GraphA operation contract instead of adding a raster/image output.
+- Reason: Users need editable diagrams after generation.
+- Decision: Use automatic chat detection, not a new button.
+- Reason: The requested workflow is paste-and-generate inside the existing AI chat.
+- Decision: Require a provider for unknown whole-problem interpretation.
+- Reason: Generic local fallback would produce misleading diagrams for full problems.
+
+## Verification
+
+- Completed:
+  - `node --check js\ai\AIService.js`; passed.
+  - `node --check js\ai\SemanticValidator.js`; passed.
+  - `node --check js\main.js`; passed.
+  - `node --check tests\ai-flow.test.js`; passed.
+  - `node --check tests\problem-diagram-fixtures.test.js`; passed.
+  - `node --test tests\ai-flow.test.js tests\problem-diagram-fixtures.test.js`; passed with 56 tests.
+  - JSON parse checks for both MathGraph drawing feature manuals; passed.
+  - JSONL parse check for synthetic drawing data; passed with 13 rows.
+  - `npm.cmd test`; passed with 190 tests.
+  - `npm.cmd run vercel-build`; passed.
+  - `git diff --check`; passed with line-ending warnings only.
+  - Production deploy `dpl_AhwVQqr8Zvv1whSgoSobUxwHmJNG` reached `Ready` and attached `https://mathgraph-five.vercel.app`.
+  - Production HTTP 200 check passed.
+  - Production owner-mode Playwright smoke completed 1 live full-problem prompt successfully; 2 additional live prompts timed out waiting for OpenAI responses and are recorded in `docs/progress-log.md`.
+
+---
+
+## Status
+
 - Task: Textbook arrow and image recreation fidelity
 - State: Done
 - Last updated: 2026-06-18

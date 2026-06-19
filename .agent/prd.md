@@ -2,6 +2,50 @@
 
 ## Summary
 
+- Task: Full problem text to exam-style MathGraph diagram
+- Owner: Codex
+- Date: 2026-06-19
+- Related files:
+  - `.agent/problem_text_exam_diagram_mode.md`
+  - `js/ai/AIService.js`
+  - `js/ai/SemanticValidator.js`
+  - `js/main.js`
+  - `tests/ai-flow.test.js`
+  - `tests/problem-diagram-fixtures.test.js`
+  - `.agents/skills/mathgraph-drawing/references/feature-manual.json`
+  - `runtime/mathgraph-drawing/references/feature-manual.json`
+
+## Problem
+
+- Users want to paste a complete math exam problem and receive the figure that should appear in the problem, not the solution.
+- The existing AI flow already creates GraphA operations, but full problem statements need a stricter intent mode and validation so prose, answer choices, or solution text are not drawn.
+
+## Goals
+
+- Detect complete problem text and route it to `problem_diagram`.
+- Generate editable GraphA diagrams with exam-style monochrome defaults and concise labels.
+- Keep existing OpenAI Responses API, owner proxy, structured output, repair, and renderer contracts.
+- Validate problem diagrams semantically before applying them.
+- Show a small success meta note that the result was generated in problem-diagram mode.
+
+## Non-Goals
+
+- Do not create a new image generation path.
+- Do not add server APIs or environment variables.
+- Do not add unsupported GraphA primitives in v1.
+
+## Acceptance Criteria
+
+- [x] Whole problem text routes to `problem_diagram`.
+- [x] Short drawing commands still route to `command`.
+- [x] Whole problem text without provider credentials succeeds only for deterministic known patterns; otherwise it gives a clear provider-required message.
+- [x] Semantic validation rejects empty diagrams, copied prose/answer choices, and diagrams missing the expected object family.
+- [x] Full verification, docs, commit, push, and deployment outcome are recorded.
+
+---
+
+## Summary
+
 - Task: Textbook arrow and image recreation fidelity
 - Owner: Codex
 - Date: 2026-06-18

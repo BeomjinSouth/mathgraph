@@ -66,12 +66,15 @@ The first-load landing screen chooses the OpenAI authentication path for the bro
 
 Whole problem statements pasted into the AI chat are treated as diagram-generation input, not as answer requests.
 
-When text looks like a full textbook-style problem, `AIService` adds a problem-situation graphing instruction before the model call:
+When text looks like a full textbook-style problem, `AIService.detectCommandMode()` routes it to internal `problem_diagram` mode and adds problem-diagram instructions before the model call:
 
 - extract diagram-relevant conditions such as variables, coordinate axes, functions, equations, inequalities, points, intersections, tangencies, geometric relations, regions, and short labels;
 - create a useful supporting graph or diagram even when the problem did not explicitly say "draw";
 - do not solve the problem, state the answer, copy full prose, or recreate answer choices as standalone text objects;
+- keep the default presentation monochrome and exam-like, with hidden helper points and sparse labels;
 - keep the final output in the same strict GraphA `operations[]` contract.
+
+Problem-diagram outputs are accepted only after schema validation, reference validation, and `SemanticValidator.validateProblemDiagramIntent()`. If a provider-backed OpenAI result fails those checks, the existing command repair flow retries once with the validation errors. In local/guest mode without a provider key, full problem interpretation is limited to known deterministic templates; otherwise the chat returns a clear OpenAI-connection-required message instead of broad generic fallback output.
 
 ## 1.1.2 Local Deterministic Fallback
 

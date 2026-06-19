@@ -4,6 +4,36 @@
 
 - Skill: MathGraph Drawing
 - Why it matters:
+  - The feature must preserve GraphA `{ operations }`, supported primitives, helper-point hiding, and exam-style drawing constraints.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The feature keeps the existing OpenAI Responses API and strict structured output path, and volatile model/API assumptions need official source confirmation.
+
+## Current Task Notes
+
+- User request:
+  - Implement automatic full-problem-text to mock-exam-style MathGraph diagram generation.
+- Planned behavior:
+  - Full problem text is routed to `problem_diagram`.
+  - Short drawing commands remain `command`.
+  - The model must not solve, copy the problem body, copy answer choices, or draw long prose.
+  - Generated diagrams should be black-and-white, editable, concise, and built from current GraphA primitives.
+- Constraint:
+  - Unknown full-problem interpretation in no-key local/guest mode must fail clearly instead of using broad generic fallback.
+- Implementation result:
+  - `AIService` now routes full problem text to `problem_diagram`, injects problem-specific reference guidance, and uses semantic validation plus one OpenAI repair attempt.
+  - `SemanticValidator` rejects copied problem prose/answer choices and checks graph, geometry, number-line, solid, and chart object families.
+  - Chat success metadata now includes `문제그림 모드로 생성됨`.
+- Verification result:
+  - Focused tests, fixture tests, full `npm.cmd test`, Vercel build, diff check, production deploy, inspect, HTTP 200, and one successful production owner-mode live problem smoke passed.
+  - Two additional production live prompts timed out while waiting for OpenAI responses; details are recorded in `docs/progress-log.md`.
+
+---
+
+## Relevant Skills
+
+- Skill: MathGraph Drawing
+- Why it matters:
   - The request checks which GraphA primitives can represent textbook arrows and how image-only diagram reconstruction should map visible graph elements into editable operations.
 - Skill: Frontend Testing Debugging
 - Why it matters:

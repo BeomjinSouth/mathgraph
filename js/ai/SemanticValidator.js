@@ -64,6 +64,66 @@ export class SemanticValidator {
         return result;
     }
 
+    validateProblemDiagramIntent(data, options = {}) {
+        const operations = data?.operations || (Array.isArray(data) ? data : []);
+        if (!Array.isArray(operations)) {
+            return ValidationResult.failure('problem diagram validation requires operations to be an array.');
+        }
+        if (operations.length === 0) {
+            return ValidationResult.failure('problem diagram must not be empty.');
+        }
+
+        const result = ValidationResult.success();
+        const ctx = this.buildContext(operations);
+        const creates = ctx.creates;
+        const prompt = this.text(options.prompt || options.userMessage || '');
+        const visibleCreates = creates.filter(op => this.isVisibleDiagramObject(op));
+
+        if (visibleCreates.length === 0) {
+            result.addError('problem diagram must contain at least one visible non-helper object.');
+        }
+
+        const copiedText = this.extractDiagramText(creates)
+            .filter(text => this.looksLikeProblemProseOrAnswerChoice(text));
+        if (copiedText.length > 0) {
+            result.addError(`problem diagram must not copy problem prose, solution text, or answer choices into labels: ${copiedText.slice(0, 3).join(', ')}`);
+        }
+
+        const hasGraphPrompt = /함수|그래프|좌표|좌표평면|직선|포물선|이차|일차|방정식|부등식|교점|접선|graph|function|line|parabola|quadratic|linear|inequality|intersection|tangent/.test(prompt);
+        const hasGeometryPrompt = /삼각형|사각형|다각형|도형|원|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직|길이|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
+        const hasNumberLinePrompt = /수직선|실수|근호|제곱근|number line|numberline|radical/.test(prompt);
+        const hasSolidPrompt = /입체|직육면체|정육면체|각기둥|각뿔|원기둥|원뿔|구|solid|prism|pyramid|cube|cylinder|cone|sphere/.test(prompt);
+        const hasChartPrompt = /통계|도수|히스토그램|산점도|상자그림|분포|자료|chart|histogram|scatter|box plot|statistics|frequency|distribution/.test(prompt);
+        const hasPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
+        const effectiveGeometryPrompt = hasGeometryPrompt && hasPlaneGeometryPrompt && !(
+            hasNumberLinePrompt &&
+            !/삼각형|사각형|다각형|도형|원\s|접선|반지름|지름|호|부채꼴|각|닮음|평행|triangle|circle|polygon|angle|similar|parallel/.test(prompt)
+        );
+
+        if (hasGraphPrompt && !this.hasAnyType(ctx, ['function', 'line', 'ray', 'vector', 'numberLine', 'intersection'])) {
+            result.addError('graph/function problem diagram needs a graph object such as function, line, ray, vector, numberLine, or intersection.');
+        }
+        if (effectiveGeometryPrompt && !this.hasAnyType(ctx, ['polygon', 'circle', 'circleThreePoints', 'arc', 'sector', 'circularSegment', 'lensRegion', 'segment', 'angleDimension', 'lengthDimension'])) {
+            result.addError('geometry problem diagram needs geometric objects such as polygon, circle, arc/sector, segment, or markers.');
+        }
+        if (hasNumberLinePrompt && !this.hasAnyType(ctx, ['numberLine'])) {
+            result.addError('number-line problem diagram needs a numberLine object.');
+        }
+        if (hasSolidPrompt && !this.hasAnyType(ctx, ['prism', 'pyramid', 'polygon', 'segment'])) {
+            result.addError('solid problem diagram needs a supported solid approximation such as prism, pyramid, polygon, or segment.');
+        }
+        if (hasChartPrompt && !this.hasAnyType(ctx, ['polygon', 'point', 'segment', 'numberLine', 'line'])) {
+            result.addError('statistics/chart problem diagram needs supported chart approximation objects such as polygons, points, segments, or numberLine.');
+        }
+
+        const typedPrompt = hasGraphPrompt || effectiveGeometryPrompt || hasNumberLinePrompt || hasSolidPrompt || hasChartPrompt;
+        if (!typedPrompt && visibleCreates.length < 2) {
+            result.addError('problem diagram needs enough visible structure to represent the problem conditions.');
+        }
+
+        return result;
+    }
+
     buildContext(operations) {
         const creates = operations.filter(op => op?.op === 'create');
         const byId = new Map();
@@ -80,6 +140,47 @@ export class SemanticValidator {
                 return creates.filter(op => op.type === type);
             }
         };
+    }
+
+    hasAnyType(ctx, types) {
+        return types.some(type => ctx.byType(type).length > 0);
+    }
+
+    isVisibleDiagramObject(op) {
+        if (!op || op.op !== 'create') return false;
+        if (op.visible === false) return false;
+        if (op.type === 'point' && Number(op.pointSize) === 0 && !op.showLabel) return false;
+        return true;
+    }
+
+    extractDiagramText(operations) {
+        const texts = [];
+        for (const op of operations) {
+            for (const field of ['label', 'customText', 'text']) {
+                const value = op?.[field];
+                if (typeof value === 'string' && value.trim()) {
+                    texts.push(value.trim());
+                }
+            }
+            if (Array.isArray(op?.customMarks)) {
+                for (const mark of op.customMarks) {
+                    if (typeof mark?.label === 'string' && mark.label.trim()) {
+                        texts.push(mark.label.trim());
+                    }
+                }
+            }
+        }
+        return texts;
+    }
+
+    looksLikeProblemProseOrAnswerChoice(value) {
+        const raw = String(value || '').trim();
+        const normalized = this.text(raw);
+        if (!raw) return false;
+        if (raw.length > 28) return true;
+        if (/[①②③④⑤]|(?:^|\s)[1-5][).]/.test(raw)) return true;
+        if (/[ㄱㄴㄷㄹ]\s*[).]/.test(raw)) return true;
+        return /다음|보기|선택지|정답|풀이|해설|구하여라|구하시오|옳은|옳지|값은|답은|문제|조건|which of|answer|solution|explanation|choose|following/.test(normalized);
     }
 
     validateRadicalNumberLine(ctx, result) {
