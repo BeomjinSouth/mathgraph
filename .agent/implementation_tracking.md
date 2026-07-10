@@ -21,7 +21,7 @@
 - [x] Root-cause and scope investigation
 - [x] Design approved for autonomous execution
 - [x] Baseline `npm.cmd test`: 219 passed
-- [ ] Detailed implementation plan
+- [x] Detailed implementation plan
 - [ ] Security closure
 - [ ] Composite-copy integrity
 - [ ] Mobile/touch implementation
