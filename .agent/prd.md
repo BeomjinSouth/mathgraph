@@ -22,6 +22,7 @@
 
 - The production site still serves the June 19 owner flow while the worktree contains incomplete July security and history changes.
 - The command palette has a reachable DOM-XSS path, login attempts are not limited, parsed object bodies bypass the byte cap, and proxy limits can be reset with a new token.
+- Legacy browser settings can retain a plaintext guest API key in persistent local storage until the user saves settings again.
 - Composite pasted objects can keep references to original points/circles, silently corrupting teacher diagrams.
 - At 390×844, fixed side panels collapse the canvas to 0px and the mouse-only input path excludes touch/pen drawing.
 - Several direct edits do not participate in undo, and Vercel's build command is a no-op.
@@ -29,6 +30,7 @@
 ## Goals
 
 - Close the validated authentication, proxy, and DOM security boundaries.
+- Remove legacy persistent guest API keys during configuration load while preserving the active tab session.
 - Make copied composite geometry independent from the source geometry.
 - Provide a canvas-first mobile editor with overlay drawers and primary touch/pen input.
 - Make common property and constrained-point changes undoable while preserving atomic AI/paste actions.
@@ -45,6 +47,7 @@
 - [ ] Command-palette malicious input renders as inert text.
 - [ ] Owner login and proxy abuse limits cannot be reset by trivial retries or a fresh token.
 - [ ] Parsed object bodies honor the configured byte limit and proxy request fields are server constrained.
+- [ ] Legacy local-storage API keys migrate to session storage and are immediately removed from persistent settings.
 - [ ] Polygon, lens, prism, tangent-circle, and closed-region copies use copied references through undo/redo.
 - [ ] A 390×844 guest workspace has a nonzero full-width canvas, usable drawers, contained chat, and primary touch/pen input.
 - [ ] Desktop mouse, pan, wheel, double-click, and panel behavior remain intact.

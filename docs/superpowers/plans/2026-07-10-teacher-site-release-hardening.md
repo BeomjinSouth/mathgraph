@@ -272,6 +272,7 @@ git commit -m "Close owner login and command palette findings"
 **Interfaces:**
 - Produces: `ProxyRequestError`, `sanitizeProxyRequestBody(body)`, `getProxyTimeoutMs()`, `fetchWithTimeout(url, init, timeoutMs)`.
 - Preserves: current Structured Outputs text/image bodies and owner bearer authentication.
+- Migrates: legacy `graphA_ai_config.apiKey` into session-only storage and removes it from persistent storage during load.
 
 - [ ] **Step 1: Write failing request-policy tests**
 
@@ -329,7 +330,12 @@ In the handler, sanitize before fetch, key `checkRateLimit()` with `proxy:${toke
 
 - [ ] **Step 4: Write and verify the client timeout RED test**
 
-Add to `tests/ai-flow.test.js` a mocked fetch that waits for `init.signal.abort`, then assert `callOpenAI()` rejects with a Korean retryable timeout message. Run the focused test and confirm it fails because no signal is supplied.
+Add to `tests/ai-flow.test.js`:
+
+- a mocked fetch that waits for `init.signal.abort`, then assert `callOpenAI()` rejects with a Korean retryable timeout message;
+- a legacy-storage test where `graphA_ai_config` contains `apiKey`, then assert `AIServiceConfig.fromStorage()` keeps the key available for the session, removes it from the rewritten local record, and does not overwrite an existing session key.
+
+Run the focused tests and confirm they fail because no signal is supplied and the legacy key remains persisted.
 
 - [ ] **Step 5: Implement client fetch timeout**
 
@@ -350,7 +356,7 @@ export async function fetchWithTimeout(url, init = {}, timeoutMs = 125000) {
 }
 ```
 
-Use it for both OpenAI text and image calls.
+Use it for both OpenAI text and image calls. In `AIServiceConfig.fromStorage()`, extract any legacy `apiKey` before assigning public settings, preserve an existing session key when present, otherwise copy the legacy key into session storage, and immediately rewrite `graphA_ai_config` without the secret.
 
 - [ ] **Step 6: Verify and commit**
 

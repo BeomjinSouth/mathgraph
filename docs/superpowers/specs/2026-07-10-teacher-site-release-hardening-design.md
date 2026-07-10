@@ -61,6 +61,12 @@ Each phase is independently testable and committed. Existing dirty hunks are pre
 - Abort the upstream fetch on timeout and return a clear retryable gateway-timeout response.
 - Preserve valid text and image Structured Outputs requests from the current client.
 
+### Guest API-key migration
+
+- Treat a legacy `apiKey` embedded in `graphA_ai_config` as sensitive migration input, not as a supported persistent setting.
+- On first load, move that value to `sessionStorage`, immediately rewrite the local-storage record without `apiKey`, and prefer an already-present session key.
+- If session storage is unavailable, still remove the persistent key and keep it only in the current in-memory configuration.
+
 ## Composite-copy Reference Design
 
 - Add one pure reference-remapping helper shared by `GraphAApp.pasteObjects()` and `PatchApplier.resolveReferences()`.
@@ -126,6 +132,7 @@ Desktop at 1280×720 retains two 320px side panels and the existing mouse, wheel
 - Repeated invalid owner login receives `429` and a valid control still works within budget.
 - A new owner token does not bypass the proxy subject limiter.
 - Disallowed Responses fields are not forwarded upstream.
+- A legacy local-storage API key is removed during configuration load and remains available only for the current session.
 
 ### Deployment
 
