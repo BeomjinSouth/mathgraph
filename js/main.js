@@ -63,6 +63,14 @@ import {
     scaleExportAreaRect
 } from './utils/ExportArea.js';
 import { getScaledAxisArrowStyle } from './utils/AxisArrowStyle.js';
+import {
+    createProjectEnvelope,
+    parseProjectFile
+} from './utils/ProjectFile.js';
+import {
+    getPhysicalExportPlan,
+    TEACHER_EXPORT_PRESETS
+} from './utils/TeacherExport.js';
 
 /**
  * 그래프A 애플리케이션
@@ -98,6 +106,7 @@ class GraphAApp {
         this.showHiddenObjects = false;
         this.currentFillColor = '#000000';
         this.currentFillOpacity = 0.24;
+        this.projectName = localStorage.getItem('graphA_project_name') || '수학 시험 그림';
 
         this.setupTools();
         this.setupUI();
@@ -826,6 +835,29 @@ class GraphAApp {
 
         document.getElementById('areaExportBtn')?.addEventListener('click', () => {
             this.startAreaExport();
+        });
+
+        const projectNameInput = document.getElementById('projectNameInput');
+        if (projectNameInput) {
+            projectNameInput.value = this.projectName;
+            projectNameInput.addEventListener('change', () => {
+                this.setProjectName(projectNameInput.value);
+            });
+        }
+
+        document.getElementById('projectExportBtn')?.addEventListener('click', () => {
+            this.exportProjectFile();
+        });
+
+        const projectImportInput = document.getElementById('projectImportInput');
+        document.getElementById('projectImportBtn')?.addEventListener('click', () => {
+            projectImportInput?.click();
+        });
+        projectImportInput?.addEventListener('change', async () => {
+            const file = projectImportInput.files?.[0];
+            projectImportInput.value = '';
+            if (!file) return;
+            await this.importProjectFile(file);
         });
 
         // 함수 모달
@@ -2761,11 +2793,24 @@ class GraphAApp {
     getExportOptions(options = {}) {
         const format = options.format ?? document.querySelector('input[name="exportFormat"]:checked')?.value ?? 'png';
         const requestedScale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
+        const presetKey = options.teacherPreset
+            ?? document.getElementById('teacherExportPreset')?.value
+            ?? 'standard';
+        const preset = TEACHER_EXPORT_PRESETS[presetKey] || null;
+        const physicalPlan = format === 'png' && preset
+            ? getPhysicalExportPlan({
+                ...preset,
+                sourceWidth: this.canvas.width,
+                sourceHeight: this.canvas.height
+            })
+            : null;
 
         return {
             format,
             requestedScale,
-            scale: format === 'png' ? requestedScale : 1,
+            scale: format === 'png' ? (physicalPlan?.scale ?? requestedScale) : 1,
+            teacherPreset: presetKey,
+            physicalPlan,
             includeBackground: options.includeBackground ?? document.getElementById('exportBackground')?.checked ?? true,
             includeGrid: options.includeGrid ?? document.getElementById('exportGrid')?.checked ?? false,
             includeAxes: options.includeAxes ?? document.getElementById('exportAxes')?.checked ?? true
@@ -3766,6 +3811,7 @@ class GraphAApp {
     saveToLocal() {
         const data = {
             version: '1.0',
+            projectName: this.projectName,
             canvas: {
                 offsetX: this.canvas.offset.x,
                 offsetY: this.canvas.offset.y,
@@ -3791,6 +3837,10 @@ class GraphAApp {
         try {
             const data = JSON.parse(saved);
 
+            if (typeof data.projectName === 'string' && data.projectName.trim()) {
+                this.setProjectName(data.projectName);
+            }
+
             if (data.canvas) {
                 this.canvas.offset.x = data.canvas.offsetX;
                 this.canvas.offset.y = data.canvas.offsetY;
@@ -3811,6 +3861,73 @@ class GraphAApp {
         } catch (error) {
             this.showToast('데이터를 불러오는 중 오류가 발생했습니다.', 'error');
             console.error(error);
+        }
+    }
+
+    setProjectName(name) {
+        this.projectName = String(name || '수학 시험 그림').trim() || '수학 시험 그림';
+        localStorage.setItem('graphA_project_name', this.projectName);
+        const input = document.getElementById('projectNameInput');
+        if (input) input.value = this.projectName;
+    }
+
+    buildProjectEnvelope() {
+        return createProjectEnvelope({
+            name: this.projectName,
+            view: {
+                offset: {
+                    x: this.canvas.offset.x,
+                    y: this.canvas.offset.y
+                },
+                scale: this.canvas.scale
+            },
+            objects: this.objectManager.toJSON()
+        });
+    }
+
+    sanitizeProjectFilename(name) {
+        const safe = String(name || 'mathgraph-project')
+            .replace(/[\\/:*?"<>|]+/g, '-')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return safe || 'mathgraph-project';
+    }
+
+    exportProjectFile() {
+        const envelope = this.buildProjectEnvelope();
+        const blob = new Blob([JSON.stringify(envelope, null, 2)], {
+            type: 'application/json'
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = this.sanitizeProjectFilename(this.projectName) + '.mathgraph.json';
+        link.click();
+        URL.revokeObjectURL(url);
+        this.showToast('프로젝트 파일을 저장했습니다.', 'success');
+    }
+
+    async importProjectFile(file) {
+        try {
+            const envelope = parseProjectFile(await file.text());
+            const candidateManager = new ObjectManager();
+            candidateManager.fromJSON(envelope.objects);
+            if (candidateManager.toJSON().length !== envelope.objects.length) {
+                throw new Error('지원하지 않는 객체가 포함되어 있습니다.');
+            }
+
+            this.objectManager.fromJSON(envelope.objects);
+            this.canvas.offset.x = envelope.view.offset.x;
+            this.canvas.offset.y = envelope.view.offset.y;
+            this.canvas.scale = envelope.view.scale;
+            this.setProjectName(envelope.name);
+            this.historyManager.clear();
+            this.updateSidebar();
+            this.updateZoomDisplay();
+            this.render();
+            this.showToast('프로젝트를 불러왔습니다.', 'success');
+        } catch (error) {
+            this.showToast(error.message || '프로젝트 파일을 불러오지 못했습니다.', 'error');
         }
     }
 

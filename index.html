@@ -71,6 +71,10 @@
                     <span class="material-symbols-outlined" id="currentToolIcon">arrow_selector_tool</span>
                     <span id="currentToolName">선택</span>
                 </div>
+                <label class="project-name-field" aria-label="프로젝트 이름">
+                    <span class="material-symbols-outlined">description</span>
+                    <input id="projectNameInput" type="text" value="수학 시험 그림" maxlength="80">
+                </label>
             </div>
 
             <div class="toolbar-section toolbar-right">
@@ -87,6 +91,13 @@
                 <button class="action-btn" id="areaExportBtn" data-tool="areaExport" aria-label="영역 저장" title="영역 저장">
                     <span class="material-symbols-outlined">crop_free</span>
                 </button>
+                <button class="action-btn" id="projectImportBtn" aria-label="프로젝트 불러오기" title="프로젝트 불러오기">
+                    <span class="material-symbols-outlined">folder_open</span>
+                </button>
+                <button class="action-btn" id="projectExportBtn" aria-label="프로젝트 저장" title="프로젝트 저장">
+                    <span class="material-symbols-outlined">save</span>
+                </button>
+                <input id="projectImportInput" type="file" accept=".json,.mathgraph.json,application/json" hidden>
             </div>
         </header>
 
@@ -773,6 +784,13 @@
                                     <span>3x</span>
                                 </label>
                             </div>
+                            <label for="teacherExportPreset">시험지 출력</label>
+                            <select id="teacherExportPreset">
+                                <option value="standard">화면 배율 사용</option>
+                                <option value="hwpCompact">HWP용 · 80 mm · 300 dpi</option>
+                                <option value="hwpWide">HWP용 넓게 · 120 mm · 300 dpi</option>
+                                <option value="printHigh">고해상도 · 160 mm · 600 dpi</option>
+                            </select>
                         </div>
                         <div class="option-group">
                             <label>옵션</label>
