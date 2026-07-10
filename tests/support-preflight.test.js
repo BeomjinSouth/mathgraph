@@ -8,6 +8,16 @@ test('statistical chart requests are explicitly excluded', () => {
     assert.equal(result.status, 'excluded');
     assert.deepEqual(result.excluded, ['boxPlot', 'scatterPlot']);
     assert.match(result.message, /지원하지/);
+    assert.match(result.message, /상자그림.*산점도/);
+});
+
+test('basic statistical chart families remain excluded from the teacher workflow', () => {
+    const result = analyzeDrawingSupport('막대그래프와 원그래프를 시험지 그림으로 만들어줘');
+    assert.equal(result.status, 'excluded');
+    assert.deepEqual(result.excluded, ['barChart', 'pieChart']);
+    assert.match(result.message, /지원하지/);
+    assert.match(result.message, /막대그래프.*원그래프/);
+    assert.doesNotMatch(result.message, /barChart|pieChart/);
 });
 
 test('curved solid requests are supported', () => {

@@ -74,6 +74,8 @@ import {
     TEACHER_EXPORT_PRESETS
 } from './utils/TeacherExport.js';
 import { buildCurvedSolidInput } from './utils/CurvedSolidInput.js';
+import { TeacherWorkflow } from './ui/TeacherWorkflow.js';
+import { analyzeDrawingSupport } from './ai/SupportPreflight.js';
 
 /**
  * 그래프A 애플리케이션
@@ -110,9 +112,11 @@ class GraphAApp {
         this.currentFillColor = '#000000';
         this.currentFillOpacity = 0.24;
         this.projectName = localStorage.getItem('graphA_project_name') || '수학 시험 그림';
+        this.lastSupportResult = analyzeDrawingSupport('');
 
         this.setupTools();
         this.setupUI();
+        this.setupTeacherWorkflow();
         this.setupEventListeners();
 
         // 초기 렌더링
@@ -3248,6 +3252,43 @@ class GraphAApp {
         });
     }
 
+    setupTeacherWorkflow() {
+        const prompt = document.getElementById('chatInput');
+        const status = document.getElementById('teacherWorkflowStatus');
+        const retry = document.getElementById('teacherRetryBtn');
+        const summary = document.getElementById('teacherQaSummary');
+        const liveRegion = document.getElementById('teacherWorkflowLive');
+        this.teacherWorkflow = new TeacherWorkflow({ prompt, status, retry, summary, liveRegion });
+
+        prompt?.addEventListener('input', () => {
+            this.teacherWorkflow.setPrompt(prompt.value);
+        });
+        retry?.addEventListener('click', () => {
+            this.sendChatMessage();
+        });
+
+        const updateSummary = () => this.updateTeacherQualitySummary();
+        this.objectManager.on('objectAdded', updateSummary);
+        this.objectManager.on('objectRemoved', updateSummary);
+        this.objectManager.on('objectUpdated', updateSummary);
+        this.updateTeacherQualitySummary();
+    }
+
+    setTeacherWorkflowState(state, details = {}) {
+        this.teacherWorkflow?.setState(state, details);
+        if (state === 'error') {
+            const alert = document.getElementById('teacherWorkflowAlert');
+            if (alert) alert.textContent = details.message || '그림을 생성하지 못했습니다.';
+        }
+    }
+
+    updateTeacherQualitySummary() {
+        return this.teacherWorkflow?.updateQualitySummary(
+            this.objectManager.getAllObjects(),
+            this.lastSupportResult
+        );
+    }
+
     /**
      * AI 설정 모달 설정
      */
@@ -3503,10 +3544,19 @@ class GraphAApp {
 
         if (!message) return;
 
+        this.teacherWorkflow?.setPrompt(message);
+        this.lastSupportResult = analyzeDrawingSupport(message);
+        this.updateTeacherQualitySummary();
         // 사용자 메시지 추가
         this.addChatMessage(message, 'user');
-        input.value = '';
-        input.style.height = 'auto';
+
+        if (this.lastSupportResult.status === 'excluded') {
+            this.setTeacherWorkflowState('warning', { message: this.lastSupportResult.message });
+            this.addChatMessage(`⚠️ ${this.lastSupportResult.message}`, 'assistant');
+            return;
+        }
+
+        this.setTeacherWorkflowState('checking', { message: this.lastSupportResult.message });
 
         // AI 응답 (현재는 시뮬레이션)
         setTimeout(() => {
@@ -3593,12 +3643,13 @@ class GraphAApp {
         // JSON 형식인지 확인 - 직접 처리
         if (trimmedMessage.startsWith('{') || trimmedMessage.startsWith('[') ||
             trimmedMessage.startsWith('```')) {
-            this.processAIJSON(trimmedMessage);
-            return;
+            this.setTeacherWorkflowState('generating');
+            return this.processAIJSON(trimmedMessage);
         }
 
         // 로딩 표시
         const loadingMessage = this.addChatMessage('처리 중... ⏳', 'assistant');
+        this.setTeacherWorkflowState('generating');
 
         try {
             // 현재 캔버스 상태를 컨텍스트로 전달
@@ -3609,18 +3660,24 @@ class GraphAApp {
 
             if (result.success && result.json) {
                 // JSON 패치 적용
-                this.processAIJSON(result.json, {
+                return this.processAIJSON(result.json, {
                     modelMeta: this.getAIModelResultMeta(result)
                 });
             } else if (result.error) {
                 this.addChatMessage(result.error, 'assistant');
+                this.setTeacherWorkflowState('error', { message: result.error });
+                return false;
             }
         } catch (error) {
             console.error('AI 명령 처리 실패:', error);
-            this.addChatMessage(`❌ ${error.message || 'AI 요청 처리 중 오류가 발생했습니다.'}`, 'assistant');
+            const message = error.message || 'AI 요청 처리 중 오류가 발생했습니다.';
+            this.addChatMessage(`❌ ${message}`, 'assistant');
+            this.setTeacherWorkflowState('error', { message });
+            return false;
         } finally {
             this.removeChatMessage(loadingMessage);
             this.updateSidebar();
+            this.updateTeacherQualitySummary();
         }
     }
 
@@ -3654,7 +3711,9 @@ class GraphAApp {
                 'assistant'
             );
             console.error('AI JSON 검증 실패:', validationResult.errors);
-            return;
+            const message = validationResult.errors.join(' ');
+            this.setTeacherWorkflowState('error', { message });
+            return false;
         }
 
         // 2. 파싱된 JSON 추출
@@ -3663,7 +3722,8 @@ class GraphAApp {
             data = parseAIJSONPayload(jsonInput);
         } catch (e) {
             this.addChatMessage(`⚠️ JSON 파싱 실패: ${e.message}`, 'assistant');
-            return;
+            this.setTeacherWorkflowState('error', { message: e.message });
+            return false;
         }
 
         // 3. 참조 ID 검증
@@ -3676,7 +3736,9 @@ class GraphAApp {
                 'assistant'
             );
             console.error('AI 참조 검증 실패:', refResult.errors);
-            return;
+            const message = refResult.errors.join(' ');
+            this.setTeacherWorkflowState('error', { message });
+            return false;
         }
 
         // 4. 패치 적용
@@ -3694,7 +3756,9 @@ class GraphAApp {
                 'assistant'
             );
             console.error('AI semantic validation failed:', intentResult.errors);
-            return;
+            const message = intentResult.errors.join(' ');
+            this.setTeacherWorkflowState('error', { message });
+            return false;
         }
 
         const patchResult = this.patchApplier.apply(data);
@@ -3705,12 +3769,17 @@ class GraphAApp {
             this.addChatMessage(`✅ ${patchResult.message}`, 'assistant', {
                 meta: intentOptions.modelMeta || ''
             });
+            this.setTeacherWorkflowState('complete');
+            this.updateTeacherQualitySummary();
+            return true;
         } else {
             this.addChatMessage(
                 `❌ 적용 실패: ${patchResult.message}\n${patchResult.errors.join('\n')}`,
                 'assistant'
             );
             console.error('AI 패치 적용 실패:', patchResult);
+            this.setTeacherWorkflowState('error', { message: patchResult.message });
+            return false;
         }
     }
 

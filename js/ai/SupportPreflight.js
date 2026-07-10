@@ -14,12 +14,31 @@ const APPROXIMATED_FAMILIES = [
 ];
 
 const EXCLUDED_FAMILIES = [
+    ['barChart', /막대\s*(?:그래프|도표)|bar\s*chart/i],
+    ['pieChart', /원\s*(?:그래프|도표)|파이\s*(?:그래프|차트)|pie\s*chart/i],
     ['boxPlot', /상자\s*(?:수염\s*)?그림|상자그림|box\s*plot/i],
     ['scatterPlot', /산점도|scatter\s*plot/i],
     ['histogram', /히스토그램|histogram/i],
     ['frequencyPolygon', /도수분포다각형|frequency\s*polygon/i],
     ['dotPlot', /점도표|dot\s*plot/i]
 ];
+
+const FAMILY_LABELS = Object.freeze({
+    annularSector: '고리 부채꼴',
+    barChart: '막대그래프',
+    boxPlot: '상자그림',
+    dotPlot: '점도표',
+    frequencyPolygon: '도수분포다각형',
+    histogram: '히스토그램',
+    pieChart: '원그래프',
+    scatterPlot: '산점도'
+});
+
+function formatFamilyLabels(ids = []) {
+    return ids
+        .map((id) => FAMILY_LABELS[id] || id)
+        .join(', ');
+}
 
 function collectMatches(text, definitions) {
     return definitions
@@ -39,7 +58,7 @@ export function analyzeDrawingSupport(input = '') {
             supported,
             approximated,
             excluded,
-            message: `현재 전용 기능으로 지원하지 않는 항목이 있습니다: ${excluded.join(', ')}.`
+            message: `현재 전용 기능으로 지원하지 않는 항목이 있습니다: ${formatFamilyLabels(excluded)}.`
         };
     }
 
@@ -49,7 +68,7 @@ export function analyzeDrawingSupport(input = '') {
             supported,
             approximated,
             excluded,
-            message: `일부 항목은 현재 도형 조합으로 근사해 생성합니다: ${approximated.join(', ')}.`
+            message: `일부 항목은 현재 도형 조합으로 근사해 생성합니다: ${formatFamilyLabels(approximated)}.`
         };
     }
 
