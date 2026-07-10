@@ -27,6 +27,24 @@ export const AI_IMAGE_PREPROCESS_MIN_CROP_LONG_EDGE = 900;
 export const AI_IMAGE_PREPROCESS_CROP_PADDING_RATIO = 0.06;
 export const AI_IMAGE_PREPROCESS_JPEG_QUALITY = 0.92;
 
+export async function fetchWithTimeout(url, init = {}, timeoutMs = 125000) {
+    const normalizedTimeoutMs = Number.isSafeInteger(timeoutMs) && timeoutMs > 0
+        ? timeoutMs
+        : 125000;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), normalizedTimeoutMs);
+    try {
+        return await fetch(url, { ...init, signal: controller.signal });
+    } catch (error) {
+        if (controller.signal.aborted || error?.name === 'AbortError') {
+            throw new Error('AI 요청 시간이 초과되었습니다. 잠시 후 다시 시도하세요.');
+        }
+        throw error;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 export const OPENAI_MODEL_OPTIONS = [
     { value: 'gpt-5.5', label: 'GPT-5.5 (권장)' },
     { value: 'gpt-5.5-pro', label: 'GPT-5.5 Pro (고난도/느림)' },
@@ -531,24 +549,42 @@ export class AIServiceConfig {
 
     static fromStorage() {
         const config = new AIServiceConfig();
+        let legacyApiKey = '';
         try {
             const saved = localStorage.getItem('graphA_ai_config');
             if (saved) {
                 const data = JSON.parse(saved);
-                Object.assign(config, data);
+                if (data && typeof data === 'object' && !Array.isArray(data)) {
+                    const hasLegacyApiKey = Object.prototype.hasOwnProperty.call(data, 'apiKey');
+                    legacyApiKey = typeof data.apiKey === 'string' ? data.apiKey : '';
+                    const { apiKey: _legacyApiKey, ...persistedConfig } = data;
+                    Object.assign(config, persistedConfig);
+
+                    // 세션 저장소 접근 가능 여부와 무관하게 디스크의 평문 키를 먼저 제거합니다.
+                    if (hasLegacyApiKey) {
+                        localStorage.setItem('graphA_ai_config', JSON.stringify(persistedConfig));
+                    }
+                }
             }
         } catch (e) {
             console.warn('AI 설정 로드 실패:', e);
         }
+
         // 게스트 API 키는 영구 localStorage 대신 세션 저장소에만 보관합니다.
         // (평문 키가 디스크에 오래 남지 않도록 탭 세션 범위로 제한)
         try {
             const sessionKey = sessionStorage.getItem('graphA_ai_key');
             if (sessionKey) {
                 config.apiKey = sessionKey;
+            } else if (legacyApiKey) {
+                config.apiKey = legacyApiKey;
+                sessionStorage.setItem('graphA_ai_key', legacyApiKey);
             }
         } catch (e) {
-            // 세션 저장소 미지원 환경(예: 테스트 러너)은 무시합니다.
+            // 세션 저장소가 없더라도 현재 메모리에서는 마이그레이션된 키를 유지합니다.
+            if (legacyApiKey) {
+                config.apiKey = legacyApiKey;
+            }
         }
         return config;
     }
@@ -1302,7 +1338,7 @@ export class AIService {
         this.lastRequestModel = requestBody.model;
         const transport = this.buildOpenAITransport();
 
-        const response = await fetch(transport.url, {
+        const response = await fetchWithTimeout(transport.url, {
             method: 'POST',
             headers: transport.headers,
             body: JSON.stringify(requestBody)
@@ -2758,7 +2794,7 @@ export class AIService {
         this.lastRequestModel = requestBody.model;
         const transport = this.buildOpenAITransport();
 
-        const response = await fetch(transport.url, {
+        const response = await fetchWithTimeout(transport.url, {
             method: 'POST',
             headers: transport.headers,
             body: JSON.stringify(requestBody)

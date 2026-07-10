@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+import * as AIServiceModule from '../js/ai/AIService.js';
 import { parseAIJSONPayload } from '../js/ai/JSONUtils.js';
 import {
     AI_COMMAND_MODE,
     AIService,
+    AIServiceConfig,
     DEFAULT_OPENAI_MODEL,
     GRAPH_OPERATIONS_RESPONSE_FORMAT,
     DEFAULT_IMAGE_RECREATE_INSTRUCTION,
@@ -33,6 +35,52 @@ function createAIService() {
         apiKey: '',
         save() { }
     });
+}
+
+function withStorageEnvironment({ localConfig, sessionKey, sessionUnavailable = false }, callback) {
+    const originalLocalStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    const originalSessionStorage = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+    const localValues = new Map();
+    const sessionValues = new Map();
+    if (localConfig !== undefined) {
+        localValues.set('graphA_ai_config', JSON.stringify(localConfig));
+    }
+    if (sessionKey !== undefined) {
+        sessionValues.set('graphA_ai_key', sessionKey);
+    }
+
+    const storage = (values, unavailable = false) => ({
+        getItem(key) {
+            if (unavailable) throw new Error('storage unavailable');
+            return values.has(key) ? values.get(key) : null;
+        },
+        setItem(key, value) {
+            if (unavailable) throw new Error('storage unavailable');
+            values.set(key, String(value));
+        },
+        removeItem(key) {
+            if (unavailable) throw new Error('storage unavailable');
+            values.delete(key);
+        }
+    });
+
+    Object.defineProperty(globalThis, 'localStorage', {
+        configurable: true,
+        value: storage(localValues)
+    });
+    Object.defineProperty(globalThis, 'sessionStorage', {
+        configurable: true,
+        value: storage(sessionValues, sessionUnavailable)
+    });
+
+    try {
+        return callback({ localValues, sessionValues });
+    } finally {
+        if (originalLocalStorage) Object.defineProperty(globalThis, 'localStorage', originalLocalStorage);
+        else delete globalThis.localStorage;
+        if (originalSessionStorage) Object.defineProperty(globalThis, 'sessionStorage', originalSessionStorage);
+        else delete globalThis.sessionStorage;
+    }
 }
 
 const TEST_REFERENCE_MANUAL = {
@@ -344,6 +392,68 @@ test('buildOpenAIRequestBody always includes at least one user turn', () => {
     assert.ok(body.input.some(item => item.role === 'user'));
 });
 
+test('AIServiceConfig migrates a legacy persisted API key into session storage and scrubs local storage', () => {
+    withStorageEnvironment({
+        localConfig: { provider: 'openai', model: 'gpt-5.4-mini', apiKey: 'legacy-key' }
+    }, ({ localValues, sessionValues }) => {
+        const config = AIServiceConfig.fromStorage();
+        const persisted = JSON.parse(localValues.get('graphA_ai_config'));
+
+        assert.equal(config.apiKey, 'legacy-key');
+        assert.equal(sessionValues.get('graphA_ai_key'), 'legacy-key');
+        assert.equal(Object.hasOwn(persisted, 'apiKey'), false);
+        assert.equal(persisted.model, 'gpt-5.4-mini');
+    });
+});
+
+test('AIServiceConfig keeps an existing session API key while scrubbing a different legacy key', () => {
+    withStorageEnvironment({
+        localConfig: { provider: 'openai', apiKey: 'legacy-key' },
+        sessionKey: 'current-session-key'
+    }, ({ localValues, sessionValues }) => {
+        const config = AIServiceConfig.fromStorage();
+        const persisted = JSON.parse(localValues.get('graphA_ai_config'));
+
+        assert.equal(config.apiKey, 'current-session-key');
+        assert.equal(sessionValues.get('graphA_ai_key'), 'current-session-key');
+        assert.equal(Object.hasOwn(persisted, 'apiKey'), false);
+    });
+});
+
+test('AIServiceConfig scrubs a legacy API key even when session storage is unavailable', () => {
+    withStorageEnvironment({
+        localConfig: { provider: 'openai', apiKey: 'memory-only-key' },
+        sessionUnavailable: true
+    }, ({ localValues }) => {
+        const config = AIServiceConfig.fromStorage();
+        const persisted = JSON.parse(localValues.get('graphA_ai_config'));
+
+        assert.equal(config.apiKey, 'memory-only-key');
+        assert.equal(Object.hasOwn(persisted, 'apiKey'), false);
+    });
+});
+
+test('fetchWithTimeout aborts a slow OpenAI request with a retryable Korean message', async () => {
+    assert.equal(typeof AIServiceModule.fetchWithTimeout, 'function');
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (_url, init) => new Promise((_resolve, reject) => {
+        init.signal.addEventListener('abort', () => {
+            const error = new Error('aborted');
+            error.name = 'AbortError';
+            reject(error);
+        }, { once: true });
+    });
+
+    try {
+        await assert.rejects(
+            () => AIServiceModule.fetchWithTimeout('/slow-openai', { method: 'POST' }, 5),
+            /AI 요청 시간이 초과되었습니다\. 잠시 후 다시 시도하세요\./
+        );
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('AIService callOpenAI sends Structured Outputs request and extracts output text', async () => {
     const originalFetch = globalThis.fetch;
     let capturedUrl = null;
@@ -391,6 +501,7 @@ test('AIService callOpenAI sends Structured Outputs request and extracts output 
         const body = JSON.parse(capturedOptions.body);
         assert.equal(capturedUrl, 'https://api.openai.com/v1/responses');
         assert.equal(capturedOptions.headers.Authorization, 'Bearer test-key');
+        assert.ok(capturedOptions.signal instanceof AbortSignal);
         assert.equal(body.text.format.type, 'json_schema');
         assert.equal(body.text.format.strict, true);
         assert.equal(body.store, false);
@@ -1333,6 +1444,7 @@ test('AIService analyzeImage sends image input with targeted patch prompt', asyn
         const userContent = body.input[1].content;
 
         assert.equal(capturedUrl, 'https://api.openai.com/v1/responses');
+        assert.ok(capturedOptions.signal instanceof AbortSignal);
         assert.equal(result.success, true);
         assert.equal(result.json.operations[0].op, 'update');
         assert.equal(service.lastResponseId, 'resp_image_patch');

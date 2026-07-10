@@ -11,12 +11,15 @@
 import {
     AuthConfigError,
     PayloadTooLargeError,
+    ProxyRequestError,
     verifyToken,
     getBearerToken,
     readJson,
     isModelAllowed,
     getAllowedModels,
-    checkRateLimit
+    checkRateLimit,
+    sanitizeProxyRequestBody,
+    getProxyTimeoutMs
 } from '../lib/ownerAuth.js';
 
 export default async function handler(req, res) {
@@ -46,8 +49,8 @@ export default async function handler(req, res) {
         return;
     }
 
-    // 토큰 단위 호출 빈도 제한 (서버리스 인스턴스별 메모리 기반).
-    const rate = checkRateLimit(`proxy:${bearerToken}`);
+    // 새 토큰 발급으로 예산이 초기화되지 않도록 검증된 오너 주체 단위로 제한합니다.
+    const rate = checkRateLimit(`proxy:${tokenResult.payload.sub}:${tokenResult.payload.name}`);
     if (!rate.allowed) {
         res.setHeader('Retry-After', String(Math.ceil((rate.retryAfterMs || 1000) / 1000)));
         res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도하세요.' });
@@ -64,10 +67,14 @@ export default async function handler(req, res) {
 
     let requestBody;
     try {
-        requestBody = await readJson(req);
+        requestBody = sanitizeProxyRequestBody(await readJson(req));
     } catch (error) {
         if (error instanceof PayloadTooLargeError) {
             res.status(413).json({ error: '요청 본문이 너무 큽니다.' });
+            return;
+        }
+        if (error instanceof ProxyRequestError) {
+            res.status(400).json({ error: error.message });
             return;
         }
         res.status(400).json({ error: '요청 본문을 해석하지 못했습니다.' });
@@ -81,6 +88,13 @@ export default async function handler(req, res) {
         return;
     }
 
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, getProxyTimeoutMs());
+
     try {
         const response = await fetch('https://api.openai.com/v1/responses', {
             method: 'POST',
@@ -88,10 +102,8 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`
             },
-            body: JSON.stringify({
-                ...requestBody,
-                store: false
-            })
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
         });
 
         const responseText = await response.text();
@@ -99,8 +111,16 @@ export default async function handler(req, res) {
         res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
         res.send(responseText);
     } catch (error) {
+        if (timedOut || error?.name === 'AbortError') {
+            res.status(504).json({
+                error: 'OpenAI 요청 시간이 초과되었습니다. 잠시 후 다시 시도하세요.'
+            });
+            return;
+        }
         res.status(502).json({
             error: error?.message || 'OpenAI proxy request failed.'
         });
+    } finally {
+        clearTimeout(timer);
     }
 }

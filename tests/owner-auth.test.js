@@ -7,6 +7,7 @@ process.env.MATHGRAPH_LOGIN_SECRET = 'test-signing-secret';
 const {
     AuthConfigError,
     PayloadTooLargeError,
+    ProxyRequestError,
     OWNER_NAME,
     createToken,
     verifyToken,
@@ -18,7 +19,9 @@ const {
     getAllowedModels,
     checkRateLimit,
     resetRateLimit,
-    resetRateLimitKey
+    resetRateLimitKey,
+    sanitizeProxyRequestBody,
+    getProxyTimeoutMs
 } = await import('../lib/ownerAuth.js');
 
 function futureToken(overrides = {}) {
@@ -114,6 +117,86 @@ test('isModelAllowed honors the MATHGRAPH_PROXY_ALLOWED_MODELS override', () => 
         } else {
             process.env.MATHGRAPH_PROXY_ALLOWED_MODELS = original;
         }
+    }
+});
+
+test('sanitizeProxyRequestBody preserves supported nested Responses input and enforces server-owned fields', () => {
+    const input = [{
+        role: 'user',
+        content: [
+            { type: 'input_text', text: '도형을 재현해줘' },
+            { type: 'input_image', image_url: 'data:image/png;base64,AAAA', detail: 'high' }
+        ]
+    }];
+    const reasoning = { effort: 'low' };
+    const text = {
+        verbosity: 'low',
+        format: {
+            type: 'json_schema',
+            name: 'graph_operations',
+            strict: true,
+            schema: {
+                type: 'object',
+                properties: {
+                    operations: { type: 'array', items: { type: 'object' } }
+                }
+            }
+        }
+    };
+
+    const sanitized = sanitizeProxyRequestBody({
+        model: 'gpt-5.5',
+        input,
+        reasoning,
+        text,
+        previous_response_id: 'resp_previous',
+        store: true
+    });
+
+    assert.deepEqual(sanitized.input, input);
+    assert.deepEqual(sanitized.reasoning, reasoning);
+    assert.deepEqual(sanitized.text, text);
+    assert.equal(sanitized.previous_response_id, 'resp_previous');
+    assert.equal(sanitized.store, false);
+    assert.equal(sanitized.max_output_tokens, 16384);
+});
+
+test('sanitizeProxyRequestBody rejects caller-controlled Responses cost and execution fields', () => {
+    for (const [field, value] of [
+        ['tools', [{ type: 'web_search' }]],
+        ['background', true],
+        ['stream', true],
+        ['service_tier', 'priority'],
+        ['max_output_tokens', 999999]
+    ]) {
+        assert.throws(
+            () => sanitizeProxyRequestBody({ model: 'gpt-5.5', input: [], [field]: value }),
+            (error) => error instanceof ProxyRequestError && error.message.includes(field),
+            field
+        );
+    }
+});
+
+test('proxy numeric settings accept only finite positive safe integers', () => {
+    const originalMaxOutput = process.env.MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS;
+    const originalTimeout = process.env.MATHGRAPH_PROXY_TIMEOUT_MS;
+    try {
+        process.env.MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS = '2048';
+        process.env.MATHGRAPH_PROXY_TIMEOUT_MS = '2500';
+        assert.equal(sanitizeProxyRequestBody({ model: 'gpt-5.5', input: [] }).max_output_tokens, 2048);
+        assert.equal(getProxyTimeoutMs(), 2500);
+
+        for (const invalid of ['0', '-1', '3.5', 'Infinity', 'NaN', '9007199254740992']) {
+            process.env.MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS = invalid;
+            process.env.MATHGRAPH_PROXY_TIMEOUT_MS = invalid;
+            assert.equal(sanitizeProxyRequestBody({ model: 'gpt-5.5', input: [] }).max_output_tokens, 16384, invalid);
+            assert.equal(getProxyTimeoutMs(), 120000, invalid);
+        }
+    } finally {
+        if (originalMaxOutput === undefined) delete process.env.MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS;
+        else process.env.MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS = originalMaxOutput;
+        if (originalTimeout === undefined) delete process.env.MATHGRAPH_PROXY_TIMEOUT_MS;
+        else process.env.MATHGRAPH_PROXY_TIMEOUT_MS = originalTimeout;
     }
 });
 
