@@ -2604,3 +2604,11 @@
 - Ran `git remote -v`; no remote is configured.
 - Ran `git push`; failed with `fatal: No configured push destination`.
 - Next action: add a GitHub remote with `git remote add origin <url>` and push with `git push -u origin master`.
+
+## 2026-07-10 Teacher-site readiness audit
+
+- Reviewed the committed history, current dirty working tree, implementation documents, production site, desktop teacher flows, mobile layout, accessibility, security boundaries, and deployment linkage.
+- Recorded the full result in `docs/teacher-site-readiness-audit-2026-07-10.md`.
+- Verification: `npm.cmd test` passed 219/219; `npm.cmd run vercel-build` exited 0 but remains a no-op quality gate; `git diff --check` passed with line-ending warnings only; production returned HTTP 200; guest entry, AI panel opening, and function creation succeeded with no observed console errors.
+- Critical follow-up: the July 9 local security changes are not committed or deployed; the live login is still name-only; mobile 390×844 collapses the canvas to 0px and pushes the property panel offscreen; residual command-palette XSS, login abuse protection, parsed-body size enforcement, composite-copy reference remapping, request timeout/cancellation, and model/document drift remain.
+- Deployment: no product deployment was performed for this audit. Vercel CLI inspection was blocked by missing local credentials, while public HTTP/browser checks succeeded. The existing dirty product changes were preserved.
