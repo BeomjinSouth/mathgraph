@@ -109,7 +109,7 @@ export class SemanticValidator {
         if (hasNumberLinePrompt && !this.hasAnyType(ctx, ['numberLine'])) {
             result.addError('number-line problem diagram needs a numberLine object.');
         }
-        if (hasSolidPrompt && !this.hasAnyType(ctx, ['prism', 'pyramid', 'polygon', 'segment'])) {
+        if (hasSolidPrompt && !this.hasAnyType(ctx, ['prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'polygon', 'segment'])) {
             result.addError('solid problem diagram needs a supported solid approximation such as prism, pyramid, polygon, or segment.');
         }
         if (hasChartPrompt && !this.hasAnyType(ctx, ['polygon', 'point', 'segment', 'numberLine', 'line'])) {

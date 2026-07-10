@@ -343,6 +343,20 @@ export class PatchApplier {
                 );
                 break;
 
+            case 'cylinder':
+            case 'cone':
+            case 'sphere':
+                object = this.objectManager.createCurvedSolid(op.type, {
+                    ...commonParams,
+                    x: resolvedOp.x,
+                    y: resolvedOp.y,
+                    width: resolvedOp.width,
+                    height: resolvedOp.height,
+                    ...(resolvedOp.ellipseRatio !== undefined ? { ellipseRatio: resolvedOp.ellipseRatio } : {}),
+                    ...(resolvedOp.showHiddenLines !== undefined ? { showHiddenLines: resolvedOp.showHiddenLines } : {})
+                });
+                break;
+
             default:
                 throw new Error(`Unsupported object type: ${op.type}`);
         }
@@ -400,6 +414,10 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'text', op.text);
         this.applyPropertyUpdate(object, 'align', op.align);
         this.applyPropertyUpdate(object, 'backgroundColor', op.backgroundColor);
+        this.applyPropertyUpdate(object, 'width', op.width);
+        this.applyPropertyUpdate(object, 'height', op.height);
+        this.applyPropertyUpdate(object, 'ellipseRatio', op.ellipseRatio);
+        this.applyPropertyUpdate(object, 'showHiddenLines', op.showHiddenLines);
 
         if (op.labelOffset !== undefined && 'labelOffset' in object) {
             this.recordPropertyChange(object, 'labelOffset', object.labelOffset, op.labelOffset);

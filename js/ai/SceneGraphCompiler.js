@@ -53,7 +53,12 @@ const NODE_KIND_ALIASES = new Map(Object.entries({
     prism: 'prism',
     rectangularprism: 'prism',
     triangularprism: 'prism',
-    pyramid: 'pyramid'
+    pyramid: 'pyramid',
+    cylinder: 'cylinder',
+    cone: 'cone',
+    sphere: 'sphere',
+    textlabel: 'textLabel',
+    text: 'textLabel'
 }));
 
 const RELATION_KIND_ALIASES = new Map(Object.entries({
@@ -76,16 +81,11 @@ const RELATION_KIND_ALIASES = new Map(Object.entries({
 }));
 
 const UNSUPPORTED_NODE_KINDS = new Set([
-    'cylinder',
-    'cone',
-    'sphere',
     'histogram',
     'scatterplot',
     'boxplot',
     'dotplot',
     'table',
-    'textlabel',
-    'text',
     'image'
 ]);
 
@@ -105,7 +105,11 @@ export const SCENE_GRAPH_SUPPORTED_NODE_KINDS = [
     'function',
     'numberLine',
     'prism',
-    'pyramid'
+    'pyramid',
+    'cylinder',
+    'cone',
+    'sphere',
+    'textLabel'
 ];
 
 export const SCENE_GRAPH_SUPPORTED_RELATION_KINDS = [
@@ -310,6 +314,14 @@ export class SceneGraphCompiler {
                 break;
             case 'pyramid':
                 this.addPyramid(node);
+                break;
+            case 'cylinder':
+            case 'cone':
+            case 'sphere':
+                this.addCurvedSolid(node, kind);
+                break;
+            case 'textLabel':
+                this.addTextLabel(node);
                 break;
             default:
                 this.warn(`Scene node "${node.id || rawKind}" has unsupported kind "${rawKind}".`);
@@ -633,6 +645,53 @@ export class SceneGraphCompiler {
             ...(node.showArrows !== undefined ? { showArrows: Boolean(node.showArrows) } : {}),
             ...(Number.isFinite(numberFrom(node.tickHeight)) ? { tickHeight: numberFrom(node.tickHeight) } : {}),
             ...(Array.isArray(node.customMarks) ? { customMarks: node.customMarks } : {}),
+            ...commonFields(node)
+        });
+        this.createdIds.add(id);
+    }
+
+    addCurvedSolid(node, type) {
+        const id = this.nodeId(node, type);
+        const x = numberFrom(node.x ?? node.centerX ?? 0);
+        const y = numberFrom(node.y ?? node.centerY ?? 0);
+        const width = numberFrom(node.width ?? (Number.isFinite(numberFrom(node.radius)) ? numberFrom(node.radius) * 2 : undefined));
+        const height = numberFrom(node.height ?? (type === 'sphere' ? width : undefined));
+        if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
+            this.warn(`${type} "${id}" skipped because positive x/y/width/height values are required.`);
+            return;
+        }
+        this.addOperation({
+            op: 'create',
+            id,
+            type,
+            x,
+            y,
+            width,
+            height,
+            ...(Number.isFinite(numberFrom(node.ellipseRatio)) ? { ellipseRatio: numberFrom(node.ellipseRatio) } : {}),
+            ...(node.showHiddenLines !== undefined ? { showHiddenLines: Boolean(node.showHiddenLines) } : {}),
+            ...commonFields(node)
+        });
+        this.createdIds.add(id);
+    }
+
+    addTextLabel(node) {
+        const id = this.nodeId(node, 'textLabel');
+        const text = String(node.text ?? node.content ?? '').trim();
+        const x = numberFrom(node.x ?? 0);
+        const y = numberFrom(node.y ?? 0);
+        if (!text || !Number.isFinite(x) || !Number.isFinite(y)) {
+            this.warn(`Text label "${id}" skipped because text and x/y are required.`);
+            return;
+        }
+        this.addOperation({
+            op: 'create',
+            id,
+            type: 'textLabel',
+            text,
+            x,
+            y,
+            ...(node.align ? { align: node.align } : {}),
             ...commonFields(node)
         });
         this.createdIds.add(id);

@@ -19,6 +19,7 @@ import { ClosedRegion } from '../objects/ClosedRegion.js';
 import { Prism, Pyramid } from '../objects/Solid3D.js'; // Mk.3
 import { NumberLine } from '../objects/NumberLine.js'; // Mk.4
 import { TextLabel } from '../objects/TextLabel.js';
+import { CurvedSolid } from '../objects/CurvedSolid.js';
 
 export class ObjectManager {
     constructor() {
@@ -617,6 +618,12 @@ export class ObjectManager {
                 obj = new TextLabel(data.text, data.x, data.y, data);
                 break;
 
+            case ObjectType.CYLINDER:
+            case ObjectType.CONE:
+            case ObjectType.SPHERE:
+                obj = new CurvedSolid(data.type, data);
+                break;
+
             default:
                 console.warn(`알 수 없는 객체 타입: ${data.type}`);
                 return null;
@@ -772,6 +779,10 @@ export class ObjectManager {
 
     createTextLabel(text, x, y, params = {}) {
         return this.addObject(new TextLabel(text, x, y, params));
+    }
+
+    createCurvedSolid(kind, params = {}) {
+        return this.addObject(new CurvedSolid(kind, params));
     }
 }
 

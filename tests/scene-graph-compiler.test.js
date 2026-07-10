@@ -90,7 +90,7 @@ test('SceneGraphCompiler creates a radius support point for circle radius scenes
     validateOperations(compiled.operations);
 });
 
-test('SceneGraphCompiler warns instead of inventing invalid GraphA for unsupported primitives', () => {
+test('SceneGraphCompiler compiles curved solids and text while warning on excluded charts', () => {
     const scene = {
         nodes: [
             { id: 'cyl_1', kind: 'cylinder', center: 'O', radius: 2, height: 4 },
@@ -101,10 +101,10 @@ test('SceneGraphCompiler warns instead of inventing invalid GraphA for unsupport
 
     const compiled = compileSceneGraph(scene);
 
-    assert.equal(compiled.operations.length, 0);
-    assert.equal(compiled.warnings.length, 3);
-    assert.match(compiled.warnings.join('\n'), /cylinder/);
-    assert.match(compiled.warnings.join('\n'), /textLabel/);
+    assert.deepEqual(compiled.operations.map(operation => operation.type), ['cylinder', 'textLabel']);
+    assert.equal(compiled.warnings.length, 1);
+    validateOperations(compiled.operations);
+    assert.doesNotMatch(compiled.warnings.join('\n'), /cylinder|textLabel/);
     assert.match(compiled.warnings.join('\n'), /histogram/);
 });
 

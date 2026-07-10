@@ -268,6 +268,18 @@
                                     <span class="material-symbols-outlined">details</span>
                                     <span>각뿔</span>
                                 </button>
+                                <button class="tool-item" data-tool="cylinder">
+                                    <span class="material-symbols-outlined">view_in_ar</span>
+                                    <span>원기둥</span>
+                                </button>
+                                <button class="tool-item" data-tool="cone">
+                                    <span class="material-symbols-outlined">change_history</span>
+                                    <span>원뿔</span>
+                                </button>
+                                <button class="tool-item" data-tool="sphere">
+                                    <span class="material-symbols-outlined">circle</span>
+                                    <span>구</span>
+                                </button>
                             </div>
                         </div>
 
@@ -1193,6 +1205,42 @@
                 <div class="dialog-buttons">
                     <button class="btn-secondary" id="textLabelCancelBtn">취소</button>
                     <button class="btn-primary" id="textLabelCreateBtn">넣기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 곡면 입체도형 모달 -->
+        <div id="curvedSolidModal" class="dialog-overlay hidden">
+            <div class="dialog-content" style="width: 440px;">
+                <h3 id="curvedSolidTitle">곡면 입체 만들기</h3>
+                <div class="form-group">
+                    <label for="curvedSolidX">중심 x</label>
+                    <input type="number" id="curvedSolidX" value="0" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="curvedSolidY">중심 y</label>
+                    <input type="number" id="curvedSolidY" value="0" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="curvedSolidWidth">너비</label>
+                    <input type="number" id="curvedSolidWidth" value="4" min="0.1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="curvedSolidHeight">높이</label>
+                    <input type="number" id="curvedSolidHeight" value="6" min="0.1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="curvedSolidEllipseRatio">곡선 깊이</label>
+                    <input type="range" id="curvedSolidEllipseRatio" value="0.28" min="0.12" max="0.6" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="curvedSolidHiddenLines">숨은 곡선</label>
+                    <input type="checkbox" id="curvedSolidHiddenLines" checked>
+                    <span class="property-note">점선으로 표시</span>
+                </div>
+                <div class="dialog-buttons">
+                    <button class="btn-secondary" id="curvedSolidCancelBtn">취소</button>
+                    <button class="btn-primary" id="curvedSolidCreateBtn">만들기</button>
                 </div>
             </div>
         </div>

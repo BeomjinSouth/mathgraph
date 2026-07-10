@@ -177,7 +177,8 @@ const GRAPH_OPERATION_TYPES = [
     'vector', 'rightAngleMarker', 'equalLengthMarker',
     'angleDimension', 'lengthDimension',
     'arc', 'sector', 'circularSegment',
-    'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine'
+    'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine', 'textLabel',
+    'cylinder', 'cone', 'sphere'
 ];
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
@@ -188,9 +189,13 @@ const customMarkSchema = {
     type: 'object',
     properties: {
         value: NULLABLE_NUMBER,
-        label: NULLABLE_STRING
+        label: NULLABLE_STRING,
+        endpoint: {
+            type: ['string', 'null'],
+            enum: ['open', 'closed', null]
+        }
     },
-    required: ['value', 'label'],
+    required: ['value', 'label', 'endpoint'],
     additionalProperties: false
 };
 
@@ -210,8 +215,18 @@ const operationProperties = {
         description: 'Object type for create operations. Use null for update/delete operations.'
     },
     label: NULLABLE_STRING,
+    text: NULLABLE_STRING,
+    align: {
+        type: ['string', 'null'],
+        enum: ['left', 'center', 'right', null]
+    },
+    backgroundColor: NULLABLE_STRING,
     x: NULLABLE_NUMBER,
     y: NULLABLE_NUMBER,
+    width: NULLABLE_NUMBER,
+    height: NULLABLE_NUMBER,
+    ellipseRatio: NULLABLE_NUMBER,
+    showHiddenLines: NULLABLE_BOOLEAN,
     point1Id: NULLABLE_STRING,
     point2Id: NULLABLE_STRING,
     point3Id: NULLABLE_STRING,
@@ -381,6 +396,8 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
    - For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough away to render a visible, non-degenerate angle arc.
    - For prism objects, use baseVertexIds for the near/front face and topVertexIds for the shifted rear face so visible front edges stay solid and hidden rear edges become dashed.
    - For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.
+   - For cylinders, cones, and spheres, use the first-class cylinder/cone/sphere objects with x, y, width, and height. Hidden curved edges are rendered automatically.
+   - Use textLabel with text, x, and y for standalone conditions, annotations, and formulas that are not attached to another object.
    - For nested solids, keep inner vertices inside the outer projection and separate multiple inner solids so they do not overlap visually.
    - For standalone textbook arrows or direction arrows, create a vector with hidden helper endpoint points. Do not invent an unsupported arrow type.
    - Hide helper points with visible:false when they only shape a region.
@@ -426,6 +443,8 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - prism: baseVertexIds (배열), topVertexIds (배열) - 각기둥
 - pyramid: baseVertexIds (배열), apexId - 각뿔
 - numberLine: start, end, step, y
+- cylinder, cone, sphere: x, y, width, height (optional ellipseRatio, showHiddenLines)
+- textLabel: text, x, y (optional align, fontSize)
 
 ### 선택적 공통 속성
 - label: 객체 이름
@@ -1157,7 +1176,7 @@ export class AIService {
         const addCircle = () => add('point', 'circle', 'circleThreePoints', 'pointOnCircle', 'circleCenterPoint', 'arc', 'sector', 'circularSegment', 'lensRegion', 'tangentCircle');
         const addConstruction = () => add('intersection', 'midpoint', 'parallel', 'perpendicular', 'perpendicularBisector', 'angleBisector', 'rightAngleMarker', 'equalLengthMarker', 'angleDimension', 'lengthDimension');
         const addSolid = () => {
-            add('point', 'segment', 'polygon', 'prism', 'pyramid');
+            add('point', 'segment', 'polygon', 'prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'textLabel');
             includeKnownGaps = true;
         };
         const addGraph = () => add('point', 'segment', 'line', 'vector', 'function', 'tangentFunction', 'intersection', 'polygon');
@@ -1488,6 +1507,25 @@ export class AIService {
                     note: `기존 원(${circleLabel}) 옆에 새 원을 생성했습니다.`
                 };
             }
+        }
+
+        // 원기둥·원뿔·구는 전용 곡면 입체 객체를 사용한다.
+        const curvedSolidType = lower.includes('원기둥') || lower.includes('cylinder')
+            ? 'cylinder'
+            : lower.includes('원뿔') || lower.includes('cone')
+                ? 'cone'
+                : lower.includes('구') || lower.includes('sphere')
+                    ? 'sphere'
+                    : null;
+        if (curvedSolidType) {
+            const width = curvedSolidType === 'sphere' ? 5 : 4;
+            const height = curvedSolidType === 'sphere' ? 5 : 6;
+            operations = [{
+                op: 'create', type: curvedSolidType, id: `${curvedSolidType}_1`,
+                x: offsetX, y: offsetY, width, height
+            }];
+            this.addToHistory(operations);
+            return { success: true, json: { operations } };
         }
 
         // ===============================

@@ -40,7 +40,8 @@ export class SchemaValidator {
             'vector', 'rightAngleMarker', 'equalLengthMarker',
             'angleDimension', 'lengthDimension',
             'arc', 'sector', 'circularSegment',
-            'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine', 'textLabel'
+            'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine', 'textLabel',
+            'cylinder', 'cone', 'sphere'
         ];
 
         this.validOperations = ['create', 'update', 'delete'];
@@ -77,7 +78,10 @@ export class SchemaValidator {
             prism: ['baseVertexIds', 'topVertexIds'],
             pyramid: ['baseVertexIds', 'apexId'],
             numberLine: ['start', 'end', 'step', 'y'],
-            textLabel: ['text', 'x', 'y']
+            textLabel: ['text', 'x', 'y'],
+            cylinder: ['x', 'y', 'width', 'height'],
+            cone: ['x', 'y', 'width', 'height'],
+            sphere: ['x', 'y', 'width', 'height']
         };
     }
 
@@ -221,6 +225,23 @@ export class SchemaValidator {
                 if (op[field] !== undefined && !Number.isFinite(op[field])) {
                     errors.push(`${prefix}: textLabel ${field} must be a finite number.`);
                 }
+            }
+        }
+
+        if (['cylinder', 'cone', 'sphere'].includes(op.type)) {
+            for (const field of ['x', 'y', 'width', 'height', 'ellipseRatio']) {
+                if (op[field] !== undefined && !Number.isFinite(op[field])) {
+                    errors.push(`${prefix}: ${op.type} ${field} must be a finite number.`);
+                }
+            }
+            if (Number.isFinite(op.width) && op.width <= 0) {
+                errors.push(`${prefix}: ${op.type} width must be greater than 0.`);
+            }
+            if (Number.isFinite(op.height) && op.height <= 0) {
+                errors.push(`${prefix}: ${op.type} height must be greater than 0.`);
+            }
+            if (op.showHiddenLines !== undefined && typeof op.showHiddenLines !== 'boolean') {
+                errors.push(`${prefix}: ${op.type} showHiddenLines must be a boolean.`);
             }
         }
 

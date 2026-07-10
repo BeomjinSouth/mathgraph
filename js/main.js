@@ -34,6 +34,7 @@ import { AngleDimensionTool, LengthDimensionTool } from './tools/DimensionTool.j
 import { PolygonTool } from './tools/PolygonTool.js'; // Mk.2
 import { NumberLineTool } from './tools/NumberLineTool.js'; // Mk.4
 import { TextTool } from './tools/TextTool.js';
+import { CurvedSolidTool } from './tools/CurvedSolidTool.js';
 import { FillTool } from './tools/FillTool.js';
 import { AreaExportTool } from './tools/AreaExportTool.js';
 
@@ -72,6 +73,7 @@ import {
     getPhysicalExportPlan,
     TEACHER_EXPORT_PRESETS
 } from './utils/TeacherExport.js';
+import { buildCurvedSolidInput } from './utils/CurvedSolidInput.js';
 
 /**
  * 그래프A 애플리케이션
@@ -419,6 +421,9 @@ class GraphAApp {
         // Mk.4: 수직선 도구
         this.toolManager.registerTool('numberLine', new NumberLineTool());
         this.toolManager.registerTool('textLabel', new TextTool());
+        this.toolManager.registerTool('cylinder', new CurvedSolidTool('cylinder'));
+        this.toolManager.registerTool('cone', new CurvedSolidTool('cone'));
+        this.toolManager.registerTool('sphere', new CurvedSolidTool('sphere'));
 
         // 기본 도구 선택
         this.toolManager.setTool('select');
@@ -881,6 +886,7 @@ class GraphAApp {
         // Mk.4: 수직선 모달
         this.setupNumberLineModal();
         this.setupTextLabelModal();
+        this.setupCurvedSolidModal();
         hydrateGeneratedIcons(document);
     }
 
@@ -911,6 +917,7 @@ class GraphAApp {
             angleDimension: '각도', lengthDimension: '길이',
             rightAngle: '직각', equalLength: '같은 길이',
             numberLine: '수직선', textLabel: '텍스트',
+            cylinder: '원기둥', cone: '원뿔', sphere: '구',
             function: '함수'
         };
 
@@ -946,6 +953,9 @@ class GraphAApp {
             equalLength: 'straighten',
             numberLine: 'timeline',
             textLabel: 'text_fields',
+            cylinder: 'view_in_ar',
+            cone: 'change_history',
+            sphere: 'circle',
             function: 'functions'
         };
 
@@ -1372,6 +1382,64 @@ class GraphAApp {
                     this.render();
                 });
                 container.appendChild(positionRow);
+            }
+
+            if (['cylinder', 'cone', 'sphere'].includes(obj.type)) {
+                const sizeRow = document.createElement('div');
+                sizeRow.className = 'property-row full-width';
+                sizeRow.innerHTML = `
+                    <label>크기:</label>
+                    <input type="number" class="prop-input solid-width" min="0.1" step="0.1" value="${obj.width}" aria-label="입체 너비">
+                    <span>×</span>
+                    <input type="number" class="prop-input solid-height" min="0.1" step="0.1" value="${obj.height}" aria-label="입체 높이">
+                `;
+                const updateDimension = (property, input) => {
+                    const value = Number(input.value);
+                    if (Number.isFinite(value) && value > 0) {
+                        obj[property] = value;
+                        if (obj.type === 'sphere') {
+                            obj.width = value;
+                            obj.height = value;
+                            sizeRow.querySelector('.solid-width').value = value;
+                            sizeRow.querySelector('.solid-height').value = value;
+                        }
+                        obj.update();
+                        this.render();
+                    }
+                };
+                sizeRow.querySelector('.solid-width').addEventListener('change', (event) => updateDimension('width', event.target));
+                sizeRow.querySelector('.solid-height').addEventListener('change', (event) => updateDimension('height', event.target));
+                container.appendChild(sizeRow);
+
+                const ellipseRow = document.createElement('div');
+                ellipseRow.className = 'property-row';
+                ellipseRow.innerHTML = `
+                    <label>곡선 깊이:</label>
+                    <input type="range" min="0.12" max="0.6" step="0.01" value="${obj.ellipseRatio}" class="prop-slider">
+                    <span class="value-display">${Math.round(obj.ellipseRatio * 100)}%</span>
+                `;
+                const ellipseInput = ellipseRow.querySelector('input');
+                const ellipseValue = ellipseRow.querySelector('.value-display');
+                ellipseInput.addEventListener('input', (event) => {
+                    obj.ellipseRatio = Number(event.target.value);
+                    ellipseValue.textContent = `${Math.round(obj.ellipseRatio * 100)}%`;
+                    obj.update();
+                    this.render();
+                });
+                container.appendChild(ellipseRow);
+
+                const hiddenRow = document.createElement('div');
+                hiddenRow.className = 'property-row';
+                hiddenRow.innerHTML = `
+                    <label>숨은 곡선:</label>
+                    <input type="checkbox" class="prop-input" ${obj.showHiddenLines ? 'checked' : ''}>
+                    <span class="property-note">점선 표시</span>
+                `;
+                hiddenRow.querySelector('input').addEventListener('change', (event) => {
+                    obj.showHiddenLines = event.target.checked;
+                    this.render();
+                });
+                container.appendChild(hiddenRow);
             }
 
             if (this.isPointLikeObject(obj)) {
@@ -2730,6 +2798,49 @@ class GraphAApp {
             `${this.escapeSVG(obj.text || '')}</text>`;
     }
 
+    buildSVGCurvedSolidMarkup(obj) {
+        if (!obj.valid || !obj.position) return '';
+        const center = this.canvas.toScreen(obj.position);
+        const rx = this.canvas.toScreenLength(obj.width / 2);
+        const halfHeight = this.canvas.toScreenLength(obj.height / 2);
+        const ry = Math.max(3, rx * obj.ellipseRatio);
+        const stroke = this.escapeSVG(obj.color || '#000000');
+        const width = obj.lineWidth || 2;
+        const common = `fill="none" stroke="${stroke}" stroke-width="${width}"`;
+        const dashed = obj.showHiddenLines ? ` stroke-dasharray="5 4"` : '';
+        const parts = [`<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}">`];
+
+        if (obj.type === 'cylinder') {
+            const topY = center.y - halfHeight + ry;
+            const bottomY = center.y + halfHeight - ry;
+            parts.push(`<ellipse cx="${center.x.toFixed(2)}" cy="${topY.toFixed(2)}" rx="${rx.toFixed(2)}" ry="${ry.toFixed(2)}" ${common} />`);
+            if (obj.showHiddenLines) {
+                parts.push(`<path d="M ${(center.x - rx).toFixed(2)} ${bottomY.toFixed(2)} A ${rx.toFixed(2)} ${ry.toFixed(2)} 0 0 1 ${(center.x + rx).toFixed(2)} ${bottomY.toFixed(2)}" ${common}${dashed} />`);
+            }
+            parts.push(`<path d="M ${(center.x - rx).toFixed(2)} ${bottomY.toFixed(2)} A ${rx.toFixed(2)} ${ry.toFixed(2)} 0 0 0 ${(center.x + rx).toFixed(2)} ${bottomY.toFixed(2)}" ${common} />`);
+            parts.push(`<line x1="${(center.x - rx).toFixed(2)}" y1="${topY.toFixed(2)}" x2="${(center.x - rx).toFixed(2)}" y2="${bottomY.toFixed(2)}" ${common} />`);
+            parts.push(`<line x1="${(center.x + rx).toFixed(2)}" y1="${topY.toFixed(2)}" x2="${(center.x + rx).toFixed(2)}" y2="${bottomY.toFixed(2)}" ${common} />`);
+        } else if (obj.type === 'cone') {
+            const apexY = center.y - halfHeight;
+            const baseY = center.y + halfHeight - ry;
+            parts.push(`<path d="M ${center.x.toFixed(2)} ${apexY.toFixed(2)} L ${(center.x - rx).toFixed(2)} ${baseY.toFixed(2)} M ${center.x.toFixed(2)} ${apexY.toFixed(2)} L ${(center.x + rx).toFixed(2)} ${baseY.toFixed(2)}" ${common} />`);
+            if (obj.showHiddenLines) {
+                parts.push(`<path d="M ${(center.x - rx).toFixed(2)} ${baseY.toFixed(2)} A ${rx.toFixed(2)} ${ry.toFixed(2)} 0 0 1 ${(center.x + rx).toFixed(2)} ${baseY.toFixed(2)}" ${common}${dashed} />`);
+            }
+            parts.push(`<path d="M ${(center.x - rx).toFixed(2)} ${baseY.toFixed(2)} A ${rx.toFixed(2)} ${ry.toFixed(2)} 0 0 0 ${(center.x + rx).toFixed(2)} ${baseY.toFixed(2)}" ${common} />`);
+        } else {
+            const radius = Math.min(rx, halfHeight);
+            parts.push(`<circle cx="${center.x.toFixed(2)}" cy="${center.y.toFixed(2)}" r="${radius.toFixed(2)}" ${common} />`);
+            if (obj.showHiddenLines) {
+                parts.push(`<path d="M ${(center.x - radius).toFixed(2)} ${center.y.toFixed(2)} A ${radius.toFixed(2)} ${ry.toFixed(2)} 0 0 1 ${(center.x + radius).toFixed(2)} ${center.y.toFixed(2)}" ${common}${dashed} />`);
+            }
+            parts.push(`<path d="M ${(center.x - radius).toFixed(2)} ${center.y.toFixed(2)} A ${radius.toFixed(2)} ${ry.toFixed(2)} 0 0 0 ${(center.x + radius).toFixed(2)} ${center.y.toFixed(2)}" ${common} />`);
+        }
+
+        parts.push('</g>');
+        return parts.join('\n');
+    }
+
     buildSVGNumberLineMarkup(obj) {
         if (!obj.valid) return '';
 
@@ -2836,6 +2947,10 @@ class GraphAApp {
                 return this.buildSVGNumberLineMarkup(obj);
             case 'textLabel':
                 return this.buildSVGTextLabelMarkup(obj);
+            case 'cylinder':
+            case 'cone':
+            case 'sphere':
+                return this.buildSVGCurvedSolidMarkup(obj);
             default:
                 return '';
         }
@@ -4159,6 +4274,61 @@ class GraphAApp {
                 event.preventDefault();
                 createBtn.click();
             }
+        });
+    }
+
+    openCurvedSolidModal(kind) {
+        const modal = document.getElementById('curvedSolidModal');
+        if (!modal) return;
+        this.pendingCurvedSolidKind = kind;
+        const names = { cylinder: '원기둥', cone: '원뿔', sphere: '구' };
+        const title = document.getElementById('curvedSolidTitle');
+        if (title) title.textContent = `${names[kind] || '곡면 입체'} 만들기`;
+        document.getElementById('curvedSolidWidth').value = kind === 'sphere' ? '5' : '4';
+        document.getElementById('curvedSolidHeight').value = kind === 'sphere' ? '5' : '6';
+        modal.classList.remove('hidden');
+    }
+
+    setupCurvedSolidModal() {
+        const modal = document.getElementById('curvedSolidModal');
+        const createBtn = document.getElementById('curvedSolidCreateBtn');
+        const cancelBtn = document.getElementById('curvedSolidCancelBtn');
+        if (!modal || !createBtn || !cancelBtn) return;
+
+        const close = () => {
+            modal.classList.add('hidden');
+            this.pendingCurvedSolidKind = null;
+            this.toolManager.returnToSelect();
+        };
+
+        createBtn.addEventListener('click', () => {
+            try {
+                const input = buildCurvedSolidInput({
+                    kind: this.pendingCurvedSolidKind,
+                    x: document.getElementById('curvedSolidX').value,
+                    y: document.getElementById('curvedSolidY').value,
+                    width: document.getElementById('curvedSolidWidth').value,
+                    height: document.getElementById('curvedSolidHeight').value,
+                    ellipseRatio: document.getElementById('curvedSolidEllipseRatio').value,
+                    showHiddenLines: document.getElementById('curvedSolidHiddenLines').checked
+                });
+                const solid = this.objectManager.createCurvedSolid(input.kind, input);
+                this.historyManager.recordCreate(solid);
+                this.objectManager.clearSelection();
+                this.objectManager.selectObject(solid);
+                this.updateSidebar();
+                this.updatePropertyPanel();
+                this.render();
+                this.showToast(`${solid.getTypeName()}을 추가했습니다.`, 'success');
+                close();
+            } catch (error) {
+                this.showToast(error.message, 'warning');
+            }
+        });
+
+        cancelBtn.addEventListener('click', close);
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) close();
         });
     }
 }
