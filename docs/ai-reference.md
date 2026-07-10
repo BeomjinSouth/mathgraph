@@ -139,9 +139,9 @@ Preferred pipeline for recreate-mode image/PDF work:
 2. Compile that scene graph into GraphA operations with app-owned deterministic code.
 3. Validate the compiled operations with `SchemaValidator`, reference checks, semantic validators, and rendered canvas checks.
 
-The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `vector`, `circle`, `arc`, `sector`, `lensRegion`, `polygon`, `function`, `numberLine`, `prism`, and `pyramid`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
+The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `vector`, `circle`, `arc`, `sector`, `lensRegion`, `polygon`, `function`, `numberLine`, `textLabel`, `prism`, `pyramid`, `cylinder`, `cone`, and `sphere`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
 
-Unsupported scene nodes such as `cylinder`, `cone`, `sphere`, native `histogram`, native `scatterPlot`, and independent `textLabel` are returned as warnings instead of invalid GraphA. That is intentional: exact textbook parity for those features requires new first-class runtime primitives.
+Unsupported scene nodes such as native statistical charts, tables, solid nets, annular sectors, and exact function-bounded curved fills are returned as warnings instead of invalid GraphA. Curved solids and independent text are now first-class GraphA objects.
 
 ## 1.2.3 Diagram Quality Enhancement
 
@@ -172,6 +172,20 @@ The validator checks category-specific math structure before a live OpenAI resul
 - similarity, linear graph, quadratic graph, trigonometry, distribution curves, scatter, and prism categories each have matching structure checks.
 
 `tools/run-live-openai-pdf-ai-samples.mjs` now injects the JSON manual reference into the live prompt, optionally attaches available source page/crop images from `tmp/pdf-ai-audit/`, and retries when schema/reference/intent/semantic validation fails. `tools/validate-live-openai-pdf-results.mjs` can recheck a saved live result file and writes `tmp/live-openai-pdf-ai-samples/semantic-validation-report.json`.
+
+## 1.4 Teacher Exam Production Workflow
+
+The teacher-facing workspace uses the same validated object model but adds production guardrails around it:
+
+- A canvas-first layout keeps tools on the left, editable properties and an exam-quality summary on the right, and the AI command dock below the canvas.
+- `SupportPreflight` classifies a request as `supported`, `approximated`, `excluded`, or `unknown` before API generation.
+- Statistical chart families are explicitly excluded from this workflow: bar/pie charts, histograms, frequency polygons, box plots, dot plots, and scatter plots.
+- Warnings and generation errors keep the original prompt. Generation errors expose a retry control.
+- Project export/import uses a named versioned `mathgraph-project` JSON envelope containing the view and editable object graph.
+- PNG export includes physical presets for HWP 80 mm at 300 dpi, HWP 120 mm at 300 dpi, and print 160 mm at 600 dpi.
+
+The right-side summary reports object count and support status. It is guidance for production review, not a mathematical proof checker or automatic label-collision engine.
+
 
 ## 2. Operation Schema
 
@@ -228,6 +242,10 @@ These object types are currently supported by the AI validator and runtime patch
 - `prism`
 - `pyramid`
 - `numberLine`
+- `textLabel`
+- `cylinder`
+- `cone`
+- `sphere`
 
 Important:
 
@@ -236,8 +254,8 @@ Important:
 - `arc`, `sector`, and `circularSegment` are supported in the current runtime.
 - Use `lensRegion` for the exact filled overlap of two intersecting circles.
 - Use `polygon` for triangles, quadrilaterals, and straight-edged filled plane regions that are defined by existing point IDs.
-- `prism` and `pyramid` are supported in the current runtime.
-- `numberLine` is supported in the validated AI patch flow with numeric `start`, `end`, `step`, and `y` fields.
+- `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` are supported in the current runtime; curved solids expose editable textbook projections and optional dashed hidden curves.
+- `numberLine` is supported in the validated AI patch flow with numeric `start`, `end`, `step`, and `y` fields plus optional open/closed custom marks.
 - There is no separate first-class `arrow` create type. Use `vector` for standalone textbook arrows, direction arrows, and directed annotation segments.
 
 ## 4. Runtime Features Outside The AI Schema
@@ -474,6 +492,9 @@ Use `*` for multiplication in expressions. The runtime parser also accepts commo
 
 Function expressions must be right-hand-side expressions only. Use `"x^2 - 4"`, not `"y=x^2-4"`; including `y=` makes the function invalid and prevents the graph from rendering.
 
+Function create/update operations may set `xMin`, `xMax`, `yMin`, and `yMax`; paired minimum/maximum values must be strictly increasing. A two-valued `intersection` may set numeric `branch` to `0` or `1` for deterministic selection.
+
+
 ### 6.9 Vector
 
 ```json
@@ -547,7 +568,7 @@ Optional `angleDimension` display fields include `arcRadius`, `showValue`, `mark
 Required fields for `numberLine` are `start`, `end`, `step`, and `y`.
 Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared style fields from Section 5.
 
-`numberLine` also supports the shared style fields, plus optional `tickHeight` and `customMarks` when you need finer runtime control.
+`numberLine` also supports the shared style fields, plus optional `tickHeight` and `customMarks`. Each custom mark may set `endpoint` to `open` for a hollow circle or `closed` for a filled circle.
 
 ```json
 {
@@ -560,8 +581,8 @@ Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared st
   "showArrows": false,
   "tickHeight": 0.2,
   "customMarks": [
-    { "value": 0, "label": "O" },
-    { "value": 4, "label": "4" }
+    { "value": 0, "label": "O", "endpoint": "closed" },
+    { "value": 4, "label": "4", "endpoint": "open" }
   ]
 }
 ```
@@ -588,6 +609,24 @@ For `prism`, treat `baseVertexIds` as the near/front face and `topVertexIds` as 
 }
 ```
 
+Curved solids use direct center coordinates and projection dimensions. `ellipseRatio` controls curve depth and `showHiddenLines` controls dashed hidden curves.
+
+```json
+{
+  "operations": [
+    { "op": "create", "id": "cyl", "type": "cylinder", "x": -4, "y": 0, "width": 3, "height": 5, "showHiddenLines": true },
+    { "op": "create", "id": "cone", "type": "cone", "x": 0, "y": 0, "width": 4, "height": 6 },
+    { "op": "create", "id": "sphere", "type": "sphere", "x": 4, "y": 0, "width": 4, "height": 4 }
+  ]
+}
+```
+
+Use `textLabel` for a short condition, formula, or annotation independent of another object.
+
+```json
+{ "op": "create", "id": "note", "type": "textLabel", "text": "단, x > 0", "x": 1, "y": -2, "align": "left" }
+```
+
 ### 6.13 Dense Prompt Guidance
 
 For complex live OpenAI drawing prompts, include the following context when it matches the request:
@@ -603,7 +642,7 @@ For complex live OpenAI drawing prompts, include the following context when it m
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, include exact coordinates for the intended visible points and the exact equations for reference lines.
 - For concentric circles or fixed-radius tangency diagrams, state the shared center id and numeric radii. Current GraphA has no first-class `annularSector`; use a normal `sector` plus an inner circle outline unless a future primitive is added.
 - For curved regions bounded by functions, use a polygon through explicit boundary/sample points and hide helper points; do not claim exact curved fill unless a first-class region primitive exists.
-- For nested solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. For prisms, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds`; make the outer projection broad enough to read, keep cross-section polygons substantial when requested, put every inner-solid vertex inside the outer solid's screen-projection region, and leave visible margins so inner solids do not look cramped against the boundary.
+- For nested polyhedral solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. Use `cylinder`, `cone`, and `sphere` for curved-solid textbook projections. For prisms, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds`; make the outer projection broad enough to read, keep cross-section polygons substantial when requested, put every inner-solid vertex inside the outer solid's screen-projection region, and leave visible margins so inner solids do not look cramped against the boundary.
 - For `pyramid`, `apexId` must not appear in `baseVertexIds`, and the apex should be visually separated from the base centroid.
 - For polygon-owned boundaries, do not require duplicate segment edges unless the user explicitly asks for separate selectable edge segments.
 - The live smoke runner can render deterministic target sheets without an API call by setting `LIVE_AI_RENDER_REFERENCE_TARGETS=1`. Use this to compare intended visuals against live OpenAI outputs.
@@ -656,11 +695,20 @@ For complex live OpenAI drawing prompts, include the following context when it m
 
 ## 9. Maintenance Notes
 
+### 2026-07-10 Teacher Exam Production Workflow
+
+- Added named versioned project JSON import/export and physical HWP/print PNG presets.
+- Added first-class standalone `textLabel` and open/closed number-line endpoints.
+- Added editable `cylinder`, `cone`, and `sphere` projections with dashed hidden curves.
+- Added AI parity for function x/y limits and deterministic intersection branch 0/1.
+- Added support preflight; statistical chart families are explicitly excluded from the teacher workflow.
+- Added the canvas-first bottom generation dock, right exam-quality summary, responsive verification, and design QA evidence.
+
 ### 2026-06-15 Local Solid Fallback
 
 - Deterministic local fallback now handles rectangular-prism/cube prompts such as `직육면체 ABCD EFGH 그려줘`.
 - Nested solid prompts such as `직육면체 ABCD EFGH 내부에 정육면체가 작게 있는거 그려줘` create an outer `prism` plus a smaller inner `prism` with hidden helper points.
-- This remains within current first-class solid support: cubes and rectangular prisms are represented as `prism`; curved solids are still future/approximation work.
+- Cubes and rectangular prisms remain represented as `prism`; curved solids are now represented directly as `cylinder`, `cone`, and `sphere`.
 
 ### 2026-04-13 Recovery And Fallback Revalidation
 

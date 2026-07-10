@@ -105,9 +105,9 @@ The export keeps aspect ratio. Extremely large results are capped with a clear w
 
 ### Curved solids
 
-- `cylinder`: center, radiusX, radiusY, height.
-- `cone`: center, radiusX, radiusY, height, apexOffset.
-- `sphere`: center, radiusX, radiusY.
+- `cylinder`: x, y, width, height, ellipseRatio, showHiddenLines.
+- `cone`: x, y, width, height, ellipseRatio, showHiddenLines.
+- `sphere`: x, y, width, height, ellipseRatio, showHiddenLines.
 
 All dimensions are positive finite numbers. Default stroke is `#000000`; fill is off unless explicitly requested.
 
@@ -118,7 +118,7 @@ Custom marks accept `endpoint: "open" | "closed" | null`. Open endpoints render 
 ### AI parity
 
 - Function create/update accepts nullable `xMin`, `xMax`, `yMin`, and `yMax`.
-- Intersection create accepts nullable `branch`: `first`, `second`, `left`, `right`, `upper`, or `lower`.
+- Intersection create accepts nullable numeric `branch`: `0` or `1`.
 - Unsupported chart terms remain warnings in the support preflight.
 
 ## Error Handling

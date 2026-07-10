@@ -1,5 +1,41 @@
 # Progress Log
 
+## 2026-07-10
+
+### Teacher exam-diagram production workflow
+
+#### Work completed
+
+- Added named, versioned MathGraph project JSON export/import with validation before canvas mutation.
+- Added physical PNG presets for HWP 80 mm/300 dpi, HWP 120 mm/300 dpi, and print 160 mm/600 dpi.
+- Added first-class standalone text labels and open/closed number-line endpoint marks across runtime, persistence, SVG export, AI schema, and patching.
+- Added editable cylinder, cone, and sphere textbook projections with optional dashed hidden curves across manual tools, persistence, SVG export, scene compilation, AI schema, and local fallback.
+- Added AI parity for function x/y range limits and deterministic intersection branch 0/1.
+- Added support preflight and explicit exclusion for statistical chart families; warnings retain the original teacher prompt and generation errors expose retry.
+- Rebuilt the workspace around the central canvas with a bottom AI generation dock, right exam-quality summary, keyboard-focusable canvas, and a compact 1280 px tool rail.
+- Updated the MathGraph drawing skill, source/runtime feature manuals, retrieval indexes, AI reference, design spec, and design QA evidence.
+- Preserved the selected generated design target and browser captures at 1672×941 and 1280×720 under `docs/design-references/teacher-workflow/`.
+
+#### Verification
+
+- Ran `npm.cmd test`; passed with 218 tests, 0 failures.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `node --check` for `js/main.js`, `js/ui/TeacherWorkflow.js`, and `js/ai/SupportPreflight.js`; passed.
+- Parsed both source/runtime feature manuals and retrieval indexes as JSON and confirmed each runtime mirror is byte-identical to its source copy.
+- Ran `git diff --check`; passed with no whitespace errors.
+- Browser verification confirmed guest entry, canvas keyboard focus, prompt retention on excluded charts, Korean support-warning copy, manual cylinder creation, editable hidden-curve controls, HWP 80 mm/300 dpi preset selection, and no console errors.
+- Responsive measurements confirmed the canvas and 154 px bottom dock do not overlap at 1672×941 or 1280×720; the left tool panel collapses to 60 px at 1280 px.
+- Compared the generated target and implementation together at 1672×941. `docs/design-references/teacher-workflow/design-qa.md` records `final result: passed` with no unresolved P0/P1/P2 findings.
+
+#### Deployment / Vercel
+
+- Production deployment and alias smoke are pending the documentation commit and GitHub push in this task.
+
+#### Git / GitHub
+
+- Working branch: `codex/teacher-workflow-20260710`; feature commits are complete and the final documentation commit is pending.
+
+
 ## 2026-06-19
 
 ### Full problem text to exam-style MathGraph diagram
