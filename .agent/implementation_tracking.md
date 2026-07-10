@@ -2,6 +2,52 @@
 
 ## Status
 
+- Task: Teacher-site release hardening
+- State: In Progress
+- Last updated: 2026-07-10
+
+## Plan
+
+1. Record the release-hardening design and detailed implementation plan before code changes.
+2. Close command-palette, owner-login, token comparison, body-size, proxy-rate, request-policy, and timeout findings with focused tests.
+3. Centralize object-reference remapping and cover composite copy/undo/redo.
+4. Generate a 16:9 mobile target design sheet, then implement responsive drawers, canvas resize observation, chat clamping, and primary touch/pen input.
+5. Complete undo coverage for direct properties, constrained points, number lines, and algebra creation.
+6. Replace the no-op build gate, update current docs, and correct the model-availability audit note.
+7. Run full automated/browser/security/deployment verification, commit, push, and deploy or record the external blocker.
+
+## Progress Log
+
+- [x] Root-cause and scope investigation
+- [x] Design approved for autonomous execution
+- [x] Baseline `npm.cmd test`: 219 passed
+- [ ] Detailed implementation plan
+- [ ] Security closure
+- [ ] Composite-copy integrity
+- [ ] Mobile/touch implementation
+- [ ] Undo and build/documentation cleanup
+- [ ] Full local and production verification
+
+## Decisions
+
+- Decision: Work in the current feature branch instead of creating a clean worktree.
+- Reason: The uncommitted July changes are authoritative task input and would be omitted from a new worktree.
+- Decision: Deliver security, copy integrity, mobile/touch, then undo/build cleanup.
+- Reason: This isolates the highest-risk boundaries and keeps each phase testable.
+- Decision: Keep GPT-5.5 as the default for this release.
+- Reason: Official OpenAI docs currently recommend GPT-5.5 while GPT-5.6 is limited partner preview.
+
+## Verification
+
+- Baseline completed:
+  - Sandbox `npm.cmd test` was blocked by Node worker `spawn EPERM`.
+  - Approved unsandboxed `npm.cmd test` passed 219/219 with 0 failures.
+
+---
+
+
+## Status
+
 - Task: Full problem text to exam-style MathGraph diagram
 - State: Done
 - Last updated: 2026-06-19

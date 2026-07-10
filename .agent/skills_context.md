@@ -2,6 +2,44 @@
 
 ## Relevant Skills
 
+- Skill: Superpowers Brainstorming / Writing Plans / TDD / Subagent-Driven Development
+- Why it matters:
+  - The work spans security, data integrity, responsive input, undo, and deployment, so it needs a written design, red-green tests, and review gates.
+- Skill: Codex Security Fix Finding
+- Why it matters:
+  - Command-palette XSS, login abuse, body-size bypass, token limiter bypass, and proxy capability forwarding are validated current-checkout findings.
+- Skill: OpenAI Vibe Coding Context
+- Why it matters:
+  - The owner proxy uses the Responses API; current model availability, request fields, rate limits, and production guidance must be checked against official docs.
+- Skill: Image Generation
+- Why it matters:
+  - Project rules require a generated target screen before responsive UI implementation; the mobile phase will use a 16:9 design sheet with Korean UI text.
+- Skill: Frontend Testing Debugging / Browser
+- Why it matters:
+  - Completion depends on desktop and mobile rendered layout, touch/pen interactions, DOM safety, and console health rather than unit tests alone.
+
+## Current Task Notes
+
+- User direction:
+  - Choose the order autonomously and continue through completion.
+- Selected order:
+  - Security and proxy boundary closure.
+  - Composite-copy reference integrity.
+  - Mobile responsive drawers and touch/pen bridge.
+  - Undo consistency, real build gate, docs, deployment.
+- Baseline:
+  - Current dirty worktree preserved.
+  - Full test suite passed 219/219 outside the sandbox after the sandbox run hit `spawn EPERM`.
+- Official OpenAI check:
+  - Models documentation currently recommends GPT-5.5; GPT-5.6 is limited partner preview.
+  - Responses supports optional tools, background/service-tier controls, and output caps, so the owner proxy must forward only MathGraph-owned fields.
+  - Official rate-limit guidance supports application-side throttling and bounded retry behavior.
+
+---
+
+
+## Relevant Skills
+
 - Skill: MathGraph Drawing
 - Why it matters:
   - The feature must preserve GraphA `{ operations }`, supported primitives, helper-point hiding, and exam-style drawing constraints.

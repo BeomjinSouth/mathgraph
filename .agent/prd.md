@@ -2,6 +2,60 @@
 
 ## Summary
 
+- Task: Teacher-site release hardening
+- Owner: Codex
+- Date: 2026-07-10
+- Related files:
+  - `docs/superpowers/specs/2026-07-10-teacher-site-release-hardening-design.md`
+  - `docs/superpowers/plans/2026-07-10-teacher-site-release-hardening.md`
+  - `api/login.js`
+  - `api/openai-responses.js`
+  - `lib/ownerAuth.js`
+  - `js/ui/CommandPalette.js`
+  - `js/main.js`
+  - `js/core/EventHandler.js`
+  - `js/core/HistoryManager.js`
+  - `js/ai/PatchApplier.js`
+  - `css/styles.css`
+
+## Problem
+
+- The production site still serves the June 19 owner flow while the worktree contains incomplete July security and history changes.
+- The command palette has a reachable DOM-XSS path, login attempts are not limited, parsed object bodies bypass the byte cap, and proxy limits can be reset with a new token.
+- Composite pasted objects can keep references to original points/circles, silently corrupting teacher diagrams.
+- At 390×844, fixed side panels collapse the canvas to 0px and the mouse-only input path excludes touch/pen drawing.
+- Several direct edits do not participate in undo, and Vercel's build command is a no-op.
+
+## Goals
+
+- Close the validated authentication, proxy, and DOM security boundaries.
+- Make copied composite geometry independent from the source geometry.
+- Provide a canvas-first mobile editor with overlay drawers and primary touch/pen input.
+- Make common property and constrained-point changes undoable while preserving atomic AI/paste actions.
+- Replace the no-op deploy gate, synchronize documentation, commit/push, and deploy after required secrets are confirmed.
+
+## Non-Goals
+
+- Do not add new graph primitives, statistics charts, PDF workflows, pinch zoom, two-finger pan, or a broad desktop redesign.
+- Do not enable GPT-5.6 by default while official availability remains limited preview.
+- Do not claim full accessibility conformance in this pass.
+
+## Acceptance Criteria
+
+- [ ] Command-palette malicious input renders as inert text.
+- [ ] Owner login and proxy abuse limits cannot be reset by trivial retries or a fresh token.
+- [ ] Parsed object bodies honor the configured byte limit and proxy request fields are server constrained.
+- [ ] Polygon, lens, prism, tangent-circle, and closed-region copies use copied references through undo/redo.
+- [ ] A 390×844 guest workspace has a nonzero full-width canvas, usable drawers, contained chat, and primary touch/pen input.
+- [ ] Desktop mouse, pan, wheel, double-click, and panel behavior remain intact.
+- [ ] Common property, algebra-create, constrained-point, and number-line changes have correct undo/redo.
+- [ ] Full tests, real Vercel build gate, browser QA, documentation, commit, push, and deployment outcome are recorded.
+
+---
+
+
+## Summary
+
 - Task: Full problem text to exam-style MathGraph diagram
 - Owner: Codex
 - Date: 2026-06-19
