@@ -9,6 +9,24 @@
  */
 
 import { iconHTML } from './IconRenderer.js';
+import { escapeHtml, escapeRegExp } from '../utils/Html.js';
+
+export function buildAlgebraHintMarkup(query) {
+    const safeQuery = escapeHtml(query);
+    return `<div class="command-item algebra-hint" data-action="algebra">
+        <div class="command-icon">${iconHTML('functions')}</div>
+        <div class="command-info">
+            <div class="command-name">"${safeQuery}" 대수식으로 생성</div>
+            <div class="command-category">Enter를 눌러 생성</div>
+        </div>
+    </div>`;
+}
+
+export function highlightCommandMatch(text, query) {
+    const safeText = escapeHtml(text);
+    if (!query) return safeText;
+    return safeText.replace(new RegExp(`(${escapeRegExp(query)})`, 'gi'), '<mark>$1</mark>');
+}
 
 export class CommandPalette {
     constructor(app) {
@@ -218,22 +236,14 @@ export class CommandPalette {
         // 대수식 입력 힌트
         let algebraHint = '';
         if (query && this.filteredCommands.length === 0) {
-            algebraHint = `
-                <div class="command-item algebra-hint" data-action="algebra">
-                    <div class="command-icon">${iconHTML('functions')}</div>
-                    <div class="command-info">
-                        <div class="command-name">"${query}" 대수식으로 생성</div>
-                        <div class="command-category">Enter를 눌러 생성</div>
-                    </div>
-                </div>
-            `;
+            algebraHint = buildAlgebraHintMarkup(query);
         }
 
         this.resultList.innerHTML = algebraHint + this.filteredCommands.slice(0, 10).map((cmd, i) => `
             <div class="command-item ${i === this.selectedIndex ? 'selected' : ''}" data-index="${i}">
                 <div class="command-icon">${this.getCategoryIcon(cmd.category)}</div>
                 <div class="command-info">
-                    <div class="command-name">${this.highlightMatch(cmd.name, query)}</div>
+                    <div class="command-name">${highlightCommandMatch(cmd.name, query)}</div>
                     <div class="command-category">${cmd.category}${cmd.shortcut ? ` · ${cmd.shortcut}` : ''}</div>
                 </div>
             </div>
@@ -274,9 +284,7 @@ export class CommandPalette {
      * 검색어 하이라이트
      */
     highlightMatch(text, query) {
-        if (!query) return text;
-        const regex = new RegExp(`(${query})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
+        return highlightCommandMatch(text, query);
     }
 
     /**

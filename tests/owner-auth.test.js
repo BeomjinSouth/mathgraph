@@ -17,7 +17,8 @@ const {
     isModelAllowed,
     getAllowedModels,
     checkRateLimit,
-    resetRateLimit
+    resetRateLimit,
+    resetRateLimitKey
 } = await import('../lib/ownerAuth.js');
 
 function futureToken(overrides = {}) {
@@ -138,6 +139,13 @@ test('readJson rejects an oversized streamed body', async () => {
     await assert.rejects(readJson(req, { maxBytes: 16 }), PayloadTooLargeError);
 });
 
+
+test('readJson enforces the byte limit for pre-parsed object bodies', async () => {
+    await assert.rejects(
+        readJson({ body: { value: 'x'.repeat(128) } }, { maxBytes: 16 }),
+        PayloadTooLargeError
+    );
+});
 test('checkRateLimit blocks once the window budget is exhausted', () => {
     resetRateLimit();
     const options = { windowMs: 1000, max: 2 };
@@ -148,4 +156,13 @@ test('checkRateLimit blocks once the window budget is exhausted', () => {
     assert.ok(blocked.retryAfterMs >= 0);
     // 다른 키는 독립적으로 카운트됩니다.
     assert.equal(checkRateLimit('other', options).allowed, true);
+});
+
+test('resetRateLimitKey clears only the selected bucket', () => {
+    resetRateLimit();
+    checkRateLimit('a', { windowMs: 1000, max: 1 });
+    checkRateLimit('b', { windowMs: 1000, max: 1 });
+    resetRateLimitKey('a');
+    assert.equal(checkRateLimit('a', { windowMs: 1000, max: 1 }).allowed, true);
+    assert.equal(checkRateLimit('b', { windowMs: 1000, max: 1 }).allowed, false);
 });

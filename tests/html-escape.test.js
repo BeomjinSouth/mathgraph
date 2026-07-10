@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { escapeHtml } from '../js/utils/Html.js';
+import { escapeHtml, escapeRegExp } from '../js/utils/Html.js';
 
 test('escapeHtml neutralizes attribute-breaking payloads', () => {
     const payload = '"><img src=x onerror=alert(1)>';
@@ -23,4 +23,8 @@ test('escapeHtml returns an empty string for null/undefined', () => {
 test('escapeHtml stringifies non-string values', () => {
     assert.equal(escapeHtml(42), '42');
     assert.equal(escapeHtml(0), '0');
+});
+
+test('escapeRegExp neutralizes regex metacharacters', () => {
+    assert.equal(escapeRegExp('a+b?(c)[d]'), 'a\\+b\\?\\(c\\)\\[d\\]');
 });

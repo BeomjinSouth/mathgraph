@@ -17,7 +17,11 @@ import {
     getSigningSecret,
     getOwnerPassword,
     safeEqual,
-    readJson
+    readJson,
+    getClientAddress,
+    getLoginRateOptions,
+    checkRateLimit,
+    resetRateLimitKey
 } from '../lib/ownerAuth.js';
 
 export default async function handler(req, res) {
@@ -50,6 +54,16 @@ export default async function handler(req, res) {
         const password = String(body?.password || '');
 
         const nameMatches = name === OWNER_NAME;
+        const rateKey = `login:${getClientAddress(req)}:${name}`;
+        const rate = checkRateLimit(rateKey, getLoginRateOptions());
+        if (!rate.allowed) {
+            res.setHeader('Retry-After', String(Math.ceil((rate.retryAfterMs || 1000) / 1000)));
+            res.status(429).json({
+                error: '로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.'
+            });
+            return;
+        }
+
         const passwordMatches = safeEqual(password, ownerPassword);
         if (!nameMatches || !passwordMatches) {
             res.status(401).json({
@@ -60,6 +74,7 @@ export default async function handler(req, res) {
 
         const ttlMs = Number(process.env.MATHGRAPH_OWNER_TOKEN_TTL_MS) || DEFAULT_TOKEN_TTL_MS;
         const issuedAt = Date.now();
+        resetRateLimitKey(rateKey);
         const expiresAt = issuedAt + ttlMs;
         const token = createToken({
             sub: 'owner',
