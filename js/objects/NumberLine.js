@@ -23,7 +23,7 @@ export class NumberLine extends GeoObject {
         this.showArrows = options.showArrows !== false;                      // 화살표 표시
         this.tickHeight = options.tickHeight || 0.15;                        // 눈금 높이 (수학 좌표)
 
-        // 커스텀 마크 [{value, label, color}]
+        // 커스텀 마크 [{value, label, color, endpoint: 'open' | 'closed'}]
         this.customMarks = options.customMarks || [];
 
         this.valid = true;
@@ -101,11 +101,22 @@ export class NumberLine extends GeoObject {
             ctx.strokeStyle = markColor;
             ctx.fillStyle = markColor;
 
-            // 눈금
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y - tickScreenHeight * 1.5);
-            ctx.lineTo(pos.x, pos.y + tickScreenHeight * 1.5);
-            ctx.stroke();
+            if (mark.endpoint === 'open' || mark.endpoint === 'closed') {
+                const radius = Math.max(4, this.lineWidth * 1.8);
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+                if (mark.endpoint === 'closed') {
+                    ctx.fill();
+                } else {
+                    ctx.stroke();
+                }
+            } else {
+                // 일반 강조 눈금
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y - tickScreenHeight * 1.5);
+                ctx.lineTo(pos.x, pos.y + tickScreenHeight * 1.5);
+                ctx.stroke();
+            }
 
             // 레이블 (위쪽에 표시)
             if (mark.label) {

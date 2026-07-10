@@ -28,11 +28,15 @@ export class NumberLineTool extends Tool {
             const endInput = document.getElementById('nlEnd');
             const stepInput = document.getElementById('nlStep');
             const yInput = document.getElementById('nlY');
+            const openMarksInput = document.getElementById('nlOpenMarks');
+            const closedMarksInput = document.getElementById('nlClosedMarks');
 
             if (startInput) startInput.value = '-5';
             if (endInput) endInput.value = '5';
             if (stepInput) stepInput.value = '1';
             if (yInput) yInput.value = '0';
+            if (openMarksInput) openMarksInput.value = '';
+            if (closedMarksInput) closedMarksInput.value = '';
         } else {
             app.showToast('수직선 모달을 찾을 수 없습니다', 'error');
             app.toolManager.returnToSelect();

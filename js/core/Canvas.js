@@ -1080,18 +1080,21 @@ export class Canvas {
             color = '#000000',
             offsetX = 8,
             offsetY = -8,
-            backgroundColor = null
+            backgroundColor = null,
+            align = 'left'
         } = options;
 
-        const x = screen.x + offsetX;
         const y = screen.y + offsetY;
 
         // 수식을 렌더링 가능한 형태로 변환
         const renderedParts = this.parseMathExpression(text, fontSize, color);
+        const totalWidth = this.measureMathExpression(renderedParts, ctx, fontSize);
+        const alignedOffset = align === 'center' ? -totalWidth / 2 :
+            align === 'right' ? -totalWidth : 0;
+        const x = screen.x + offsetX + alignedOffset;
 
         // 배경 그리기
         if (backgroundColor) {
-            const totalWidth = this.measureMathExpression(renderedParts, ctx, fontSize);
             const padding = 3;
             ctx.fillStyle = backgroundColor;
             ctx.fillRect(

@@ -33,6 +33,7 @@ import { ArcTool, SectorTool, CircularSegmentTool } from './tools/ArcTool.js'; /
 import { AngleDimensionTool, LengthDimensionTool } from './tools/DimensionTool.js'; // Mk.2
 import { PolygonTool } from './tools/PolygonTool.js'; // Mk.2
 import { NumberLineTool } from './tools/NumberLineTool.js'; // Mk.4
+import { TextTool } from './tools/TextTool.js';
 import { FillTool } from './tools/FillTool.js';
 import { AreaExportTool } from './tools/AreaExportTool.js';
 
@@ -417,6 +418,7 @@ class GraphAApp {
 
         // Mk.4: 수직선 도구
         this.toolManager.registerTool('numberLine', new NumberLineTool());
+        this.toolManager.registerTool('textLabel', new TextTool());
 
         // 기본 도구 선택
         this.toolManager.setTool('select');
@@ -878,6 +880,7 @@ class GraphAApp {
 
         // Mk.4: 수직선 모달
         this.setupNumberLineModal();
+        this.setupTextLabelModal();
         hydrateGeneratedIcons(document);
     }
 
@@ -907,6 +910,7 @@ class GraphAApp {
             polygon: '다각형', fill: '채우기', prism: '각기둥', pyramid: '각뿔',
             angleDimension: '각도', lengthDimension: '길이',
             rightAngle: '직각', equalLength: '같은 길이',
+            numberLine: '수직선', textLabel: '텍스트',
             function: '함수'
         };
 
@@ -941,6 +945,7 @@ class GraphAApp {
             rightAngle: 'square_foot',
             equalLength: 'straighten',
             numberLine: 'timeline',
+            textLabel: 'text_fields',
             function: 'functions'
         };
 
@@ -1275,19 +1280,25 @@ class GraphAApp {
         if (selected.length === 1) {
             const obj = selected[0];
 
-            // 이름 수정
+            // 이름 또는 독립 텍스트 수정
             const nameRow = document.createElement('div');
             nameRow.className = 'property-row';
             nameRow.innerHTML = `
-                <label>이름:</label>
-                <input type="text" value="${obj.label || ''}" class="prop-input">
+                <label>${obj.type === 'textLabel' ? '텍스트:' : '이름:'}</label>
+                <input type="text" class="prop-input">
             `;
             const nameInput = nameRow.querySelector('input');
+            nameInput.value = obj.type === 'textLabel' ? obj.text : (obj.label || '');
             // 이벤트 버블링 차단 - 클릭 시 선택 해제 방지
             nameInput.addEventListener('mousedown', e => e.stopPropagation());
             nameInput.addEventListener('click', e => e.stopPropagation());
             nameInput.addEventListener('change', (e) => {
-                obj.label = e.target.value;
+                if (obj.type === 'textLabel') {
+                    obj.text = e.target.value;
+                    obj.update();
+                } else {
+                    obj.label = e.target.value;
+                }
                 this.updateSidebar(); // 목록 이름 업데이트
                 this.render();
             });
@@ -1309,6 +1320,59 @@ class GraphAApp {
                 this.updateSidebar(); // 목록 아이콘 색상 업데이트
             });
             container.appendChild(colorRow);
+
+            if (obj.type === 'textLabel') {
+                const fontRow = document.createElement('div');
+                fontRow.className = 'property-row';
+                fontRow.innerHTML = `
+                    <label>글씨:</label>
+                    <input type="range" min="10" max="72" value="${obj.fontSize}" class="prop-slider">
+                    <span class="value-display">${obj.fontSize}</span>
+                `;
+                const fontInput = fontRow.querySelector('input');
+                const fontDisplay = fontRow.querySelector('.value-display');
+                fontInput.addEventListener('input', (event) => {
+                    obj.fontSize = Number(event.target.value);
+                    fontDisplay.textContent = String(obj.fontSize);
+                    this.render();
+                });
+                container.appendChild(fontRow);
+
+                const alignRow = document.createElement('div');
+                alignRow.className = 'property-row';
+                alignRow.innerHTML = `
+                    <label>정렬:</label>
+                    <select class="prop-select">
+                        <option value="left">왼쪽</option>
+                        <option value="center">가운데</option>
+                        <option value="right">오른쪽</option>
+                    </select>
+                `;
+                const alignSelect = alignRow.querySelector('select');
+                alignSelect.value = obj.align;
+                alignSelect.addEventListener('change', (event) => {
+                    obj.align = event.target.value;
+                    this.render();
+                });
+                container.appendChild(alignRow);
+
+                const positionRow = document.createElement('div');
+                positionRow.className = 'property-row full-width';
+                positionRow.innerHTML = `
+                    <label>위치:</label>
+                    <input type="number" class="prop-input text-x" step="any" value="${obj.position.x}" aria-label="텍스트 x 좌표">
+                    <input type="number" class="prop-input text-y" step="any" value="${obj.position.y}" aria-label="텍스트 y 좌표">
+                `;
+                positionRow.querySelector('.text-x').addEventListener('change', (event) => {
+                    if (Number.isFinite(event.target.valueAsNumber)) obj.position.x = event.target.valueAsNumber;
+                    this.render();
+                });
+                positionRow.querySelector('.text-y').addEventListener('change', (event) => {
+                    if (Number.isFinite(event.target.valueAsNumber)) obj.position.y = event.target.valueAsNumber;
+                    this.render();
+                });
+                container.appendChild(positionRow);
+            }
 
             if (this.isPointLikeObject(obj)) {
                 const pointSizeControl = this.createPointSizeControl({
@@ -1345,7 +1409,7 @@ class GraphAApp {
             }
 
             // 선 굵기 (점 제외)
-            if (!this.isPointLikeObject(obj)) {
+            if (!this.isPointLikeObject(obj) && obj.type !== 'textLabel') {
                 const widthRow = document.createElement('div');
                 widthRow.className = 'property-row';
                 widthRow.innerHTML = `
@@ -2654,6 +2718,18 @@ class GraphAApp {
         }).join('\n');
     }
 
+    buildSVGTextLabelMarkup(obj) {
+        if (!obj.valid || !obj.position) return '';
+        const position = this.canvas.toScreen(obj.position);
+        const anchor = obj.align === 'center' ? 'middle' : obj.align === 'right' ? 'end' : 'start';
+        const color = this.escapeSVG(obj.color || '#000000');
+        return `<text data-type="textLabel" data-id="${this.escapeSVG(obj.id)}" ` +
+            `x="${position.x.toFixed(2)}" y="${position.y.toFixed(2)}" ` +
+            `font-family="Noto Sans KR, Times New Roman, sans-serif" ` +
+            `font-size="${obj.fontSize || 18}" text-anchor="${anchor}" fill="${color}">` +
+            `${this.escapeSVG(obj.text || '')}</text>`;
+    }
+
     buildSVGNumberLineMarkup(obj) {
         if (!obj.valid) return '';
 
@@ -2688,6 +2764,32 @@ class GraphAApp {
                 `<line x1="${position.x.toFixed(2)}" y1="${(position.y - tickScreenHeight).toFixed(2)}" ` +
                 `x2="${position.x.toFixed(2)}" y2="${(position.y + tickScreenHeight).toFixed(2)}" />`
             );
+        }
+
+        for (const mark of obj.customMarks || []) {
+            const position = this.canvas.toScreen(new Vec2(mark.value, obj.y));
+            const markColor = this.escapeSVG(mark.color || obj.color || '#000000');
+            if (mark.endpoint === 'open' || mark.endpoint === 'closed') {
+                const radius = Math.max(4, (obj.lineWidth || 2) * 1.8);
+                const fill = mark.endpoint === 'closed' ? markColor : '#ffffff';
+                parts.push(
+                    `<circle cx="${position.x.toFixed(2)}" cy="${position.y.toFixed(2)}" ` +
+                    `r="${radius.toFixed(2)}" stroke="${markColor}" fill="${fill}" />`
+                );
+            } else {
+                parts.push(
+                    `<line x1="${position.x.toFixed(2)}" y1="${(position.y - tickScreenHeight * 1.5).toFixed(2)}" ` +
+                    `x2="${position.x.toFixed(2)}" y2="${(position.y + tickScreenHeight * 1.5).toFixed(2)}" ` +
+                    `stroke="${markColor}" />`
+                );
+            }
+            if (mark.label) {
+                parts.push(
+                    `<text x="${position.x.toFixed(2)}" y="${(position.y - tickScreenHeight * 1.5 - 5).toFixed(2)}" ` +
+                    `font-size="${Math.max(8, (obj.fontSize || 14) - 2)}" text-anchor="middle" fill="${markColor}">` +
+                    `${this.escapeSVG(mark.label)}</text>`
+                );
+            }
         }
 
         parts.push('</g>');
@@ -2732,6 +2834,8 @@ class GraphAApp {
                 return this.buildSVGPolygonMarkup(obj);
             case 'numberLine':
                 return this.buildSVGNumberLineMarkup(obj);
+            case 'textLabel':
+                return this.buildSVGTextLabelMarkup(obj);
             default:
                 return '';
         }
@@ -3947,6 +4051,11 @@ class GraphAApp {
             const end = parseFloat(document.getElementById('nlEnd').value) || 5;
             const step = Math.max(0.1, parseFloat(document.getElementById('nlStep').value) || 1);
             const y = parseFloat(document.getElementById('nlY').value) || 0;
+            const parseMarks = (inputId, endpoint) => String(document.getElementById(inputId)?.value || '')
+                .split(',')
+                .map(value => Number(value.trim()))
+                .filter(Number.isFinite)
+                .map(value => ({ value, endpoint }));
 
             if (start >= end) {
                 this.showToast('끝값이 시작값보다 커야 합니다', 'warning');
@@ -3954,7 +4063,11 @@ class GraphAApp {
             }
 
             const numberLine = this.objectManager.createNumberLine({
-                start, end, step, y
+                start, end, step, y,
+                customMarks: [
+                    ...parseMarks('nlOpenMarks', 'open'),
+                    ...parseMarks('nlClosedMarks', 'closed')
+                ]
             });
 
             this.historyManager.recordCreate(numberLine);
@@ -3985,6 +4098,66 @@ class GraphAApp {
             if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
                 modal.classList.add('hidden');
                 this.toolManager.returnToSelect();
+            }
+        });
+    }
+
+    openTextLabelModal(mathPosition) {
+        const modal = document.getElementById('textLabelModal');
+        if (!modal) return;
+        this.pendingTextPosition = mathPosition.clone ? mathPosition.clone() : new Vec2(mathPosition.x, mathPosition.y);
+        modal.classList.remove('hidden');
+        const input = document.getElementById('textLabelContent');
+        if (input) {
+            input.value = '';
+            requestAnimationFrame(() => input.focus());
+        }
+    }
+
+    setupTextLabelModal() {
+        const modal = document.getElementById('textLabelModal');
+        const createBtn = document.getElementById('textLabelCreateBtn');
+        const cancelBtn = document.getElementById('textLabelCancelBtn');
+        const input = document.getElementById('textLabelContent');
+        if (!modal || !createBtn || !cancelBtn || !input) return;
+
+        const close = () => {
+            modal.classList.add('hidden');
+            this.pendingTextPosition = null;
+            this.toolManager.returnToSelect();
+        };
+
+        createBtn.addEventListener('click', () => {
+            const text = input.value.trim();
+            if (!text) {
+                this.showToast('넣을 글이나 수식을 입력하세요.', 'warning');
+                return;
+            }
+            const position = this.pendingTextPosition || new Vec2(0, 0);
+            const fontSize = Number(document.getElementById('textLabelFontSize')?.value) || 18;
+            const align = document.getElementById('textLabelAlign')?.value || 'left';
+            const label = this.objectManager.createTextLabel(text, position.x, position.y, {
+                fontSize,
+                align
+            });
+            this.historyManager.recordCreate(label);
+            this.objectManager.clearSelection();
+            this.objectManager.selectObject(label);
+            this.updateSidebar();
+            this.updatePropertyPanel();
+            this.render();
+            this.showToast('텍스트를 추가했습니다.', 'success');
+            close();
+        });
+
+        cancelBtn.addEventListener('click', close);
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) close();
+        });
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                createBtn.click();
             }
         });
     }

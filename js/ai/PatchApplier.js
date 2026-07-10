@@ -330,6 +330,19 @@ export class PatchApplier {
                 });
                 break;
 
+            case 'textLabel':
+                object = this.objectManager.createTextLabel(
+                    resolvedOp.text,
+                    resolvedOp.x,
+                    resolvedOp.y,
+                    {
+                        ...commonParams,
+                        ...(resolvedOp.align !== undefined ? { align: resolvedOp.align } : {}),
+                        ...(resolvedOp.backgroundColor !== undefined ? { backgroundColor: resolvedOp.backgroundColor } : {})
+                    }
+                );
+                break;
+
             default:
                 throw new Error(`Unsupported object type: ${op.type}`);
         }
@@ -384,6 +397,9 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'y', op.y);
         this.applyPropertyUpdate(object, 'showArrows', op.showArrows);
         this.applyPropertyUpdate(object, 'tickHeight', op.tickHeight);
+        this.applyPropertyUpdate(object, 'text', op.text);
+        this.applyPropertyUpdate(object, 'align', op.align);
+        this.applyPropertyUpdate(object, 'backgroundColor', op.backgroundColor);
 
         if (op.labelOffset !== undefined && 'labelOffset' in object) {
             this.recordPropertyChange(object, 'labelOffset', object.labelOffset, op.labelOffset);
