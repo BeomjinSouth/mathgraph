@@ -34,6 +34,9 @@ export class PatchApplier {
         const rollbackSnapshot = this.createRollbackSnapshot();
         const stats = { created: 0, updated: 0, deleted: 0 };
 
+        // 패치 전체를 하나의 undo 단위로 묶습니다. (실제 HistoryManager만 지원, mock은 무시)
+        this.historyManager?.beginTransaction?.();
+
         try {
             for (const op of operations) {
                 const result = this.applyOperation(op, idMap, stats);
@@ -43,12 +46,14 @@ export class PatchApplier {
             }
 
             this.objectManager.updateAll();
+            this.historyManager?.commitTransaction?.();
 
             return PatchResult.success(
                 this.formatSummary(stats),
                 createdObjects
             );
         } catch (error) {
+            this.historyManager?.abortTransaction?.();
             this.restoreRollbackSnapshot(rollbackSnapshot);
             return PatchResult.failure(`Patch application failed: ${error.message}`, [error.message]);
         }

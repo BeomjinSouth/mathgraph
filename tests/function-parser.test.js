@@ -35,6 +35,22 @@ test('function parser keeps implicit multiplication with negative coefficients',
     assert.equal(fn(2), 4.5);
 });
 
+test('function parser handles functions whose names end in digits', () => {
+    const log2 = FunctionParser.parse('log2(x)');
+    assert.equal(log2(8), 3);
+
+    const log10 = FunctionParser.parse('log10(x)');
+    assert.equal(log10(1000), 3);
+});
+
+test('function parser still inserts implicit multiplication before a parenthesis', () => {
+    const fn = FunctionParser.parse('2(x + 1)');
+    assert.equal(fn(4), 10);
+
+    const squared = FunctionParser.parse('3(x - 1)^2');
+    assert.equal(squared(4), 27);
+});
+
 test('FunctionGraph accepts y equals input while storing the right-hand side', () => {
     const func = new FunctionGraph('y = x^2 - 2*x + 1');
 

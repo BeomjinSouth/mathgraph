@@ -5,9 +5,56 @@ export class HistoryManager {
         this.redoStack = [];
         this.maxSize = 100;
         this.pendingAction = null;
+        // 트랜잭션(배치) 상태: 여러 record()를 하나의 undo 단위로 묶기 위한 버퍼입니다.
+        this.transactionDepth = 0;
+        this.transactionBuffer = null;
         this.listeners = {
             historyChanged: []
         };
+    }
+
+    /**
+     * 트랜잭션 시작 - 이후 record() 호출은 버퍼에 모였다가 commit 시 하나의 배치로 기록됩니다.
+     * 중첩 호출을 지원하며 가장 바깥 commit에서만 실제 기록됩니다.
+     */
+    beginTransaction() {
+        if (this.transactionDepth === 0) {
+            this.transactionBuffer = [];
+        }
+        this.transactionDepth += 1;
+    }
+
+    /**
+     * 트랜잭션 종료 - 버퍼에 모인 액션을 배치(2개 이상) 또는 단일 액션(1개)으로 기록합니다.
+     */
+    commitTransaction() {
+        if (this.transactionDepth === 0) {
+            return;
+        }
+        this.transactionDepth -= 1;
+        if (this.transactionDepth > 0) {
+            return;
+        }
+
+        const actions = this.transactionBuffer || [];
+        this.transactionBuffer = null;
+
+        if (actions.length === 0) {
+            return;
+        }
+        if (actions.length === 1) {
+            this.commit(actions[0]);
+        } else {
+            this.commit({ type: 'batch', actions });
+        }
+    }
+
+    /**
+     * 트랜잭션 취소 - 버퍼를 버리고 아무것도 기록하지 않습니다. (패치 롤백 등에서 사용)
+     */
+    abortTransaction() {
+        this.transactionDepth = 0;
+        this.transactionBuffer = null;
     }
 
     on(event, callback) {
@@ -23,6 +70,16 @@ export class HistoryManager {
     }
 
     record(action) {
+        // 트랜잭션 중이면 즉시 기록하지 않고 버퍼에 모읍니다.
+        if (this.transactionDepth > 0) {
+            this.transactionBuffer.push(action);
+            return;
+        }
+
+        this.commit(action);
+    }
+
+    commit(action) {
         this.undoStack.push(action);
 
         while (this.undoStack.length > this.maxSize) {
@@ -160,7 +217,36 @@ export class HistoryManager {
         if (!this.canUndo()) return false;
 
         const action = this.undoStack.pop();
+        this.undoAction(action);
+        this.redoStack.push(action);
 
+        this.emit('historyChanged', {
+            canUndo: this.canUndo(),
+            canRedo: this.canRedo()
+        });
+
+        return true;
+    }
+
+    redo() {
+        if (!this.canRedo()) return false;
+
+        const action = this.redoStack.pop();
+        this.redoAction(action);
+        this.undoStack.push(action);
+
+        this.emit('historyChanged', {
+            canUndo: this.canUndo(),
+            canRedo: this.canRedo()
+        });
+
+        return true;
+    }
+
+    /**
+     * 단일 액션 undo 디스패치 (배치의 자식 액션도 이 경로를 재사용합니다).
+     */
+    undoAction(action) {
         switch (action.type) {
             case 'create':
                 this.undoCreate(action);
@@ -178,22 +264,12 @@ export class HistoryManager {
                 this.undoDrag(action);
                 break;
         }
-
-        this.redoStack.push(action);
-
-        this.emit('historyChanged', {
-            canUndo: this.canUndo(),
-            canRedo: this.canRedo()
-        });
-
-        return true;
     }
 
-    redo() {
-        if (!this.canRedo()) return false;
-
-        const action = this.redoStack.pop();
-
+    /**
+     * 단일 액션 redo 디스패치 (배치의 자식 액션도 이 경로를 재사용합니다).
+     */
+    redoAction(action) {
         switch (action.type) {
             case 'create':
                 this.redoCreate(action);
@@ -211,15 +287,6 @@ export class HistoryManager {
                 this.redoDrag(action);
                 break;
         }
-
-        this.undoStack.push(action);
-
-        this.emit('historyChanged', {
-            canUndo: this.canUndo(),
-            canRedo: this.canRedo()
-        });
-
-        return true;
     }
 
     undoCreate(action) {
@@ -269,18 +336,16 @@ export class HistoryManager {
     }
 
     undoBatch(action) {
+        // 자식 액션을 역순으로 되돌립니다 (create/delete/propertyChange/drag 모두 지원).
         for (const childAction of [...action.actions].reverse()) {
-            if (childAction.type === 'propertyChange') {
-                this.undoPropertyChange(childAction);
-            }
+            this.undoAction(childAction);
         }
     }
 
     redoBatch(action) {
+        // 자식 액션을 정순으로 다시 적용합니다.
         for (const childAction of action.actions) {
-            if (childAction.type === 'propertyChange') {
-                this.redoPropertyChange(childAction);
-            }
+            this.redoAction(childAction);
         }
     }
 

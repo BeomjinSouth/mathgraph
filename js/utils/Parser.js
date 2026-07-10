@@ -363,10 +363,13 @@ export class FunctionParser {
     static parse(expression) {
         try {
             // 암시적 곱셈 처리 (2x -> 2*x, x(x+1) -> x*(x+1), 2sin(x) -> 2*sin(x))
+            // 주의: 숫자 뒤 여는 괄호(2( -> 2*()는 여기서 처리하지 않습니다.
+            //       log2(, log10( 처럼 숫자로 끝나는 함수 이름이 깨지기 때문입니다.
+            //       "숫자( )" 형태의 곱셈은 아래 토큰 단계에서 렉서가 함수 이름을
+            //       하나의 토큰으로 인식한 뒤에 안전하게 삽입됩니다.
             expression = expression
                 .replace(/(\d)([a-zA-Z])/g, '$1*$2')
                 .replace(/(\))(\d)/g, '$1*$2')
-                .replace(/(\d)(\()/g, '$1*$2')
                 .replace(/(\))(\()/g, '$1*$2')
                 .replace(/(\))([a-zA-Z])/g, '$1*$2')
                 .replace(/([a-zA-Z])(\()/g, (match, p1, p2) => {

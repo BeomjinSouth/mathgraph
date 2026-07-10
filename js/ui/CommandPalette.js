@@ -59,8 +59,8 @@ export class CommandPalette {
             { name: '다시하기', category: '편집', action: () => { this.app.historyManager.redo(); this.app.render(); }, shortcut: 'Ctrl+Y' },
             { name: '전체 선택', category: '편집', action: () => this.selectAll(), shortcut: 'Ctrl+A' },
             { name: '선택 삭제', category: '편집', action: () => this.app.deleteSelectedObjects(), shortcut: 'Delete' },
-            { name: '복사', category: '편집', action: () => this.app.eventHandler.copySelectedObjects(), shortcut: 'Ctrl+C' },
-            { name: '붙여넣기', category: '편집', action: () => this.app.eventHandler.pasteObjects(), shortcut: 'Ctrl+V' },
+            { name: '복사', category: '편집', action: () => this.app.copySelectedObjects(), shortcut: 'Ctrl+C' },
+            { name: '붙여넣기', category: '편집', action: () => this.app.pasteObjects(), shortcut: 'Ctrl+V' },
 
             // 뷰 명령
             { name: '확대', category: '뷰', action: () => { this.app.canvas.zoom(1.2); this.app.render(); this.app.updateZoomDisplay(); } },

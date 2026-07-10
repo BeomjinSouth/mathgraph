@@ -63,6 +63,7 @@ import {
     scaleExportAreaRect
 } from './utils/ExportArea.js';
 import { getScaledAxisArrowStyle } from './utils/AxisArrowStyle.js';
+import { escapeHtml } from './utils/Html.js';
 
 /**
  * 그래프A 애플리케이션
@@ -224,11 +225,11 @@ class GraphAApp {
         messageEl.dataset.type = type;
     }
 
-    async loginAsOwner(name) {
+    async loginAsOwner(name, password) {
         const response = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
+            body: JSON.stringify({ name, password })
         });
 
         let payload = null;
@@ -258,6 +259,7 @@ class GraphAApp {
         const landing = document.getElementById('authLanding');
         const form = document.getElementById('ownerLoginForm');
         const input = document.getElementById('ownerNameInput');
+        const passwordInput = document.getElementById('ownerPasswordInput');
         const guestButton = document.getElementById('guestLoginButton');
         const ownerButton = document.getElementById('ownerLoginButton');
 
@@ -268,9 +270,15 @@ class GraphAApp {
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             const name = input.value.trim();
+            const password = passwordInput?.value || '';
             if (!name) {
                 this.setAuthMessage('이름을 입력하세요.', 'warning');
                 input.focus();
+                return;
+            }
+            if (!password) {
+                this.setAuthMessage('비밀번호를 입력하세요.', 'warning');
+                passwordInput?.focus();
                 return;
             }
 
@@ -278,7 +286,10 @@ class GraphAApp {
             this.setAuthMessage('로그인 확인 중...', 'info');
 
             try {
-                const session = await this.loginAsOwner(name);
+                const session = await this.loginAsOwner(name, password);
+                if (passwordInput) {
+                    passwordInput.value = '';
+                }
                 this.applyAuthSession(session);
                 this.setAuthMessage('');
                 this.showToast('박범진 모드로 시작합니다. OpenAI 기본 API를 사용합니다.', 'success');
@@ -1063,6 +1074,9 @@ class GraphAApp {
         // 선택 해제
         this.objectManager.clearSelection();
 
+        // 붙여넣기 전체를 하나의 undo 단위로 묶습니다.
+        this.historyManager.beginTransaction();
+
         // 각 객체를 새로 생성
         for (const objData of this.clipboard) {
             const newData = { ...objData };
@@ -1119,6 +1133,8 @@ class GraphAApp {
                 this.historyManager.recordCreate(newObj);
             }
         }
+
+        this.historyManager.commitTransaction();
 
         // 새 객체 선택
         newObjects.forEach(obj => this.objectManager.selectObject(obj, true));
@@ -1248,7 +1264,7 @@ class GraphAApp {
             nameRow.className = 'property-row';
             nameRow.innerHTML = `
                 <label>이름:</label>
-                <input type="text" value="${obj.label || ''}" class="prop-input">
+                <input type="text" value="${escapeHtml(obj.label || '')}" class="prop-input">
             `;
             const nameInput = nameRow.querySelector('input');
             // 이벤트 버블링 차단 - 클릭 시 선택 해제 방지
@@ -1266,7 +1282,7 @@ class GraphAApp {
             colorRow.className = 'property-row';
             colorRow.innerHTML = `
                 <label>색상:</label>
-                <input type="color" value="${obj.color}" class="prop-input">
+                <input type="color" value="${escapeHtml(obj.color)}" class="prop-input">
             `;
             const colorInput = colorRow.querySelector('input');
             colorInput.addEventListener('mousedown', e => e.stopPropagation());
@@ -1368,7 +1384,7 @@ class GraphAApp {
                 exprRow.className = 'property-row';
                 exprRow.innerHTML = `
                     <label>수식:</label>
-                    <input type="text" value="${obj.expression || ''}" class="prop-input" placeholder="예: x^2 - 2*x + 1">
+                    <input type="text" value="${escapeHtml(obj.expression || '')}" class="prop-input" placeholder="예: x^2 - 2*x + 1">
                 `;
                 const exprInput = exprRow.querySelector('input');
                 exprInput.addEventListener('mousedown', e => e.stopPropagation());
@@ -1474,7 +1490,7 @@ class GraphAApp {
                 const customValue = (obj.customText !== null && obj.customText !== undefined) ? obj.customText : '';
                 customRow.innerHTML = `
                     <label>텍스트:</label>
-                    <input type="text" class="prop-input" placeholder="비우면 자동(계산값)" value="${customValue}">
+                    <input type="text" class="prop-input" placeholder="비우면 자동(계산값)" value="${escapeHtml(customValue)}">
                 `;
                 const customInput = customRow.querySelector('input');
                 customInput.addEventListener('mousedown', e => e.stopPropagation());
@@ -1829,7 +1845,7 @@ class GraphAApp {
                         <span class="material-symbols-outlined">${iconName}</span>
                     </div>
                     <div class="object-info">
-                        <div class="object-name">${obj.label || '(이름 없음)'}</div>
+                        <div class="object-name">${escapeHtml(obj.label || '(이름 없음)')}</div>
                         <div class="object-type">${typeLabel}</div>
                         ${coordsHTML}
                     </div>

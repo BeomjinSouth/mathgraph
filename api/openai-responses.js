@@ -1,76 +1,23 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+/**
+ * api/openai-responses.js 역할
+ * 오너 세션 토큰을 확인한 뒤 OpenAI Responses API로 요청을 중계하는 프록시입니다.
+ *
+ * 이번 변경의 의도는 다음과 같습니다.
+ * - 서명 검증/토큰 파싱/본문 파싱을 lib/ownerAuth.js와 공유해 중복을 없앱니다.
+ * - 전달 가능한 모델을 화이트리스트로 제한하고, 본문 크기와 호출 빈도를 제한해 남용/비용 폭주를 막습니다.
+ * - 서명 시크릿 미설정 시 fail-closed 하게 동작합니다.
+ */
 
-const OWNER_NAME = process.env.MATHGRAPH_OWNER_NAME || '박범진';
-
-function getSigningSecret() {
-    return process.env.MATHGRAPH_LOGIN_SECRET
-        || process.env.OPENAI_API_KEY
-        || process.env.VERCEL_GIT_COMMIT_SHA
-        || 'mathgraph-local-dev-secret';
-}
-function signPayload(encodedPayload) {
-    return createHmac('sha256', getSigningSecret())
-        .update(encodedPayload)
-        .digest('base64url');
-}
-
-function safeEqual(left, right) {
-    const leftBuffer = Buffer.from(left);
-    const rightBuffer = Buffer.from(right);
-    return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
-}
-
-function verifyToken(token) {
-    const [encodedPayload, signature] = String(token || '').split('.');
-    if (!encodedPayload || !signature) {
-        return { valid: false, error: 'Missing login token.' };
-    }
-
-    const expectedSignature = signPayload(encodedPayload);
-    if (!safeEqual(signature, expectedSignature)) {
-        return { valid: false, error: 'Invalid login token.' };
-    }
-
-    let payload;
-    try {
-        payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8'));
-    } catch {
-        return { valid: false, error: 'Invalid login token payload.' };
-    }
-
-    if (payload?.sub !== 'owner' || payload?.name !== OWNER_NAME) {
-        return { valid: false, error: 'Invalid login token subject.' };
-    }
-
-    if (!Number.isFinite(payload.exp) || payload.exp <= Date.now()) {
-        return { valid: false, error: 'Login token expired.' };
-    }
-
-    return { valid: true, payload };
-}
-
-async function readJson(req) {
-    if (req.body && typeof req.body === 'object') {
-        return req.body;
-    }
-
-    if (typeof req.body === 'string') {
-        return JSON.parse(req.body || '{}');
-    }
-
-    const chunks = [];
-    for await (const chunk of req) {
-        chunks.push(Buffer.from(chunk));
-    }
-    const rawBody = Buffer.concat(chunks).toString('utf8');
-    return rawBody ? JSON.parse(rawBody) : {};
-}
-
-function getBearerToken(req) {
-    const header = req.headers?.authorization || req.headers?.Authorization || '';
-    const match = String(header).match(/^Bearer\s+(.+)$/i);
-    return match?.[1] || '';
-}
+import {
+    AuthConfigError,
+    PayloadTooLargeError,
+    verifyToken,
+    getBearerToken,
+    readJson,
+    isModelAllowed,
+    getAllowedModels,
+    checkRateLimit
+} from '../lib/ownerAuth.js';
 
 export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
@@ -81,9 +28,29 @@ export default async function handler(req, res) {
         return;
     }
 
-    const tokenResult = verifyToken(getBearerToken(req));
+    const bearerToken = getBearerToken(req);
+
+    let tokenResult;
+    try {
+        tokenResult = verifyToken(bearerToken);
+    } catch (error) {
+        if (error instanceof AuthConfigError) {
+            res.status(503).json({ error: '서버 로그인 시크릿이 설정되지 않았습니다.' });
+            return;
+        }
+        throw error;
+    }
+
     if (!tokenResult.valid) {
         res.status(401).json({ error: tokenResult.error });
+        return;
+    }
+
+    // 토큰 단위 호출 빈도 제한 (서버리스 인스턴스별 메모리 기반).
+    const rate = checkRateLimit(`proxy:${bearerToken}`);
+    if (!rate.allowed) {
+        res.setHeader('Retry-After', String(Math.ceil((rate.retryAfterMs || 1000) / 1000)));
+        res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도하세요.' });
         return;
     }
 
@@ -95,8 +62,26 @@ export default async function handler(req, res) {
         return;
     }
 
+    let requestBody;
     try {
-        const requestBody = await readJson(req);
+        requestBody = await readJson(req);
+    } catch (error) {
+        if (error instanceof PayloadTooLargeError) {
+            res.status(413).json({ error: '요청 본문이 너무 큽니다.' });
+            return;
+        }
+        res.status(400).json({ error: '요청 본문을 해석하지 못했습니다.' });
+        return;
+    }
+
+    if (!isModelAllowed(requestBody?.model)) {
+        res.status(400).json({
+            error: `허용되지 않은 모델입니다. 허용 목록: ${getAllowedModels().join(', ')}`
+        });
+        return;
+    }
+
+    try {
         const response = await fetch('https://api.openai.com/v1/responses', {
             method: 'POST',
             headers: {

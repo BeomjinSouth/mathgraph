@@ -1,5 +1,30 @@
 # Progress Log
 
+## 2026-07-09
+
+### Security and quality hardening pass
+
+#### Work completed
+
+- Replaced the name-only owner "login" with name **plus** password verification. Owner login now requires `MATHGRAPH_OWNER_PASSWORD`; if unset, owner login is disabled (503) and only guest mode works. Added a password field to the landing form (`index.html`) and threaded it through `loginAsOwner`/`setupAuthLanding` in `js/main.js` (password is cleared from the field after submit).
+- Made token signing fail closed: removed the `OPENAI_API_KEY` / `VERCEL_GIT_COMMIT_SHA` / hardcoded-string fallbacks. `MATHGRAPH_LOGIN_SECRET` is now required; missing config returns 503 instead of signing with a public constant.
+- Added OpenAI proxy request validation in `api/openai-responses.js`: model allow-list (`MATHGRAPH_PROXY_ALLOWED_MODELS`, defaults to the five shipped models), request body size cap (`MATHGRAPH_PROXY_MAX_BODY_BYTES`, default 10 MB), and a per-token in-memory rate limit (`MATHGRAPH_PROXY_RATE_*`, default 30/60s).
+- Extracted the duplicated signing/token/body-parsing helpers from `api/login.js` and `api/openai-responses.js` into a shared `lib/ownerAuth.js` module.
+- Fixed DOM-based XSS: added `js/utils/Html.js` (`escapeHtml`) and applied it to user/AI-controllable values interpolated into `innerHTML` in `js/main.js` (object label ×2, function expression, dimension custom text, color).
+- Reduced guest API-key exposure at rest: the key is now kept in `sessionStorage` instead of persistent `localStorage` (`js/ai/AIService.js`).
+- Documented all new/changed environment variables in `AGENTS.md`.
+
+#### Verification
+
+- Ran `node --test`; passed with 210 tests (added `tests/owner-auth.test.js` and `tests/html-escape.test.js`, +20).
+- Ran `node --check` on `lib/ownerAuth.js`, `api/login.js`, `api/openai-responses.js`, `js/utils/Html.js`, `js/main.js`, `js/ai/AIService.js`; all passed.
+- Ran `git diff --check`; passed with line-ending (LF→CRLF) warnings only.
+
+#### Follow-up (not done in this pass)
+
+- `js/main.js` (~3.9k lines) and `js/ai/AIService.js` (~2.8k lines) remain large "god" modules; extracting the property-panel/sidebar rendering and the AI transport/prompt/validation layers is a larger refactor best done incrementally with UI coverage.
+- Client-side model IDs (`gpt-5.5`, etc.) are still hardcoded in `js/ai/AIService.js`; re-verify against current OpenAI model availability.
+
 ## 2026-06-19
 
 ### Full problem text to exam-style MathGraph diagram

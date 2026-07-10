@@ -312,6 +312,38 @@ test('AIService builds OpenAI Responses request with strict Structured Outputs',
     assert.equal(chainedBody.previous_response_id, 'resp_previous');
 });
 
+test('buildOpenAIRequestBody preserves assistant turns and collapses duplicate trailing user turns', () => {
+    const service = createAIService();
+    const body = service.buildOpenAIRequestBody([
+        { role: 'system', content: 'S1' },
+        { role: 'system', content: 'S2' },
+        { role: 'user', content: '이전 질문' },
+        { role: 'assistant', content: '{"operations":[]}' },
+        { role: 'user', content: '지금 질문' },
+        { role: 'user', content: '지금 질문' }
+    ]);
+
+    // 시스템은 하나의 developer 지시로 합쳐집니다.
+    assert.equal(body.input[0].role, 'developer');
+    assert.equal(body.input[0].content, 'S1\n\nS2');
+
+    // assistant 턴이 보존되고, 내용이 같은 인접 user 중복은 하나로 접힙니다.
+    const conversationRoles = body.input.slice(1).map(item => item.role);
+    assert.deepEqual(conversationRoles, ['user', 'assistant', 'user']);
+    assert.equal(body.input.at(-1).content, '지금 질문');
+    assert.ok(body.input.some(item => item.role === 'assistant'));
+});
+
+test('buildOpenAIRequestBody always includes at least one user turn', () => {
+    const service = createAIService();
+    const body = service.buildOpenAIRequestBody([
+        { role: 'system', content: 'only system' }
+    ]);
+
+    assert.equal(body.input[0].role, 'developer');
+    assert.ok(body.input.some(item => item.role === 'user'));
+});
+
 test('AIService callOpenAI sends Structured Outputs request and extracts output text', async () => {
     const originalFetch = globalThis.fetch;
     let capturedUrl = null;
@@ -537,6 +569,71 @@ test('processCommand repairs OpenAI text output with stale update ids', async ()
         assert.match(capturedBodies[1].input[0].content, /failed local validation/);
         assert.match(capturedBodies[1].input[0].content, /op:"create"/);
         assert.match(capturedBodies[1].input[0].content, /obj_1781506409729_1/);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('callOpenAI surfaces owner-proxy string error bodies with a re-login hint', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({
+        ok: false,
+        status: 401,
+        async json() {
+            // 오너 프록시는 { error: "문자열" } 형태로 반환합니다.
+            return { error: 'Login token expired.' };
+        }
+    });
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: '',
+            authMode: 'owner',
+            proxyToken: 'signed-owner-token',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+
+        await assert.rejects(
+            () => service.callOpenAI([{ role: 'user', content: 'x' }]),
+            (error) => {
+                assert.match(error.message, /Login token expired\./);
+                assert.match(error.message, /다시 로그인/);
+                return true;
+            }
+        );
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('callOpenAI still reads OpenAI-shaped nested error messages', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({
+        ok: false,
+        status: 400,
+        async json() {
+            // OpenAI 직접 호출은 { error: { message } } 형태로 반환합니다.
+            return { error: { message: 'Invalid model id' } };
+        }
+    });
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+
+        await assert.rejects(
+            () => service.callOpenAI([{ role: 'user', content: 'x' }]),
+            (error) => {
+                assert.match(error.message, /Invalid model id/);
+                return true;
+            }
+        );
     } finally {
         globalThis.fetch = originalFetch;
     }

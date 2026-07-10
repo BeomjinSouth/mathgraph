@@ -1,41 +1,24 @@
-import { createHmac } from 'node:crypto';
+/**
+ * api/login.js 역할
+ * 오너(`박범진`) 세션 토큰을 발급하는 서버리스 엔드포인트입니다.
+ *
+ * 이번 변경의 의도는 다음과 같습니다.
+ * - 이름만 맞으면 통과하던 방식(사실상 무인증)을 이름 + 비밀번호 검증으로 강화합니다.
+ * - 서명 시크릿/비밀번호가 서버에 없으면 발급을 막습니다(fail-closed).
+ * - 공용 인증 로직을 lib/ownerAuth.js로 옮겨 openai-responses.js와 중복을 없앱니다.
+ */
 
-const OWNER_NAME = process.env.MATHGRAPH_OWNER_NAME || '박범진';
-const DEFAULT_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
-
-function getSigningSecret() {
-    return process.env.MATHGRAPH_LOGIN_SECRET
-        || process.env.OPENAI_API_KEY
-        || process.env.VERCEL_GIT_COMMIT_SHA
-        || 'mathgraph-local-dev-secret';
-}
-function signPayload(encodedPayload) {
-    return createHmac('sha256', getSigningSecret())
-        .update(encodedPayload)
-        .digest('base64url');
-}
-
-function createToken(payload) {
-    const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
-    return `${encodedPayload}.${signPayload(encodedPayload)}`;
-}
-
-async function readJson(req) {
-    if (req.body && typeof req.body === 'object') {
-        return req.body;
-    }
-
-    if (typeof req.body === 'string') {
-        return JSON.parse(req.body || '{}');
-    }
-
-    const chunks = [];
-    for await (const chunk of req) {
-        chunks.push(Buffer.from(chunk));
-    }
-    const rawBody = Buffer.concat(chunks).toString('utf8');
-    return rawBody ? JSON.parse(rawBody) : {};
-}
+import {
+    AuthConfigError,
+    PayloadTooLargeError,
+    OWNER_NAME,
+    DEFAULT_TOKEN_TTL_MS,
+    createToken,
+    getSigningSecret,
+    getOwnerPassword,
+    safeEqual,
+    readJson
+} from '../lib/ownerAuth.js';
 
 export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
@@ -46,13 +29,31 @@ export default async function handler(req, res) {
         return;
     }
 
+    // 서버 설정(서명 시크릿, 오너 비밀번호)이 갖춰져 있는지 먼저 확인합니다.
+    let ownerPassword;
+    try {
+        getSigningSecret();
+        ownerPassword = getOwnerPassword();
+    } catch (error) {
+        if (error instanceof AuthConfigError) {
+            res.status(503).json({
+                error: '오너 로그인이 설정되지 않았습니다. 서버에 MATHGRAPH_LOGIN_SECRET와 MATHGRAPH_OWNER_PASSWORD를 설정하세요.'
+            });
+            return;
+        }
+        throw error;
+    }
+
     try {
         const body = await readJson(req);
         const name = String(body?.name || '').normalize('NFKC').trim();
+        const password = String(body?.password || '');
 
-        if (name !== OWNER_NAME) {
+        const nameMatches = name === OWNER_NAME;
+        const passwordMatches = safeEqual(password, ownerPassword);
+        if (!nameMatches || !passwordMatches) {
             res.status(401).json({
-                error: '등록된 이름이 아닙니다. 게스트로 진행하거나 이름을 다시 확인하세요.'
+                error: '이름 또는 비밀번호가 올바르지 않습니다. 게스트로 진행하거나 다시 확인하세요.'
             });
             return;
         }
@@ -75,6 +76,14 @@ export default async function handler(req, res) {
             expiresAt
         });
     } catch (error) {
+        if (error instanceof PayloadTooLargeError) {
+            res.status(413).json({ error: '요청 본문이 너무 큽니다.' });
+            return;
+        }
+        if (error instanceof AuthConfigError) {
+            res.status(503).json({ error: '오너 로그인이 설정되지 않았습니다.' });
+            return;
+        }
         res.status(400).json({
             error: error?.message || '로그인 요청을 처리하지 못했습니다.'
         });

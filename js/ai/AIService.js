@@ -521,6 +521,9 @@ export class AIServiceConfig {
         this.model = DEFAULT_OPENAI_MODEL;
         this.reasoningEffort = 'low'; // none, minimal, low, medium, high, xhigh
         this.verbosity = 'low'; // low, medium, high
+        // Gemini 생성 파라미터 (OpenAI 경로는 reasoning/verbosity를 사용)
+        this.temperature = 0.2;
+        this.maxTokens = 2048;
         this.authMode = 'guest'; // 'guest' | 'owner'
         this.proxyToken = '';
         this.proxyTokenExpiresAt = 0;
@@ -537,15 +540,35 @@ export class AIServiceConfig {
         } catch (e) {
             console.warn('AI 설정 로드 실패:', e);
         }
+        // 게스트 API 키는 영구 localStorage 대신 세션 저장소에만 보관합니다.
+        // (평문 키가 디스크에 오래 남지 않도록 탭 세션 범위로 제한)
+        try {
+            const sessionKey = sessionStorage.getItem('graphA_ai_key');
+            if (sessionKey) {
+                config.apiKey = sessionKey;
+            }
+        } catch (e) {
+            // 세션 저장소 미지원 환경(예: 테스트 러너)은 무시합니다.
+        }
         return config;
     }
 
     save() {
         try {
-            const { proxyToken, proxyTokenExpiresAt, ...persistedConfig } = this;
+            // apiKey는 localStorage에 저장하지 않습니다(아래에서 sessionStorage로 분리 저장).
+            const { proxyToken, proxyTokenExpiresAt, apiKey, ...persistedConfig } = this;
             localStorage.setItem('graphA_ai_config', JSON.stringify(persistedConfig));
         } catch (e) {
             console.warn('AI 설정 저장 실패:', e);
+        }
+        try {
+            if (this.apiKey) {
+                sessionStorage.setItem('graphA_ai_key', this.apiKey);
+            } else {
+                sessionStorage.removeItem('graphA_ai_key');
+            }
+        } catch (e) {
+            // 세션 저장소 미지원 환경은 무시합니다.
         }
     }
 }
@@ -625,6 +648,32 @@ export class AIService {
                 'Authorization': `Bearer ${this.config.apiKey}`
             }
         };
+    }
+
+    /**
+     * API 오류 응답에서 사람이 읽을 수 있는 메시지를 추출합니다.
+     * OpenAI 직접 호출은 { error: { message } }, 오너 프록시는 { error: "문자열" } 형태로
+     * 서로 다르게 반환하므로 두 형태를 모두 지원하고, JSON이 아니어도 안전하게 폴백합니다.
+     */
+    async extractApiErrorMessage(response, fallbackMessage) {
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch {
+            payload = null;
+        }
+
+        const rawError = payload?.error;
+        const detail = typeof rawError === 'string'
+            ? rawError
+            : (rawError?.message || (typeof payload?.message === 'string' ? payload.message : ''));
+        const base = detail || fallbackMessage;
+
+        // 401은 오너 토큰 만료가 가장 흔한 원인이므로 재로그인 안내를 덧붙입니다.
+        if (response.status === 401) {
+            return `${base} (로그인이 만료되었을 수 있습니다. 다시 로그인해주세요.)`;
+        }
+        return base;
     }
 
     /**
@@ -730,7 +779,17 @@ export class AIService {
             }
         } catch (error) {
             console.error('AI 처리 오류:', error);
-            return this.buildFallbackCommandResult(normalizedMessage, context, commandMode);
+            // 결정적 폴백이 요청을 그릴 수 있으면 그대로 사용하고,
+            // 그리지 못하면 일반 문구 대신 실제 API 오류(만료/키 오류 등)를 노출합니다.
+            const fallback = this.buildFallbackCommandResult(normalizedMessage, context, commandMode);
+            if (fallback?.success) {
+                return fallback;
+            }
+            return {
+                success: false,
+                error: error?.message || fallback?.error || 'AI 요청 처리 중 오류가 발생했습니다.',
+                mode: commandMode
+            };
         }
     }
 
@@ -1250,8 +1309,7 @@ export class AIService {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || 'OpenAI Responses API 오류');
+            throw new Error(await this.extractApiErrorMessage(response, 'OpenAI Responses API 오류'));
         }
 
         const data = await response.json();
@@ -1264,16 +1322,34 @@ export class AIService {
     }
 
     buildOpenAIRequestBody(messages, overrides = {}) {
-        // 시스템 프롬프트와 사용자 메시지 분리
+        // 시스템 메시지는 하나의 developer 지시로 합칩니다.
         const systemContent = messages
             .filter(m => m.role === 'system')
             .map(m => m.content)
             .join('\n\n');
 
-        const userContent = messages
-            .filter(m => m.role === 'user')
-            .map(m => m.content)
-            .join('\n\n');
+        // 시스템을 제외한 user/assistant 대화 턴은 순서를 유지해 멀티턴 맥락을 보존합니다.
+        // (기존 구현은 user만 이어붙이고 assistant 응답을 버려 후속 참조가 약했습니다.)
+        // buildMessages가 최근 히스토리 끝에 현재 user를 포함한 뒤 다시 현재 user를 덧붙이므로
+        // 내용이 같은 인접 중복 턴은 하나로 접습니다.
+        const conversation = [];
+        for (const message of messages) {
+            if (message.role !== 'user' && message.role !== 'assistant') {
+                continue;
+            }
+            const role = message.role;
+            const content = message.content;
+            const last = conversation[conversation.length - 1];
+            if (last && last.role === role && last.content === content) {
+                continue;
+            }
+            conversation.push({ role, content });
+        }
+
+        // Responses API 입력에는 최소 한 개의 user 턴이 필요합니다.
+        if (!conversation.some(item => item.role === 'user')) {
+            conversation.push({ role: 'user', content: '' });
+        }
 
         // 이전 응답 ID (대화 연속성을 위해)
         const previousResponseId = Object.prototype.hasOwnProperty.call(overrides, 'previousResponseId')
@@ -1282,7 +1358,7 @@ export class AIService {
 
         return this.buildOpenAIRequestBodyFromInput([
             { role: 'developer', content: systemContent },
-            { role: 'user', content: userContent }
+            ...conversation
         ], {
             previousResponseId,
             reasoningEffort: overrides.reasoningEffort,
@@ -1347,30 +1423,43 @@ export class AIService {
     async callGemini(messages) {
         this.lastRequestModel = this.config.model;
 
-        // Gemini 형식으로 변환
-        const parts = messages.map(m => ({
-            role: m.role === 'assistant' ? 'model' : m.role,
-            parts: [{ text: m.content }]
-        }));
+        // Gemini contents는 user/model role만 허용합니다. system은 systemInstruction으로 분리하고
+        // 나머지 대화만 contents로 변환합니다.
+        const systemText = messages
+            .filter(m => m.role === 'system')
+            .map(m => m.content)
+            .join('\n\n');
+        const contents = messages
+            .filter(m => m.role === 'user' || m.role === 'assistant')
+            .map(m => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.content }]
+            }));
+
+        const requestBody = {
+            contents,
+            generationConfig: {
+                temperature: this.config.temperature ?? 0.2,
+                maxOutputTokens: this.config.maxTokens ?? 2048,
+                // 구조화된 JSON 출력을 유도합니다.
+                responseMimeType: 'application/json'
+            }
+        };
+        if (systemText) {
+            requestBody.systemInstruction = { parts: [{ text: systemText }] };
+        }
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: parts,
-                    generationConfig: {
-                        temperature: this.config.temperature,
-                        maxOutputTokens: this.config.maxTokens
-                    }
-                })
+                body: JSON.stringify(requestBody)
             }
         );
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || 'Gemini API 오류');
+            throw new Error(await this.extractApiErrorMessage(response, 'Gemini API 오류'));
         }
 
         const data = await response.json();
@@ -2676,8 +2765,7 @@ export class AIService {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || 'OpenAI Vision API 오류');
+            throw new Error(await this.extractApiErrorMessage(response, 'OpenAI Vision API 오류'));
         }
 
         const data = await response.json();
@@ -2804,8 +2892,7 @@ export class AIService {
                 );
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error?.message || 'Gemini Vision API 오류');
+                    throw new Error(await this.extractApiErrorMessage(response, 'Gemini Vision API 오류'));
                 }
 
                 const data = await response.json();
