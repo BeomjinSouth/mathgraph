@@ -2,6 +2,8 @@
  * PatchApplier.js - AI patch application helper (Mk.2)
  */
 
+import { remapObjectReferences } from '../utils/ObjectReferences.js';
+
 export class PatchResult {
     constructor(success, message = '', createdObjects = []) {
         this.success = success;
@@ -423,37 +425,7 @@ export class PatchApplier {
     }
 
     resolveReferences(op, idMap) {
-        const resolved = { ...op };
-
-        const refFields = [
-            'point1Id', 'point2Id', 'point3Id', 'centerId', 'pointOnCircleId',
-            'originId', 'directionPointId', 'lineId', 'circleId', 'segmentId',
-            'circle1Id', 'circle2Id',
-            'object1Id', 'object2Id', 'baseLineId', 'throughPointId',
-            'startPointId', 'endPointId', 'functionId', 'vertexId',
-            'line1Id', 'line2Id', 'segment1Id', 'segment2Id',
-            'tangentPointId', 'apexId'
-        ];
-
-        for (const field of refFields) {
-            if (resolved[field] && idMap.has(resolved[field])) {
-                resolved[field] = idMap.get(resolved[field]);
-            }
-        }
-
-        if (resolved.baseVertexIds && Array.isArray(resolved.baseVertexIds)) {
-            resolved.baseVertexIds = resolved.baseVertexIds.map(id => idMap.get(id) || id);
-        }
-
-        if (resolved.topVertexIds && Array.isArray(resolved.topVertexIds)) {
-            resolved.topVertexIds = resolved.topVertexIds.map(id => idMap.get(id) || id);
-        }
-
-        if (resolved.vertexIds && Array.isArray(resolved.vertexIds)) {
-            resolved.vertexIds = resolved.vertexIds.map(id => idMap.get(id) || id);
-        }
-
-        return resolved;
+        return remapObjectReferences(op, idMap);
     }
 
     createRollbackSnapshot() {

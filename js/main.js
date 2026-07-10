@@ -64,6 +64,7 @@ import {
 } from './utils/ExportArea.js';
 import { getScaledAxisArrowStyle } from './utils/AxisArrowStyle.js';
 import { escapeHtml } from './utils/Html.js';
+import { remapObjectReferences } from './utils/ObjectReferences.js';
 
 /**
  * 그래프A 애플리케이션
@@ -1079,7 +1080,7 @@ class GraphAApp {
 
         // 각 객체를 새로 생성
         for (const objData of this.clipboard) {
-            const newData = { ...objData };
+            let newData = { ...objData };
 
             // 새 ID 생성
             const newId = 'paste_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -1097,33 +1098,7 @@ class GraphAApp {
                 newData.y += offset;
             }
 
-            // 의존성 ID 업데이트
-            if (newData.dependencies) {
-                newData.dependencies = newData.dependencies.map(depId =>
-                    idMap.get(depId) || depId
-                );
-            }
-
-            // 참조 ID들 업데이트
-            const refFields = ['point1Id', 'point2Id', 'point3Id', 'centerId', 'pointOnCircleId',
-                'originId', 'directionPointId', 'lineId', 'circleId', 'segmentId',
-                'object1Id', 'object2Id', 'baseLineId', 'throughPointId',
-                'startPointId', 'endPointId', 'functionId', 'vertexId',
-                'line1Id', 'line2Id', 'segment1Id', 'segment2Id'];
-
-            for (const field of refFields) {
-                if (newData[field] && idMap.has(newData[field])) {
-                    newData[field] = idMap.get(newData[field]);
-                }
-            }
-
-            // baseVertexIds 배열 처리
-            if (newData.baseVertexIds) {
-                newData.baseVertexIds = newData.baseVertexIds.map(id => idMap.get(id) || id);
-            }
-            if (newData.apexId && idMap.has(newData.apexId)) {
-                newData.apexId = idMap.get(newData.apexId);
-            }
+            newData = remapObjectReferences(newData, idMap);
 
             // 객체 생성
             const newObj = this.objectManager.createFromJSON(newData);
