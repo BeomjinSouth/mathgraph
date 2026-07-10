@@ -150,7 +150,10 @@ export class PatchApplier {
                     resolvedOp.object1Id,
                     resolvedOp.object2Id,
                     null,
-                    commonParams
+                    {
+                        ...commonParams,
+                        ...(resolvedOp.branch !== undefined ? { branch: resolvedOp.branch } : {})
+                    }
                 );
                 break;
 
@@ -418,6 +421,11 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'height', op.height);
         this.applyPropertyUpdate(object, 'ellipseRatio', op.ellipseRatio);
         this.applyPropertyUpdate(object, 'showHiddenLines', op.showHiddenLines);
+        this.applyPropertyUpdate(object, 'xMin', op.xMin);
+        this.applyPropertyUpdate(object, 'xMax', op.xMax);
+        this.applyPropertyUpdate(object, 'yMin', op.yMin);
+        this.applyPropertyUpdate(object, 'yMax', op.yMax);
+        this.applyPropertyUpdate(object, 'branch', op.branch);
 
         if (op.labelOffset !== undefined && 'labelOffset' in object) {
             this.recordPropertyChange(object, 'labelOffset', object.labelOffset, op.labelOffset);
@@ -582,7 +590,11 @@ export class PatchApplier {
             'fillColor',
             'fillOpacity',
             'showLabel',
-            'locked'
+            'locked',
+            'xMin',
+            'xMax',
+            'yMin',
+            'yMax'
         ];
 
         for (const field of supportedFields) {

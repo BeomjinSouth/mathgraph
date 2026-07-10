@@ -345,6 +345,10 @@ export class SceneGraphCompiler {
                 this.addRelationObject(relation, 'intersection', {
                     object1Id: ['object1Id', 'object1', 'line1', 'curve1'],
                     object2Id: ['object2Id', 'object2', 'line2', 'curve2']
+                }, {
+                    ...(Number.isInteger(numberFrom(relation.branch))
+                        ? { branch: numberFrom(relation.branch) }
+                        : {})
                 });
                 break;
             case 'midpoint':
@@ -619,6 +623,10 @@ export class SceneGraphCompiler {
             id,
             type: 'function',
             expression,
+            ...(Number.isFinite(numberFrom(node.xMin)) ? { xMin: numberFrom(node.xMin) } : {}),
+            ...(Number.isFinite(numberFrom(node.xMax)) ? { xMax: numberFrom(node.xMax) } : {}),
+            ...(Number.isFinite(numberFrom(node.yMin)) ? { yMin: numberFrom(node.yMin) } : {}),
+            ...(Number.isFinite(numberFrom(node.yMax)) ? { yMax: numberFrom(node.yMax) } : {}),
             ...commonFields(node)
         });
         this.createdIds.add(id);

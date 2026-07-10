@@ -227,6 +227,11 @@ const operationProperties = {
     height: NULLABLE_NUMBER,
     ellipseRatio: NULLABLE_NUMBER,
     showHiddenLines: NULLABLE_BOOLEAN,
+    xMin: NULLABLE_NUMBER,
+    xMax: NULLABLE_NUMBER,
+    yMin: NULLABLE_NUMBER,
+    yMax: NULLABLE_NUMBER,
+    branch: NULLABLE_NUMBER,
     point1Id: NULLABLE_STRING,
     point2Id: NULLABLE_STRING,
     point3Id: NULLABLE_STRING,
@@ -398,6 +403,8 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
    - For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.
    - For cylinders, cones, and spheres, use the first-class cylinder/cone/sphere objects with x, y, width, and height. Hidden curved edges are rendered automatically.
    - Use textLabel with text, x, and y for standalone conditions, annotations, and formulas that are not attached to another object.
+   - Function objects may use xMin, xMax, yMin, and yMax to clip the graph to the requested domain and range.
+   - For two-valued intersections, set branch to 0 or 1 so the requested crossing is deterministic.
    - For nested solids, keep inner vertices inside the outer projection and separate multiple inner solids so they do not overlap visually.
    - For standalone textbook arrows or direction arrows, create a vector with hidden helper endpoint points. Do not invent an unsupported arrow type.
    - Hide helper points with visible:false when they only shape a region.
@@ -431,6 +438,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - tangentCircle: circleId, tangentPointId
 - tangentFunction: functionId, x
 - function: expression (예: "x^2 - 2*x + 1")
+- function optional ranges: xMin, xMax, yMin, yMax
 - function expression is the right-hand side only. Never include "y=".
 - vector: startPointId, endPointId. Use vector for standalone arrows and direction arrows.
 - rightAngleMarker: vertexId, line1Id, line2Id
@@ -445,6 +453,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - numberLine: start, end, step, y
 - cylinder, cone, sphere: x, y, width, height (optional ellipseRatio, showHiddenLines)
 - textLabel: text, x, y (optional align, fontSize)
+- intersection optional branch: 0 or 1
 
 ### 선택적 공통 속성
 - label: 객체 이름

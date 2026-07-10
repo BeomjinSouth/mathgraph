@@ -253,6 +253,23 @@ export class SchemaValidator {
             errors.push(`${prefix}: align must be left, center, or right.`);
         }
 
+        const rangeFields = ['xMin', 'xMax', 'yMin', 'yMax'];
+        for (const field of rangeFields) {
+            if (op[field] !== undefined && op[field] !== null && !Number.isFinite(op[field])) {
+                errors.push(`${prefix}: ${field} must be a finite number or null.`);
+            }
+        }
+        if (Number.isFinite(op.xMin) && Number.isFinite(op.xMax) && op.xMin >= op.xMax) {
+            errors.push(`${prefix}: xMin must be less than xMax.`);
+        }
+        if (Number.isFinite(op.yMin) && Number.isFinite(op.yMax) && op.yMin >= op.yMax) {
+            errors.push(`${prefix}: yMin must be less than yMax.`);
+        }
+        if (op.branch !== undefined && op.branch !== null &&
+            (!Number.isInteger(op.branch) || op.branch < 0 || op.branch > 1)) {
+            errors.push(`${prefix}: intersection branch must be 0 or 1.`);
+        }
+
         if (op.type === 'pointOnCircle') {
             if (op.t !== undefined) {
                 errors.push(`${prefix}: pointOnCircle uses "angle" in radians; "t" is ignored at runtime and can collapse arcs/sectors.`);
