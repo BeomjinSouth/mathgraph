@@ -380,14 +380,20 @@ Commit: `git commit -m "Constrain and time-bound the OpenAI proxy"` with only Ta
 
 - [ ] **Step 1: Write failing table-driven tests**
 
-Cover these exact fields:
+Cover the complete runtime reference contract:
 
 ```js
-const SINGLE_REFERENCE_FIELDS = ['circle1Id', 'circle2Id', 'tangentPointId'];
+const SINGLE_REFERENCE_FIELDS = [
+    'point1Id', 'point2Id', 'point3Id', 'centerId', 'pointOnCircleId',
+    'originId', 'directionPointId', 'lineId', 'circleId', 'segmentId',
+    'circle1Id', 'circle2Id', 'object1Id', 'object2Id', 'baseLineId',
+    'throughPointId', 'startPointId', 'endPointId', 'functionId', 'vertexId',
+    'line1Id', 'line2Id', 'segment1Id', 'segment2Id', 'tangentPointId', 'apexId'
+];
 const ARRAY_REFERENCE_FIELDS = ['dependencies', 'vertexIds', 'baseVertexIds', 'topVertexIds', 'boundaryObjectIds'];
 ```
 
-Assert every `old-*` value becomes `new-*`, unknown external IDs remain unchanged, and the source arrays are not mutated. Add integration cases for polygon, lens, prism, tangent circle, and closed region serialized data.
+Assert every `old-*` value becomes `new-*`, unknown external IDs remain unchanged, and the source object/arrays are not mutated. Add paste integration cases for polygon, lens, prism, tangent circle, and closed region serialized data.
 
 - [ ] **Step 2: Run and verify RED**
 
@@ -416,7 +422,7 @@ Replace both duplicated mapping blocks with this helper.
 
 - [ ] **Step 4: Verify independence and undo/redo GREEN**
 
-Run focused tests. The integration test must move an original point after paste and prove the pasted polygon coordinates do not change, then undo once and redo once and recheck remapped IDs.
+Run focused tests. For all five composite families, move an original dependency after paste and prove the pasted object remains bound only to its copied dependency, then undo once and redo once and recheck every remapped ID.
 
 - [ ] **Step 5: Commit**
 
