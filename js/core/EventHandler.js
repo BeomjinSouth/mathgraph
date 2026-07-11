@@ -11,6 +11,9 @@
 
 import { Vec2 } from '../utils/Geometry.js';
 
+// 터치/펜 탭 이후 브라우저가 합성하는 유령 마우스 이벤트를 억제하는 시간 창(ms).
+const GHOST_MOUSE_SUPPRESS_MS = 700;
+
 export class EventHandler {
     constructor(app) {
         this.app = app;
@@ -26,6 +29,10 @@ export class EventHandler {
 
         // 터치/펜 브리지 상태: 활성 포인터가 있으면 호환 마우스 이벤트를 무시한다.
         this.activePointerId = null;
+        // 터치/펜 포인터가 끝난 직후 브라우저가 합성하는 "유령" 마우스 이벤트를 억제하기 위한 시각.
+        this.lastBridgedPointerTime = 0;
+        // 테스트에서 시계를 주입할 수 있도록 분리한다.
+        this.getNow = () => Date.now();
 
         // Mk.2: 스페이스바 패닝 상태
         this.spaceKeyDown = false;
@@ -76,11 +83,20 @@ export class EventHandler {
     }
 
     /**
-     * 활성 터치/펜 포인터가 있는 동안 브라우저가 합성하는 호환 마우스 이벤트인지 판단합니다.
-     * 실제 브리지 호출은 포인터 이벤트 자신을 그대로 전달하므로 pointerId가 일치합니다.
+     * 브라우저가 합성한 호환/유령 마우스 이벤트인지 판단합니다.
+     * 1) 활성 터치/펜 포인터가 있는 동안 도착한 다른 pointerId(=합성) 이벤트.
+     * 2) 포인터가 끝난 직후 짧은 창 안에서 도착한, pointerId 없는 순수 마우스 이벤트(탭 후 유령 클릭).
+     * 실제 브리지 호출은 포인터 이벤트 자신을 전달하므로 pointerId가 있어 걸러지지 않습니다.
      */
     isCompatibilityMouseEvent(event) {
-        return this.activePointerId !== null && event.pointerId !== this.activePointerId;
+        if (this.activePointerId !== null && event.pointerId !== this.activePointerId) {
+            return true;
+        }
+        if (event.pointerId === undefined &&
+            (this.getNow() - this.lastBridgedPointerTime) < GHOST_MOUSE_SUPPRESS_MS) {
+            return true;
+        }
+        return false;
     }
 
     isBridgedPointer(event) {
@@ -107,6 +123,7 @@ export class EventHandler {
 
         event.preventDefault();
         this.activePointerId = event.pointerId;
+        this.lastBridgedPointerTime = this.getNow();
 
         try {
             this.canvasElement.setPointerCapture?.(event.pointerId);
@@ -124,6 +141,7 @@ export class EventHandler {
         if (event.pointerId !== this.activePointerId) {
             return;
         }
+        this.lastBridgedPointerTime = this.getNow();
 
         const rect = this.canvasElement.getBoundingClientRect();
         const isInsideCanvas = (
@@ -146,6 +164,8 @@ export class EventHandler {
             return;
         }
 
+        // pointerup 직후 유령 마우스 이벤트가 도착하므로, 억제 창의 기준 시각을 여기서 갱신한다.
+        this.lastBridgedPointerTime = this.getNow();
         this.activePointerId = null;
         this.releasePointerCaptureSafely(event.pointerId);
         this.onDocumentMouseUp(event);
@@ -176,6 +196,8 @@ export class EventHandler {
             this.app.toolManager?.getCurrentTool()?.cancel?.(this.app);
         } finally {
             const pointerId = this.activePointerId;
+            // 취소 후에도 유령 마우스 이벤트가 이어질 수 있으므로 억제 기준 시각을 갱신한다.
+            this.lastBridgedPointerTime = this.getNow();
             this.activePointerId = null;
             this.isPanning = false;
             this.dragStartPos = null;

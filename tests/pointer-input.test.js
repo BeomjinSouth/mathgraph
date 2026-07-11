@@ -103,6 +103,9 @@ function createPointerHarness() {
     };
 
     const handler = new EventHandler(app);
+    // 유령(호환) 마우스 억제 창을 결정론적으로 검증하기 위해 시계를 주입한다.
+    const clock = { now: 100000 };
+    handler.getNow = () => clock.now;
 
     const dispatch = (listeners, type, event) => {
         for (const registered of listeners.get(type) || []) {
@@ -120,6 +123,8 @@ function createPointerHarness() {
         canvasElement,
         captures,
         released,
+        clock,
+        advanceClock: ms => { clock.now += ms; },
         dispatchCanvas: (type, event) => dispatch(canvasListeners, type, event),
         dispatchDocument: (type, event) => dispatch(documentListeners, type, event),
         restore() {
@@ -183,9 +188,51 @@ test('primary touch registers once and compatibility mouse events are ignored du
         assert.equal(harness.calls.up.length, 1);
         assert.equal(harness.handler.activePointerId, null);
 
-        // 포인터가 끝난 뒤에는 일반 마우스 경로가 다시 동작해야 한다.
+        // 포인터가 끝난 직후의 마우스 이벤트는 유령 이벤트일 수 있어 억제 창 안에서는 무시된다.
         harness.dispatchCanvas('mousemove', mouseEvent({ clientX: 170, clientY: 170 }));
+        assert.equal(harness.calls.move.length, 1);
+
+        // 억제 창이 지나면 일반 마우스 경로가 다시 동작해야 한다.
+        harness.advanceClock(800);
+        harness.dispatchCanvas('mousemove', mouseEvent({ clientX: 190, clientY: 190 }));
         assert.equal(harness.calls.move.length, 2);
+    } finally {
+        harness.restore();
+    }
+});
+
+test('ghost compatibility mouse events after a touch tap do not double-fire the tool', () => {
+    const harness = createPointerHarness();
+    try {
+        // 실제 태블릿 탭: pointerdown → pointerup 후 브라우저가 mousedown/mouseup/click을 합성한다.
+        harness.dispatchCanvas('pointerdown', pointerEvent());
+        harness.dispatchDocument('pointerup', pointerEvent());
+        assert.equal(harness.calls.down.length, 1, 'tap creates exactly one tool down');
+        assert.equal(harness.handler.activePointerId, null);
+        const downAfterTap = harness.calls.down.length;
+        const upAfterTap = harness.calls.up.length;
+
+        // 곧바로 도착하는 유령 마우스 시퀀스는 아무 것도 추가로 실행하면 안 된다(두 번째 점 생성 방지).
+        harness.dispatchCanvas('mousedown', mouseEvent());
+        harness.dispatchDocument('mouseup', mouseEvent());
+        assert.equal(harness.calls.down.length, downAfterTap, 'ghost mousedown must not create a second down');
+        assert.equal(harness.calls.up.length, upAfterTap, 'ghost mouseup must not add a second tool completion');
+    } finally {
+        harness.restore();
+    }
+});
+
+test('a real mouse click well after a touch is not suppressed', () => {
+    const harness = createPointerHarness();
+    try {
+        harness.dispatchCanvas('pointerdown', pointerEvent());
+        harness.dispatchDocument('pointerup', pointerEvent());
+        assert.equal(harness.calls.down.length, 1);
+
+        // 억제 창을 넘긴 뒤의 실제 마우스 클릭은 정상 처리된다.
+        harness.advanceClock(1000);
+        harness.dispatchCanvas('mousedown', mouseEvent());
+        assert.equal(harness.calls.down.length, 2);
     } finally {
         harness.restore();
     }
