@@ -4,12 +4,31 @@ import test from 'node:test';
 import { ObjectManager } from '../js/core/ObjectManager.js';
 import { HistoryManager } from '../js/core/HistoryManager.js';
 import { PatchApplier } from '../js/ai/PatchApplier.js';
+import { CommandPalette } from '../js/ui/CommandPalette.js';
+import { AlgebraInput } from '../js/ui/AlgebraInput.js';
 
 function createStack() {
     const objectManager = new ObjectManager();
     const historyManager = new HistoryManager(objectManager);
     const patchApplier = new PatchApplier(objectManager, historyManager);
     return { objectManager, historyManager, patchApplier };
+}
+
+// CommandPalette 생성자는 DOM을 만들므로, DOM 없이 대수식 실행 로직만 검증하기 위해
+// executeAlgebra를 가짜 팔레트 컨텍스트로 직접 호출한다.
+function createAlgebraStack() {
+    const { objectManager, historyManager } = createStack();
+    const app = {
+        algebraInput: new AlgebraInput(objectManager),
+        objectManager,
+        historyManager,
+        render() {},
+        updateSidebar() {},
+        showToast() {}
+    };
+    const palette = { app, close() {} };
+    const runAlgebra = expression => CommandPalette.prototype.executeAlgebra.call(palette, expression);
+    return { objectManager, historyManager, runAlgebra };
 }
 
 // PatchApplier는 임시 id(A/B/C/tri)를 실제 생성 id(obj_...)로 매핑하므로
@@ -90,6 +109,61 @@ test('a batch can mix create and delete and still undo/redo as one step', () => 
     historyManager.redo();
     assert.equal(objectManager.getObject(polygonId), undefined);
     assert.ok(objectManager.getObject(createdPointId));
+});
+
+test('point algebra creation records exactly one create action', () => {
+    const { objectManager, historyManager, runAlgebra } = createAlgebraStack();
+
+    runAlgebra('A=(2,0)');
+
+    assert.equal(objectManager.getAllObjects().length, 1);
+    assert.equal(historyManager.undoStack.length, 1);
+    assert.equal(historyManager.undoStack[0].type, 'create');
+
+    historyManager.undo();
+    assert.equal(objectManager.getAllObjects().length, 0);
+});
+
+test('function algebra creation records exactly one create action', () => {
+    const { objectManager, historyManager, runAlgebra } = createAlgebraStack();
+
+    runAlgebra('y=x^2');
+
+    assert.equal(objectManager.getAllObjects().length, 1);
+    assert.equal(historyManager.undoStack.length, 1);
+    assert.equal(historyManager.undoStack[0].type, 'create');
+
+    historyManager.undo();
+    assert.equal(objectManager.getAllObjects().length, 0);
+});
+
+test('circle algebra creation is one atomic batch of helper points and circle', () => {
+    const { objectManager, historyManager, runAlgebra } = createAlgebraStack();
+
+    runAlgebra('(x-2)^2+(y-3)^2=25');
+
+    assert.equal(objectManager.getAllObjects().length, 3, 'center + rim point + circle');
+    assert.equal(historyManager.undoStack.length, 1, 'must be a single undo step');
+    assert.equal(historyManager.undoStack[0].type, 'batch');
+    assert.equal(historyManager.undoStack[0].actions.length, 3);
+
+    historyManager.undo();
+    assert.equal(objectManager.getAllObjects().length, 0);
+
+    historyManager.redo();
+    assert.equal(objectManager.getAllObjects().length, 3);
+    assert.equal(objectManager.getObjectsByType('circle').length, 1);
+});
+
+test('failed algebra parse leaves history and transaction state untouched', () => {
+    const { objectManager, historyManager, runAlgebra } = createAlgebraStack();
+
+    runAlgebra('@@nonsense@@');
+
+    assert.equal(objectManager.getAllObjects().length, 0);
+    assert.equal(historyManager.undoStack.length, 0);
+    assert.equal(historyManager.transactionDepth, 0);
+    assert.equal(historyManager.transactionBuffer, null);
 });
 
 test('a single-operation patch records a plain action, not a batch wrapper', () => {

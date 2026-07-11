@@ -65,6 +65,7 @@ import {
 import { getScaledAxisArrowStyle } from './utils/AxisArrowStyle.js';
 import { escapeHtml } from './utils/Html.js';
 import { remapObjectReferences } from './utils/ObjectReferences.js';
+import { applyRecordedPropertyChange } from './utils/HistoryEdits.js';
 import {
     createAnimationFrameCoalescer,
     isCompactViewport,
@@ -1323,6 +1324,22 @@ class GraphAApp {
     }
 
     /**
+     * 속성 편집을 히스토리 기록과 함께 적용합니다.
+     * 슬라이더/색상 피커처럼 input으로 라이브 반영된 편집은 oldValue로 시작값을 넘겨
+     * 종료 시점에 한 번만 기록합니다.
+     */
+    recordObjectPropertyEdit(obj, property, newValue, { oldValue, apply } = {}) {
+        return applyRecordedPropertyChange({
+            object: obj,
+            property,
+            newValue,
+            oldValue,
+            historyManager: this.historyManager,
+            apply
+        });
+    }
+
+    /**
      * 개별 속성 UI 업데이트 (간소화 버전)
      */
     updateIndividualProperties(selected) {
@@ -1364,7 +1381,7 @@ class GraphAApp {
             nameInput.addEventListener('mousedown', e => e.stopPropagation());
             nameInput.addEventListener('click', e => e.stopPropagation());
             nameInput.addEventListener('change', (e) => {
-                obj.label = e.target.value;
+                this.recordObjectPropertyEdit(obj, 'label', e.target.value);
                 this.updateSidebar(); // 목록 이름 업데이트
                 this.render();
             });
@@ -1380,17 +1397,29 @@ class GraphAApp {
             const colorInput = colorRow.querySelector('input');
             colorInput.addEventListener('mousedown', e => e.stopPropagation());
             colorInput.addEventListener('click', e => e.stopPropagation());
+            // 피커 드래그 동안은 라이브 반영만 하고, 닫힐 때(change) 시작값 대비 한 번만 기록한다.
+            let colorEditStart;
             colorInput.addEventListener('input', (e) => {
+                if (colorEditStart === undefined) colorEditStart = obj.color;
                 obj.color = e.target.value;
                 this.render();
                 this.updateSidebar(); // 목록 아이콘 색상 업데이트
             });
+            colorInput.addEventListener('change', (e) => {
+                const startColor = colorEditStart !== undefined ? colorEditStart : obj.color;
+                colorEditStart = undefined;
+                this.recordObjectPropertyEdit(obj, 'color', e.target.value, { oldValue: startColor });
+                this.render();
+                this.updateSidebar();
+            });
             container.appendChild(colorRow);
 
             if (this.isPointLikeObject(obj)) {
+                let pointSizeEditStart;
                 const pointSizeControl = this.createPointSizeControl({
                     value: obj.pointSize,
                     onInput: (size) => {
+                        if (pointSizeEditStart === undefined) pointSizeEditStart = obj.pointSize;
                         obj.pointSize = size;
                         const bodyToggle = container.querySelector('.point-body-toggle');
                         if (bodyToggle) {
@@ -1399,6 +1428,11 @@ class GraphAApp {
                         this.render();
                         this.updateSidebar();
                     }
+                });
+                pointSizeControl.input.addEventListener('change', () => {
+                    const startSize = pointSizeEditStart !== undefined ? pointSizeEditStart : obj.pointSize;
+                    pointSizeEditStart = undefined;
+                    this.recordObjectPropertyEdit(obj, 'pointSize', obj.pointSize, { oldValue: startSize });
                 });
                 container.appendChild(pointSizeControl.row);
 
@@ -1413,7 +1447,10 @@ class GraphAApp {
                 bodyInput.addEventListener('mousedown', e => e.stopPropagation());
                 bodyInput.addEventListener('click', e => e.stopPropagation());
                 bodyInput.addEventListener('change', (e) => {
-                    obj.pointSize = e.target.checked ? this.settingsManager.normalizePointSize(this.settingsManager.defaultStyles.pointSize) : 0;
+                    const nextSize = e.target.checked
+                        ? this.settingsManager.normalizePointSize(this.settingsManager.defaultStyles.pointSize)
+                        : 0;
+                    this.recordObjectPropertyEdit(obj, 'pointSize', nextSize);
                     pointSizeControl.setValue(obj.pointSize);
                     this.render();
                     this.updateSidebar();
@@ -1434,11 +1471,18 @@ class GraphAApp {
                 const widthDisplay = widthRow.querySelector('span');
                 widthInput.addEventListener('mousedown', e => e.stopPropagation());
                 widthInput.addEventListener('click', e => e.stopPropagation());
+                let lineWidthEditStart;
                 widthInput.addEventListener('input', (e) => {
+                    if (lineWidthEditStart === undefined) lineWidthEditStart = obj.lineWidth || 2;
                     const width = parseInt(e.target.value);
                     obj.lineWidth = width;
                     widthDisplay.textContent = width;
                     this.render();
+                });
+                widthInput.addEventListener('change', () => {
+                    const startWidth = lineWidthEditStart !== undefined ? lineWidthEditStart : (obj.lineWidth || 2);
+                    lineWidthEditStart = undefined;
+                    this.recordObjectPropertyEdit(obj, 'lineWidth', obj.lineWidth, { oldValue: startWidth });
                 });
                 container.appendChild(widthRow);
             }
@@ -1459,8 +1503,21 @@ class GraphAApp {
                         const val = parseFloat(e.target.value);
                         if (!isNaN(val)) {
                             const type = e.target.dataset.coord;
-                            if (type === 'x') obj.position.x = val;
-                            if (type === 'y') obj.position.y = val;
+                            const nextPos = {
+                                x: type === 'x' ? val : obj.position.x,
+                                y: type === 'y' ? val : obj.position.y
+                            };
+                            this.recordObjectPropertyEdit(obj, 'position', nextPos, {
+                                oldValue: { x: obj.position.x, y: obj.position.y },
+                                apply: (target, value) => {
+                                    if (typeof target.setPosition === 'function') {
+                                        target.setPosition(value.x, value.y);
+                                    } else {
+                                        target.position.x = value.x;
+                                        target.position.y = value.y;
+                                    }
+                                }
+                            });
                             this.objectManager.updateAll();
                             this.render();
                         }
@@ -1485,7 +1542,9 @@ class GraphAApp {
                 exprInput.addEventListener('change', (e) => {
                     const newExpr = e.target.value.trim();
                     if (newExpr) {
-                        obj.setExpression(newExpr);
+                        this.recordObjectPropertyEdit(obj, 'expression', newExpr, {
+                            apply: (target, value) => target.setExpression(value)
+                        });
                         if (obj.valid) {
                             this.showToast('함수 식이 업데이트됨', 'success');
                         } else {
@@ -1588,10 +1647,19 @@ class GraphAApp {
                 const customInput = customRow.querySelector('input');
                 customInput.addEventListener('mousedown', e => e.stopPropagation());
                 customInput.addEventListener('click', e => e.stopPropagation());
+                let customTextEditStart;
                 customInput.addEventListener('input', (e) => {
+                    if (customTextEditStart === undefined) customTextEditStart = obj.customText ?? null;
                     // 빈 값이면 자동 표시로 복귀
                     const v = e.target.value.trim();
                     obj.customText = v.length === 0 ? null : v;
+                    this.render();
+                });
+                customInput.addEventListener('change', (e) => {
+                    const startText = customTextEditStart !== undefined ? customTextEditStart : (obj.customText ?? null);
+                    customTextEditStart = undefined;
+                    const v = e.target.value.trim();
+                    this.recordObjectPropertyEdit(obj, 'customText', v.length === 0 ? null : v, { oldValue: startText });
                     this.render();
                 });
                 container.appendChild(customRow);
@@ -1609,11 +1677,18 @@ class GraphAApp {
                 const fontDisplay = fontRow.querySelector('span');
                 fontInput.addEventListener('mousedown', e => e.stopPropagation());
                 fontInput.addEventListener('click', e => e.stopPropagation());
+                let fontSizeEditStart;
                 fontInput.addEventListener('input', (e) => {
+                    if (fontSizeEditStart === undefined) fontSizeEditStart = obj.labelFontSize || 14;
                     const v = parseInt(e.target.value);
                     obj.labelFontSize = v;
                     fontDisplay.textContent = v;
                     this.render();
+                });
+                fontInput.addEventListener('change', () => {
+                    const startSize = fontSizeEditStart !== undefined ? fontSizeEditStart : (obj.labelFontSize || 14);
+                    fontSizeEditStart = undefined;
+                    this.recordObjectPropertyEdit(obj, 'labelFontSize', obj.labelFontSize, { oldValue: startSize });
                 });
                 container.appendChild(fontRow);
 
@@ -1636,7 +1711,7 @@ class GraphAApp {
                 precisionSelect.addEventListener('mousedown', e => e.stopPropagation());
                 precisionSelect.addEventListener('click', e => e.stopPropagation());
                 precisionSelect.addEventListener('change', (e) => {
-                    obj.precision = parseInt(e.target.value);
+                    this.recordObjectPropertyEdit(obj, 'precision', parseInt(e.target.value));
                     this.render();
                 });
                 container.appendChild(precisionRow);
@@ -1805,7 +1880,7 @@ class GraphAApp {
     updateFunctionRangeValue(obj, key, input) {
         const rawValue = input.value.trim();
         if (rawValue === '') {
-            obj[key] = null;
+            this.recordObjectPropertyEdit(obj, key, null);
             this.render();
             return;
         }
@@ -1817,7 +1892,7 @@ class GraphAApp {
             return;
         }
 
-        obj[key] = value;
+        this.recordObjectPropertyEdit(obj, key, value);
         this.render();
     }
 

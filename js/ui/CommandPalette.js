@@ -332,12 +332,40 @@ export class CommandPalette {
      */
     executeAlgebra(expression) {
         if (this.app.algebraInput) {
-            const result = this.app.algebraInput.parse(expression);
+            // 대수식 하나가 여러 객체(예: 원 = 중심점+원둘레점+원)를 만들 수 있으므로
+            // 파싱 전 객체 목록을 기억했다가 생성분 전체를 하나의 undo 단위로 기록한다.
+            const objectManager = this.app.objectManager;
+            const historyManager = this.app.historyManager;
+            const beforeIds = objectManager
+                ? new Set(objectManager.getAllObjects().map(obj => obj.id))
+                : null;
+
+            historyManager?.beginTransaction?.();
+
+            let result;
+            try {
+                result = this.app.algebraInput.parse(expression);
+            } catch (error) {
+                historyManager?.abortTransaction?.();
+                this.app.showToast(error?.message || '대수식 처리 중 오류가 발생했습니다.', 'error');
+                this.close();
+                return;
+            }
+
             if (result.success) {
+                if (beforeIds && historyManager) {
+                    for (const obj of objectManager.getAllObjects()) {
+                        if (!beforeIds.has(obj.id)) {
+                            historyManager.recordCreate(obj);
+                        }
+                    }
+                }
+                historyManager?.commitTransaction?.();
                 this.app.render();
                 this.app.updateSidebar();
                 this.app.showToast(result.message, 'success');
             } else {
+                historyManager?.abortTransaction?.();
                 this.app.showToast(result.message, 'error');
             }
         } else {

@@ -197,35 +197,58 @@ export class HistoryManager {
         return true;
     }
 
+    /**
+     * 드래그 히스토리에 저장할 "권위 있는" 상태를 고릅니다.
+     * 제약점(선 위의 점 t, 원 위의 점 angle)과 수직선(y)은 파생 좌표(position)가 아니라
+     * 원본 파라미터를 저장해야 undo 후 update()가 올바른 위치를 재계산합니다.
+     * 치수(dimension)의 angle은 표시용 파생 상태이므로 타입으로 구분해 제외합니다.
+     */
     getObjectState(obj) {
+        if (obj.type === 'pointOnObject' && obj.t !== undefined) {
+            return { t: obj.t };
+        }
+        if (obj.type === 'pointOnObject' && obj.angle !== undefined) {
+            return { angle: obj.angle };
+        }
+        if (obj.type === 'numberLine' && obj.y !== undefined) {
+            return { y: obj.y };
+        }
         if (obj.position) {
             return { x: obj.position.x, y: obj.position.y };
         }
-        if (obj.t !== undefined) {
-            return { t: obj.t };
-        }
-        if (obj.angle !== undefined) {
-            return { angle: obj.angle };
-        }
-        if (obj.x !== undefined) {
-            return { x: obj.x };
+        if (obj.x !== undefined || obj.y !== undefined) {
+            return { x: obj.x, y: obj.y };
         }
         return {};
     }
 
     restoreObjectState(obj, state) {
-        if (obj.position && state.x !== undefined) {
-            obj.position.x = state.x;
-            obj.position.y = state.y;
-        }
-        if (obj.t !== undefined && state.t !== undefined) {
+        if (obj.type === 'pointOnObject' && state.t !== undefined) {
             obj.t = state.t;
+            return;
         }
-        if (obj.angle !== undefined && state.angle !== undefined) {
+        if (obj.type === 'pointOnObject' && state.angle !== undefined) {
             obj.angle = state.angle;
+            return;
+        }
+        if (obj.type === 'numberLine' && state.y !== undefined) {
+            obj.y = state.y;
+            return;
+        }
+        if (obj.position && state.x !== undefined) {
+            if (typeof obj.setPosition === 'function') {
+                obj.setPosition(state.x, state.y);
+            } else {
+                obj.position.x = state.x;
+                obj.position.y = state.y;
+            }
+            return;
         }
         if (obj.x !== undefined && state.x !== undefined) {
             obj.x = state.x;
+        }
+        if (obj.y !== undefined && state.y !== undefined) {
+            obj.y = state.y;
         }
     }
 
@@ -374,6 +397,19 @@ export class HistoryManager {
     }
 
     setPropertyValue(target, propertyPath, value) {
+        // 위치/수식은 런타임 상태(Vec2, 파서)를 재구축하는 세터를 통해 복원해야 한다.
+        // 단순 대입은 Vec2를 평범한 객체로, 함수 파서를 낡은 상태로 남겨 이후 편집을 깨뜨린다.
+        if (propertyPath === 'position' &&
+            typeof target.setPosition === 'function' &&
+            value && value.x !== undefined && value.y !== undefined) {
+            target.setPosition(value.x, value.y);
+            return;
+        }
+        if (propertyPath === 'expression' && typeof target.setExpression === 'function') {
+            target.setExpression(value);
+            return;
+        }
+
         if (!propertyPath.includes('.')) {
             target[propertyPath] = value;
             return;
@@ -415,7 +451,9 @@ export class HistoryManager {
         return {
             undoStack: this.cloneValue(this.undoStack),
             redoStack: this.cloneValue(this.redoStack),
-            pendingAction: this.cloneValue(this.pendingAction)
+            pendingAction: this.cloneValue(this.pendingAction),
+            transactionDepth: this.transactionDepth,
+            transactionBuffer: this.cloneValue(this.transactionBuffer)
         };
     }
 
@@ -425,6 +463,10 @@ export class HistoryManager {
         this.undoStack = this.cloneValue(snapshot.undoStack || []);
         this.redoStack = this.cloneValue(snapshot.redoStack || []);
         this.pendingAction = this.cloneValue(snapshot.pendingAction || null);
+        this.transactionDepth = Number.isInteger(snapshot.transactionDepth)
+            ? snapshot.transactionDepth
+            : 0;
+        this.transactionBuffer = this.cloneValue(snapshot.transactionBuffer ?? null);
 
         this.emit('historyChanged', {
             canUndo: this.canUndo(),
