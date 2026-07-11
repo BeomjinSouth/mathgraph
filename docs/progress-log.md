@@ -2660,3 +2660,12 @@
 - Production still runs the pre-hardening June build (name-only login, unconstrained proxy). Push + env check (`MATHGRAPH_OWNER_PASSWORD`) + `npx vercel deploy --prod --yes` remain as Task 8.
 - Multi-select bulk point-size edits and specialized composite/label/dimension drag adapters are not yet history-recorded (documented follow-up, matches plan scope).
 - The Task 4 target design sheet PNG (image-generation step) was skipped; the implemented layout was verified against the plan's acceptance criteria directly.
+
+## 2026-07-11 Task 8 gate, push, and deploy blocker
+
+- Final local gate: 276/276 tests via `npm test` and `npm run vercel-build`; syntax checks clean for all changed runtime/server files; `git diff --check` clean.
+- Browser QA at 390x844: full-width canvas, no horizontal overflow, exclusive drawers, chat panel inside viewport, primary touch creates exactly one point, no console errors.
+- Pushed `codex/ai-fallback-recovery` to GitHub (`0f36f53..a934e57`); branch is in sync with origin.
+- `npx vercel env ls production`: `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` present, **`MATHGRAPH_OWNER_PASSWORD` missing**.
+- Production deploy intentionally NOT run per the release plan constraint. Next action for the owner: add `MATHGRAPH_OWNER_PASSWORD` in the Vercel dashboard (or `npx vercel env add MATHGRAPH_OWNER_PASSWORD production`), then run `npx vercel deploy --prod --yes` and the production smoke checks.
+- Until deployed, production still serves the pre-hardening June build (name-only owner login, unconstrained OpenAI proxy).
