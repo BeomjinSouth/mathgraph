@@ -520,16 +520,18 @@ Commit: `git commit -m "Add canvas-first mobile editor drawers"`.
 
 **Files:**
 - Modify: `js/core/EventHandler.js`
+- Modify: `js/core/HistoryManager.js`
+- Modify: `js/tools/SelectTool.js`
 - Modify: `css/styles.css`
 - Create: `tests/pointer-input.test.js`
 
 **Interfaces:**
-- Produces: `activePointerId`, touch/pen bridge handlers, and pointer-cancel cleanup.
+- Produces: `activePointerId`, touch/pen bridge handlers, idempotent capture cleanup, and `HistoryManager.cancelPendingDrag({ restore: true })`.
 - Preserves: all existing mouse listeners and shortcuts.
 
 - [ ] **Step 1: Write failing fake-DOM pointer tests**
 
-Test that primary touch registers once, compatibility mouse is ignored during that pointer, non-primary touch is ignored, modifiers/button values reach the existing handler, and `pointercancel` clears `isDragging`, `isPanning`, `dragStartPos`, `draggedObject`, and `activePointerId`.
+Test that primary touch registers once, compatibility mouse is ignored during that pointer, non-primary touch is ignored, modifiers/button values reach the existing handler, inside/outside moves choose the same paths as mouse, and `pointercancel`/lost capture are idempotent. Cancellation must restore and clear a pending history drag, invoke the current tool's cancel path, clear SelectTool/AreaExportTool gesture state, remove pan classes, and never call normal mouse-up completion.
 
 - [ ] **Step 2: Run and verify RED**
 
@@ -539,11 +541,11 @@ Expected: FAIL because pointer listeners and state do not exist.
 
 - [ ] **Step 3: Implement the bridge**
 
-Register `pointerdown` on the canvas and `pointermove`, `pointerup`, `pointercancel` on `document`. Only handle `isPrimary && (pointerType === 'touch' || pointerType === 'pen')`; call `preventDefault()`, capture the pointer where supported, and delegate to existing mouse-path methods. Set `#mainCanvas { touch-action: none; }`.
+Register `pointerdown` on the canvas and `pointermove`, `pointerup`, `pointercancel` on `document`, plus `lostpointercapture` on the canvas. Only handle `isPrimary && (pointerType === 'touch' || pointerType === 'pen')`; call `preventDefault()`, capture the pointer where supported, and delegate to existing mouse-path methods. During an active pointer, ignore compatibility mouse events that do not carry the matching pointer ID. Route inside moves through `onMouseMove()` and outside moves through `onDocumentMouseMove()` so each move is delivered once. For cancel/lost capture, restore the history start snapshot before calling tool cancellation, then clear and release capture in an idempotent `finally` path. Enhance `SelectTool.cancel()` to end per-object drag state and clear every drag/rotation flag. Set `#mainCanvas { touch-action: none; }`.
 
 - [ ] **Step 4: Verify GREEN and browser interaction**
 
-Run focused/full tests. In the in-app Browser, dispatch one touch-like pointer to create exactly one point, drag it, cancel a second drag, and prove internal state cleanup. Recheck desktop mouse click, drag, right/middle/Alt/Space pan, wheel, and double-click.
+Run focused/full tests. In the in-app Browser, dispatch one touch-like pointer to create exactly one point, drag it, cancel a second drag, and prove the object position and pending history state roll back without completing the tool action. Recheck desktop mouse click, drag, right/middle/Alt/Space pan, wheel, and double-click.
 
 - [ ] **Step 5: Commit**
 

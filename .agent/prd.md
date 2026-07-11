@@ -50,6 +50,7 @@
 - [ ] Legacy local-storage API keys migrate to session storage and are immediately removed from persistent settings.
 - [ ] Polygon, lens, prism, tangent-circle, and closed-region copies use copied references through undo/redo.
 - [ ] A 390×844 guest workspace has a nonzero full-width canvas, usable drawers, contained chat, and primary touch/pen input.
+- [ ] A cancelled touch/pen gesture rolls back pending drag state and never completes an export or leaves a tool/history action open.
 - [ ] Desktop mouse, pan, wheel, double-click, and panel behavior remain intact.
 - [ ] Common property, algebra-create (including circle helper objects), constrained-point, and number-line changes have correct undo/redo without replacing runtime vector/parser state with plain data.
 - [ ] Full tests, real Vercel build gate, browser QA, documentation, commit, push, and deployment outcome are recorded.

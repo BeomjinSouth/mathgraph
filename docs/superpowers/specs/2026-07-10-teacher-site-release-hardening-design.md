@@ -87,7 +87,8 @@ At viewports up to 900px:
 - Size each drawer to `min(320px, calc(100vw - 48px))`.
 - Keep the canvas container at the full available width and clamp the chat panel inside the viewport.
 - Observe canvas-container size changes and coalesce `canvas.resize()` plus render calls with `requestAnimationFrame`.
-- Preserve the existing mouse event path. Bridge only primary touch/pen pointer events into it, ignore compatibility mouse duplication, use `touch-action: none`, and clear state on `pointercancel`.
+- Preserve the existing mouse event path. Bridge only primary touch/pen pointer events into it, ignore compatibility mouse duplication, and use `touch-action: none`.
+- On `pointercancel` or lost capture, roll back any pending history drag, invoke the active tool's cancellation path, release capture best-effort, and clear both input-layer and tool-layer gesture state without committing an export or selection action.
 - Exclude pinch zoom and multi-touch gestures.
 
 Desktop at 1280×720 retains two 320px side panels and the existing mouse, wheel, double-click, right/middle-click, Alt, and Space interactions.
