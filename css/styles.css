@@ -3117,3 +3117,61 @@ body.auth-locked .modal:not(#manualModal) {
 .command-icon .material-symbols-outlined {
     font-size: 20px;
 }
+
+/* Canvas-first compact drawers */
+@media (max-width: 900px) {
+    #main-content {
+        position: relative;
+        min-width: 0;
+    }
+
+    #canvas-container {
+        flex: 1 1 100%;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #tool-panel,
+    #property-panel {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        z-index: 240;
+        width: min(320px, calc(100vw - 48px));
+        max-width: calc(100vw - 48px);
+        height: auto;
+        transform: translateX(0);
+        transition: transform var(--transition-normal);
+    }
+
+    #tool-panel {
+        left: 0;
+    }
+
+    #property-panel {
+        right: 0;
+    }
+
+    #tool-panel.collapsed {
+        width: min(320px, calc(100vw - 48px));
+        max-width: calc(100vw - 48px);
+        transform: translateX(-100%);
+    }
+
+    #property-panel.collapsed {
+        width: min(320px, calc(100vw - 48px));
+        max-width: calc(100vw - 48px);
+        transform: translateX(100%);
+    }
+
+    .sidebar-toggles {
+        z-index: 260;
+    }
+
+    #chat-panel {
+        right: 8px;
+        width: min(var(--chat-width), calc(100vw - 16px));
+        max-width: calc(100vw - 16px);
+    }
+}

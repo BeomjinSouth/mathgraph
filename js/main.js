@@ -65,6 +65,11 @@ import {
 import { getScaledAxisArrowStyle } from './utils/AxisArrowStyle.js';
 import { escapeHtml } from './utils/Html.js';
 import { remapObjectReferences } from './utils/ObjectReferences.js';
+import {
+    createAnimationFrameCoalescer,
+    isCompactViewport,
+    nextCompactPanelState
+} from './utils/ResponsiveLayout.js';
 
 /**
  * 그래프A 애플리케이션
@@ -103,6 +108,7 @@ class GraphAApp {
 
         this.setupTools();
         this.setupUI();
+        this.setupResponsiveLayout();
         this.setupEventListeners();
 
         // 초기 렌더링
@@ -594,28 +600,12 @@ class GraphAApp {
 
         // 좌측 패널 토글
         document.getElementById('toggleLeftSidebar')?.addEventListener('click', () => {
-            const panel = document.getElementById('tool-panel');
-            if (panel) {
-                panel.classList.toggle('collapsed');
-                const btn = document.getElementById('toggleLeftSidebar');
-                const icon = btn?.querySelector('.material-symbols-outlined');
-                if (icon) {
-                    setGeneratedIcon(icon, panel.classList.contains('collapsed') ? 'left_panel_open' : 'left_panel_close');
-                }
-            }
+            this.toggleToolPanel();
         });
 
         // 우측 패널 토글
         document.getElementById('toggleRightSidebar')?.addEventListener('click', () => {
-            const panel = document.getElementById('property-panel');
-            if (panel) {
-                panel.classList.toggle('collapsed');
-                const btn = document.getElementById('toggleRightSidebar');
-                const icon = btn?.querySelector('.material-symbols-outlined');
-                if (icon) {
-                    setGeneratedIcon(icon, panel.classList.contains('collapsed') ? 'right_panel_open' : 'right_panel_close');
-                }
-            }
+            this.togglePropertyPanel();
         });
 
         // 참고
@@ -957,6 +947,134 @@ class GraphAApp {
             };
             syncOpacity();
             opacityInput.addEventListener('input', syncOpacity);
+        }
+    }
+
+    readPanelOpenState() {
+        return {
+            toolOpen: !document.getElementById('tool-panel')?.classList.contains('collapsed'),
+            propertyOpen: !document.getElementById('property-panel')?.classList.contains('collapsed')
+        };
+    }
+
+    applyPanelOpenState(state) {
+        const nextState = {
+            toolOpen: Boolean(state?.toolOpen),
+            propertyOpen: Boolean(state?.propertyOpen)
+        };
+        const toolPanel = document.getElementById('tool-panel');
+        const propertyPanel = document.getElementById('property-panel');
+        const leftToggle = document.getElementById('toggleLeftSidebar');
+        const rightToggle = document.getElementById('toggleRightSidebar');
+
+        toolPanel?.classList.toggle('collapsed', !nextState.toolOpen);
+        propertyPanel?.classList.toggle('collapsed', !nextState.propertyOpen);
+        leftToggle?.setAttribute('aria-expanded', String(nextState.toolOpen));
+        rightToggle?.setAttribute('aria-expanded', String(nextState.propertyOpen));
+
+        const leftIcon = leftToggle?.querySelector('.material-symbols-outlined');
+        const rightIcon = rightToggle?.querySelector('.material-symbols-outlined');
+        if (leftIcon) {
+            setGeneratedIcon(leftIcon, nextState.toolOpen ? 'left_panel_close' : 'left_panel_open');
+        }
+        if (rightIcon) {
+            setGeneratedIcon(rightIcon, nextState.propertyOpen ? 'right_panel_close' : 'right_panel_open');
+        }
+
+        this.scheduleCanvasResize?.();
+    }
+
+    toggleToolPanel() {
+        if (this.isCompactLayout) {
+            this.compactPanelState = nextCompactPanelState(this.compactPanelState, 'toggleTool');
+            this.applyPanelOpenState(this.compactPanelState);
+            return;
+        }
+
+        const current = this.readPanelOpenState();
+        this.desktopPanelState = { ...current, toolOpen: !current.toolOpen };
+        this.applyPanelOpenState(this.desktopPanelState);
+    }
+
+    togglePropertyPanel() {
+        if (this.isCompactLayout) {
+            this.compactPanelState = nextCompactPanelState(this.compactPanelState, 'toggleProperty');
+            this.applyPanelOpenState(this.compactPanelState);
+            return;
+        }
+
+        const current = this.readPanelOpenState();
+        this.desktopPanelState = { ...current, propertyOpen: !current.propertyOpen };
+        this.applyPanelOpenState(this.desktopPanelState);
+    }
+
+    syncViewportMode() {
+        if (typeof this.isCompactLayout !== 'boolean') return;
+        const matches = this.compactMediaQuery
+            ? Boolean(this.compactMediaQuery.matches)
+            : isCompactViewport(window.innerWidth);
+        if (matches !== this.isCompactLayout) {
+            this.handleCompactViewportChange?.({ matches });
+        }
+    }
+
+    setupResponsiveLayout() {
+        const toolPanel = document.getElementById('tool-panel');
+        const propertyPanel = document.getElementById('property-panel');
+        const canvasContainer = document.getElementById('canvas-container');
+        if (!toolPanel || !propertyPanel || !canvasContainer) return;
+
+        this.desktopPanelState = this.readPanelOpenState();
+        this.compactPanelState = { toolOpen: false, propertyOpen: false };
+
+        const requestFrame = typeof window.requestAnimationFrame === 'function'
+            ? window.requestAnimationFrame.bind(window)
+            : callback => setTimeout(callback, 0);
+        this.scheduleCanvasResize = createAnimationFrameCoalescer(() => {
+            this.canvas.resize();
+            this.render();
+        }, requestFrame);
+
+        if (typeof ResizeObserver === 'function') {
+            this.canvasResizeObserver = new ResizeObserver(() => {
+                // 일부 임베디드 환경은 matchMedia change 이벤트를 전달하지 않으므로
+                // 컨테이너 크기가 바뀔 때마다 현재 뷰포트 모드를 동기적으로 재확인한다.
+                this.syncViewportMode();
+                this.scheduleCanvasResize();
+            });
+            this.canvasResizeObserver.observe(canvasContainer);
+        }
+
+        const applyViewportMode = compact => {
+            const wasCompact = this.isCompactLayout;
+            if (compact && wasCompact !== true) {
+                this.desktopPanelState = this.readPanelOpenState();
+                this.compactPanelState = { toolOpen: false, propertyOpen: false };
+            }
+
+            this.isCompactLayout = compact;
+            this.applyPanelOpenState(compact ? this.compactPanelState : this.desktopPanelState);
+        };
+
+        this.compactMediaQuery = typeof window.matchMedia === 'function'
+            ? window.matchMedia('(max-width: 900px)')
+            : null;
+        const initialCompact = this.compactMediaQuery
+            ? this.compactMediaQuery.matches
+            : isCompactViewport(window.innerWidth);
+        applyViewportMode(initialCompact);
+
+        this.handleCompactViewportChange = event => applyViewportMode(Boolean(event.matches));
+        if (typeof this.compactMediaQuery?.addEventListener === 'function') {
+            this.compactMediaQuery.addEventListener('change', this.handleCompactViewportChange);
+        } else if (typeof this.compactMediaQuery?.addListener === 'function') {
+            this.compactMediaQuery.addListener(this.handleCompactViewportChange);
+        }
+
+        // matchMedia change가 오지 않는 환경까지 대비한 추가 안전망.
+        if (typeof window.addEventListener === 'function') {
+            this.handleWindowResize = () => this.syncViewportMode();
+            window.addEventListener('resize', this.handleWindowResize);
         }
     }
 
