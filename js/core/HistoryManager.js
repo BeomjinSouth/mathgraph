@@ -173,6 +173,30 @@ export class HistoryManager {
         this.pendingAction = null;
     }
 
+    /**
+     * 보류 중인 드래그를 기록 없이 종료합니다.
+     * restore가 true면 드래그 시작 시점 상태로 객체를 되돌립니다. (포인터 취소 등에서 사용)
+     */
+    cancelPendingDrag({ restore = true } = {}) {
+        const pending = this.pendingAction;
+        if (!pending || pending.type !== 'drag') {
+            return false;
+        }
+
+        if (restore) {
+            for (const data of pending.objectsData) {
+                const obj = this.objectManager.getObject(data.id);
+                if (obj) {
+                    this.restoreObjectState(obj, data.startState);
+                }
+            }
+            this.objectManager.updateAll();
+        }
+
+        this.pendingAction = null;
+        return true;
+    }
+
     getObjectState(obj) {
         if (obj.position) {
             return { x: obj.position.x, y: obj.position.y };

@@ -820,17 +820,33 @@ export class SelectTool extends Tool {
 
     cancel(app) {
         super.cancel(app);
+
+        // 진행 중이던 객체별 드래그 상태를 먼저 종료한다. (히스토리 기록 없이)
+        for (const obj of this.draggedObjects) {
+            obj.endDrag?.();
+        }
+
         this.isDragging = false;
         this.isRotating = false;
         this.isBoxSelecting = false;
         this.isShiftDragging = false;
+        this.isMultiDrag = false;
+        this.multiDragStart = null;
+        this.dragStartPositions = null;
         this.draggedObjects = [];
         this.boxStart = null;
         this.boxEnd = null;
         this.rotationObject = null;
         this.rotationCenter = null;
         this.rotationStartAngle = null;
+        this.clickStartPos = null;
+        this.clickStartMathPos = null;
+        this.clickStartTime = null;
+        this.emptySpaceClick = false;
         app.objectManager.clearSelection();
+        if (app.canvasElement?.style) {
+            app.canvasElement.style.cursor = 'default';
+        }
         app.render();
     }
 }

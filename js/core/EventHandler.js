@@ -24,6 +24,9 @@ export class EventHandler {
         this.lastMousePos = null;
         this.draggedObject = null;
 
+        // 터치/펜 브리지 상태: 활성 포인터가 있으면 호환 마우스 이벤트를 무시한다.
+        this.activePointerId = null;
+
         // Mk.2: 스페이스바 패닝 상태
         this.spaceKeyDown = false;
         this.panStartScreenPos = null;
@@ -46,6 +49,13 @@ export class EventHandler {
         document.addEventListener('mousemove', this.onDocumentMouseMove.bind(this));
         document.addEventListener('mouseup', this.onDocumentMouseUp.bind(this));
 
+        // 터치/펜 포인터 이벤트 (기존 마우스 경로로 중계)
+        this.canvasElement.addEventListener('pointerdown', this.onPointerDown.bind(this));
+        document.addEventListener('pointermove', this.onPointerMove.bind(this));
+        document.addEventListener('pointerup', this.onPointerUp.bind(this));
+        document.addEventListener('pointercancel', this.onPointerCancel.bind(this));
+        this.canvasElement.addEventListener('lostpointercapture', this.onLostPointerCapture.bind(this));
+
         // 컨텍스트 메뉴 방지
         this.canvasElement.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -66,9 +76,125 @@ export class EventHandler {
     }
 
     /**
+     * 활성 터치/펜 포인터가 있는 동안 브라우저가 합성하는 호환 마우스 이벤트인지 판단합니다.
+     * 실제 브리지 호출은 포인터 이벤트 자신을 그대로 전달하므로 pointerId가 일치합니다.
+     */
+    isCompatibilityMouseEvent(event) {
+        return this.activePointerId !== null && event.pointerId !== this.activePointerId;
+    }
+
+    isBridgedPointer(event) {
+        return event.isPrimary === true &&
+            (event.pointerType === 'touch' || event.pointerType === 'pen');
+    }
+
+    releasePointerCaptureSafely(pointerId) {
+        if (pointerId === null || pointerId === undefined) return;
+        try {
+            this.canvasElement.releasePointerCapture?.(pointerId);
+        } catch {
+            // 이미 해제된 캡처는 무시한다.
+        }
+    }
+
+    /**
+     * 터치/펜 포인터 다운 - 기존 마우스 다운 경로로 중계합니다.
+     */
+    onPointerDown(event) {
+        if (!this.isBridgedPointer(event) || this.activePointerId !== null) {
+            return;
+        }
+
+        event.preventDefault();
+        this.activePointerId = event.pointerId;
+
+        try {
+            this.canvasElement.setPointerCapture?.(event.pointerId);
+        } catch {
+            // 캡처가 지원되지 않아도 document 레벨 핸들러로 계속 추적한다.
+        }
+
+        this.onMouseDown(event);
+    }
+
+    /**
+     * 터치/펜 포인터 이동 - 캔버스 안팎에 따라 기존 이동 경로 하나로만 전달합니다.
+     */
+    onPointerMove(event) {
+        if (event.pointerId !== this.activePointerId) {
+            return;
+        }
+
+        const rect = this.canvasElement.getBoundingClientRect();
+        const isInsideCanvas = (
+            event.clientX >= rect.left && event.clientX <= rect.right &&
+            event.clientY >= rect.top && event.clientY <= rect.bottom
+        );
+
+        if (isInsideCanvas) {
+            this.onMouseMove(event);
+        } else {
+            this.onDocumentMouseMove(event);
+        }
+    }
+
+    /**
+     * 터치/펜 포인터 업 - 기존 마우스 업 경로로 종료를 중계합니다.
+     */
+    onPointerUp(event) {
+        if (event.pointerId !== this.activePointerId) {
+            return;
+        }
+
+        this.activePointerId = null;
+        this.releasePointerCaptureSafely(event.pointerId);
+        this.onDocumentMouseUp(event);
+    }
+
+    onPointerCancel(event) {
+        if (event.pointerId !== this.activePointerId) {
+            return;
+        }
+        this.cancelActivePointer();
+    }
+
+    onLostPointerCapture(event) {
+        if (event.pointerId !== this.activePointerId) {
+            return;
+        }
+        this.cancelActivePointer();
+    }
+
+    /**
+     * 포인터 취소/캡처 소실 처리.
+     * 보류 중인 드래그 히스토리를 시작 상태로 되돌린 뒤 도구 취소 경로를 부르고,
+     * 입력 계층 제스처 상태를 마우스 업 완료 경로 없이 정리합니다. 중복 호출에도 안전합니다.
+     */
+    cancelActivePointer() {
+        try {
+            this.app.historyManager?.cancelPendingDrag?.({ restore: true });
+            this.app.toolManager?.getCurrentTool()?.cancel?.(this.app);
+        } finally {
+            const pointerId = this.activePointerId;
+            this.activePointerId = null;
+            this.isPanning = false;
+            this.dragStartPos = null;
+            this.panStartScreenPos = null;
+            this.canvasElement.classList.remove('panning');
+            if (!this.spaceKeyDown) {
+                this.canvasElement.classList.remove('pan-ready');
+            }
+            this.releasePointerCaptureSafely(pointerId);
+            this.app.render?.();
+        }
+    }
+
+    /**
      * 마우스 다운
      */
     onMouseDown(event) {
+        if (this.isCompatibilityMouseEvent(event)) return;
+
         const screenPos = this.getMousePos(event);
         const mathPos = this.canvas.toMath(screenPos);
 
@@ -121,6 +247,8 @@ export class EventHandler {
      * 마우스 이동
      */
     onMouseMove(event) {
+        if (this.isCompatibilityMouseEvent(event)) return;
+
         const screenPos = this.getMousePos(event);
         const mathPos = this.canvas.toMath(screenPos);
 
@@ -152,6 +280,8 @@ export class EventHandler {
      * Document 레벨 마우스 이동 (캔버스 밖에서도 드래그 지원)
      */
     onDocumentMouseMove(event) {
+        if (this.isCompatibilityMouseEvent(event)) return;
+
         // 캔버스 내부면 기존 핸들러가 처리
         const rect = this.canvasElement.getBoundingClientRect();
         const isInsideCanvas = (
@@ -199,6 +329,8 @@ export class EventHandler {
      * Document 레벨 마우스 업 (캔버스 밖에서도 드래그 종료 지원)
      */
     onDocumentMouseUp(event) {
+        if (this.isCompatibilityMouseEvent(event)) return;
+
         // 캔버스 드래그 중이었다면 종료 처리
         if (this.dragStartPos) {
             const rect = this.canvasElement.getBoundingClientRect();
