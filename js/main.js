@@ -200,6 +200,16 @@ class GraphAApp {
             && Boolean(this.aiService.config.proxyToken);
     }
 
+    /**
+     * 로그아웃 - 세션(오너 토큰 포함)을 지우고 로그인 랜딩으로 돌아갑니다.
+     * applyAuthSession(null)이 sessionStorage 세션 제거와 프록시 토큰 초기화까지 수행합니다.
+     */
+    logout() {
+        this.applyAuthSession(null);
+        this.setAuthMessage('', 'info');
+        this.showToast('로그아웃되었습니다.', 'info');
+    }
+
     syncAuthModeUI() {
         const landing = document.getElementById('authLanding');
         const badge = document.getElementById('authModeBadge');
@@ -514,6 +524,20 @@ class GraphAApp {
         document.getElementById('redoBtn')?.addEventListener('click', () => {
             this.historyManager.redo();
             this.render();
+        });
+
+        // 저장/불러오기 (명령 팔레트 외에 툴바에서도 접근 가능하도록)
+        document.getElementById('saveSceneBtn')?.addEventListener('click', () => {
+            this.saveToLocal();
+        });
+
+        document.getElementById('loadSceneBtn')?.addEventListener('click', () => {
+            this.loadFromLocal();
+        });
+
+        // 로그아웃 (공용 PC에서 오너 세션이 남지 않도록)
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            this.logout();
         });
 
         // 줌 컨트롤

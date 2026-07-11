@@ -37,6 +37,20 @@ const ICONS = {
         <path ${STROKE} d="M9 19.5H4.5V15"/>
         <path ${STROKE_SOFT} d="M8 8h8v8H8Z"/>
     `),
+    save: icon(`
+        <path ${STROKE} d="M4.8 4.2h10.7l3.7 3.7v11.9H4.8V4.2Z"/>
+        <path ${STROKE_THIN} d="M8.2 4.2v4.6h6.4V4.2"/>
+        <path ${STROKE_THIN} d="M8.2 19.8v-5.4h7.6v5.4"/>
+    `),
+    folder_open: icon(`
+        <path ${STROKE} d="M3.8 19V5.4h5.4l1.9 2.1h9.1V19H3.8Z"/>
+        <path ${STROKE_SOFT} d="M3.8 10.3h16.4"/>
+    `),
+    logout: icon(`
+        <path ${STROKE} d="M14.4 4.4H5v15.2h9.4"/>
+        <path ${STROKE} d="M10.8 12h9.4"/>
+        <path ${STROKE} d="m17 8.6 3.2 3.4L17 15.4"/>
+    `),
     fiber_manual_record: icon(`
         <circle cx="12" cy="12" r="4.6" ${FILL}/>
         <circle cx="12" cy="12" r="7.6" ${STROKE_SOFT}/>
