@@ -549,7 +549,7 @@ Run focused/full tests. In the in-app Browser, dispatch one touch-like pointer t
 
 Commit: `git commit -m "Support primary touch and pen drawing"`.
 
-### Task 6: Complete Undo Consistency
+### Task 6: Close Priority Undo Consistency Gaps
 
 **Files:**
 - Modify: `js/core/HistoryManager.js`
@@ -561,7 +561,7 @@ Commit: `git commit -m "Support primary touch and pen drawing"`.
 - Create: `tests/history-edits.test.js`
 
 **Interfaces:**
-- Produces: authoritative drag state for `t`, `angle`, and number-line `y`; transaction snapshot fields; `applyRecordedPropertyChange(...)`.
+- Produces: authoritative drag state for point-on-line `t`, point-on-circle `angle`, and number-line `y`; complete transaction snapshots; invariant-safe property restoration; `applyRecordedPropertyChange(...)`.
 
 - [ ] **Step 1: Write failing history-state tests**
 
@@ -571,7 +571,9 @@ Cover:
 - point-on-circle angle round trip;
 - number-line `y` drag round trip;
 - snapshot/restore of `transactionDepth` and `transactionBuffer`;
-- algebra creation produces one create action.
+- point/function algebra creation produces one create action;
+- circle algebra creation produces one atomic batch containing both helper points and the circle;
+- point coordinate undo preserves its `Vec2`/`setPosition()` behavior and function-expression undo rebuilds parser state through `setExpression()`.
 
 - [ ] **Step 2: Run and verify RED**
 
@@ -583,8 +585,8 @@ Use this ordering:
 
 ```js
 getObjectState(obj) {
-    if (obj.t !== undefined) return { t: obj.t };
-    if (obj.angle !== undefined) return { angle: obj.angle };
+    if (obj.type === 'pointOnLine' && obj.t !== undefined) return { t: obj.t };
+    if (obj.type === 'pointOnCircle' && obj.angle !== undefined) return { angle: obj.angle };
     if (obj.type === 'numberLine' && obj.y !== undefined) return { y: obj.y };
     if (obj.position) return { x: obj.position.x, y: obj.position.y };
     if (obj.x !== undefined || obj.y !== undefined) return { x: obj.x, y: obj.y };
@@ -592,17 +594,17 @@ getObjectState(obj) {
 }
 ```
 
-Restore the matching fields and call `objectManager.updateAll()`. Include transaction depth/buffer in snapshot and restore.
+Restore the matching fields and call `objectManager.updateAll()`. Include transaction depth/buffer in snapshot and restore. Do not treat every object with an `angle` property as a constrained point because dimensions use angle-like display state for different behavior.
 
 - [ ] **Step 4: Implement recorded property edits**
 
-`applyRecordedPropertyChange()` clones old/new values, skips equality, applies the value, and calls `historyManager.recordPropertyChange(object.id, property, oldValue, newValue)`. Route property-panel label, color, point size, line width, coordinates, function expression/ranges, and dimension text/format controls through it. Capture continuous range/color edits at focus/start and record once on change/end.
+`applyRecordedPropertyChange()` clones old/new values, skips equality, applies through an optional invariant-safe setter, and calls `historyManager.recordPropertyChange(object.id, property, oldValue, newValue)`. Route property-panel label, color, point size, line width, coordinates, function expression/ranges, and dimension text/format controls through it. Capture continuous range/color edits at focus/start and record once on change/end. In `HistoryManager.setPropertyValue()`, route position restoration through `setPosition()` and expression restoration through `setExpression()` instead of replacing runtime `Vec2` or parser state with plain values.
 
-In `CommandPalette.executeAlgebra()`, record every successfully created object with `historyManager.recordCreate(object)`.
+In `CommandPalette.executeAlgebra()`, capture object IDs before parsing, begin a transaction, then record every object added by a successful parse. Commit the delta so point/function creation stays one action and circle creation (center, radius point, circle) is one atomic batch; abort the transaction on failure.
 
 - [ ] **Step 5: Verify GREEN and browser undo flows**
 
-Run focused/full tests. Browser-check label edit, color edit, function expression edit, algebra creation, constrained-point drag, number-line drag, AI batch, and paste batch, each with one undo/redo cycle.
+Run focused/full tests. Browser-check label edit, color edit, coordinate edit, function expression edit, point/function/circle algebra creation, constrained-point drag, number-line drag, AI batch, and paste batch, each with one undo/redo cycle. Record specialized composite/label/dimension drag adapters not covered by the named release paths as explicit follow-up rather than claiming universal undo coverage.
 
 - [ ] **Step 6: Commit**
 

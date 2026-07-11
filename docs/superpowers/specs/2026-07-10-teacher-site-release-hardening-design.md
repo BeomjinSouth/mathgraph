@@ -96,10 +96,12 @@ Desktop at 1280×720 retains two 320px side panels and the existing mouse, wheel
 
 - Preserve the new history transaction API for AI patches and paste batches.
 - Record property-panel label, color, size, width, coordinates, and function-expression changes with old/new values.
-- Record command-palette algebra creation as a create action.
+- Record command-palette algebra creation from the full before/after object delta so a circle and its helper points undo atomically.
 - Capture constrained-point state using its authoritative parameter (`t` or `angle`) rather than only derived position.
 - Capture number-line vertical position and transaction state in snapshots used for rollback.
+- Restore point coordinates through `setPosition()` and function expressions through `setExpression()` so undo preserves runtime object invariants.
 - Keep every direct user edit as one understandable undo step; do not combine unrelated edits.
+- This release closes the named teacher-edit gaps; specialized drag-state adapters outside those paths remain a documented follow-up rather than an unverified claim of universal undo coverage.
 
 ## Build and Documentation Design
 
