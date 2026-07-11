@@ -2669,3 +2669,15 @@
 - `npx vercel env ls production`: `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` present, **`MATHGRAPH_OWNER_PASSWORD` missing**.
 - Production deploy intentionally NOT run per the release plan constraint. Next action for the owner: add `MATHGRAPH_OWNER_PASSWORD` in the Vercel dashboard (or `npx vercel env add MATHGRAPH_OWNER_PASSWORD production`), then run `npx vercel deploy --prod --yes` and the production smoke checks.
 - Until deployed, production still serves the pre-hardening June build (name-only owner login, unconstrained OpenAI proxy).
+
+## 2026-07-11 Post-release adversarial review fixes
+
+Ran a multi-agent adversarial review of the full release diff (7caf684^..HEAD). Session limits let only the security dimension complete; I manually reviewed the input/history/regression dimensions and fixed every real defect found.
+
+- **Security (confirmed):** logout() left the guest API key in config + sessionStorage and prefilled in AI settings, exposing it to the next user on a shared PC. Added `AIService.clearCredentials()` and call it from logout() + re-sync the settings inputs. (js/ai/AIService.js, js/main.js; tests in tests/ai-flow.test.js)
+- **Command palette (minor):** clicking the algebra hint passed the lowercased filter string, so `A=(3,4)` created point `a`. Now passes the raw input, matching Enter. (js/ui/CommandPalette.js)
+- **Touch input (real, verified in browser):** after a tap, browser-synthesized compatibility mouse events (mousedown/mouseup/click) fired the active tool again because activePointerId was already cleared — every tablet tap created two points. Added a 700ms ghost-suppression window keyed on the last bridged pointer time; real mouse input outside the window is unaffected. (js/core/EventHandler.js; tests/pointer-input.test.js)
+- **Save/load (real, verified in browser):** a function with a dragged formula label, or a dimension with a moved label, serialized the label position as plain {x,y}; on load the constructor stored it verbatim so the next render/drag called .clone() on a non-Vec2 and threw. Wrap loaded label positions back into Vec2. (js/objects/Function.js, js/objects/Dimension.js; tests/label-serialization.test.js)
+- **Paste remap:** verified every serialized *Id/*Ids reference field is covered by ObjectReferences.js — no gap, no change needed.
+
+Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; browser checks confirmed guest-key wipe on logout, case-preserving algebra click, single point per tablet tap with ghost events ignored, desktop 3-click = 3 points unaffected, and function label save/load round trip without crash.
