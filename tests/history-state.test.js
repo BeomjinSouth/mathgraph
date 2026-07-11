@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { ObjectManager } from '../js/core/ObjectManager.js';
 import { HistoryManager } from '../js/core/HistoryManager.js';
+import { Vec2 } from '../js/utils/Geometry.js';
 
 function createStack() {
     const objectManager = new ObjectManager();
@@ -96,6 +97,82 @@ test('snapshot captures and restores transaction depth and buffer', () => {
 
     history.commitTransaction();
     assert.equal(history.undoStack.length, 1);
+});
+
+test('dimension label drag records labelOffset and round-trips through undo/redo', () => {
+    const { historyManager: history } = createStack();
+    const dimension = {
+        id: 'dim1',
+        type: 'lengthDimension',
+        labelOffset: new Vec2(0, 0)
+    };
+    const objects = new Map([[dimension.id, dimension]]);
+    history.objectManager = {
+        getObject: id => objects.get(id) || null,
+        updateAll() {}
+    };
+
+    history.startDrag([dimension]);
+    dimension.labelOffset.x = 12;
+    dimension.labelOffset.y = -7;
+    history.endDrag([dimension]);
+
+    assert.equal(history.undoStack.length, 1, 'dimension label drag must be recorded');
+
+    history.undo();
+    assert.equal(dimension.labelOffset.x, 0);
+    assert.equal(dimension.labelOffset.y, 0);
+    assert.equal(typeof dimension.labelOffset.clone, 'function', 'labelOffset must stay a Vec2');
+
+    history.redo();
+    assert.equal(dimension.labelOffset.x, 12);
+    assert.equal(dimension.labelOffset.y, -7);
+    assert.equal(typeof dimension.labelOffset.clone, 'function');
+});
+
+test('function label drag records the label position and round-trips through undo/redo', () => {
+    const { objectManager: om, historyManager: history } = createStack();
+    const fn = om.createFunction('y = x^2');
+
+    history.startDrag([fn]);
+    fn._labelMathPos = new Vec2(3, 4);
+    history.endDrag([fn]);
+
+    assert.equal(history.undoStack.length, 1, 'function label drag must be recorded');
+
+    history.undo();
+    assert.equal(fn._labelMathPos, null, 'undo must restore the default label position');
+
+    history.redo();
+    assert.ok(fn._labelMathPos, 'redo must restore the dragged label position');
+    assert.equal(fn._labelMathPos.x, 3);
+    assert.equal(fn._labelMathPos.y, 4);
+    assert.equal(typeof fn._labelMathPos.clone, 'function', 'label position must stay a Vec2');
+});
+
+test('bulk point-size batch undoes and redoes every object at once', () => {
+    const { objectManager: om, historyManager: history } = createStack();
+    const p1 = om.createPoint(0, 0);
+    const p2 = om.createPoint(1, 1);
+    p1.pointSize = 4;
+    p2.pointSize = 4;
+
+    history.beginTransaction();
+    history.recordPropertyChange(p1.id, 'pointSize', 4, 9);
+    history.recordPropertyChange(p2.id, 'pointSize', 4, 9);
+    history.commitTransaction();
+    p1.pointSize = 9;
+    p2.pointSize = 9;
+
+    assert.equal(history.undoStack.length, 1, 'bulk edit must be one undo step');
+
+    history.undo();
+    assert.equal(p1.pointSize, 4);
+    assert.equal(p2.pointSize, 4);
+
+    history.redo();
+    assert.equal(p1.pointSize, 9);
+    assert.equal(p2.pointSize, 9);
 });
 
 test('position undo routes through setPosition and keeps Vec2 behavior', () => {

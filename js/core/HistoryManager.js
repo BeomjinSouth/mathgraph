@@ -1,3 +1,7 @@
+import { Vec2 } from '../utils/Geometry.js';
+
+const DIMENSION_TYPES = new Set(['angleDimension', 'lengthDimension']);
+
 export class HistoryManager {
     constructor(objectManager) {
         this.objectManager = objectManager;
@@ -213,6 +217,18 @@ export class HistoryManager {
         if (obj.type === 'numberLine' && obj.y !== undefined) {
             return { y: obj.y };
         }
+        // 치수와 함수의 드래그는 라벨 위치만 움직인다. Vec2 프로토타입이 스냅샷 복제에서
+        // 유실되지 않도록 상태는 항상 평범한 값으로 저장하고 복원 시 재구성한다.
+        if (DIMENSION_TYPES.has(obj.type) && obj.labelOffset) {
+            return { labelOffset: { x: obj.labelOffset.x, y: obj.labelOffset.y } };
+        }
+        if (obj.type === 'function') {
+            return {
+                labelMathPos: obj._labelMathPos
+                    ? { x: obj._labelMathPos.x, y: obj._labelMathPos.y }
+                    : null
+            };
+        }
         if (obj.position) {
             return { x: obj.position.x, y: obj.position.y };
         }
@@ -233,6 +249,21 @@ export class HistoryManager {
         }
         if (obj.type === 'numberLine' && state.y !== undefined) {
             obj.y = state.y;
+            return;
+        }
+        if (DIMENSION_TYPES.has(obj.type) && state.labelOffset !== undefined) {
+            if (obj.labelOffset) {
+                obj.labelOffset.x = state.labelOffset.x;
+                obj.labelOffset.y = state.labelOffset.y;
+            } else {
+                obj.labelOffset = new Vec2(state.labelOffset.x, state.labelOffset.y);
+            }
+            return;
+        }
+        if (obj.type === 'function' && state.labelMathPos !== undefined) {
+            obj._labelMathPos = state.labelMathPos
+                ? new Vec2(state.labelMathPos.x, state.labelMathPos.y)
+                : null;
             return;
         }
         if (obj.position && state.x !== undefined) {

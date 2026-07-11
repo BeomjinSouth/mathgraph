@@ -1377,15 +1377,32 @@ class GraphAApp {
             const currentSize = selectedPointLikeObjects.every(obj => obj.pointSize === selectedPointLikeObjects[0].pointSize)
                 ? selectedPointLikeObjects[0].pointSize
                 : this.settingsManager.defaultStyles.pointSize;
+            // 일괄 크기 변경도 한 번의 undo 단위가 되도록 시작값을 기억했다가 종료 시 배치 기록한다.
+            let bulkSizeStart;
             const sizeControl = this.createPointSizeControl({
                 labelText: '선택 점 크기:',
                 value: currentSize,
                 noteText: `${selectedPointLikeObjects.length}개`,
                 onInput: (size) => {
+                    if (!bulkSizeStart) {
+                        bulkSizeStart = new Map(selectedPointLikeObjects.map(obj => [obj.id, obj.pointSize]));
+                    }
                     this.settingsManager.applyPointSizeToObjects(selectedPointLikeObjects, size);
                     this.render();
                     this.updateSidebar();
                 }
+            });
+            sizeControl.input.addEventListener('change', () => {
+                if (!bulkSizeStart) return;
+                this.historyManager.beginTransaction();
+                for (const obj of selectedPointLikeObjects) {
+                    const startSize = bulkSizeStart.get(obj.id);
+                    if (startSize !== obj.pointSize) {
+                        this.historyManager.recordPropertyChange(obj.id, 'pointSize', startSize, obj.pointSize);
+                    }
+                }
+                this.historyManager.commitTransaction();
+                bulkSizeStart = undefined;
             });
             container.appendChild(sizeControl.row);
         }
