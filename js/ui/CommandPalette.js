@@ -257,7 +257,9 @@ export class CommandPalette {
         this.resultList.querySelectorAll('.command-item').forEach((item, i) => {
             item.addEventListener('click', () => {
                 if (item.dataset.action === 'algebra') {
-                    this.executeAlgebra(query);
+                    // 대수식은 대소문자를 보존해야 한다(점 A vs a). 필터용 소문자 query가 아니라
+                    // 입력창 원문을 그대로 넘겨 Enter 실행과 동일하게 동작하도록 한다.
+                    this.executeAlgebra(this.input.value.trim());
                 } else {
                     this.selectedIndex = parseInt(item.dataset.index);
                     this.executeSelected();

@@ -2042,3 +2042,30 @@ function crampedTriangularPyramidInsidePrismOperations() {
         { op: 'create', id: 'pyramid1', type: 'pyramid', apexId: 'P4', baseVertexIds: ['P1', 'P2', 'P3'], showLabel: false }
     ];
 }
+
+test('clearCredentials wipes the guest API key and proxy token from config and session storage', () => {
+    withStorageEnvironment({ sessionKey: 'sk-guest-123' }, ({ sessionValues }) => {
+        const service = new AIService(new AIServiceConfig());
+        service.config.provider = 'openai';
+        service.config.authMode = 'guest';
+        service.setApiKey('sk-guest-123');
+        assert.equal(service.config.apiKey, 'sk-guest-123');
+        assert.equal(sessionValues.get('graphA_ai_key'), 'sk-guest-123');
+
+        service.clearCredentials();
+
+        assert.equal(service.config.apiKey, '', 'in-memory guest key must be cleared');
+        assert.equal(service.config.proxyToken, '', 'proxy token must be cleared');
+        assert.equal(sessionValues.has('graphA_ai_key'), false, 'session-stored guest key must be removed');
+    });
+});
+
+test('setAuthSession owner mode does not leave a stale guest key', () => {
+    withStorageEnvironment({ sessionKey: 'sk-guest-xyz' }, ({ sessionValues }) => {
+        const service = new AIService(new AIServiceConfig());
+        service.setApiKey('sk-guest-xyz');
+        service.setAuthSession({ mode: 'owner', token: 'tok', expiresAt: Date.now() + 1000 });
+        assert.equal(service.config.apiKey, '');
+        assert.equal(sessionValues.has('graphA_ai_key'), false);
+    });
+});

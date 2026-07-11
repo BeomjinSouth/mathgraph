@@ -206,6 +206,9 @@ class GraphAApp {
      */
     logout() {
         this.applyAuthSession(null);
+        // 공용 PC에서 다음 사용자에게 게스트 API 키가 노출되지 않도록 자격 증명을 지운다.
+        this.aiService.clearCredentials();
+        this.syncAISettingsControls();
         this.setAuthMessage('', 'info');
         this.showToast('로그아웃되었습니다.', 'info');
     }

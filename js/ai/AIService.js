@@ -634,6 +634,18 @@ export class AIService {
         this.config.save();
     }
 
+    /**
+     * 게스트 API 키와 오너 프록시 토큰을 모두 지웁니다.
+     * 로그아웃 시 공용 PC에 다음 사용자를 위한 자격 증명이 남지 않도록 합니다.
+     * config.save()가 sessionStorage('graphA_ai_key')에서도 키를 제거합니다.
+     */
+    clearCredentials() {
+        this.config.apiKey = '';
+        this.config.proxyToken = '';
+        this.config.proxyTokenExpiresAt = 0;
+        this.config.save();
+    }
+
     setAuthSession({ mode = 'guest', token = '', expiresAt = 0 } = {}) {
         this.config.authMode = mode === 'owner' ? 'owner' : 'guest';
         this.config.proxyToken = token || '';
