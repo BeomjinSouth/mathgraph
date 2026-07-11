@@ -31,7 +31,7 @@
 - Consumes: the current authoritative dirty worktree and the 219-test green baseline.
 - Produces: a clean, reviewable commit that subsequent red-green tasks can diff against.
 
-- [ ] **Step 1: Re-run syntax checks for the existing July runtime/server files**
+- [x] **Step 1: Re-run syntax checks for the existing July runtime/server files**
 
 Run:
 
@@ -51,13 +51,13 @@ node --check js/utils/Parser.js
 
 Expected: every command exits 0.
 
-- [ ] **Step 2: Re-run the full baseline**
+- [x] **Step 2: Re-run the full baseline**
 
 Run: `npm.cmd test` outside the sandbox when Node workers hit `spawn EPERM`.
 
 Expected: `219` passed, `0` failed.
 
-- [ ] **Step 3: Review the exact staged scope**
+- [x] **Step 3: Review the exact staged scope**
 
 Run:
 
@@ -69,7 +69,7 @@ git diff --stat
 
 Expected: no whitespace errors; only the listed July files are selected for the groundwork commit.
 
-- [ ] **Step 4: Commit the groundwork without screenshots**
+- [x] **Step 4: Commit the groundwork without screenshots**
 
 ```powershell
 git add AGENTS.md api/login.js api/openai-responses.js docs/progress-log.md index.html js/ai/AIService.js js/ai/PatchApplier.js js/core/EventHandler.js js/core/HistoryManager.js js/main.js js/ui/CommandPalette.js js/utils/Parser.js js/utils/Html.js lib/ownerAuth.js tests/ai-flow.test.js tests/function-parser.test.js tests/history-transaction.test.js tests/html-escape.test.js tests/owner-auth.test.js
@@ -91,7 +91,7 @@ git commit -m "Integrate July security and history groundwork"
 - Consumes: `escapeHtml(value)`, `checkRateLimit(key, options)`, and owner login JSON `{name,password}`.
 - Produces: `escapeRegExp(value)`, `getClientAddress(req)`, `getLoginRateOptions()`, `resetRateLimitKey(key)`, and a rate-limited login handler.
 
-- [ ] **Step 1: Write failing palette and utility tests**
+- [x] **Step 1: Write failing palette and utility tests**
 
 Add to `tests/html-escape.test.js`:
 
@@ -121,13 +121,13 @@ test('command highlighting treats regex syntax as literal text', () => {
 });
 ```
 
-- [ ] **Step 2: Run the palette tests and verify RED**
+- [x] **Step 2: Run the palette tests and verify RED**
 
 Run: `node --test tests/html-escape.test.js tests/command-palette-security.test.js`
 
 Expected: FAIL because `escapeRegExp`, `buildAlgebraHintMarkup`, and `highlightCommandMatch` do not exist.
 
-- [ ] **Step 3: Implement safe palette rendering helpers**
+- [x] **Step 3: Implement safe palette rendering helpers**
 
 Add to `js/utils/Html.js`:
 
@@ -160,7 +160,7 @@ export function highlightCommandMatch(text, query) {
 
 Route `renderResults()` and the instance `highlightMatch()` through these helpers.
 
-- [ ] **Step 4: Write failing owner-auth boundary tests**
+- [x] **Step 4: Write failing owner-auth boundary tests**
 
 Add to `tests/owner-auth.test.js`:
 
@@ -203,13 +203,13 @@ test('valid owner credentials still return a token within the attempt budget', a
 
 The helper sets `MATHGRAPH_LOGIN_SECRET`, `MATHGRAPH_OWNER_PASSWORD`, `x-forwarded-for`, and resets rate buckets between tests.
 
-- [ ] **Step 5: Run owner tests and verify RED**
+- [x] **Step 5: Run owner tests and verify RED**
 
 Run: `node --test tests/owner-auth.test.js tests/login-handler.test.js`
 
 Expected: FAIL on parsed-object size enforcement, missing bucket reset, and missing login 429 behavior.
 
-- [ ] **Step 6: Implement the owner security boundary**
+- [x] **Step 6: Implement the owner security boundary**
 
 In `lib/ownerAuth.js`:
 
@@ -239,7 +239,7 @@ export function resetRateLimitKey(key) {
 
 For object-valued `req.body`, serialize and measure it before returning it. In `api/login.js`, derive `login:${address}:${normalizedName}`, call the limiter before credential comparison, return 429 with `Retry-After`, and reset that bucket after successful authentication.
 
-- [ ] **Step 7: Verify GREEN and commit**
+- [x] **Step 7: Verify GREEN and commit**
 
 Run:
 
@@ -274,7 +274,7 @@ git commit -m "Close owner login and command palette findings"
 - Preserves: current Structured Outputs text/image bodies and owner bearer authentication.
 - Migrates: legacy `graphA_ai_config.apiKey` into session-only storage and removes it from persistent storage during load.
 
-- [ ] **Step 1: Write failing request-policy tests**
+- [x] **Step 1: Write failing request-policy tests**
 
 Add cases that prove:
 
@@ -291,13 +291,13 @@ assert.throws(() => sanitizeProxyRequestBody({ model: 'gpt-5.5', input: [], serv
 
 Add a proxy handler test that signs two tokens for the same owner, exhausts the first token's budget, and confirms the second token receives `429` because the key is the verified subject.
 
-- [ ] **Step 2: Run policy tests and verify RED**
+- [x] **Step 2: Run policy tests and verify RED**
 
 Run: `node --test tests/owner-auth.test.js tests/openai-proxy-handler.test.js`
 
 Expected: FAIL because the policy helpers and subject limiter do not exist.
 
-- [ ] **Step 3: Implement server-owned request policy**
+- [x] **Step 3: Implement server-owned request policy**
 
 In `lib/ownerAuth.js`:
 
@@ -328,7 +328,7 @@ export function getProxyTimeoutMs() {
 
 In the handler, sanitize before fetch, key `checkRateLimit()` with `proxy:${tokenResult.payload.sub}:${tokenResult.payload.name}`, pass an AbortController signal, clear the timer, and return `504` for abort timeout.
 
-- [ ] **Step 4: Write and verify the client timeout RED test**
+- [x] **Step 4: Write and verify the client timeout RED test**
 
 Add to `tests/ai-flow.test.js`:
 
@@ -337,7 +337,7 @@ Add to `tests/ai-flow.test.js`:
 
 Run the focused tests and confirm they fail because no signal is supplied and the legacy key remains persisted.
 
-- [ ] **Step 5: Implement client fetch timeout**
+- [x] **Step 5: Implement client fetch timeout**
 
 Add:
 
@@ -358,7 +358,7 @@ export async function fetchWithTimeout(url, init = {}, timeoutMs = 125000) {
 
 Use it for both OpenAI text and image calls. In `AIServiceConfig.fromStorage()`, extract any legacy `apiKey` before assigning public settings, preserve an existing session key when present, otherwise copy the legacy key into session storage, and immediately rewrite `graphA_ai_config` without the secret.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 Run focused tests, syntax checks, then `npm.cmd test`.
 
@@ -378,7 +378,7 @@ Commit: `git commit -m "Constrain and time-bound the OpenAI proxy"` with only Ta
 **Interfaces:**
 - Produces: `remapObjectReferences(data, idMap)` returning a shallow-cloned object with cloned/remapped ID arrays.
 
-- [ ] **Step 1: Write failing table-driven tests**
+- [x] **Step 1: Write failing table-driven tests**
 
 Cover the complete runtime reference contract:
 
@@ -395,13 +395,13 @@ const ARRAY_REFERENCE_FIELDS = ['dependencies', 'vertexIds', 'baseVertexIds', 't
 
 Assert every `old-*` value becomes `new-*`, unknown external IDs remain unchanged, and the source object/arrays are not mutated. Add paste integration cases for polygon, lens, prism, tangent circle, and closed region serialized data.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `node --test tests/object-reference-remap.test.js tests/history-transaction.test.js`
 
 Expected: FAIL because the shared remapper does not exist and paste/redo retains original references.
 
-- [ ] **Step 3: Implement the shared remapper**
+- [x] **Step 3: Implement the shared remapper**
 
 `js/utils/ObjectReferences.js` exports the complete existing single-reference list from `PatchApplier` plus the array list above:
 
@@ -420,11 +420,11 @@ export function remapObjectReferences(data, idMap) {
 
 Replace both duplicated mapping blocks with this helper.
 
-- [ ] **Step 4: Verify independence and undo/redo GREEN**
+- [x] **Step 4: Verify independence and undo/redo GREEN**
 
 Run focused tests. For all five composite families, move an original dependency after paste and prove the pasted object remains bound only to its copied dependency, then undo once and redo once and recheck every remapped ID.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `git commit -m "Keep copied geometry references independent"`.
 
@@ -441,7 +441,7 @@ Commit: `git commit -m "Keep copied geometry references independent"`.
 - Produces: `isCompactViewport(width)` and `nextCompactPanelState(state, action)`.
 - Preserves: desktop panel widths and existing panel IDs/classes.
 
-- [ ] **Step 1: Generate the 16:9 target design sheet**
+- [ ] **Step 1: Generate the 16:9 target design sheet** *(skipped 2026-07-11: image-generation tool unavailable; implemented layout verified directly against the acceptance criteria — see progress-log)*
 
 Use the built-in image generator with this exact prompt:
 
@@ -458,7 +458,7 @@ Avoid: bottom navigation redesign, colorful illustration, fake browser chrome, t
 
 Inspect the result, confirm the two states and text, and copy the selected output into the exact workspace path above.
 
-- [ ] **Step 2: Write failing responsive-state tests**
+- [x] **Step 2: Write failing responsive-state tests**
 
 ```js
 assert.equal(isCompactViewport(390), true);
@@ -470,7 +470,7 @@ assert.deepEqual(nextCompactPanelState({ toolOpen: true, propertyOpen: false }, 
 
 Run and verify RED.
 
-- [ ] **Step 3: Implement responsive state and drawer integration**
+- [x] **Step 3: Implement responsive state and drawer integration**
 
 Create the pure helper, then in `main.js`:
 
@@ -480,7 +480,7 @@ Create the pure helper, then in `main.js`:
 - restore remembered desktop collapsed states when leaving compact mode;
 - add a `ResizeObserver` on `#canvas-container` that schedules one `canvas.resize(); render();` per animation frame.
 
-- [ ] **Step 4: Add final-cascade CSS at the end of `styles.css`**
+- [x] **Step 4: Add final-cascade CSS at the end of `styles.css`**
 
 Use:
 
@@ -508,11 +508,11 @@ Use:
 
 Adjust selectors to the existing collapsed implementation without changing desktop rules.
 
-- [ ] **Step 5: Verify unit tests and desktop/mobile rendered layout**
+- [x] **Step 5: Verify unit tests and desktop/mobile rendered layout**
 
 Run focused tests, then use the in-app Browser at 1280×720 and 390×844. Record canvas/container widths, scroll width, drawer states, chat bounds, DOM snapshot, console logs, and screenshots.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Commit: `git commit -m "Add canvas-first mobile editor drawers"`.
 
@@ -529,25 +529,25 @@ Commit: `git commit -m "Add canvas-first mobile editor drawers"`.
 - Produces: `activePointerId`, touch/pen bridge handlers, idempotent capture cleanup, and `HistoryManager.cancelPendingDrag({ restore: true })`.
 - Preserves: all existing mouse listeners and shortcuts.
 
-- [ ] **Step 1: Write failing fake-DOM pointer tests**
+- [x] **Step 1: Write failing fake-DOM pointer tests**
 
 Test that primary touch registers once, compatibility mouse is ignored during that pointer, non-primary touch is ignored, modifiers/button values reach the existing handler, inside/outside moves choose the same paths as mouse, and `pointercancel`/lost capture are idempotent. Cancellation must restore and clear a pending history drag, invoke the current tool's cancel path, clear SelectTool/AreaExportTool gesture state, remove pan classes, and never call normal mouse-up completion.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `node --test tests/pointer-input.test.js`.
 
 Expected: FAIL because pointer listeners and state do not exist.
 
-- [ ] **Step 3: Implement the bridge**
+- [x] **Step 3: Implement the bridge**
 
 Register `pointerdown` on the canvas and `pointermove`, `pointerup`, `pointercancel` on `document`, plus `lostpointercapture` on the canvas. Only handle `isPrimary && (pointerType === 'touch' || pointerType === 'pen')`; call `preventDefault()`, capture the pointer where supported, and delegate to existing mouse-path methods. During an active pointer, ignore compatibility mouse events that do not carry the matching pointer ID. Route inside moves through `onMouseMove()` and outside moves through `onDocumentMouseMove()` so each move is delivered once. For cancel/lost capture, restore the history start snapshot before calling tool cancellation, then clear and release capture in an idempotent `finally` path. Enhance `SelectTool.cancel()` to end per-object drag state and clear every drag/rotation flag. Set `#mainCanvas { touch-action: none; }`.
 
-- [ ] **Step 4: Verify GREEN and browser interaction**
+- [x] **Step 4: Verify GREEN and browser interaction**
 
 Run focused/full tests. In the in-app Browser, dispatch one touch-like pointer to create exactly one point, drag it, cancel a second drag, and prove the object position and pending history state roll back without completing the tool action. Recheck desktop mouse click, drag, right/middle/Alt/Space pan, wheel, and double-click.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `git commit -m "Support primary touch and pen drawing"`.
 
@@ -565,7 +565,7 @@ Commit: `git commit -m "Support primary touch and pen drawing"`.
 **Interfaces:**
 - Produces: authoritative drag state for point-on-line `t`, point-on-circle `angle`, and number-line `y`; complete transaction snapshots; invariant-safe property restoration; `applyRecordedPropertyChange(...)`.
 
-- [ ] **Step 1: Write failing history-state tests**
+- [x] **Step 1: Write failing history-state tests**
 
 Cover:
 
@@ -577,11 +577,11 @@ Cover:
 - circle algebra creation produces one atomic batch containing both helper points and the circle;
 - point coordinate undo preserves its `Vec2`/`setPosition()` behavior and function-expression undo rebuilds parser state through `setExpression()`.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `node --test tests/history-transaction.test.js tests/history-state.test.js tests/history-edits.test.js`.
 
-- [ ] **Step 3: Implement authoritative state capture**
+- [x] **Step 3: Implement authoritative state capture**
 
 Use this ordering:
 
@@ -598,17 +598,17 @@ getObjectState(obj) {
 
 Restore the matching fields and call `objectManager.updateAll()`. Include transaction depth/buffer in snapshot and restore. Do not treat every object with an `angle` property as a constrained point because dimensions use angle-like display state for different behavior.
 
-- [ ] **Step 4: Implement recorded property edits**
+- [x] **Step 4: Implement recorded property edits**
 
 `applyRecordedPropertyChange()` clones old/new values, skips equality, applies through an optional invariant-safe setter, and calls `historyManager.recordPropertyChange(object.id, property, oldValue, newValue)`. Route property-panel label, color, point size, line width, coordinates, function expression/ranges, and dimension text/format controls through it. Capture continuous range/color edits at focus/start and record once on change/end. In `HistoryManager.setPropertyValue()`, route position restoration through `setPosition()` and expression restoration through `setExpression()` instead of replacing runtime `Vec2` or parser state with plain values.
 
 In `CommandPalette.executeAlgebra()`, capture object IDs before parsing, begin a transaction, then record every object added by a successful parse. Commit the delta so point/function creation stays one action and circle creation (center, radius point, circle) is one atomic batch; abort the transaction on failure.
 
-- [ ] **Step 5: Verify GREEN and browser undo flows**
+- [x] **Step 5: Verify GREEN and browser undo flows**
 
 Run focused/full tests. Browser-check label edit, color edit, coordinate edit, function expression edit, point/function/circle algebra creation, constrained-point drag, number-line drag, AI batch, and paste batch, each with one undo/redo cycle. Record specialized composite/label/dimension drag adapters not covered by the named release paths as explicit follow-up rather than claiming universal undo coverage.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Commit: `git commit -m "Make teacher edits consistently undoable"`.
 
@@ -625,7 +625,7 @@ Commit: `git commit -m "Make teacher edits consistently undoable"`.
 - Modify: `docs/progress-log.md`
 - Modify: `docs/teacher-site-readiness-audit-2026-07-10.md`
 
-- [ ] **Step 1: Make build commands real**
+- [x] **Step 1: Make build commands real**
 
 Change scripts to:
 
@@ -635,15 +635,15 @@ Change scripts to:
 "vercel-build": "node --test"
 ```
 
-- [ ] **Step 2: Update environment and user documentation**
+- [x] **Step 2: Update environment and user documentation**
 
 Document `MATHGRAPH_LOGIN_RATE_WINDOW_MS`, `MATHGRAPH_LOGIN_RATE_MAX`, `MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS`, and `MATHGRAPH_PROXY_TIMEOUT_MS`; correct name-only login/session-storage notes; describe responsive drawers, touch/pen scope, copy integrity, and undo behavior.
 
-- [ ] **Step 3: Close planning checklists with evidence only**
+- [x] **Step 3: Close planning checklists with evidence only**
 
 Mark an acceptance item complete only after its focused and full verification has passed. Add official OpenAI source URLs for Models, Responses create, production best practices, and rate limits.
 
-- [ ] **Step 4: Run documentation/build verification**
+- [x] **Step 4: Run documentation/build verification**
 
 Run:
 
@@ -655,7 +655,7 @@ git diff --check
 
 Expected: both suites pass with the same test count; no whitespace errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `git commit -m "Enforce release verification and update teacher docs"`.
 
@@ -665,7 +665,7 @@ Commit: `git commit -m "Enforce release verification and update teacher docs"`.
 - No source changes unless reviewers find a defect.
 - Update: `docs/progress-log.md` only when recording final external outcomes.
 
-- [ ] **Step 1: Run the complete local gate fresh**
+- [x] **Step 1: Run the complete local gate fresh**
 
 Run full tests, Vercel build, syntax checks for all changed JS files, `git diff --check`, and `git status --short`.
 
@@ -673,15 +673,15 @@ Run full tests, Vercel build, syntax checks for all changed JS files, `git diff 
 
 Review the full branch diff against the design. Fix every Critical/Important finding with focused tests and re-review.
 
-- [ ] **Step 3: Run in-app Browser QA**
+- [x] **Step 3: Run in-app Browser QA**
 
 Check desktop 1280×720, mobile 390×844, tablet 768×1024, and landscape 1024×768. Verify page identity, meaningful DOM, no overlay, console health, screenshots, guest flow, manual drawing, AI panel, copy/undo, drawers, chat bounds, touch/pen, and desktop input regression.
 
-- [ ] **Step 4: Confirm production prerequisites**
+- [x] **Step 4: Confirm production prerequisites**
 
 Run `npx.cmd vercel env ls` and confirm the three required variable names without exposing values. If `MATHGRAPH_OWNER_PASSWORD` is missing, do not deploy until it is safely added through Vercel's secret prompt or the user-controlled dashboard.
 
-- [ ] **Step 5: Push the verified branch**
+- [x] **Step 5: Push the verified branch**
 
 ```powershell
 git push origin codex/ai-fallback-recovery
