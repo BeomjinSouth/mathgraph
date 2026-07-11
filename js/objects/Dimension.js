@@ -34,7 +34,10 @@ export class AngleDimension extends GeoObject {
         this.markerCount = params.markerCount || 0; // 동일 각도 표시 선 수 (0, 1, 2, 3)
 
         // Mk.2: 라벨 드래그 오프셋 및 사용자 정의 텍스트
-        this.labelOffset = params.labelOffset || new Vec2(0, 0);
+        // 불러오기에서 평범한 {x,y}로 들어오므로 Vec2로 감싸 clone() 등을 보존한다.
+        this.labelOffset = params.labelOffset
+            ? new Vec2(params.labelOffset.x, params.labelOffset.y)
+            : new Vec2(0, 0);
         this.customText = params.customText || null; // null이면 자동 계산값 표시
 
         // Mk2.1: 표시 설정
@@ -343,7 +346,10 @@ export class LengthDimension extends GeoObject {
         this.precision = (params.precision !== undefined) ? params.precision : 2;
 
         // Mk.2: 라벨 드래그 오프셋 및 사용자 정의 텍스트
-        this.labelOffset = params.labelOffset || new Vec2(0, 0);
+        // 불러오기에서 평범한 {x,y}로 들어오므로 Vec2로 감싸 clone() 등을 보존한다.
+        this.labelOffset = params.labelOffset
+            ? new Vec2(params.labelOffset.x, params.labelOffset.y)
+            : new Vec2(0, 0);
         this.customText = params.customText || null;
 
         // 계산된 값

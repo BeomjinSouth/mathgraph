@@ -71,7 +71,10 @@ export class FunctionGraph extends GeoObject {
         this.yMax = normalizeOptionalNumber(params.yMax);
 
         // 라벨 수학 좌표 위치 (null이면 자동 계산)
-        this._labelMathPos = params.labelMathPos || null;
+        // 저장/불러오기에서 평범한 {x,y}로 들어오므로 Vec2로 감싸 clone() 등의 메서드를 보존한다.
+        this._labelMathPos = params.labelMathPos
+            ? new Vec2(params.labelMathPos.x, params.labelMathPos.y)
+            : null;
         // 라벨이 드래그 중인지 여부
         this._labelDragging = false;
 
