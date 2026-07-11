@@ -105,6 +105,9 @@ This repository is a local context hub for OpenAI developer documentation. Use i
   - `MATHGRAPH_PROXY_ALLOWED_MODELS` is optional (comma-separated). Overrides the OpenAI proxy model allow-list without a code deploy; defaults to `gpt-5.5, gpt-5.5-pro, gpt-5.4, gpt-5.4-mini, gpt-5.4-nano`.
   - `MATHGRAPH_PROXY_MAX_BODY_BYTES` is optional and caps the proxy request body size (default 10 MB).
   - `MATHGRAPH_PROXY_RATE_WINDOW_MS` / `MATHGRAPH_PROXY_RATE_MAX` are optional and tune the per-token proxy rate limit (default 30 requests / 60 s, enforced per serverless instance).
+  - `MATHGRAPH_LOGIN_RATE_WINDOW_MS` / `MATHGRAPH_LOGIN_RATE_MAX` are optional and tune the login attempt rate limit (default 10 tries / 15 min per client address + name).
+  - `MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS` is optional and caps the forced `max_output_tokens` on proxied Responses requests (default 16384).
+  - `MATHGRAPH_PROXY_TIMEOUT_MS` is optional and bounds the upstream OpenAI request time (default 120000 ms; the proxy returns 504 on timeout).
 - Current Vercel environment check on 2026-06-16: `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` are configured as encrypted Production environment variables. `MATHGRAPH_OWNER_NAME` is intentionally not configured in Production, so the UTF-8 source default owner name is used. Preview branch env setup is unavailable until the Vercel project is connected to a Git repository, and Vercel does not allow Sensitive variables in Development.
 - Production deploy command: `npx.cmd vercel deploy --prod --yes`.
 - Deployment verification steps:

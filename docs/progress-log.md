@@ -2637,3 +2637,26 @@
 - Verification: `npm.cmd test` passed 219/219; `npm.cmd run vercel-build` exited 0 but remains a no-op quality gate; `git diff --check` passed with line-ending warnings only; production returned HTTP 200; guest entry, AI panel opening, and function creation succeeded with no observed console errors.
 - Critical follow-up: the July 9 local security changes are not committed or deployed; the live login is still name-only; mobile 390×844 collapses the canvas to 0px and pushes the property panel offscreen; residual command-palette XSS, login abuse protection, parsed-body size enforcement, composite-copy reference remapping, request timeout/cancellation, and model/document drift remain.
 - Deployment: no product deployment was performed for this audit. Vercel CLI inspection was blocked by missing local credentials, while public HTTP/browser checks succeeded. The existing dirty product changes were preserved.
+
+## 2026-07-11 Release hardening Tasks 4-7 and toolbar UX
+
+### Work completed
+
+- Task 4: Committed the canvas-first mobile drawers (`js/utils/ResponsiveLayout.js`, compact CSS cascade, drawer state machine in `js/main.js`). Added a viewport-mode resync path so environments that miss `matchMedia('change')` events (embedded webviews) recover via `ResizeObserver` and a `window resize` fallback.
+- Task 5: Added a primary touch/pen pointer bridge in `js/core/EventHandler.js` that reuses the existing mouse paths, ignores compatibility mouse events during an active pointer, and cancels safely: `HistoryManager.cancelPendingDrag({ restore: true })` rolls back pending drags, the tool cancel path runs, and capture cleanup is idempotent. `SelectTool.cancel()` now clears every gesture flag and per-object drag. `#mainCanvas` uses `touch-action: none`.
+- Task 6: Made teacher edits consistently undoable. `HistoryManager.getObjectState()` now stores authoritative params (pointOnObject `t`/`angle`, numberLine `y`) instead of derived positions; snapshots include transaction depth/buffer; `setPropertyValue()` restores positions via `setPosition()` and expressions via `setExpression()`. New `js/utils/HistoryEdits.js` (`applyRecordedPropertyChange`) routes property-panel label/color/point-size/line-width/coordinate/expression/range/dimension edits through recorded changes, with continuous slider/color edits recorded once at change-end. `CommandPalette.executeAlgebra()` wraps parsing in a history transaction so circle algebra (center + rim + circle) is one atomic undo step and failures abort cleanly.
+- Toolbar UX: Added save/load buttons (browser storage) and a logout button that clears the session token and returns to the landing overlay. Added `save`, `folder_open`, `logout` icons to `js/ui/IconRenderer.js`.
+- Task 7: `build`/`vercel-build` now run `node --test` (real release gate). Updated `README.md` (owner login now name+password, sessionStorage keys, responsive/touch scope, undo coverage, full environment variable list) and `AGENTS.md` (login rate limit, proxy output-token cap, proxy timeout variables). Added official OpenAI source URLs to `docs/ai-reference.md`.
+
+### Verification
+
+- `npm test` and `npm run vercel-build`: 276/276 tests pass.
+- `git diff --check`: line-ending warnings only.
+- In-app Browser (localhost static server): guest entry, touch tap creates exactly one point, touch drag records one history step, `pointercancel` rolls back without recording, mouse click/drag/Alt-pan regression clean, mobile 375px keeps full-width canvas with exclusive drawers, circle algebra is one undo step, position undo keeps `Vec2`, expression undo rebuilds the parser, save/load round trip works, logout clears session + proxy token and relocks the app.
+- Environment caveat: this session's Browser pane never paints (rAF/ResizeObserver/resize events suspended), so rendered-pixel screenshots were not capturable; verification used DOM geometry, app state, and unit tests instead.
+
+### Known follow-ups
+
+- Production still runs the pre-hardening June build (name-only login, unconstrained proxy). Push + env check (`MATHGRAPH_OWNER_PASSWORD`) + `npx vercel deploy --prod --yes` remain as Task 8.
+- Multi-select bulk point-size edits and specialized composite/label/dimension drag adapters are not yet history-recorded (documented follow-up, matches plan scope).
+- The Task 4 target design sheet PNG (image-generation step) was skipped; the implemented layout was verified against the plan's acceptance criteria directly.

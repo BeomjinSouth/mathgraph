@@ -5,9 +5,9 @@
   "type": "module",
   "description": "Static math graph editor",
   "scripts": {
-    "build": "echo Static site build step not required",
+    "build": "node --test",
     "test": "node --test",
-    "vercel-build": "echo Static site build step not required",
+    "vercel-build": "node --test",
     "vercel:dev": "vercel dev",
     "vercel:link": "vercel link",
     "vercel:pull": "vercel pull"

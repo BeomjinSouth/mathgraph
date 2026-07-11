@@ -667,3 +667,12 @@ For complex live OpenAI drawing prompts, include the following context when it m
 - `js/ai/AIService.js` was restored to a parse-valid baseline after a broken intermediate edit and reconnected to the shared `parseAIJSONPayload()` helper.
 - Deterministic local fallback is revalidated for delete-safety, circle center/radius prompts, graph-function prompts, midpoint requests, tangent-to-function prompts, standard-form circle equations, and linear equations.
 - The AI request context now includes richer serialized object data (`id`, coordinates, expressions, dependencies, and number-line fields) so provider-backed natural-language requests can reference existing objects more reliably.
+
+## 10. Official OpenAI Sources
+
+Re-verify volatile facts (model names, limits, prices) against these official pages before changing AI integration behavior:
+
+- Models: https://developers.openai.com/api/docs/models
+- Responses create: https://developers.openai.com/api/reference/resources/responses/methods/create
+- Production best practices: https://developers.openai.com/api/docs/guides/production-best-practices
+- Rate limits: https://developers.openai.com/api/docs/guides/rate-limits
