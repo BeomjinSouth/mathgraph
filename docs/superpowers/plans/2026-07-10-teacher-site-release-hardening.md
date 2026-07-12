@@ -693,6 +693,8 @@ git push origin codex/ai-fallback-recovery
 
 Run `npx.cmd vercel deploy --prod --yes`, inspect the returned URL, confirm `target=production`, `status=Ready`, primary alias attachment, and HTTP 200.
 
+Before direct deployment, ensure user-owned local configuration such as `.claude/` is excluded by `.vercelignore` so it cannot enter the upload bundle.
+
 - [ ] **Step 7: Repeat production browser smoke**
 
 Repeat the desktop/mobile core flows against `https://mathgraph-five.vercel.app`, including owner login only when the required password is available without exposing it.

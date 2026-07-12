@@ -5,6 +5,7 @@
 # Agent, test, and documentation workspaces are not runtime assets.
 /.agent/
 /.agents/
+/.claude/
 /docs/
 /tests/
 /tools/
