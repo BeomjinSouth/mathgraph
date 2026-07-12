@@ -58,7 +58,7 @@
 - [x] A cancelled touch/pen gesture rolls back pending drag state and never completes an export or leaves a tool/history action open.
 - [x] Desktop mouse, right/middle/Space pan, wheel, double-click, and panel behavior remain intact.
 - [x] Common property, algebra-create (including circle helper objects), constrained-point, and number-line changes have correct undo/redo without replacing runtime vector/parser state with plain data.
-- [ ] Full tests, real Vercel build gate, browser QA, documentation, review, commit/push outcome, and deployment blocker are recorded.
+- [x] Full tests, real Vercel build gate, browser QA, documentation, review, commit/push outcome, and deployment blocker are recorded.
 - [ ] The hardened release is deployed to production and passes production browser smoke after `MATHGRAPH_OWNER_PASSWORD` and valid Vercel authentication are available.
 
 ---

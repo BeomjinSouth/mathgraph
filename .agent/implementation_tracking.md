@@ -52,6 +52,7 @@
   - Responsive tests passed 9/9; independent resize review reported 0 Critical and 0 Important findings.
   - Local browser QA passed at 1280×720, 390×844, 768×1024, and 1024×768 with no console errors. It also passed exclusive mobile drawers, bounded chat, one-point desktop creation, right/middle/Space pan, wheel zoom, and double-click regression checks.
   - Independent security re-review reproduced 1,024 high-cardinality login requests and confirmed the isolated proxy bucket remained blocked at HTTP 429; 0 Critical and 0 Important findings remain.
+  - Release review code, documentation, and four design/audit images were committed as `703b4e9` and pushed to `origin/codex/ai-fallback-recovery` together with resize fix `9e4a5d4`.
   - Production remains on the prior June release. The last authoritative environment listing showed `MATHGRAPH_OWNER_PASSWORD` missing, and the latest refresh attempt failed because the local Vercel token is invalid.
 
 ---

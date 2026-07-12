@@ -2714,3 +2714,9 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - The last successful Production environment-name check (2026-07-11) showed `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` present but required `MATHGRAPH_OWNER_PASSWORD` missing.
 - On 2026-07-13 the local Vercel CLI had no valid credentials and entered a login flow instead of returning project state. No authentication was completed and no deployment was attempted.
 - Production therefore still serves the pre-hardening June build. Safe deployment requires the owner to restore Vercel authentication and add/confirm `MATHGRAPH_OWNER_PASSWORD`; then run production deploy, inspect, HTTP 200, and production browser smoke.
+
+### Git / GitHub
+
+- Committed the final resize follow-up as `9e4a5d4` (`Coalesce responsive canvas resizing`).
+- Committed the bounded login/proxy stores, regression tests, synchronized release documents, current-state screenshots, and generated mobile target as `703b4e9` (`Harden login limits and close release review`).
+- Pushed `6e07597..703b4e9` to `origin/codex/ai-fallback-recovery` successfully. The only remaining untracked workspace item is user-owned `.claude/launch.json`, which was intentionally left untouched.

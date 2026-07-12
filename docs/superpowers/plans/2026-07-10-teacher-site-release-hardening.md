@@ -683,7 +683,7 @@ Completed with Playwright CLI on 2026-07-13. All four viewports had a nonzero ca
 
 Run `npx.cmd vercel env ls` and confirm the three required variable names without exposing values. If `MATHGRAPH_OWNER_PASSWORD` is missing, do not deploy until it is safely added through Vercel's secret prompt or the user-controlled dashboard.
 
-- [ ] **Step 5: Push the verified branch**
+- [x] **Step 5: Push the verified branch**
 
 ```powershell
 git push origin codex/ai-fallback-recovery
@@ -732,4 +732,4 @@ Use a dedicated login body cap, validate field types/lengths, consume both login
 
 Run login/auth tests, all 289+ tests, `npm.cmd run vercel-build`, syntax checks, `git diff --check`, and independent security re-review.
 
-- [ ] **Step 5: Update release documents, commit, and push**
+- [x] **Step 5: Update release documents, commit, and push**
