@@ -2720,3 +2720,11 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - Committed the final resize follow-up as `9e4a5d4` (`Coalesce responsive canvas resizing`).
 - Committed the bounded login/proxy stores, regression tests, synchronized release documents, current-state screenshots, and generated mobile target as `703b4e9` (`Harden login limits and close release review`).
 - Pushed `6e07597..703b4e9` to `origin/codex/ai-fallback-recovery` successfully. The only remaining untracked workspace item is user-owned `.claude/launch.json`, which was intentionally left untouched.
+
+## 2026-07-13 Deployment resume attempt
+
+- Rechecked the blocked production step after the user resumed the goal.
+- `VERCEL_TOKEN` is not present and Vercel CLI has no stored credentials. `vercel whoami` entered the device-login flow instead of returning an authenticated account; no authorization was completed.
+- The verified release-candidate branch remains synchronized with GitHub through `2fb4361`. The production alias still returns HTTP 200 but continues to serve the pre-hardening June release.
+- No deployment was attempted because the last successful environment-name check still showed required `MATHGRAPH_OWNER_PASSWORD` missing, and completing Vercel OAuth requires explicit user-controlled account approval.
+- Next action: the owner signs in to Vercel and adds/confirms the Production `MATHGRAPH_OWNER_PASSWORD`, then resumes this goal for deploy, inspect, and production browser smoke.
