@@ -32,9 +32,6 @@ export class Canvas {
 
         // 크기 초기화
         this.resize();
-
-        // 리사이즈 이벤트
-        window.addEventListener('resize', () => this.resize());
     }
 
     /**

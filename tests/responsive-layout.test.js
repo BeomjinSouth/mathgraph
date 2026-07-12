@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+import { Canvas } from '../js/core/Canvas.js';
 import {
     createAnimationFrameCoalescer,
     isCompactViewport,
@@ -235,6 +236,91 @@ test('resize resyncs layout mode when media query change events are missed', () 
         assert.equal(propertyPanel.classList.contains('collapsed'), true);
     } finally {
         harness.restore();
+    }
+});
+
+test('Canvas leaves window resize ownership to the coalesced app layout path', () => {
+    const previousWindow = globalThis.window;
+    let resizeListenerCount = 0;
+    const context = { scale() {} };
+    const canvasElement = {
+        parentElement: {
+            getBoundingClientRect() {
+                return { width: 640, height: 480 };
+            }
+        },
+        style: {},
+        getContext() {
+            return context;
+        }
+    };
+    globalThis.window = {
+        devicePixelRatio: 1,
+        addEventListener(type) {
+            if (type === 'resize') resizeListenerCount += 1;
+        }
+    };
+
+    try {
+        const canvas = new Canvas(canvasElement);
+        assert.equal(canvas.width, 640);
+        assert.equal(canvas.height, 480);
+        assert.equal(resizeListenerCount, 0);
+    } finally {
+        if (previousWindow === undefined) delete globalThis.window;
+        else globalThis.window = previousWindow;
+    }
+});
+
+test('window resize delegates to the animation-frame coalescer instead of rendering immediately', () => {
+    const previousDocument = globalThis.document;
+    const previousWindow = globalThis.window;
+    const listeners = new Map();
+    const frames = [];
+    let resizeCount = 0;
+    let renderCount = 0;
+
+    globalThis.document = { getElementById() { return null; } };
+    globalThis.window = {
+        addEventListener(type, listener) {
+            listeners.set(type, listener);
+        }
+    };
+
+    try {
+        const app = {
+            objectManager: { on() {} },
+            historyManager: { on() {} },
+            canvas: { resize() { resizeCount += 1; } },
+            render() { renderCount += 1; }
+        };
+        app.scheduleCanvasResize = createAnimationFrameCoalescer(
+            () => {
+                app.canvas.resize();
+                app.render();
+            },
+            callback => frames.push(callback)
+        );
+
+        GraphAApp.prototype.setupEventListeners.call(app);
+        const resizeListener = listeners.get('resize');
+        assert.equal(typeof resizeListener, 'function');
+
+        resizeListener();
+        resizeListener();
+
+        assert.equal(resizeCount, 0);
+        assert.equal(renderCount, 0);
+        assert.equal(frames.length, 1);
+
+        frames.shift()(16);
+        assert.equal(resizeCount, 1);
+        assert.equal(renderCount, 1);
+    } finally {
+        if (previousDocument === undefined) delete globalThis.document;
+        else globalThis.document = previousDocument;
+        if (previousWindow === undefined) delete globalThis.window;
+        else globalThis.window = previousWindow;
     }
 });
 

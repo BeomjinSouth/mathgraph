@@ -1099,11 +1099,6 @@ class GraphAApp {
             this.compactMediaQuery.addListener(this.handleCompactViewportChange);
         }
 
-        // matchMedia change가 오지 않는 환경까지 대비한 추가 안전망.
-        if (typeof window.addEventListener === 'function') {
-            this.handleWindowResize = () => this.syncViewportMode();
-            window.addEventListener('resize', this.handleWindowResize);
-        }
     }
 
     setupEventListeners() {
@@ -1133,8 +1128,13 @@ class GraphAApp {
 
         // 윈도우 리사이즈
         window.addEventListener('resize', () => {
-            this.canvas.resize();
-            this.render();
+            this.syncViewportMode?.();
+            if (this.scheduleCanvasResize) {
+                this.scheduleCanvasResize();
+            } else {
+                this.canvas.resize();
+                this.render();
+            }
         });
 
         // Mk.2: 클립보드 초기화
