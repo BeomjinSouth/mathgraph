@@ -2670,7 +2670,7 @@
 - Production deploy intentionally NOT run per the release plan constraint. Next action for the owner: add `MATHGRAPH_OWNER_PASSWORD` in the Vercel dashboard (or `npx vercel env add MATHGRAPH_OWNER_PASSWORD production`), then run `npx vercel deploy --prod --yes` and the production smoke checks.
 - Until deployed, production still serves the pre-hardening June build (name-only owner login, unconstrained OpenAI proxy).
 
-## 2026-07-11 Post-release adversarial review fixes
+## 2026-07-11 Post-hardening adversarial review fixes
 
 Ran a multi-agent adversarial review of the full release diff (7caf684^..HEAD). Session limits let only the security dimension complete; I manually reviewed the input/history/regression dimensions and fixed every real defect found.
 
@@ -2681,3 +2681,36 @@ Ran a multi-agent adversarial review of the full release diff (7caf684^..HEAD). 
 - **Paste remap:** verified every serialized *Id/*Ids reference field is covered by ObjectReferences.js — no gap, no change needed.
 
 Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; browser checks confirmed guest-key wipe on logout, case-preserving algebra click, single point per tablet tap with ghost events ignored, desktop 3-click = 3 points unaffected, and function label save/load round trip without crash.
+
+## 2026-07-13 Final release-candidate review and verification
+
+### Completed work
+
+- Generated and visually inspected the required mobile target at `docs/design-references/teacher-workflow/mobile-responsive-target-2026-07-10.png`. It is 1672×941 (effectively 16:9), shows both canvas-first and open-tool-drawer states, and includes `MathGraph`, `도구`, `속성`, `AI 도우미`, `점`, `선`, `원`, and `함수`.
+- Retained the three 1280×720 current-state references (`current-workspace.png`, `current-ai-assistant.png`, `current-export.png`) as audit evidence. They contain no credential values.
+- Closed the duplicate resize-owner review finding in commit `9e4a5d4`: `main.js` now owns window resize through the rAF coalescer, while `Canvas` no longer registers a second raw listener. Responsive focused tests pass 9/9 and the independent re-review reported 0 Critical and 0 Important findings.
+- A final security review found that rotating unique login names from one address bypassed the account-shaped bucket and could grow the shared bucket map. Added a dedicated 8 KB login body cap, 128-character name and 1024-character password limits, fixed-length SHA-256 address/name key parts, and address-wide plus address+account buckets.
+- The first bounded-store implementation used a shared LRU and independent review proved 1,024 high-cardinality login attempts could evict an active OpenAI proxy bucket. Replaced it with separate login/proxy stores (2048 entries each), expiry cleanup, and fail-closed overflow that never deletes an active rate limit.
+- Added regression tests for oversized login JSON, overlong fields, rotating names, capacity overflow, scope isolation, and the exact 1,024-login cross-handler reproduction. The new tests failed against the prior implementations as expected; focused login/auth/proxy verification then passed 30/30.
+- Independent security re-review repeated the high-cardinality reproduction and confirmed the proxy stayed blocked at HTTP 429, expiry/capacity/reset scoping were correct, and no Critical or Important findings remained.
+- This section supersedes two earlier follow-ups: bulk point-size plus function/dimension label-drag history were completed by `91d1b37`, and the previously skipped target image now exists at the required path.
+
+### Verification
+
+- `npm.cmd test`: 295/295 passed.
+- `npm.cmd run vercel-build`: 295/295 passed; the Vercel build command remains a real release gate.
+- `node --check api/login.js`, `lib/ownerAuth.js`, `js/main.js`, and `js/core/Canvas.js`: passed.
+- Playwright CLI local QA:
+  - 1280×720: canvas 640×656, both desktop panels restored, no horizontal overflow.
+  - 390×844: canvas 390×780, both drawers initially closed, left/right drawers mutually exclusive, open chat inside the viewport at left 8/right 382, no horizontal overflow.
+  - 768×1024: canvas 768×960, compact drawers closed, no horizontal overflow.
+  - 1024×768: desktop panels restored and canvas remained nonzero at 384×704.
+  - Desktop input: one point click created exactly one object; right-button, middle-button, and Space+left-button pan all changed the viewport; wheel changed scale from 50 to 55; double-click caused no extra object or error.
+  - Console errors: 0; failed non-static requests: 0.
+- `git diff --check`: passed; line-ending conversion warnings only, no whitespace errors.
+
+### Deployment / external blocker
+
+- The last successful Production environment-name check (2026-07-11) showed `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` present but required `MATHGRAPH_OWNER_PASSWORD` missing.
+- On 2026-07-13 the local Vercel CLI had no valid credentials and entered a login flow instead of returning project state. No authentication was completed and no deployment was attempted.
+- Production therefore still serves the pre-hardening June build. Safe deployment requires the owner to restore Vercel authentication and add/confirm `MATHGRAPH_OWNER_PASSWORD`; then run production deploy, inspect, HTTP 200, and production browser smoke.

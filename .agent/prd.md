@@ -4,7 +4,7 @@
 
 - Task: Teacher-site release hardening
 - Owner: Codex
-- Date: 2026-07-10
+- Date: 2026-07-13
 - Related files:
   - `docs/superpowers/specs/2026-07-10-teacher-site-release-hardening-design.md`
   - `docs/superpowers/plans/2026-07-10-teacher-site-release-hardening.md`
@@ -16,9 +16,13 @@
   - `js/core/EventHandler.js`
   - `js/core/HistoryManager.js`
   - `js/ai/PatchApplier.js`
+  - `js/utils/ObjectReferences.js`
+  - `js/utils/ResponsiveLayout.js`
+  - `js/utils/HistoryEdits.js`
   - `css/styles.css`
+  - `docs/design-references/teacher-workflow/mobile-responsive-target-2026-07-10.png`
 
-## Problem
+## Initial Problem
 
 - The production site still serves the June 19 owner flow while the worktree contains incomplete July security and history changes.
 - The command palette has a reachable DOM-XSS path, login attempts are not limited, parsed object bodies bypass the byte cap, and proxy limits can be reset with a new token.
@@ -44,16 +48,18 @@
 
 ## Acceptance Criteria
 
-- [ ] Command-palette malicious input renders as inert text.
-- [ ] Owner login and proxy abuse limits cannot be reset by trivial retries or a fresh token.
-- [ ] Parsed object bodies honor the configured byte limit and proxy request fields are server constrained.
-- [ ] Legacy local-storage API keys migrate to session storage and are immediately removed from persistent settings.
-- [ ] Polygon, lens, prism, tangent-circle, and closed-region copies use copied references through undo/redo.
-- [ ] A 390×844 guest workspace has a nonzero full-width canvas, usable drawers, contained chat, and primary touch/pen input.
-- [ ] A cancelled touch/pen gesture rolls back pending drag state and never completes an export or leaves a tool/history action open.
-- [ ] Desktop mouse, pan, wheel, double-click, and panel behavior remain intact.
-- [ ] Common property, algebra-create (including circle helper objects), constrained-point, and number-line changes have correct undo/redo without replacing runtime vector/parser state with plain data.
-- [ ] Full tests, real Vercel build gate, browser QA, documentation, commit, push, and deployment outcome are recorded.
+- [x] Command-palette malicious input renders as inert text.
+- [x] Owner login and proxy abuse limits cannot be reset by trivial retries or a fresh token.
+- [x] Login attempts remain address-limited when names rotate, login payload/field sizes are bounded, and in-memory rate buckets have a hard cap.
+- [x] Parsed object bodies honor the configured byte limit and proxy request fields are server constrained.
+- [x] Legacy local-storage API keys migrate to session storage and are immediately removed from persistent settings.
+- [x] Polygon, lens, prism, tangent-circle, and closed-region copies use copied references through undo/redo.
+- [x] A 390×844 guest workspace has a nonzero full-width canvas, usable drawers, contained chat, and primary touch/pen input.
+- [x] A cancelled touch/pen gesture rolls back pending drag state and never completes an export or leaves a tool/history action open.
+- [x] Desktop mouse, right/middle/Space pan, wheel, double-click, and panel behavior remain intact.
+- [x] Common property, algebra-create (including circle helper objects), constrained-point, and number-line changes have correct undo/redo without replacing runtime vector/parser state with plain data.
+- [ ] Full tests, real Vercel build gate, browser QA, documentation, review, commit/push outcome, and deployment blocker are recorded.
+- [ ] The hardened release is deployed to production and passes production browser smoke after `MATHGRAPH_OWNER_PASSWORD` and valid Vercel authentication are available.
 
 ---
 

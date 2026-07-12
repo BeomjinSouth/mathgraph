@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 process.env.MATHGRAPH_LOGIN_SECRET = 'proxy-handler-test-signing-secret';
+process.env.MATHGRAPH_OWNER_PASSWORD = 'proxy-handler-test-password';
 
 const { default: handler } = await import('../api/openai-responses.js');
+const { default: loginHandler } = await import('../api/login.js');
 const {
     OWNER_NAME,
     createToken,
@@ -103,6 +105,42 @@ test('proxy rate limit follows verified owner subject across distinct bearer tok
         await handler(createRequest(secondToken, { model: 'gpt-5.5', input: [] }), secondResponse);
         assert.equal(secondResponse.statusCode, 429);
         assert.equal(fetchCalls, 1);
+    });
+});
+
+test('high-cardinality login traffic cannot reset an active proxy rate limit', async () => {
+    await withProxyEnvironment({
+        OPENAI_API_KEY: 'server-test-key',
+        MATHGRAPH_PROXY_RATE_MAX: '1',
+        MATHGRAPH_PROXY_RATE_WINDOW_MS: '60000'
+    }, async () => {
+        globalThis.fetch = async () => ({
+            status: 200,
+            headers: { get: () => 'application/json' },
+            async text() { return '{"id":"resp_isolated"}'; }
+        });
+
+        const first = createResponse();
+        await handler(createRequest(ownerToken(10), { model: 'gpt-5.5', input: [] }), first);
+        assert.equal(first.statusCode, 200);
+
+        const initiallyBlocked = createResponse();
+        await handler(createRequest(ownerToken(11), { model: 'gpt-5.5', input: [] }), initiallyBlocked);
+        assert.equal(initiallyBlocked.statusCode, 429);
+
+        for (let i = 0; i < 1024; i += 1) {
+            const loginResponse = createResponse();
+            await loginHandler({
+                method: 'POST',
+                headers: { 'x-forwarded-for': `198.51.${Math.floor(i / 256)}.${i % 256}` },
+                body: { name: `rotating-${i}`, password: 'wrong' }
+            }, loginResponse);
+            assert.equal(loginResponse.statusCode, 401);
+        }
+
+        const stillBlocked = createResponse();
+        await handler(createRequest(ownerToken(12), { model: 'gpt-5.5', input: [] }), stillBlocked);
+        assert.equal(stillBlocked.statusCode, 429);
     });
 });
 

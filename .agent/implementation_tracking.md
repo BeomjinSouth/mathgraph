@@ -3,8 +3,8 @@
 ## Status
 
 - Task: Teacher-site release hardening
-- State: In Progress
-- Last updated: 2026-07-10
+- State: In Progress — local release candidate verified; production prerequisites pending
+- Last updated: 2026-07-13
 
 ## Plan
 
@@ -22,11 +22,12 @@
 - [x] Design approved for autonomous execution
 - [x] Baseline `npm.cmd test`: 219 passed
 - [x] Detailed implementation plan
-- [ ] Security closure
-- [ ] Composite-copy integrity
-- [ ] Mobile/touch implementation
-- [ ] Undo and build/documentation cleanup
-- [ ] Full local and production verification
+- [x] Security closure, including rotating-name login abuse and bounded rate-bucket storage
+- [x] Composite-copy integrity
+- [x] Mobile/touch implementation and generated 16:9 target
+- [x] Undo and build/documentation cleanup
+- [x] Full local, browser, and independent-review verification
+- [ ] Production deployment verification (requires `MATHGRAPH_OWNER_PASSWORD` and valid Vercel authentication)
 
 ## Decisions
 
@@ -36,12 +37,22 @@
 - Reason: This isolates the highest-risk boundaries and keeps each phase testable.
 - Decision: Keep GPT-5.5 as the default for this release.
 - Reason: Official OpenAI docs currently recommend GPT-5.5 while GPT-5.6 is limited partner preview.
+- Decision: Do not deploy until the owner supplies the password secret and Vercel CLI authentication is restored.
+- Reason: The hardened server intentionally disables owner login without `MATHGRAPH_OWNER_PASSWORD`; choosing or exposing that secret is outside autonomous implementation scope.
 
 ## Verification
 
 - Baseline completed:
   - Sandbox `npm.cmd test` was blocked by Node worker `spawn EPERM`.
   - Approved unsandboxed `npm.cmd test` passed 219/219 with 0 failures.
+- Release candidate completed:
+  - Generated and visually inspected the required 1672×941 mobile target at `docs/design-references/teacher-workflow/mobile-responsive-target-2026-07-10.png`.
+  - Focused login/auth/proxy tests passed 30/30 after RED failures confirmed rotating-name, body-size, field-length, capacity, and cross-endpoint eviction regressions.
+  - `npm.cmd test` and `npm.cmd run vercel-build` each passed 295/295 on 2026-07-13.
+  - Responsive tests passed 9/9; independent resize review reported 0 Critical and 0 Important findings.
+  - Local browser QA passed at 1280×720, 390×844, 768×1024, and 1024×768 with no console errors. It also passed exclusive mobile drawers, bounded chat, one-point desktop creation, right/middle/Space pan, wheel zoom, and double-click regression checks.
+  - Independent security re-review reproduced 1,024 high-cardinality login requests and confirmed the isolated proxy bucket remained blocked at HTTP 429; 0 Critical and 0 Important findings remain.
+  - Production remains on the prior June release. The last authoritative environment listing showed `MATHGRAPH_OWNER_PASSWORD` missing, and the latest refresh attempt failed because the local Vercel token is invalid.
 
 ---
 

@@ -50,7 +50,10 @@ export default async function handler(req, res) {
     }
 
     // 새 토큰 발급으로 예산이 초기화되지 않도록 검증된 오너 주체 단위로 제한합니다.
-    const rate = checkRateLimit(`proxy:${tokenResult.payload.sub}:${tokenResult.payload.name}`);
+    const rate = checkRateLimit(
+        `proxy:${tokenResult.payload.sub}:${tokenResult.payload.name}`,
+        { scope: 'proxy' }
+    );
     if (!rate.allowed) {
         res.setHeader('Retry-After', String(Math.ceil((rate.retryAfterMs || 1000) / 1000)));
         res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도하세요.' });

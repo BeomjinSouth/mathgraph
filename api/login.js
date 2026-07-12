@@ -13,6 +13,9 @@ import {
     PayloadTooLargeError,
     OWNER_NAME,
     DEFAULT_TOKEN_TTL_MS,
+    LOGIN_MAX_BODY_BYTES,
+    LOGIN_MAX_NAME_LENGTH,
+    LOGIN_MAX_PASSWORD_LENGTH,
     createToken,
     getSigningSecret,
     getOwnerPassword,
@@ -20,6 +23,7 @@ import {
     readJson,
     getClientAddress,
     getLoginRateOptions,
+    hashRateLimitKeyPart,
     checkRateLimit,
     resetRateLimitKey
 } from '../lib/ownerAuth.js';
@@ -49,21 +53,45 @@ export default async function handler(req, res) {
     }
 
     try {
-        const body = await readJson(req);
-        const name = String(body?.name || '').normalize('NFKC').trim();
-        const password = String(body?.password || '');
-
-        const nameMatches = name === OWNER_NAME;
-        const rateKey = `login:${getClientAddress(req)}:${name}`;
-        const rate = checkRateLimit(rateKey, getLoginRateOptions());
-        if (!rate.allowed) {
-            res.setHeader('Retry-After', String(Math.ceil((rate.retryAfterMs || 1000) / 1000)));
+        const body = await readJson(req, { maxBytes: LOGIN_MAX_BODY_BYTES });
+        const rateOptions = { ...getLoginRateOptions(), scope: 'login' };
+        const addressHash = hashRateLimitKeyPart(getClientAddress(req));
+        const addressRateKey = `login:address:${addressHash}`;
+        const addressRate = checkRateLimit(addressRateKey, rateOptions);
+        if (!addressRate.allowed) {
+            res.setHeader('Retry-After', String(Math.ceil((addressRate.retryAfterMs || 1000) / 1000)));
             res.status(429).json({
                 error: '로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.'
             });
             return;
         }
 
+        if (!body || typeof body !== 'object' || Array.isArray(body)
+            || typeof body.name !== 'string' || typeof body.password !== 'string') {
+            throw new Error('이름과 비밀번호는 문자열이어야 합니다.');
+        }
+        if (body.name.length > LOGIN_MAX_NAME_LENGTH
+            || body.password.length > LOGIN_MAX_PASSWORD_LENGTH) {
+            throw new Error('이름 또는 비밀번호가 허용 길이를 초과했습니다.');
+        }
+
+        const name = body.name.normalize('NFKC').trim();
+        const password = body.password;
+        if (name.length > LOGIN_MAX_NAME_LENGTH) {
+            throw new Error('이름이 허용 길이를 초과했습니다.');
+        }
+
+        const accountRateKey = `login:account:${addressHash}:${hashRateLimitKeyPart(name)}`;
+        const accountRate = checkRateLimit(accountRateKey, rateOptions);
+        if (!accountRate.allowed) {
+            res.setHeader('Retry-After', String(Math.ceil((accountRate.retryAfterMs || 1000) / 1000)));
+            res.status(429).json({
+                error: '로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.'
+            });
+            return;
+        }
+
+        const nameMatches = name === OWNER_NAME;
         const passwordMatches = safeEqual(password, ownerPassword);
         if (!nameMatches || !passwordMatches) {
             res.status(401).json({
@@ -74,7 +102,8 @@ export default async function handler(req, res) {
 
         const ttlMs = Number(process.env.MATHGRAPH_OWNER_TOKEN_TTL_MS) || DEFAULT_TOKEN_TTL_MS;
         const issuedAt = Date.now();
-        resetRateLimitKey(rateKey);
+        resetRateLimitKey(addressRateKey, { scope: 'login' });
+        resetRateLimitKey(accountRateKey, { scope: 'login' });
         const expiresAt = issuedAt + ttlMs;
         const token = createToken({
             sub: 'owner',

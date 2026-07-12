@@ -13,7 +13,7 @@
   - The owner proxy uses the Responses API; current model availability, request fields, rate limits, and production guidance must be checked against official docs.
 - Skill: Image Generation
 - Why it matters:
-  - Project rules require a generated target screen before responsive UI implementation; the mobile phase will use a 16:9 design sheet with Korean UI text.
+  - Project rules require a generated target screen for responsive UI work; the selected 16:9 Korean mobile design sheet is stored at `docs/design-references/teacher-workflow/mobile-responsive-target-2026-07-10.png`.
 - Skill: Frontend Testing Debugging / Browser
 - Why it matters:
   - Completion depends on desktop and mobile rendered layout, touch/pen interactions, DOM safety, and console health rather than unit tests alone.
@@ -29,7 +29,14 @@
   - Undo consistency, real build gate, docs, deployment.
 - Baseline:
   - Current dirty worktree preserved.
-  - Full test suite passed 219/219 outside the sandbox after the sandbox run hit `spawn EPERM`.
+  - The initial full test suite passed 219/219 outside the sandbox after the sandbox run hit `spawn EPERM`.
+- Release-candidate result:
+  - Security/proxy closure, composite-copy remapping, responsive drawers, touch/pen input, undo consistency, real build gates, toolbar save/load/logout, and post-review serialization/input fixes are implemented.
+  - The generated mobile target is 1672×941 (effectively 16:9) and contains the required canvas-first and open-tool-drawer states with the planned Korean labels.
+  - Focused login/auth/proxy verification passes 30/30; full `npm.cmd test` and `npm.cmd run vercel-build` each pass 295/295 on 2026-07-13.
+  - Browser QA covers desktop, phone, tablet, and landscape layouts plus desktop input and mobile drawer/chat behavior with 0 console errors.
+  - Independent security re-review confirms 1,024 unique login attempts cannot evict the active OpenAI proxy limit; no Critical or Important findings remain.
+  - Production remains on the prior June build until the owner configures `MATHGRAPH_OWNER_PASSWORD` and restores valid Vercel CLI authentication.
 - Official OpenAI check:
   - Models documentation currently recommends GPT-5.5; GPT-5.6 is limited partner preview.
   - Responses supports optional tools, background/service-tier controls, and output caps, so the owner proxy must forward only MathGraph-owned fields.

@@ -441,7 +441,7 @@ Commit: `git commit -m "Keep copied geometry references independent"`.
 - Produces: `isCompactViewport(width)` and `nextCompactPanelState(state, action)`.
 - Preserves: desktop panel widths and existing panel IDs/classes.
 
-- [ ] **Step 1: Generate the 16:9 target design sheet** *(skipped 2026-07-11: image-generation tool unavailable; implemented layout verified directly against the acceptance criteria — see progress-log)*
+- [x] **Step 1: Generate the 16:9 target design sheet** *(completed and visually inspected 2026-07-12; the selected 1672×941 output contains both required mobile states and all planned Korean labels)*
 
 Use the built-in image generator with this exact prompt:
 
@@ -669,7 +669,7 @@ Commit: `git commit -m "Enforce release verification and update teacher docs"`.
 
 Run full tests, Vercel build, syntax checks for all changed JS files, `git diff --check`, and `git status --short`.
 
-- [ ] **Step 2: Run broad code and security review**
+- [x] **Step 2: Run broad code and security review**
 
 Review the full branch diff against the design. Fix every Critical/Important finding with focused tests and re-review.
 
@@ -677,11 +677,13 @@ Review the full branch diff against the design. Fix every Critical/Important fin
 
 Check desktop 1280×720, mobile 390×844, tablet 768×1024, and landscape 1024×768. Verify page identity, meaningful DOM, no overlay, console health, screenshots, guest flow, manual drawing, AI panel, copy/undo, drawers, chat bounds, touch/pen, and desktop input regression.
 
+Completed with Playwright CLI on 2026-07-13. All four viewports had a nonzero canvas and no horizontal overflow; compact drawers were exclusive; the 390×844 chat stayed within `left=8`, `right=382`; desktop point creation, right/middle/Space pan, wheel zoom, and double-click passed; console errors were 0. Screenshots are in ignored `output/playwright/release-*.png`; the committed design/audit references remain under `docs/design-references/teacher-workflow/`.
+
 - [x] **Step 4: Confirm production prerequisites**
 
 Run `npx.cmd vercel env ls` and confirm the three required variable names without exposing values. If `MATHGRAPH_OWNER_PASSWORD` is missing, do not deploy until it is safely added through Vercel's secret prompt or the user-controlled dashboard.
 
-- [x] **Step 5: Push the verified branch**
+- [ ] **Step 5: Push the verified branch**
 
 ```powershell
 git push origin codex/ai-fallback-recovery
@@ -698,3 +700,36 @@ Repeat the desktop/mobile core flows against `https://mathgraph-five.vercel.app`
 - [ ] **Step 8: Record final outcome and close the goal**
 
 Update `docs/progress-log.md`, commit and push the final log, verify branch synchronization, and mark the goal complete only when every design acceptance criterion has authoritative evidence or the strict repeated external-blocker rule is satisfied.
+
+### Task 9: Bound Login Abuse State After Final Security Review
+
+**Files:**
+- Modify: `lib/ownerAuth.js`
+- Modify: `api/login.js`
+- Modify: `tests/owner-auth.test.js`
+- Modify: `tests/login-handler.test.js`
+- Modify: `README.md`
+- Modify: `AGENTS.md`
+
+**Security contract:**
+- Login JSON uses a dedicated small byte limit instead of the 10 MB image-proxy limit.
+- Name and password must be strings within explicit length limits before hashing or credential comparison.
+- Every attempt consumes an address-wide bucket first and an address+account bucket second, with fixed-length hashed key parts.
+- Login and OpenAI proxy buckets use separate bounded stores, so unauthenticated login traffic cannot evict a proxy limit.
+- Each store prunes expired entries, but when still full it fails closed for new keys instead of deleting active rate-limit state.
+
+- [x] **Step 1: Record the validated finding and mitigation plan**
+
+- [x] **Step 2: Add failing abuse and capacity tests**
+
+Cover oversized login JSON, overlong fields, rotating names from one address, a hard bucket-count cap, cross-endpoint isolation, and fail-closed overflow. Run the focused tests and verify RED.
+
+- [x] **Step 3: Implement the bounded login policy**
+
+Use a dedicated login body cap, validate field types/lengths, consume both login buckets, reset both after success, isolate login/proxy stores, and fail closed when a store remains full after expiry cleanup.
+
+- [x] **Step 4: Re-run focused, full, build, and review gates**
+
+Run login/auth tests, all 289+ tests, `npm.cmd run vercel-build`, syntax checks, `git diff --check`, and independent security re-review.
+
+- [ ] **Step 5: Update release documents, commit, and push**

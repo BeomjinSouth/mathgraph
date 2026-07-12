@@ -45,7 +45,7 @@ The app opens with a login landing overlay.
 - The toolbar's logout button clears the session (including the owner token) and
   returns to the landing overlay.
 - The OpenAI proxy is constrained server-side: model allow-list, request body size
-  cap, per-token rate limit, output-token cap, and request timeout.
+  cap, verified-owner-subject rate limit, output-token cap, and request timeout.
 
 ## Editing Highlights
 
@@ -66,6 +66,10 @@ The app opens with a login landing overlay.
 
 This repository is configured as a static Vercel project.
 
+The public alias currently serves the pre-hardening June release. Do not deploy the
+current candidate until the owner restores Vercel authentication and adds/confirms
+`MATHGRAPH_OWNER_PASSWORD`; production inspect and browser smoke must follow.
+
 - `vercel.json` keeps the output directory at the repository root
 - `npm run vercel-build` runs the full `node --test` suite as the release gate;
   run it locally before `npx vercel deploy --prod --yes`
@@ -73,16 +77,20 @@ This repository is configured as a static Vercel project.
 - Required environment variables (production):
   - `OPENAI_API_KEY`: used by the owner-mode OpenAI proxy
   - `MATHGRAPH_LOGIN_SECRET`: signs owner-session tokens; the server fails closed (503) without it
-  - `MATHGRAPH_OWNER_PASSWORD`: owner login password; owner login is disabled (503) without it
+  - `MATHGRAPH_OWNER_PASSWORD`: owner login password; owner login is disabled (503) without it, and the browser login field accepts at most 1024 characters
 - Optional environment variables:
   - `MATHGRAPH_OWNER_NAME`: overrides the default owner name
   - `MATHGRAPH_OWNER_TOKEN_TTL_MS`: owner-session token lifetime (default 12h)
-  - `MATHGRAPH_LOGIN_RATE_WINDOW_MS` / `MATHGRAPH_LOGIN_RATE_MAX`: login attempt rate limit (default 10 tries / 15 min per address+name)
+  - `MATHGRAPH_LOGIN_RATE_WINDOW_MS` / `MATHGRAPH_LOGIN_RATE_MAX`: login attempt rate limit (default 10 tries / 15 min, enforced for both address-wide and address+account buckets)
   - `MATHGRAPH_PROXY_ALLOWED_MODELS`: comma-separated proxy model allow-list override
   - `MATHGRAPH_PROXY_MAX_BODY_BYTES`: proxy request body cap (default 10 MB)
-  - `MATHGRAPH_PROXY_RATE_WINDOW_MS` / `MATHGRAPH_PROXY_RATE_MAX`: proxy rate limit (default 30 requests / 60 s per token)
+  - `MATHGRAPH_PROXY_RATE_WINDOW_MS` / `MATHGRAPH_PROXY_RATE_MAX`: proxy rate limit (default 30 requests / 60 s per verified owner subject, enforced per serverless instance)
   - `MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS`: forced `max_output_tokens` on proxied requests (default 16384)
   - `MATHGRAPH_PROXY_TIMEOUT_MS`: upstream OpenAI request timeout (default 120 s)
+- Fixed login request defenses:
+  - login JSON is capped at 8 KB; names at 128 characters; passwords at 1024 characters
+  - attacker-controlled address/name key parts are SHA-256 hashed; login and proxy use separate per-instance stores capped at 2048 buckets each
+  - expired buckets are reclaimed, but a full active store rejects new keys instead of evicting another active rate limit
 
 ## Working Agreement
 

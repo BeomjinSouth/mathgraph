@@ -104,11 +104,12 @@ This repository is a local context hub for OpenAI developer documentation. Use i
   - `MATHGRAPH_OWNER_TOKEN_TTL_MS` is optional and controls owner-session token lifetime.
   - `MATHGRAPH_PROXY_ALLOWED_MODELS` is optional (comma-separated). Overrides the OpenAI proxy model allow-list without a code deploy; defaults to `gpt-5.5, gpt-5.5-pro, gpt-5.4, gpt-5.4-mini, gpt-5.4-nano`.
   - `MATHGRAPH_PROXY_MAX_BODY_BYTES` is optional and caps the proxy request body size (default 10 MB).
-  - `MATHGRAPH_PROXY_RATE_WINDOW_MS` / `MATHGRAPH_PROXY_RATE_MAX` are optional and tune the per-token proxy rate limit (default 30 requests / 60 s, enforced per serverless instance).
-  - `MATHGRAPH_LOGIN_RATE_WINDOW_MS` / `MATHGRAPH_LOGIN_RATE_MAX` are optional and tune the login attempt rate limit (default 10 tries / 15 min per client address + name).
+  - `MATHGRAPH_PROXY_RATE_WINDOW_MS` / `MATHGRAPH_PROXY_RATE_MAX` are optional and tune the verified-owner-subject proxy rate limit (default 30 requests / 60 s, enforced per serverless instance and not reset by a new token).
+  - `MATHGRAPH_LOGIN_RATE_WINDOW_MS` / `MATHGRAPH_LOGIN_RATE_MAX` are optional and tune the login attempt rate limit (default 10 tries / 15 min, enforced for both client-address and address+account buckets).
+  - Login JSON is fixed at an 8 KB maximum; owner names at 128 characters; passwords at 1024 characters. Attacker-controlled rate-key parts are SHA-256 hashed. Login and proxy use separate per-instance stores capped at 2048 entries each; a full active store fails closed for new keys instead of evicting another active limit.
   - `MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS` is optional and caps the forced `max_output_tokens` on proxied Responses requests (default 16384).
   - `MATHGRAPH_PROXY_TIMEOUT_MS` is optional and bounds the upstream OpenAI request time (default 120000 ms; the proxy returns 504 on timeout).
-- Current Vercel environment check on 2026-06-16: `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` are configured as encrypted Production environment variables. `MATHGRAPH_OWNER_NAME` is intentionally not configured in Production, so the UTF-8 source default owner name is used. Preview branch env setup is unavailable until the Vercel project is connected to a Git repository, and Vercel does not allow Sensitive variables in Development.
+- Last successful Vercel Production environment-name check on 2026-07-11: `OPENAI_API_KEY` and `MATHGRAPH_LOGIN_SECRET` were present, while required `MATHGRAPH_OWNER_PASSWORD` was missing. A 2026-07-13 refresh could not run because the local Vercel CLI has no valid credentials. Do not deploy until the owner restores Vercel authentication and adds/confirms `MATHGRAPH_OWNER_PASSWORD` without exposing its value.
 - Production deploy command: `npx.cmd vercel deploy --prod --yes`.
 - Deployment verification steps:
   - Run `npm.cmd test`.

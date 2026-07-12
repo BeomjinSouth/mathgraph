@@ -249,3 +249,27 @@ test('resetRateLimitKey clears only the selected bucket', () => {
     assert.equal(checkRateLimit('a', { windowMs: 1000, max: 1 }).allowed, true);
     assert.equal(checkRateLimit('b', { windowMs: 1000, max: 1 }).allowed, false);
 });
+
+test('checkRateLimit fails closed for a new key when active buckets fill the store', () => {
+    resetRateLimit();
+    const options = { windowMs: 60_000, max: 1, maxBuckets: 2 };
+    assert.equal(checkRateLimit('oldest', options).allowed, true);
+    assert.equal(checkRateLimit('newer', options).allowed, true);
+    const overflow = checkRateLimit('newest', options);
+    assert.equal(overflow.allowed, false);
+    assert.equal(overflow.overflow, true);
+    assert.equal(checkRateLimit('oldest', options).allowed, false);
+});
+
+test('login bucket churn cannot evict an active proxy rate limit', () => {
+    resetRateLimit();
+    const proxy = { windowMs: 60_000, max: 1, maxBuckets: 2, scope: 'proxy' };
+    const login = { windowMs: 60_000, max: 1, maxBuckets: 2, scope: 'login' };
+
+    assert.equal(checkRateLimit('proxy-owner', proxy).allowed, true);
+    assert.equal(checkRateLimit('proxy-owner', proxy).allowed, false);
+    assert.equal(checkRateLimit('login-a', login).allowed, true);
+    assert.equal(checkRateLimit('login-b', login).allowed, true);
+    assert.equal(checkRateLimit('login-c', login).allowed, false);
+    assert.equal(checkRateLimit('proxy-owner', proxy).allowed, false);
+});
