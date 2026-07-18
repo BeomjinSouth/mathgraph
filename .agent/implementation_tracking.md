@@ -2885,3 +2885,38 @@ Planned before final handoff:
 - State: Done
 - Completed: 2026-04-25
 - Verification: `node --check js/ai/AIService.js`, targeted parse check, `node --test tests/ai-flow.test.js`, `npm.cmd test`, and `git diff --check` all passed.
+## Status
+
+- Task: Teacher workflow regression recovery and curved-solid completeness
+- State: In progress
+- Last updated: 2026-07-18
+
+## Goal
+
+Restore the accumulated AI drawing quality in the teacher-facing `AI 시험 그림 만들기` workflow without losing the later owner-authentication, OpenAI proxy, validation, retry, responsive, history, and security hardening.
+
+## Scope and assumptions
+
+- Integrate the teacher workflow commits from `codex/teacher-workflow-20260710` into the current direct-deploy branch `codex/ai-fallback-recovery`.
+- Preserve user-owned uncommitted changes in `docs/superpowers/plans/2026-07-10-teacher-site-release-hardening.md` and `.claude/`.
+- Keep the editable GraphA operation model; do not replace diagram generation with a raster image.
+- Treat text-only teacher prompts as text commands. Use Vision input only when an actual image is attached.
+- A request containing multiple required solids or relations, such as `원뿔 안에 구`, must not be marked complete when only one outer solid is produced.
+
+## Success criteria
+
+1. The teacher workflow is present on the hardened current branch.
+2. Owner-mode OpenAI calls retain the current same-origin proxy, timeout, structured-output, repair, and readable error behavior.
+3. Text-only generation does not report a generic `OpenAI Vision API 오류` merely because no image is attached.
+4. Curved-solid requests preserve the teacher branch's cone/sphere approximation support.
+5. `원뿔 안에 구` is rejected and repaired when either the cone, the sphere, or the inside relation is missing.
+6. Focused tests, the full test suite, `vercel-build`, `git diff --check`, and a rendered teacher-flow check pass before release.
+
+## Verification plan
+
+- Add regression tests for teacher text routing, proxy error extraction, cone-plus-sphere completeness, and containment.
+- Run focused AI/teacher tests first, then `npm.cmd test`, `npm.cmd run vercel-build`, and `git diff --check`.
+- Verify the teacher workflow in a rendered browser at desktop and mobile widths.
+- Deploy only if Vercel authentication and required Production environment variables are confirmed without exposing secret values.
+
+---
