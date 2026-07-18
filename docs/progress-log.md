@@ -2787,5 +2787,8 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 
 ### 배포 상태
 
-- 소스 통합과 로컬 검증은 완료했다.
-- 운영 배포는 프로젝트 안전 규칙에 따라 Vercel 인증과 Production의 필수 `MATHGRAPH_OWNER_PASSWORD` 존재 여부를 다시 확인한 뒤에만 진행한다.
+- Vercel 계정 `beomjinsouth` 인증을 확인했다. 값은 출력하지 않고 Production에 `OPENAI_API_KEY`, `MATHGRAPH_LOGIN_SECRET`, `MATHGRAPH_OWNER_PASSWORD`가 모두 존재하는 것만 확인했다.
+- Production 배포 `dpl_CwSJF6jSRW2tndHySC1ueaKaexsR`가 `Ready` 상태로 완료됐고 `https://mathgraph-five.vercel.app` 별칭이 연결됐다.
+- 운영 주소는 HTTP 200을 반환했고 교사용 생성 도크가 포함된 최신 HTML을 제공했다.
+- 운영 브라우저에서 게스트의 AI 공급자를 `로컬 (API 없음)`으로 설정한 뒤 같은 원뿔·구·`h` 요청을 실행했다. `객체 3개`, `3 created`, `시험지용 그림 준비 완료`와 실제 도형 렌더링을 확인했고 콘솔 오류는 없었다.
+- 박범진 소유자용 OpenAI 경로는 Production 키와 로그인 비밀번호가 연결된 상태다. 비밀번호 값을 자동화에서 읽지 않는 보안 원칙 때문에 실제 소유자 로그인을 대신 수행하지 않았으며, 해당 프록시 동작은 자동 회귀 테스트로 검증했다.

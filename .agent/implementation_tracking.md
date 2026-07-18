@@ -2926,6 +2926,6 @@ Restore the accumulated AI drawing quality in the teacher-facing `AI 시험 그�
 - Added a deterministic cone-plus-sphere fallback and readable owner-proxy image error propagation.
 - Preserved the later owner authentication, proxy limits, timeout, repair, responsive drawer, history, save/load, and logout work.
 - Verified 328 tests, the release build gate, whitespace checks, and the rendered desktop/mobile teacher flow. The local browser created three objects and displayed the cone, inner sphere, and `h` label without console errors.
-- Production deployment remains gated on valid Vercel authentication and confirmation of the required Production `MATHGRAPH_OWNER_PASSWORD` variable.
+- Confirmed Vercel authentication and the required Production variables, deployed successfully, and verified the production alias with a rendered cone-plus-sphere smoke test.
 
 ---
