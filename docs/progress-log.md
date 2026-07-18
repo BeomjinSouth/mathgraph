@@ -2792,3 +2792,9 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - 운영 주소는 HTTP 200을 반환했고 교사용 생성 도크가 포함된 최신 HTML을 제공했다.
 - 운영 브라우저에서 게스트의 AI 공급자를 `로컬 (API 없음)`으로 설정한 뒤 같은 원뿔·구·`h` 요청을 실행했다. `객체 3개`, `3 created`, `시험지용 그림 준비 완료`와 실제 도형 렌더링을 확인했고 콘솔 오류는 없었다.
 - 박범진 소유자용 OpenAI 경로는 Production 키와 로그인 비밀번호가 연결된 상태다. 비밀번호 값을 자동화에서 읽지 않는 보안 원칙 때문에 실제 소유자 로그인을 대신 수행하지 않았으며, 해당 프록시 동작은 자동 회귀 테스트로 검증했다.
+
+## 2026-07-18 박범진 운영 로그인 비밀번호 재설정
+
+- 사용자 요청에 따라 Production의 `MATHGRAPH_OWNER_PASSWORD`를 새 값으로 교체했다. 실제 값은 출력하거나 문서·Git에 기록하지 않았다.
+- 환경 변수 변경을 적용하기 위해 Production을 다시 배포했다. 배포 `dpl_4VRML4FDkdVX8MZzsTKmzfW4vc7m`가 `Ready` 상태가 되었고 `https://mathgraph-five.vercel.app` 별칭이 연결됐다.
+- 운영 로그인 화면에서 박범진 계정으로 직접 확인했고 로그인 창이 닫히며 `박범진 · 기본 API` 상태가 표시됐다.
