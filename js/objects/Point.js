@@ -337,6 +337,7 @@ export class IntersectionPoint extends GeoObject {
         this.object1Id = object1Id;
         this.object2Id = object2Id;
         this.anchor = anchor; // 여러 교점 중 선택 기준점
+        this.branch = Number.isInteger(params.branch) && params.branch >= 0 && params.branch <= 1 ? params.branch : null;
         this.position = new Vec2(0, 0);
         this.addDependency(object1Id);
         this.addDependency(object2Id);
@@ -359,8 +360,10 @@ export class IntersectionPoint extends GeoObject {
             return;
         }
 
-        // anchor에 가장 가까운 교점 선택
-        if (this.anchor && intersections.length > 1) {
+        if (this.branch !== null && intersections[this.branch]) {
+            this.position = intersections[this.branch];
+        } else if (this.anchor && intersections.length > 1) {
+            // anchor에 가장 가까운 교점 선택
             let minDist = Infinity;
             let closest = intersections[0];
 
@@ -530,6 +533,7 @@ export class IntersectionPoint extends GeoObject {
             ...super.toJSON(),
             object1Id: this.object1Id,
             object2Id: this.object2Id,
+            branch: this.branch,
             anchorX: this.anchor?.x,
             anchorY: this.anchor?.y
         };

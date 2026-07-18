@@ -2888,7 +2888,7 @@ Planned before final handoff:
 ## Status
 
 - Task: Teacher workflow regression recovery and curved-solid completeness
-- State: In progress
+- State: Done
 - Last updated: 2026-07-18
 
 ## Goal
@@ -2918,5 +2918,14 @@ Restore the accumulated AI drawing quality in the teacher-facing `AI 시험 그�
 - Run focused AI/teacher tests first, then `npm.cmd test`, `npm.cmd run vercel-build`, and `git diff --check`.
 - Verify the teacher workflow in a rendered browser at desktop and mobile widths.
 - Deploy only if Vercel authentication and required Production environment variables are confirmed without exposing secret values.
+
+## Completion record
+
+- Restored the teacher workflow and first-class `cylinder`, `cone`, `sphere`, and `textLabel` drawing support on the hardened direct-deploy branch.
+- Added requested-solid completeness and containment validation so a cone-only answer cannot satisfy `원뿔 안에 구`.
+- Added a deterministic cone-plus-sphere fallback and readable owner-proxy image error propagation.
+- Preserved the later owner authentication, proxy limits, timeout, repair, responsive drawer, history, save/load, and logout work.
+- Verified 328 tests, the release build gate, whitespace checks, and the rendered desktop/mobile teacher flow. The local browser created three objects and displayed the cone, inner sphere, and `h` label without console errors.
+- Production deployment remains gated on valid Vercel authentication and confirmation of the required Production `MATHGRAPH_OWNER_PASSWORD` variable.
 
 ---

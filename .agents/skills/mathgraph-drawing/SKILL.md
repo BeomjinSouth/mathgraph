@@ -18,11 +18,11 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 
 ## Reference Selection
 
-- Plane figures: load core contract, point/line/polygon objects, construction objects, marker/dimension objects, and examples tagged `plane`.
+- Plane figures: load core contract, point/line/polygon/textLabel objects, construction objects, marker/dimension objects, and examples tagged `plane`.
 - Circles and curved regions: load circle, circleThreePoints, pointOnCircle, tangentCircle, arc, sector, circularSegment, lensRegion, and examples tagged `circle`.
-- Solids: load prism/pyramid, base/top/apex point patterns, and examples tagged `solid`.
+- Solids: load prism/pyramid plus first-class cylinder/cone/sphere projections, base/top/apex point patterns, and examples tagged `solid`.
 - Graphs/functions: load function, tangentFunction, intersection, line/segment, numberLine, and examples tagged `graph`.
-- Statistical or chart-like requests: load polygon, numberLine, line/segment, and examples tagged `chart_approximation`; mention that chart primitives are not first-class yet.
+- Statistical or chart-like requests: report them as explicitly excluded from the standard teacher generation workflow. Do not imply first-class support for bar/pie charts, histograms, frequency polygons, box plots, dot plots, or scatter plots.
 - API integration prompts: load `api_prompting`, `operationContract`, and `validationWorkflow` from the feature manual.
 - Image reference or patching prompts: load `api_prompting`, `operationContract`, `validationWorkflow`, known gaps, and only the object chunks relevant to the pasted image/instruction.
 
@@ -40,7 +40,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For concentric-circle or fixed-radius prompts, reuse the same center id and create radius points at the requested distance.
 - There is no first-class `annularSector` yet; when a prompt accepts approximation, use a normal sector plus an inner circle outline rather than claiming a true ring-sector cutout.
 - For function-bounded curved regions, use a polygon through explicit boundary/sample points and hide helper vertices with `visible:false`; exact curved fills need future primitives.
-- Use `prism` and `pyramid` for current solid support. Approximate cylinders, cones, spheres, nets, box plots, histograms, and scatter plots with current primitives and state the limitation when needed.
+- Use `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` for current solid support. Curved solids use editable textbook projections with optional dashed hidden curves; nets and revolution sweeps remain unsupported.
 - For `prism`, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds` so the runtime can keep front edges solid and hidden rear edges dashed.
 - For `pyramid`, keep `apexId` out of `baseVertexIds` and place the apex far enough from the base centroid to read as a real apex.
 - For nested solid requests, keep inner vertices inside the outer projection and separate multiple inner solids in the screen projection so they do not visually overlap.
@@ -53,7 +53,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.
 - For command/recreate AI flows, remember that `AIService` now runs `DiagramQualityEnhancer` after JSON parsing; prompt for good geometry, but rely on the app-owned enhancer for recurring label-offset, right-angle-aid, prism cross-section, and nested triangular-solid layout corrections.
 - Default object stroke and fill color is `#000000`; omit color fields unless a user explicitly requests color, and never introduce multiple colors on your own.
-- For image/PDF recreation, do not silently approximate unsupported first-class nodes such as cylinder, cone, sphere, native histogram/scatter/box plot, or standalone text. Emit a scene graph unsupported item or compiler warning unless the user explicitly accepts approximation.
+- For image/PDF recreation, use first-class `cylinder`, `cone`, `sphere`, and `textLabel` nodes when visible. Emit unsupported items for native statistical charts, tables, nets, annular sectors, or exact function-bounded curved fills instead of silently guessing them.
 
 ## Quality Checks
 
@@ -67,4 +67,7 @@ Before returning final JSON, check:
 - `pyramid.apexId` is not one of the base vertices.
 - Visible angle markers do not reuse the vertex as a helper point.
 - `numberLine.start < numberLine.end` and `numberLine.step > 0`.
+- `numberLine.customMarks[].endpoint`, when present, is `open` or `closed`.
+- `function` range limits satisfy `xMin < xMax` and `yMin < yMax` when both bounds are present; `intersection.branch` is `0` or `1` when supplied.
+- `cylinder`, `cone`, and `sphere` have finite `x`, `y`, positive `width`/`height`, and a sensible `ellipseRatio`; `textLabel` has non-empty `text` and finite `x`, `y`.
 - Styling fields are simple values: hex colors, numeric widths/opacities, booleans for toggles. Default color fields, when included, should be `#000000`.

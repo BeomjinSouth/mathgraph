@@ -33,6 +33,8 @@ import { ArcTool, SectorTool, CircularSegmentTool } from './tools/ArcTool.js'; /
 import { AngleDimensionTool, LengthDimensionTool } from './tools/DimensionTool.js'; // Mk.2
 import { PolygonTool } from './tools/PolygonTool.js'; // Mk.2
 import { NumberLineTool } from './tools/NumberLineTool.js'; // Mk.4
+import { TextTool } from './tools/TextTool.js';
+import { CurvedSolidTool } from './tools/CurvedSolidTool.js';
 import { FillTool } from './tools/FillTool.js';
 import { AreaExportTool } from './tools/AreaExportTool.js';
 
@@ -71,6 +73,17 @@ import {
     isCompactViewport,
     nextCompactPanelState
 } from './utils/ResponsiveLayout.js';
+import {
+    createProjectEnvelope,
+    parseProjectFile
+} from './utils/ProjectFile.js';
+import {
+    getPhysicalExportPlan,
+    TEACHER_EXPORT_PRESETS
+} from './utils/TeacherExport.js';
+import { buildCurvedSolidInput } from './utils/CurvedSolidInput.js';
+import { TeacherWorkflow } from './ui/TeacherWorkflow.js';
+import { analyzeDrawingSupport } from './ai/SupportPreflight.js';
 
 /**
  * 그래프A 애플리케이션
@@ -106,10 +119,13 @@ class GraphAApp {
         this.showHiddenObjects = false;
         this.currentFillColor = '#000000';
         this.currentFillOpacity = 0.24;
+        this.projectName = localStorage.getItem('graphA_project_name') || '수학 시험 그림';
+        this.lastSupportResult = analyzeDrawingSupport('');
 
         this.setupTools();
         this.setupUI();
         this.setupResponsiveLayout();
+        this.setupTeacherWorkflow();
         this.setupEventListeners();
 
         // 초기 렌더링
@@ -440,6 +456,10 @@ class GraphAApp {
 
         // Mk.4: 수직선 도구
         this.toolManager.registerTool('numberLine', new NumberLineTool());
+        this.toolManager.registerTool('textLabel', new TextTool());
+        this.toolManager.registerTool('cylinder', new CurvedSolidTool('cylinder'));
+        this.toolManager.registerTool('cone', new CurvedSolidTool('cone'));
+        this.toolManager.registerTool('sphere', new CurvedSolidTool('sphere'));
 
         // 기본 도구 선택
         this.toolManager.setTool('select');
@@ -858,6 +878,29 @@ class GraphAApp {
             this.startAreaExport();
         });
 
+        const projectNameInput = document.getElementById('projectNameInput');
+        if (projectNameInput) {
+            projectNameInput.value = this.projectName;
+            projectNameInput.addEventListener('change', () => {
+                this.setProjectName(projectNameInput.value);
+            });
+        }
+
+        document.getElementById('projectExportBtn')?.addEventListener('click', () => {
+            this.exportProjectFile();
+        });
+
+        const projectImportInput = document.getElementById('projectImportInput');
+        document.getElementById('projectImportBtn')?.addEventListener('click', () => {
+            projectImportInput?.click();
+        });
+        projectImportInput?.addEventListener('change', async () => {
+            const file = projectImportInput.files?.[0];
+            projectImportInput.value = '';
+            if (!file) return;
+            await this.importProjectFile(file);
+        });
+
         // 함수 모달
         this.setupFunctionModal();
 
@@ -876,6 +919,8 @@ class GraphAApp {
 
         // Mk.4: 수직선 모달
         this.setupNumberLineModal();
+        this.setupTextLabelModal();
+        this.setupCurvedSolidModal();
         hydrateGeneratedIcons(document);
     }
 
@@ -905,6 +950,8 @@ class GraphAApp {
             polygon: '다각형', fill: '채우기', prism: '각기둥', pyramid: '각뿔',
             angleDimension: '각도', lengthDimension: '길이',
             rightAngle: '직각', equalLength: '같은 길이',
+            numberLine: '수직선', textLabel: '텍스트',
+            cylinder: '원기둥', cone: '원뿔', sphere: '구',
             function: '함수'
         };
 
@@ -939,6 +986,10 @@ class GraphAApp {
             rightAngle: 'square_foot',
             equalLength: 'straighten',
             numberLine: 'timeline',
+            textLabel: 'text_fields',
+            cylinder: 'view_in_ar',
+            cone: 'change_history',
+            sphere: 'circle',
             function: 'functions'
         };
 
@@ -1413,19 +1464,29 @@ class GraphAApp {
         if (selected.length === 1) {
             const obj = selected[0];
 
-            // 이름 수정
+            // 이름 또는 독립 텍스트 수정
             const nameRow = document.createElement('div');
             nameRow.className = 'property-row';
             nameRow.innerHTML = `
-                <label>이름:</label>
-                <input type="text" value="${escapeHtml(obj.label || '')}" class="prop-input">
+                <label>${obj.type === 'textLabel' ? '텍스트:' : '이름:'}</label>
+                <input type="text" class="prop-input">
             `;
             const nameInput = nameRow.querySelector('input');
+            nameInput.value = obj.type === 'textLabel' ? obj.text : (obj.label || '');
             // 이벤트 버블링 차단 - 클릭 시 선택 해제 방지
             nameInput.addEventListener('mousedown', e => e.stopPropagation());
             nameInput.addEventListener('click', e => e.stopPropagation());
             nameInput.addEventListener('change', (e) => {
-                this.recordObjectPropertyEdit(obj, 'label', e.target.value);
+                if (obj.type === 'textLabel') {
+                    this.recordObjectPropertyEdit(obj, 'text', e.target.value, {
+                        apply: (target, value) => {
+                            target.text = value;
+                            target.update();
+                        }
+                    });
+                } else {
+                    this.recordObjectPropertyEdit(obj, 'label', e.target.value);
+                }
                 this.updateSidebar(); // 목록 이름 업데이트
                 this.render();
             });
@@ -1457,6 +1518,117 @@ class GraphAApp {
                 this.updateSidebar();
             });
             container.appendChild(colorRow);
+
+            if (obj.type === 'textLabel') {
+                const fontRow = document.createElement('div');
+                fontRow.className = 'property-row';
+                fontRow.innerHTML = `
+                    <label>글씨:</label>
+                    <input type="range" min="10" max="72" value="${obj.fontSize}" class="prop-slider">
+                    <span class="value-display">${obj.fontSize}</span>
+                `;
+                const fontInput = fontRow.querySelector('input');
+                const fontDisplay = fontRow.querySelector('.value-display');
+                fontInput.addEventListener('input', (event) => {
+                    obj.fontSize = Number(event.target.value);
+                    fontDisplay.textContent = String(obj.fontSize);
+                    this.render();
+                });
+                container.appendChild(fontRow);
+
+                const alignRow = document.createElement('div');
+                alignRow.className = 'property-row';
+                alignRow.innerHTML = `
+                    <label>정렬:</label>
+                    <select class="prop-select">
+                        <option value="left">왼쪽</option>
+                        <option value="center">가운데</option>
+                        <option value="right">오른쪽</option>
+                    </select>
+                `;
+                const alignSelect = alignRow.querySelector('select');
+                alignSelect.value = obj.align;
+                alignSelect.addEventListener('change', (event) => {
+                    obj.align = event.target.value;
+                    this.render();
+                });
+                container.appendChild(alignRow);
+
+                const positionRow = document.createElement('div');
+                positionRow.className = 'property-row full-width';
+                positionRow.innerHTML = `
+                    <label>위치:</label>
+                    <input type="number" class="prop-input text-x" step="any" value="${obj.position.x}" aria-label="텍스트 x 좌표">
+                    <input type="number" class="prop-input text-y" step="any" value="${obj.position.y}" aria-label="텍스트 y 좌표">
+                `;
+                positionRow.querySelector('.text-x').addEventListener('change', (event) => {
+                    if (Number.isFinite(event.target.valueAsNumber)) obj.position.x = event.target.valueAsNumber;
+                    this.render();
+                });
+                positionRow.querySelector('.text-y').addEventListener('change', (event) => {
+                    if (Number.isFinite(event.target.valueAsNumber)) obj.position.y = event.target.valueAsNumber;
+                    this.render();
+                });
+                container.appendChild(positionRow);
+            }
+
+            if (['cylinder', 'cone', 'sphere'].includes(obj.type)) {
+                const sizeRow = document.createElement('div');
+                sizeRow.className = 'property-row full-width';
+                sizeRow.innerHTML = `
+                    <label>크기:</label>
+                    <input type="number" class="prop-input solid-width" min="0.1" step="0.1" value="${obj.width}" aria-label="입체 너비">
+                    <span>×</span>
+                    <input type="number" class="prop-input solid-height" min="0.1" step="0.1" value="${obj.height}" aria-label="입체 높이">
+                `;
+                const updateDimension = (property, input) => {
+                    const value = Number(input.value);
+                    if (Number.isFinite(value) && value > 0) {
+                        obj[property] = value;
+                        if (obj.type === 'sphere') {
+                            obj.width = value;
+                            obj.height = value;
+                            sizeRow.querySelector('.solid-width').value = value;
+                            sizeRow.querySelector('.solid-height').value = value;
+                        }
+                        obj.update();
+                        this.render();
+                    }
+                };
+                sizeRow.querySelector('.solid-width').addEventListener('change', (event) => updateDimension('width', event.target));
+                sizeRow.querySelector('.solid-height').addEventListener('change', (event) => updateDimension('height', event.target));
+                container.appendChild(sizeRow);
+
+                const ellipseRow = document.createElement('div');
+                ellipseRow.className = 'property-row';
+                ellipseRow.innerHTML = `
+                    <label>곡선 깊이:</label>
+                    <input type="range" min="0.12" max="0.6" step="0.01" value="${obj.ellipseRatio}" class="prop-slider">
+                    <span class="value-display">${Math.round(obj.ellipseRatio * 100)}%</span>
+                `;
+                const ellipseInput = ellipseRow.querySelector('input');
+                const ellipseValue = ellipseRow.querySelector('.value-display');
+                ellipseInput.addEventListener('input', (event) => {
+                    obj.ellipseRatio = Number(event.target.value);
+                    ellipseValue.textContent = `${Math.round(obj.ellipseRatio * 100)}%`;
+                    obj.update();
+                    this.render();
+                });
+                container.appendChild(ellipseRow);
+
+                const hiddenRow = document.createElement('div');
+                hiddenRow.className = 'property-row';
+                hiddenRow.innerHTML = `
+                    <label>숨은 곡선:</label>
+                    <input type="checkbox" class="prop-input" ${obj.showHiddenLines ? 'checked' : ''}>
+                    <span class="property-note">점선 표시</span>
+                `;
+                hiddenRow.querySelector('input').addEventListener('change', (event) => {
+                    obj.showHiddenLines = event.target.checked;
+                    this.render();
+                });
+                container.appendChild(hiddenRow);
+            }
 
             if (this.isPointLikeObject(obj)) {
                 let pointSizeEditStart;
@@ -1503,7 +1675,7 @@ class GraphAApp {
             }
 
             // 선 굵기 (점 제외)
-            if (!this.isPointLikeObject(obj)) {
+            if (!this.isPointLikeObject(obj) && obj.type !== 'textLabel') {
                 const widthRow = document.createElement('div');
                 widthRow.className = 'property-row';
                 widthRow.innerHTML = `
@@ -2850,6 +3022,61 @@ class GraphAApp {
         }).join('\n');
     }
 
+    buildSVGTextLabelMarkup(obj) {
+        if (!obj.valid || !obj.position) return '';
+        const position = this.canvas.toScreen(obj.position);
+        const anchor = obj.align === 'center' ? 'middle' : obj.align === 'right' ? 'end' : 'start';
+        const color = this.escapeSVG(obj.color || '#000000');
+        return `<text data-type="textLabel" data-id="${this.escapeSVG(obj.id)}" ` +
+            `x="${position.x.toFixed(2)}" y="${position.y.toFixed(2)}" ` +
+            `font-family="Noto Sans KR, Times New Roman, sans-serif" ` +
+            `font-size="${obj.fontSize || 18}" text-anchor="${anchor}" fill="${color}">` +
+            `${this.escapeSVG(obj.text || '')}</text>`;
+    }
+
+    buildSVGCurvedSolidMarkup(obj) {
+        if (!obj.valid || !obj.position) return '';
+        const center = this.canvas.toScreen(obj.position);
+        const rx = this.canvas.toScreenLength(obj.width / 2);
+        const halfHeight = this.canvas.toScreenLength(obj.height / 2);
+        const ry = Math.max(3, rx * obj.ellipseRatio);
+        const stroke = this.escapeSVG(obj.color || '#000000');
+        const width = obj.lineWidth || 2;
+        const common = `fill="none" stroke="${stroke}" stroke-width="${width}"`;
+        const dashed = obj.showHiddenLines ? ` stroke-dasharray="5 4"` : '';
+        const parts = [`<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}">`];
+
+        if (obj.type === 'cylinder') {
+            const topY = center.y - halfHeight + ry;
+            const bottomY = center.y + halfHeight - ry;
+            parts.push(`<ellipse cx="${center.x.toFixed(2)}" cy="${topY.toFixed(2)}" rx="${rx.toFixed(2)}" ry="${ry.toFixed(2)}" ${common} />`);
+            if (obj.showHiddenLines) {
+                parts.push(`<path d="M ${(center.x - rx).toFixed(2)} ${bottomY.toFixed(2)} A ${rx.toFixed(2)} ${ry.toFixed(2)} 0 0 1 ${(center.x + rx).toFixed(2)} ${bottomY.toFixed(2)}" ${common}${dashed} />`);
+            }
+            parts.push(`<path d="M ${(center.x - rx).toFixed(2)} ${bottomY.toFixed(2)} A ${rx.toFixed(2)} ${ry.toFixed(2)} 0 0 0 ${(center.x + rx).toFixed(2)} ${bottomY.toFixed(2)}" ${common} />`);
+            parts.push(`<line x1="${(center.x - rx).toFixed(2)}" y1="${topY.toFixed(2)}" x2="${(center.x - rx).toFixed(2)}" y2="${bottomY.toFixed(2)}" ${common} />`);
+            parts.push(`<line x1="${(center.x + rx).toFixed(2)}" y1="${topY.toFixed(2)}" x2="${(center.x + rx).toFixed(2)}" y2="${bottomY.toFixed(2)}" ${common} />`);
+        } else if (obj.type === 'cone') {
+            const apexY = center.y - halfHeight;
+            const baseY = center.y + halfHeight - ry;
+            parts.push(`<path d="M ${center.x.toFixed(2)} ${apexY.toFixed(2)} L ${(center.x - rx).toFixed(2)} ${baseY.toFixed(2)} M ${center.x.toFixed(2)} ${apexY.toFixed(2)} L ${(center.x + rx).toFixed(2)} ${baseY.toFixed(2)}" ${common} />`);
+            if (obj.showHiddenLines) {
+                parts.push(`<path d="M ${(center.x - rx).toFixed(2)} ${baseY.toFixed(2)} A ${rx.toFixed(2)} ${ry.toFixed(2)} 0 0 1 ${(center.x + rx).toFixed(2)} ${baseY.toFixed(2)}" ${common}${dashed} />`);
+            }
+            parts.push(`<path d="M ${(center.x - rx).toFixed(2)} ${baseY.toFixed(2)} A ${rx.toFixed(2)} ${ry.toFixed(2)} 0 0 0 ${(center.x + rx).toFixed(2)} ${baseY.toFixed(2)}" ${common} />`);
+        } else {
+            const radius = Math.min(rx, halfHeight);
+            parts.push(`<circle cx="${center.x.toFixed(2)}" cy="${center.y.toFixed(2)}" r="${radius.toFixed(2)}" ${common} />`);
+            if (obj.showHiddenLines) {
+                parts.push(`<path d="M ${(center.x - radius).toFixed(2)} ${center.y.toFixed(2)} A ${radius.toFixed(2)} ${ry.toFixed(2)} 0 0 1 ${(center.x + radius).toFixed(2)} ${center.y.toFixed(2)}" ${common}${dashed} />`);
+            }
+            parts.push(`<path d="M ${(center.x - radius).toFixed(2)} ${center.y.toFixed(2)} A ${radius.toFixed(2)} ${ry.toFixed(2)} 0 0 0 ${(center.x + radius).toFixed(2)} ${center.y.toFixed(2)}" ${common} />`);
+        }
+
+        parts.push('</g>');
+        return parts.join('\n');
+    }
+
     buildSVGNumberLineMarkup(obj) {
         if (!obj.valid) return '';
 
@@ -2884,6 +3111,32 @@ class GraphAApp {
                 `<line x1="${position.x.toFixed(2)}" y1="${(position.y - tickScreenHeight).toFixed(2)}" ` +
                 `x2="${position.x.toFixed(2)}" y2="${(position.y + tickScreenHeight).toFixed(2)}" />`
             );
+        }
+
+        for (const mark of obj.customMarks || []) {
+            const position = this.canvas.toScreen(new Vec2(mark.value, obj.y));
+            const markColor = this.escapeSVG(mark.color || obj.color || '#000000');
+            if (mark.endpoint === 'open' || mark.endpoint === 'closed') {
+                const radius = Math.max(4, (obj.lineWidth || 2) * 1.8);
+                const fill = mark.endpoint === 'closed' ? markColor : '#ffffff';
+                parts.push(
+                    `<circle cx="${position.x.toFixed(2)}" cy="${position.y.toFixed(2)}" ` +
+                    `r="${radius.toFixed(2)}" stroke="${markColor}" fill="${fill}" />`
+                );
+            } else {
+                parts.push(
+                    `<line x1="${position.x.toFixed(2)}" y1="${(position.y - tickScreenHeight * 1.5).toFixed(2)}" ` +
+                    `x2="${position.x.toFixed(2)}" y2="${(position.y + tickScreenHeight * 1.5).toFixed(2)}" ` +
+                    `stroke="${markColor}" />`
+                );
+            }
+            if (mark.label) {
+                parts.push(
+                    `<text x="${position.x.toFixed(2)}" y="${(position.y - tickScreenHeight * 1.5 - 5).toFixed(2)}" ` +
+                    `font-size="${Math.max(8, (obj.fontSize || 14) - 2)}" text-anchor="middle" fill="${markColor}">` +
+                    `${this.escapeSVG(mark.label)}</text>`
+                );
+            }
         }
 
         parts.push('</g>');
@@ -2928,6 +3181,12 @@ class GraphAApp {
                 return this.buildSVGPolygonMarkup(obj);
             case 'numberLine':
                 return this.buildSVGNumberLineMarkup(obj);
+            case 'textLabel':
+                return this.buildSVGTextLabelMarkup(obj);
+            case 'cylinder':
+            case 'cone':
+            case 'sphere':
+                return this.buildSVGCurvedSolidMarkup(obj);
             default:
                 return '';
         }
@@ -2989,11 +3248,24 @@ class GraphAApp {
     getExportOptions(options = {}) {
         const format = options.format ?? document.querySelector('input[name="exportFormat"]:checked')?.value ?? 'png';
         const requestedScale = options.scale ?? parseInt(document.querySelector('input[name="exportScale"]:checked')?.value || '1', 10);
+        const presetKey = options.teacherPreset
+            ?? document.getElementById('teacherExportPreset')?.value
+            ?? 'standard';
+        const preset = TEACHER_EXPORT_PRESETS[presetKey] || null;
+        const physicalPlan = format === 'png' && preset
+            ? getPhysicalExportPlan({
+                ...preset,
+                sourceWidth: this.canvas.width,
+                sourceHeight: this.canvas.height
+            })
+            : null;
 
         return {
             format,
             requestedScale,
-            scale: format === 'png' ? requestedScale : 1,
+            scale: format === 'png' ? (physicalPlan?.scale ?? requestedScale) : 1,
+            teacherPreset: presetKey,
+            physicalPlan,
             includeBackground: options.includeBackground ?? document.getElementById('exportBackground')?.checked ?? true,
             includeGrid: options.includeGrid ?? document.getElementById('exportGrid')?.checked ?? false,
             includeAxes: options.includeAxes ?? document.getElementById('exportAxes')?.checked ?? true
@@ -3210,6 +3482,43 @@ class GraphAApp {
         document.addEventListener('paste', (e) => {
             this.handleClipboardPaste(e);
         });
+    }
+
+    setupTeacherWorkflow() {
+        const prompt = document.getElementById('chatInput');
+        const status = document.getElementById('teacherWorkflowStatus');
+        const retry = document.getElementById('teacherRetryBtn');
+        const summary = document.getElementById('teacherQaSummary');
+        const liveRegion = document.getElementById('teacherWorkflowLive');
+        this.teacherWorkflow = new TeacherWorkflow({ prompt, status, retry, summary, liveRegion });
+
+        prompt?.addEventListener('input', () => {
+            this.teacherWorkflow.setPrompt(prompt.value);
+        });
+        retry?.addEventListener('click', () => {
+            this.sendChatMessage();
+        });
+
+        const updateSummary = () => this.updateTeacherQualitySummary();
+        this.objectManager.on('objectAdded', updateSummary);
+        this.objectManager.on('objectRemoved', updateSummary);
+        this.objectManager.on('objectUpdated', updateSummary);
+        this.updateTeacherQualitySummary();
+    }
+
+    setTeacherWorkflowState(state, details = {}) {
+        this.teacherWorkflow?.setState(state, details);
+        if (state === 'error') {
+            const alert = document.getElementById('teacherWorkflowAlert');
+            if (alert) alert.textContent = details.message || '그림을 생성하지 못했습니다.';
+        }
+    }
+
+    updateTeacherQualitySummary() {
+        return this.teacherWorkflow?.updateQualitySummary(
+            this.objectManager.getAllObjects(),
+            this.lastSupportResult
+        );
     }
 
     /**
@@ -3467,10 +3776,19 @@ class GraphAApp {
 
         if (!message) return;
 
+        this.teacherWorkflow?.setPrompt(message);
+        this.lastSupportResult = analyzeDrawingSupport(message);
+        this.updateTeacherQualitySummary();
         // 사용자 메시지 추가
         this.addChatMessage(message, 'user');
-        input.value = '';
-        input.style.height = 'auto';
+
+        if (this.lastSupportResult.status === 'excluded') {
+            this.setTeacherWorkflowState('warning', { message: this.lastSupportResult.message });
+            this.addChatMessage(`⚠️ ${this.lastSupportResult.message}`, 'assistant');
+            return;
+        }
+
+        this.setTeacherWorkflowState('checking', { message: this.lastSupportResult.message });
 
         // AI 응답 (현재는 시뮬레이션)
         setTimeout(() => {
@@ -3557,12 +3875,13 @@ class GraphAApp {
         // JSON 형식인지 확인 - 직접 처리
         if (trimmedMessage.startsWith('{') || trimmedMessage.startsWith('[') ||
             trimmedMessage.startsWith('```')) {
-            this.processAIJSON(trimmedMessage);
-            return;
+            this.setTeacherWorkflowState('generating');
+            return this.processAIJSON(trimmedMessage);
         }
 
         // 로딩 표시
         const loadingMessage = this.addChatMessage('처리 중... ⏳', 'assistant');
+        this.setTeacherWorkflowState('generating');
 
         try {
             // 현재 캔버스 상태를 컨텍스트로 전달
@@ -3573,18 +3892,24 @@ class GraphAApp {
 
             if (result.success && result.json) {
                 // JSON 패치 적용
-                this.processAIJSON(result.json, {
+                return this.processAIJSON(result.json, {
                     modelMeta: this.getAIModelResultMeta(result)
                 });
             } else if (result.error) {
                 this.addChatMessage(result.error, 'assistant');
+                this.setTeacherWorkflowState('error', { message: result.error });
+                return false;
             }
         } catch (error) {
             console.error('AI 명령 처리 실패:', error);
-            this.addChatMessage(`❌ ${error.message || 'AI 요청 처리 중 오류가 발생했습니다.'}`, 'assistant');
+            const message = error.message || 'AI 요청 처리 중 오류가 발생했습니다.';
+            this.addChatMessage(`❌ ${message}`, 'assistant');
+            this.setTeacherWorkflowState('error', { message });
+            return false;
         } finally {
             this.removeChatMessage(loadingMessage);
             this.updateSidebar();
+            this.updateTeacherQualitySummary();
         }
     }
 
@@ -3618,7 +3943,9 @@ class GraphAApp {
                 'assistant'
             );
             console.error('AI JSON 검증 실패:', validationResult.errors);
-            return;
+            const message = validationResult.errors.join(' ');
+            this.setTeacherWorkflowState('error', { message });
+            return false;
         }
 
         // 2. 파싱된 JSON 추출
@@ -3627,7 +3954,8 @@ class GraphAApp {
             data = parseAIJSONPayload(jsonInput);
         } catch (e) {
             this.addChatMessage(`⚠️ JSON 파싱 실패: ${e.message}`, 'assistant');
-            return;
+            this.setTeacherWorkflowState('error', { message: e.message });
+            return false;
         }
 
         // 3. 참조 ID 검증
@@ -3640,7 +3968,9 @@ class GraphAApp {
                 'assistant'
             );
             console.error('AI 참조 검증 실패:', refResult.errors);
-            return;
+            const message = refResult.errors.join(' ');
+            this.setTeacherWorkflowState('error', { message });
+            return false;
         }
 
         // 4. 패치 적용
@@ -3658,7 +3988,9 @@ class GraphAApp {
                 'assistant'
             );
             console.error('AI semantic validation failed:', intentResult.errors);
-            return;
+            const message = intentResult.errors.join(' ');
+            this.setTeacherWorkflowState('error', { message });
+            return false;
         }
 
         const patchResult = this.patchApplier.apply(data);
@@ -3669,12 +4001,17 @@ class GraphAApp {
             this.addChatMessage(`✅ ${patchResult.message}`, 'assistant', {
                 meta: intentOptions.modelMeta || ''
             });
+            this.setTeacherWorkflowState('complete');
+            this.updateTeacherQualitySummary();
+            return true;
         } else {
             this.addChatMessage(
                 `❌ 적용 실패: ${patchResult.message}\n${patchResult.errors.join('\n')}`,
                 'assistant'
             );
             console.error('AI 패치 적용 실패:', patchResult);
+            this.setTeacherWorkflowState('error', { message: patchResult.message });
+            return false;
         }
     }
 
@@ -3994,6 +4331,7 @@ class GraphAApp {
     saveToLocal() {
         const data = {
             version: '1.0',
+            projectName: this.projectName,
             canvas: {
                 offsetX: this.canvas.offset.x,
                 offsetY: this.canvas.offset.y,
@@ -4019,6 +4357,10 @@ class GraphAApp {
         try {
             const data = JSON.parse(saved);
 
+            if (typeof data.projectName === 'string' && data.projectName.trim()) {
+                this.setProjectName(data.projectName);
+            }
+
             if (data.canvas) {
                 this.canvas.offset.x = data.canvas.offsetX;
                 this.canvas.offset.y = data.canvas.offsetY;
@@ -4042,6 +4384,73 @@ class GraphAApp {
         }
     }
 
+    setProjectName(name) {
+        this.projectName = String(name || '수학 시험 그림').trim() || '수학 시험 그림';
+        localStorage.setItem('graphA_project_name', this.projectName);
+        const input = document.getElementById('projectNameInput');
+        if (input) input.value = this.projectName;
+    }
+
+    buildProjectEnvelope() {
+        return createProjectEnvelope({
+            name: this.projectName,
+            view: {
+                offset: {
+                    x: this.canvas.offset.x,
+                    y: this.canvas.offset.y
+                },
+                scale: this.canvas.scale
+            },
+            objects: this.objectManager.toJSON()
+        });
+    }
+
+    sanitizeProjectFilename(name) {
+        const safe = String(name || 'mathgraph-project')
+            .replace(/[\\/:*?"<>|]+/g, '-')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return safe || 'mathgraph-project';
+    }
+
+    exportProjectFile() {
+        const envelope = this.buildProjectEnvelope();
+        const blob = new Blob([JSON.stringify(envelope, null, 2)], {
+            type: 'application/json'
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = this.sanitizeProjectFilename(this.projectName) + '.mathgraph.json';
+        link.click();
+        URL.revokeObjectURL(url);
+        this.showToast('프로젝트 파일을 저장했습니다.', 'success');
+    }
+
+    async importProjectFile(file) {
+        try {
+            const envelope = parseProjectFile(await file.text());
+            const candidateManager = new ObjectManager();
+            candidateManager.fromJSON(envelope.objects);
+            if (candidateManager.toJSON().length !== envelope.objects.length) {
+                throw new Error('지원하지 않는 객체가 포함되어 있습니다.');
+            }
+
+            this.objectManager.fromJSON(envelope.objects);
+            this.canvas.offset.x = envelope.view.offset.x;
+            this.canvas.offset.y = envelope.view.offset.y;
+            this.canvas.scale = envelope.view.scale;
+            this.setProjectName(envelope.name);
+            this.historyManager.clear();
+            this.updateSidebar();
+            this.updateZoomDisplay();
+            this.render();
+            this.showToast('프로젝트를 불러왔습니다.', 'success');
+        } catch (error) {
+            this.showToast(error.message || '프로젝트 파일을 불러오지 못했습니다.', 'error');
+        }
+    }
+
     /**
      * Mk.4: 수직선 모달 설정
      */
@@ -4058,6 +4467,11 @@ class GraphAApp {
             const end = parseFloat(document.getElementById('nlEnd').value) || 5;
             const step = Math.max(0.1, parseFloat(document.getElementById('nlStep').value) || 1);
             const y = parseFloat(document.getElementById('nlY').value) || 0;
+            const parseMarks = (inputId, endpoint) => String(document.getElementById(inputId)?.value || '')
+                .split(',')
+                .map(value => Number(value.trim()))
+                .filter(Number.isFinite)
+                .map(value => ({ value, endpoint }));
 
             if (start >= end) {
                 this.showToast('끝값이 시작값보다 커야 합니다', 'warning');
@@ -4065,7 +4479,11 @@ class GraphAApp {
             }
 
             const numberLine = this.objectManager.createNumberLine({
-                start, end, step, y
+                start, end, step, y,
+                customMarks: [
+                    ...parseMarks('nlOpenMarks', 'open'),
+                    ...parseMarks('nlClosedMarks', 'closed')
+                ]
             });
 
             this.historyManager.recordCreate(numberLine);
@@ -4097,6 +4515,121 @@ class GraphAApp {
                 modal.classList.add('hidden');
                 this.toolManager.returnToSelect();
             }
+        });
+    }
+
+    openTextLabelModal(mathPosition) {
+        const modal = document.getElementById('textLabelModal');
+        if (!modal) return;
+        this.pendingTextPosition = mathPosition.clone ? mathPosition.clone() : new Vec2(mathPosition.x, mathPosition.y);
+        modal.classList.remove('hidden');
+        const input = document.getElementById('textLabelContent');
+        if (input) {
+            input.value = '';
+            requestAnimationFrame(() => input.focus());
+        }
+    }
+
+    setupTextLabelModal() {
+        const modal = document.getElementById('textLabelModal');
+        const createBtn = document.getElementById('textLabelCreateBtn');
+        const cancelBtn = document.getElementById('textLabelCancelBtn');
+        const input = document.getElementById('textLabelContent');
+        if (!modal || !createBtn || !cancelBtn || !input) return;
+
+        const close = () => {
+            modal.classList.add('hidden');
+            this.pendingTextPosition = null;
+            this.toolManager.returnToSelect();
+        };
+
+        createBtn.addEventListener('click', () => {
+            const text = input.value.trim();
+            if (!text) {
+                this.showToast('넣을 글이나 수식을 입력하세요.', 'warning');
+                return;
+            }
+            const position = this.pendingTextPosition || new Vec2(0, 0);
+            const fontSize = Number(document.getElementById('textLabelFontSize')?.value) || 18;
+            const align = document.getElementById('textLabelAlign')?.value || 'left';
+            const label = this.objectManager.createTextLabel(text, position.x, position.y, {
+                fontSize,
+                align
+            });
+            this.historyManager.recordCreate(label);
+            this.objectManager.clearSelection();
+            this.objectManager.selectObject(label);
+            this.updateSidebar();
+            this.updatePropertyPanel();
+            this.render();
+            this.showToast('텍스트를 추가했습니다.', 'success');
+            close();
+        });
+
+        cancelBtn.addEventListener('click', close);
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) close();
+        });
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                createBtn.click();
+            }
+        });
+    }
+
+    openCurvedSolidModal(kind) {
+        const modal = document.getElementById('curvedSolidModal');
+        if (!modal) return;
+        this.pendingCurvedSolidKind = kind;
+        const names = { cylinder: '원기둥', cone: '원뿔', sphere: '구' };
+        const title = document.getElementById('curvedSolidTitle');
+        if (title) title.textContent = `${names[kind] || '곡면 입체'} 만들기`;
+        document.getElementById('curvedSolidWidth').value = kind === 'sphere' ? '5' : '4';
+        document.getElementById('curvedSolidHeight').value = kind === 'sphere' ? '5' : '6';
+        modal.classList.remove('hidden');
+    }
+
+    setupCurvedSolidModal() {
+        const modal = document.getElementById('curvedSolidModal');
+        const createBtn = document.getElementById('curvedSolidCreateBtn');
+        const cancelBtn = document.getElementById('curvedSolidCancelBtn');
+        if (!modal || !createBtn || !cancelBtn) return;
+
+        const close = () => {
+            modal.classList.add('hidden');
+            this.pendingCurvedSolidKind = null;
+            this.toolManager.returnToSelect();
+        };
+
+        createBtn.addEventListener('click', () => {
+            try {
+                const input = buildCurvedSolidInput({
+                    kind: this.pendingCurvedSolidKind,
+                    x: document.getElementById('curvedSolidX').value,
+                    y: document.getElementById('curvedSolidY').value,
+                    width: document.getElementById('curvedSolidWidth').value,
+                    height: document.getElementById('curvedSolidHeight').value,
+                    ellipseRatio: document.getElementById('curvedSolidEllipseRatio').value,
+                    showHiddenLines: document.getElementById('curvedSolidHiddenLines').checked
+                });
+                const solid = this.objectManager.createCurvedSolid(input.kind, input);
+                this.historyManager.recordCreate(solid);
+                this.objectManager.clearSelection();
+                this.objectManager.selectObject(solid);
+                this.updateSidebar();
+                this.updatePropertyPanel();
+                this.render();
+                this.showToast(`${solid.getTypeName()}을 추가했습니다.`, 'success');
+                close();
+            } catch (error) {
+                this.showToast(error.message, 'warning');
+            }
+        });
+
+        cancelBtn.addEventListener('click', close);
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) close();
         });
     }
 }

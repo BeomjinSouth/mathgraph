@@ -109,7 +109,7 @@ export class SemanticValidator {
         if (hasNumberLinePrompt && !this.hasAnyType(ctx, ['numberLine'])) {
             result.addError('number-line problem diagram needs a numberLine object.');
         }
-        if (hasSolidPrompt && !this.hasAnyType(ctx, ['prism', 'pyramid', 'polygon', 'segment'])) {
+        if (hasSolidPrompt && !this.hasAnyType(ctx, ['prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'polygon', 'segment'])) {
             result.addError('solid problem diagram needs a supported solid approximation such as prism, pyramid, polygon, or segment.');
         }
         if (hasChartPrompt && !this.hasAnyType(ctx, ['polygon', 'point', 'segment', 'numberLine', 'line'])) {
@@ -122,6 +122,70 @@ export class SemanticValidator {
         }
 
         return result;
+    }
+
+    validateRequestedSolidIntent(data, options = {}) {
+        const operations = data?.operations || (Array.isArray(data) ? data : []);
+        if (!Array.isArray(operations)) {
+            return ValidationResult.failure('solid intent validation requires operations to be an array.');
+        }
+
+        const result = ValidationResult.success();
+        const prompt = this.text(options.prompt || options.userMessage || options.instruction || '');
+        const creates = operations.filter(operation => operation?.op === 'create');
+        const requestedTypes = [
+            ['cylinder', /원기둥|cylinder/],
+            ['cone', /원뿔|cone/],
+            ['sphere', /(?:^|[\s,(])구(?=$|[\s,.)]|(?:를|을|와|과|가|이|의|안|속|내부))|sphere/]
+        ].filter(([, pattern]) => pattern.test(prompt));
+
+        for (const [type] of requestedTypes) {
+            if (!creates.some(operation => operation.type === type)) {
+                result.addError(`the user explicitly requested a ${type}, but no ${type} object was created.`);
+            }
+        }
+
+        const requestsSphereInsideCone =
+            /원뿔.{0,16}(?:안|속|내부).{0,16}구/.test(prompt) ||
+            /sphere.{0,24}(?:inside|within).{0,24}cone/.test(prompt);
+        if (!requestsSphereInsideCone) {
+            return result;
+        }
+
+        const cone = creates.find(operation => operation.type === 'cone');
+        const sphere = creates.find(operation => operation.type === 'sphere');
+        if (!cone || !sphere) {
+            return result;
+        }
+
+        if (!this.isSolidBoundingBoxInside(sphere, cone)) {
+            result.addError('the requested sphere must be placed completely inside the cone, with a smaller size and contained bounds.');
+        }
+
+        return result;
+    }
+
+    isSolidBoundingBoxInside(inner, outer) {
+        const innerX = Number(inner?.x);
+        const innerY = Number(inner?.y);
+        const innerWidth = Math.abs(Number(inner?.width));
+        const innerHeight = Math.abs(Number(inner?.height));
+        const outerX = Number(outer?.x);
+        const outerY = Number(outer?.y);
+        const outerWidth = Math.abs(Number(outer?.width));
+        const outerHeight = Math.abs(Number(outer?.height));
+        const values = [innerX, innerY, innerWidth, innerHeight, outerX, outerY, outerWidth, outerHeight];
+        if (!values.every(Number.isFinite) || innerWidth <= 0 || innerHeight <= 0 || outerWidth <= 0 || outerHeight <= 0) {
+            return false;
+        }
+
+        const epsilon = 1e-6;
+        return innerWidth < outerWidth &&
+            innerHeight < outerHeight &&
+            innerX - innerWidth / 2 >= outerX - outerWidth / 2 - epsilon &&
+            innerX + innerWidth / 2 <= outerX + outerWidth / 2 + epsilon &&
+            innerY - innerHeight / 2 >= outerY - outerHeight / 2 - epsilon &&
+            innerY + innerHeight / 2 <= outerY + outerHeight / 2 + epsilon;
     }
 
     buildContext(operations) {

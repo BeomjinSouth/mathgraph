@@ -40,7 +40,8 @@ export class SchemaValidator {
             'vector', 'rightAngleMarker', 'equalLengthMarker',
             'angleDimension', 'lengthDimension',
             'arc', 'sector', 'circularSegment',
-            'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine'
+            'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine', 'textLabel',
+            'cylinder', 'cone', 'sphere'
         ];
 
         this.validOperations = ['create', 'update', 'delete'];
@@ -76,7 +77,11 @@ export class SchemaValidator {
             polygon: ['vertexIds'],
             prism: ['baseVertexIds', 'topVertexIds'],
             pyramid: ['baseVertexIds', 'apexId'],
-            numberLine: ['start', 'end', 'step', 'y']
+            numberLine: ['start', 'end', 'step', 'y'],
+            textLabel: ['text', 'x', 'y'],
+            cylinder: ['x', 'y', 'width', 'height'],
+            cone: ['x', 'y', 'width', 'height'],
+            sphere: ['x', 'y', 'width', 'height']
         };
     }
 
@@ -191,9 +196,78 @@ export class SchemaValidator {
                 errors.push(`${prefix}: numberLine showArrows must be a boolean.`);
             }
 
-            if (op.customMarks !== undefined && !Array.isArray(op.customMarks)) {
-                errors.push(`${prefix}: numberLine customMarks must be an array.`);
+            if (op.customMarks !== undefined) {
+                if (!Array.isArray(op.customMarks)) {
+                    errors.push(`${prefix}: numberLine customMarks must be an array.`);
+                } else {
+                    op.customMarks.forEach((mark, markIndex) => {
+                        const markPrefix = `${prefix}: numberLine customMarks[${markIndex}]`;
+                        if (!mark || typeof mark !== 'object') {
+                            errors.push(`${markPrefix} must be an object.`);
+                            return;
+                        }
+                        if (!Number.isFinite(mark.value)) {
+                            errors.push(`${markPrefix} value must be a finite number.`);
+                        }
+                        if (mark.endpoint !== undefined && !['open', 'closed'].includes(mark.endpoint)) {
+                            errors.push(`${markPrefix} endpoint must be "open" or "closed".`);
+                        }
+                    });
+                }
             }
+        }
+
+        if (op.type === 'textLabel') {
+            if (typeof op.text !== 'string' || op.text.trim().length === 0) {
+                errors.push(`${prefix}: textLabel text must be a non-empty string.`);
+            }
+            for (const field of ['x', 'y', 'fontSize']) {
+                if (op[field] !== undefined && !Number.isFinite(op[field])) {
+                    errors.push(`${prefix}: textLabel ${field} must be a finite number.`);
+                }
+            }
+        }
+
+        if (['cylinder', 'cone', 'sphere'].includes(op.type)) {
+            for (const field of ['x', 'y', 'width', 'height', 'ellipseRatio']) {
+                if (op[field] !== undefined && !Number.isFinite(op[field])) {
+                    errors.push(`${prefix}: ${op.type} ${field} must be a finite number.`);
+                }
+            }
+            if (Number.isFinite(op.width) && op.width <= 0) {
+                errors.push(`${prefix}: ${op.type} width must be greater than 0.`);
+            }
+            if (Number.isFinite(op.height) && op.height <= 0) {
+                errors.push(`${prefix}: ${op.type} height must be greater than 0.`);
+            }
+            if (op.showHiddenLines !== undefined && typeof op.showHiddenLines !== 'boolean') {
+                errors.push(`${prefix}: ${op.type} showHiddenLines must be a boolean.`);
+            }
+        }
+
+        if (op.text !== undefined && typeof op.text !== 'string') {
+            errors.push(`${prefix}: text must be a string.`);
+        }
+
+        if (op.align !== undefined && !['left', 'center', 'right'].includes(op.align)) {
+            errors.push(`${prefix}: align must be left, center, or right.`);
+        }
+
+        const rangeFields = ['xMin', 'xMax', 'yMin', 'yMax'];
+        for (const field of rangeFields) {
+            if (op[field] !== undefined && op[field] !== null && !Number.isFinite(op[field])) {
+                errors.push(`${prefix}: ${field} must be a finite number or null.`);
+            }
+        }
+        if (Number.isFinite(op.xMin) && Number.isFinite(op.xMax) && op.xMin >= op.xMax) {
+            errors.push(`${prefix}: xMin must be less than xMax.`);
+        }
+        if (Number.isFinite(op.yMin) && Number.isFinite(op.yMax) && op.yMin >= op.yMax) {
+            errors.push(`${prefix}: yMin must be less than yMax.`);
+        }
+        if (op.branch !== undefined && op.branch !== null &&
+            (!Number.isInteger(op.branch) || op.branch < 0 || op.branch > 1)) {
+            errors.push(`${prefix}: intersection branch must be 0 or 1.`);
         }
 
         if (op.type === 'pointOnCircle') {

@@ -157,7 +157,10 @@ export class PatchApplier {
                     resolvedOp.object1Id,
                     resolvedOp.object2Id,
                     null,
-                    commonParams
+                    {
+                        ...commonParams,
+                        ...(resolvedOp.branch !== undefined ? { branch: resolvedOp.branch } : {})
+                    }
                 );
                 break;
 
@@ -337,6 +340,33 @@ export class PatchApplier {
                 });
                 break;
 
+            case 'textLabel':
+                object = this.objectManager.createTextLabel(
+                    resolvedOp.text,
+                    resolvedOp.x,
+                    resolvedOp.y,
+                    {
+                        ...commonParams,
+                        ...(resolvedOp.align !== undefined ? { align: resolvedOp.align } : {}),
+                        ...(resolvedOp.backgroundColor !== undefined ? { backgroundColor: resolvedOp.backgroundColor } : {})
+                    }
+                );
+                break;
+
+            case 'cylinder':
+            case 'cone':
+            case 'sphere':
+                object = this.objectManager.createCurvedSolid(op.type, {
+                    ...commonParams,
+                    x: resolvedOp.x,
+                    y: resolvedOp.y,
+                    width: resolvedOp.width,
+                    height: resolvedOp.height,
+                    ...(resolvedOp.ellipseRatio !== undefined ? { ellipseRatio: resolvedOp.ellipseRatio } : {}),
+                    ...(resolvedOp.showHiddenLines !== undefined ? { showHiddenLines: resolvedOp.showHiddenLines } : {})
+                });
+                break;
+
             default:
                 throw new Error(`Unsupported object type: ${op.type}`);
         }
@@ -391,6 +421,18 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'y', op.y);
         this.applyPropertyUpdate(object, 'showArrows', op.showArrows);
         this.applyPropertyUpdate(object, 'tickHeight', op.tickHeight);
+        this.applyPropertyUpdate(object, 'text', op.text);
+        this.applyPropertyUpdate(object, 'align', op.align);
+        this.applyPropertyUpdate(object, 'backgroundColor', op.backgroundColor);
+        this.applyPropertyUpdate(object, 'width', op.width);
+        this.applyPropertyUpdate(object, 'height', op.height);
+        this.applyPropertyUpdate(object, 'ellipseRatio', op.ellipseRatio);
+        this.applyPropertyUpdate(object, 'showHiddenLines', op.showHiddenLines);
+        this.applyPropertyUpdate(object, 'xMin', op.xMin);
+        this.applyPropertyUpdate(object, 'xMax', op.xMax);
+        this.applyPropertyUpdate(object, 'yMin', op.yMin);
+        this.applyPropertyUpdate(object, 'yMax', op.yMax);
+        this.applyPropertyUpdate(object, 'branch', op.branch);
 
         if (op.labelOffset !== undefined && 'labelOffset' in object) {
             this.recordPropertyChange(object, 'labelOffset', object.labelOffset, op.labelOffset);
@@ -525,7 +567,11 @@ export class PatchApplier {
             'fillColor',
             'fillOpacity',
             'showLabel',
-            'locked'
+            'locked',
+            'xMin',
+            'xMax',
+            'yMin',
+            'yMax'
         ];
 
         for (const field of supportedFields) {

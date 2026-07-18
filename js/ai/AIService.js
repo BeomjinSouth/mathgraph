@@ -195,7 +195,8 @@ const GRAPH_OPERATION_TYPES = [
     'vector', 'rightAngleMarker', 'equalLengthMarker',
     'angleDimension', 'lengthDimension',
     'arc', 'sector', 'circularSegment',
-    'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine'
+    'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine', 'textLabel',
+    'cylinder', 'cone', 'sphere'
 ];
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
@@ -206,9 +207,13 @@ const customMarkSchema = {
     type: 'object',
     properties: {
         value: NULLABLE_NUMBER,
-        label: NULLABLE_STRING
+        label: NULLABLE_STRING,
+        endpoint: {
+            type: ['string', 'null'],
+            enum: ['open', 'closed', null]
+        }
     },
-    required: ['value', 'label'],
+    required: ['value', 'label', 'endpoint'],
     additionalProperties: false
 };
 
@@ -228,8 +233,23 @@ const operationProperties = {
         description: 'Object type for create operations. Use null for update/delete operations.'
     },
     label: NULLABLE_STRING,
+    text: NULLABLE_STRING,
+    align: {
+        type: ['string', 'null'],
+        enum: ['left', 'center', 'right', null]
+    },
+    backgroundColor: NULLABLE_STRING,
     x: NULLABLE_NUMBER,
     y: NULLABLE_NUMBER,
+    width: NULLABLE_NUMBER,
+    height: NULLABLE_NUMBER,
+    ellipseRatio: NULLABLE_NUMBER,
+    showHiddenLines: NULLABLE_BOOLEAN,
+    xMin: NULLABLE_NUMBER,
+    xMax: NULLABLE_NUMBER,
+    yMin: NULLABLE_NUMBER,
+    yMax: NULLABLE_NUMBER,
+    branch: NULLABLE_NUMBER,
     point1Id: NULLABLE_STRING,
     point2Id: NULLABLE_STRING,
     point3Id: NULLABLE_STRING,
@@ -399,6 +419,12 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
    - For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough away to render a visible, non-degenerate angle arc.
    - For prism objects, use baseVertexIds for the near/front face and topVertexIds for the shifted rear face so visible front edges stay solid and hidden rear edges become dashed.
    - For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.
+   - For cylinders, cones, and spheres, use the first-class cylinder/cone/sphere objects with x, y, width, and height. Hidden curved edges are rendered automatically.
+   - When the user names multiple solids, create every named solid. A single outer solid is not a complete response.
+   - For containment requests such as "a sphere inside a cone", make the inner solid smaller and place its full bounds inside the outer solid.
+   - Use textLabel with text, x, and y for standalone conditions, annotations, and formulas that are not attached to another object.
+   - Function objects may use xMin, xMax, yMin, and yMax to clip the graph to the requested domain and range.
+   - For two-valued intersections, set branch to 0 or 1 so the requested crossing is deterministic.
    - For nested solids, keep inner vertices inside the outer projection and separate multiple inner solids so they do not overlap visually.
    - For standalone textbook arrows or direction arrows, create a vector with hidden helper endpoint points. Do not invent an unsupported arrow type.
    - Hide helper points with visible:false when they only shape a region.
@@ -432,6 +458,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - tangentCircle: circleId, tangentPointId
 - tangentFunction: functionId, x
 - function: expression (예: "x^2 - 2*x + 1")
+- function optional ranges: xMin, xMax, yMin, yMax
 - function expression is the right-hand side only. Never include "y=".
 - vector: startPointId, endPointId. Use vector for standalone arrows and direction arrows.
 - rightAngleMarker: vertexId, line1Id, line2Id
@@ -444,6 +471,9 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - prism: baseVertexIds (배열), topVertexIds (배열) - 각기둥
 - pyramid: baseVertexIds (배열), apexId - 각뿔
 - numberLine: start, end, step, y
+- cylinder, cone, sphere: x, y, width, height (optional ellipseRatio, showHiddenLines)
+- textLabel: text, x, y (optional align, fontSize)
+- intersection optional branch: 0 or 1
 
 ### 선택적 공통 속성
 - label: 객체 이름
@@ -525,7 +555,7 @@ export const PROBLEM_DIAGRAM_GRAPH_GUIDANCE = [
     'If no figure is explicitly provided, choose the most useful coordinate graph, function graph, number line, plane-geometry diagram, solid diagram, or region diagram for understanding the conditions.',
     'Default visual style is monochrome Korean exam paper style: thin black lines, sparse hatching or light shading when needed, no decoration, no heavy colors.',
     'Hide helper points with visible:false or pointSize:0. Keep labels sparse and avoid overlap.',
-    'For histogram, scatter, box plot, cylinder, cone, or sphere prompts, approximate with supported GraphA objects when reasonable; otherwise avoid inventing unsupported text-heavy objects.',
+    'For cylinder, cone, or sphere prompts, use the matching first-class curved-solid object. For unsupported chart families, use a disclosed approximation only when reasonable.',
     'When a condition is ambiguous, draw exact numeric elements first and arrange the rest in a mathematically natural representative layout.'
 ].join('\n');
 
@@ -879,6 +909,13 @@ export class AIService {
         const referenceResult = this.schemaValidator.validateReferences(json, existingIds);
         if (!referenceResult.valid) {
             return referenceResult;
+        }
+
+        const solidIntentResult = this.semanticValidator.validateRequestedSolidIntent(json, {
+            prompt: options.userMessage
+        });
+        if (!solidIntentResult.valid) {
+            return solidIntentResult;
         }
 
         if (options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
@@ -1264,7 +1301,7 @@ export class AIService {
         const addCircle = () => add('point', 'circle', 'circleThreePoints', 'pointOnCircle', 'circleCenterPoint', 'arc', 'sector', 'circularSegment', 'lensRegion', 'tangentCircle');
         const addConstruction = () => add('intersection', 'midpoint', 'parallel', 'perpendicular', 'perpendicularBisector', 'angleBisector', 'rightAngleMarker', 'equalLengthMarker', 'angleDimension', 'lengthDimension');
         const addSolid = () => {
-            add('point', 'segment', 'polygon', 'prism', 'pyramid');
+            add('point', 'segment', 'polygon', 'prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'textLabel');
             includeKnownGaps = true;
         };
         const addGraph = () => add('point', 'segment', 'line', 'vector', 'function', 'tangentFunction', 'intersection', 'polygon');
@@ -1627,6 +1664,25 @@ export class AIService {
             }
         }
 
+        // 원기둥·원뿔·구는 전용 곡면 입체 객체를 사용한다.
+        const curvedSolidType = lower.includes('원기둥') || lower.includes('cylinder')
+            ? 'cylinder'
+            : lower.includes('원뿔') || lower.includes('cone')
+                ? 'cone'
+                : lower.includes('구') || lower.includes('sphere')
+                    ? 'sphere'
+                    : null;
+        if (curvedSolidType) {
+            const width = curvedSolidType === 'sphere' ? 5 : 4;
+            const height = curvedSolidType === 'sphere' ? 5 : 6;
+            operations = [{
+                op: 'create', type: curvedSolidType, id: `${curvedSolidType}_1`,
+                x: offsetX, y: offsetY, width, height
+            }];
+            this.addToHistory(operations);
+            return { success: true, json: { operations } };
+        }
+
         // ===============================
         // 2. 삼각형 (라벨 및 좌표 파싱)
         // ===============================
@@ -1893,6 +1949,7 @@ export class AIService {
             () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
             () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage),
             () => this.buildBasicFunctionOperations(normalizedMessage),
+            () => this.buildBasicCurvedSolidOperations(normalizedMessage, state.layoutOrigin),
             () => this.buildBasicSolidOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
             () => this.buildBasicCircleOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
             () => this.buildEquationCircleOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
@@ -2227,6 +2284,63 @@ export class AIService {
                 { op: 'create', type: 'function', expression }
             ]
         };
+    }
+
+    buildBasicCurvedSolidOperations(message, layoutOrigin = { x: 0, y: 0 }) {
+        const text = String(message ?? '');
+        const requested = [];
+        if (/원기둥|cylinder/i.test(text)) requested.push('cylinder');
+        if (/원뿔|cone/i.test(text)) requested.push('cone');
+        if (/(?:^|[\s,(])구(?=$|[\s,.)]|(?:를|을|와|과|가|이|의|안|속|내부))|sphere/i.test(text)) requested.push('sphere');
+        if (requested.length === 0) return null;
+
+        const originX = Number.isFinite(layoutOrigin?.x) ? layoutOrigin.x : 0;
+        const originY = Number.isFinite(layoutOrigin?.y) ? layoutOrigin.y : 0;
+        const sphereInsideCone = requested.includes('cone') && requested.includes('sphere') &&
+            (/원뿔.{0,16}(?:안|속|내부).{0,16}구/i.test(text) ||
+                /sphere.{0,24}(?:inside|within).{0,24}cone/i.test(text));
+
+        if (sphereInsideCone) {
+            const operations = [
+                {
+                    op: 'create', id: 'outer_cone', type: 'cone',
+                    x: originX, y: originY, width: 6, height: 8,
+                    ellipseRatio: 0.24, showHiddenLines: true, showLabel: false
+                },
+                {
+                    op: 'create', id: 'inner_sphere', type: 'sphere',
+                    x: originX, y: originY - 0.5, width: 2.4, height: 2.4,
+                    ellipseRatio: 0.24, showHiddenLines: true, showLabel: false
+                }
+            ];
+            if (/높이\s*(?:는|를|가|을)?\s*h|height\s*h/i.test(text)) {
+                operations.push({
+                    op: 'create', id: 'height_label', type: 'textLabel',
+                    text: 'h', x: originX + 3.45, y: originY, align: 'left', fontSize: 18
+                });
+            }
+            return { operations };
+        }
+
+        const spacing = 6;
+        const startX = originX - ((requested.length - 1) * spacing) / 2;
+        const operations = requested.map((type, index) => {
+            const width = type === 'sphere' ? 4 : 4.8;
+            const height = type === 'sphere' ? 4 : 6.4;
+            return {
+                op: 'create',
+                id: `${type}_${index + 1}`,
+                type,
+                x: startX + index * spacing,
+                y: originY,
+                width,
+                height,
+                ellipseRatio: 0.24,
+                showHiddenLines: true,
+                showLabel: false
+            };
+        });
+        return { operations };
     }
 
     buildBasicSolidOperations(message, usedLabels, layoutOrigin = { x: 0, y: 0 }) {
@@ -2765,11 +2879,18 @@ export class AIService {
     }
 
     validateImageAnalysisIntent(json, options) {
-        return this.schemaValidator.validateIntent(json, {
+        const schemaIntentResult = this.schemaValidator.validateIntent(json, {
             mode: options.mode,
             instruction: options.instruction,
             context: options.context,
             maxOperations: options.mode === 'recreate' ? IMAGE_RECREATE_OPERATION_BUDGET : undefined
+        });
+        if (!schemaIntentResult.valid) {
+            return schemaIntentResult;
+        }
+
+        return this.semanticValidator.validateRequestedSolidIntent(json, {
+            instruction: options.instruction
         });
     }
 

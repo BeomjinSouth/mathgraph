@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "project": "MathGraph",
-  "updatedAt": "2026-06-02",
+  "updatedAt": "2026-07-10",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
   "referenceFiles": [
     {
@@ -12,7 +12,7 @@
     {
       "path": "synthetic-drawing-data.jsonl",
       "role": "synthetic examples with Korean prompts, planning steps, and valid operations payloads",
-      "readWhen": "Need a concrete pattern for a complex plane figure, solid, graph, number line, or chart-like approximation."
+      "readWhen": "Need a concrete pattern for a complex plane figure, solid, graph, or number line. Statistical charts remain outside the standard teacher generation workflow."
     }
   ],
   "selectionRules": [
@@ -27,7 +27,7 @@
       "exampleTags": ["circle", "sector", "tangent"]
     },
     {
-      "ifPromptMentions": ["각기둥", "각뿔", "입체", "정육면체", "직육면체", "삼각기둥", "사각뿔"],
+      "ifPromptMentions": ["각기둥", "각뿔", "입체", "정육면체", "직육면체", "삼각기둥", "사각뿔", "원기둥", "원뿔", "구"],
       "loadChunks": ["contract-core", "objects-solid"],
       "exampleTags": ["solid"]
     },
@@ -43,8 +43,8 @@
     },
     {
       "ifPromptMentions": ["히스토그램", "도수", "상자그림", "산점도", "통계", "막대"],
-      "loadChunks": ["contract-core", "objects-plane-core", "objects-number-line", "known-gaps"],
-      "exampleTags": ["chart_approximation"]
+      "loadChunks": ["known-gaps"],
+      "exampleTags": []
     },
     {
       "ifPromptMentions": ["문제 전문", "문제 전체", "문제 상황", "구하여라", "구하시오", "조건을 만족", "좌표평면"],
@@ -54,7 +54,7 @@
     {
       "ifPromptMentions": ["사진", "이미지", "도식", "그림 재구성", "사진 속", "문제 사진"],
       "loadChunks": ["api-prompting", "scene-graph-pipeline", "contract-core", "objects-plane-core", "objects-graph", "objects-circle-core", "objects-solid", "objects-number-line", "known-gaps"],
-      "exampleTags": ["plane", "graph", "circle", "solid", "chart_approximation"]
+      "exampleTags": ["plane", "graph", "circle", "solid"]
     },
     {
       "ifPromptMentions": ["API", "GPT", "structured output", "구조화", "프롬프트", "토큰"],
@@ -81,7 +81,7 @@
     {
       "id": "objects-plane-core",
       "file": "feature-manual.json",
-      "objectTypes": ["point", "pointOnLine", "segment", "line", "ray", "vector", "polygon"]
+      "objectTypes": ["point", "pointOnLine", "segment", "line", "ray", "vector", "polygon", "textLabel"]
     },
     {
       "id": "objects-circle-core",
@@ -101,7 +101,7 @@
     {
       "id": "objects-solid",
       "file": "feature-manual.json",
-      "objectTypes": ["prism", "pyramid", "point", "polygon"]
+      "objectTypes": ["prism", "pyramid", "cylinder", "cone", "sphere", "point", "polygon", "textLabel"]
     },
     {
       "id": "objects-graph",

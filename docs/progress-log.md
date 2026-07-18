@@ -25,6 +25,41 @@
 - `js/main.js` (~3.9k lines) and `js/ai/AIService.js` (~2.8k lines) remain large "god" modules; extracting the property-panel/sidebar rendering and the AI transport/prompt/validation layers is a larger refactor best done incrementally with UI coverage.
 - Client-side model IDs (`gpt-5.5`, etc.) are still hardcoded in `js/ai/AIService.js`; re-verify against current OpenAI model availability.
 
+## 2026-07-10
+
+### Teacher exam-diagram production workflow
+
+#### Work completed
+
+- Added named, versioned MathGraph project JSON export/import with validation before canvas mutation.
+- Added physical PNG presets for HWP 80 mm/300 dpi, HWP 120 mm/300 dpi, and print 160 mm/600 dpi.
+- Added first-class standalone text labels and open/closed number-line endpoint marks across runtime, persistence, SVG export, AI schema, and patching.
+- Added editable cylinder, cone, and sphere textbook projections with optional dashed hidden curves across manual tools, persistence, SVG export, scene compilation, AI schema, and local fallback.
+- Added AI parity for function x/y range limits and deterministic intersection branch 0/1.
+- Added support preflight and explicit exclusion for statistical chart families; warnings retain the original teacher prompt and generation errors expose retry.
+- Rebuilt the workspace around the central canvas with a bottom AI generation dock, right exam-quality summary, keyboard-focusable canvas, and a compact 1280 px tool rail.
+- Updated the MathGraph drawing skill, source/runtime feature manuals, retrieval indexes, AI reference, design spec, and design QA evidence.
+- Preserved the selected generated design target and browser captures at 1672×941 and 1280×720 under `docs/design-references/teacher-workflow/`.
+
+#### Verification
+
+- Ran `npm.cmd test`; passed with 218 tests, 0 failures.
+- Ran `npm.cmd run vercel-build`; passed.
+- Ran `node --check` for `js/main.js`, `js/ui/TeacherWorkflow.js`, and `js/ai/SupportPreflight.js`; passed.
+- Parsed both source/runtime feature manuals and retrieval indexes as JSON and confirmed each runtime mirror is byte-identical to its source copy.
+- Ran `git diff --check`; passed with no whitespace errors.
+- Browser verification confirmed guest entry, canvas keyboard focus, prompt retention on excluded charts, Korean support-warning copy, manual cylinder creation, editable hidden-curve controls, HWP 80 mm/300 dpi preset selection, and no console errors.
+- Responsive measurements confirmed the canvas and 154 px bottom dock do not overlap at 1672×941 or 1280×720; the left tool panel collapses to 60 px at 1280 px.
+- Compared the generated target and implementation together at 1672×941. `docs/design-references/teacher-workflow/design-qa.md` records `final result: passed` with no unresolved P0/P1/P2 findings.
+
+#### Deployment / Vercel
+
+- Production deployment and alias smoke are pending the documentation commit and GitHub push in this task.
+
+#### Git / GitHub
+
+- Working branch: `codex/teacher-workflow-20260710`; feature commits are complete and the final documentation commit is pending.
+
 ## 2026-06-19
 
 ### Full problem text to exam-style MathGraph diagram
@@ -2728,3 +2763,29 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - The verified release-candidate branch remains synchronized with GitHub through `2fb4361`. The production alias still returns HTTP 200 but continues to serve the pre-hardening June release.
 - No deployment was attempted because the last successful environment-name check still showed required `MATHGRAPH_OWNER_PASSWORD` missing, and completing Vercel OAuth requires explicit user-controlled account approval.
 - Next action: the owner signs in to Vercel and adds/confirms the Production `MATHGRAPH_OWNER_PASSWORD`, then resumes this goal for deploy, inspect, and production browser smoke.
+
+## 2026-07-18 교사용 AI 그림 성능 회귀 복구
+
+### 원인과 수정
+
+- 현재 배포 갈래 `codex/ai-fallback-recovery`와 교사용 그림 개선 갈래 `codex/teacher-workflow-20260710`가 2026-06-19 이후 갈라져 있었다. 원뿔·구·원기둥 전용 도형과 교사용 생성 도크는 후자에, 로그인·OpenAI 프록시·시간 제한·오류 복구·모바일·실행 취소 보강은 전자에만 남은 상태였다.
+- 교사용 그림 개선 갈래를 현재 배포 갈래에 통합하면서 이후의 보안·오류 처리·반응형·저장 기능을 모두 유지했다.
+- AI 결과 검증에 요청된 입체의 종류와 포함 관계를 추가했다. 이제 `원뿔 안에 구` 요청은 원뿔이나 구가 빠지거나 구가 원뿔 밖에 있으면 실패로 판정하여 복구한다.
+- OpenAI 호출이 실패하거나 사용할 수 없을 때도 원뿔, 내부 구, 높이 `h`를 편집 가능한 객체 3개로 만드는 로컬 대체 생성을 추가했다.
+- 이미지 분석 실패는 더 이상 무조건 `OpenAI Vision API 오류`로 뭉뚱그리지 않고, 소유자 프록시가 반환한 읽을 수 있는 실제 오류를 표시한다.
+- 390px 모바일 폭에서 입력칸과 생성 버튼이 겹치지 않도록 교사용 도크를 한 열로 정리했다.
+
+### 검증
+
+- `npm.cmd test`: 328/328 통과.
+- `npm.cmd run vercel-build`: 328/328 통과.
+- `git diff --cached --check`: 공백 오류 없음.
+- 앱 내 브라우저 로컬 확인:
+  - 데스크톱과 390×844 모바일에서 게스트 진입 후 `원뿔 안에 구 그리고 높이 h를 표시해줘`를 실행했다.
+  - 두 화면 모두 `객체 3개`, `시험지용 그림 준비 완료`를 표시했고 원뿔, 내부 구, `h`가 함께 렌더링됐다.
+  - 브라우저 개발자 로그에는 준비 완료 로그만 있었고 오류·경고는 없었다.
+
+### 배포 상태
+
+- 소스 통합과 로컬 검증은 완료했다.
+- 운영 배포는 프로젝트 안전 규칙에 따라 Vercel 인증과 Production의 필수 `MATHGRAPH_OWNER_PASSWORD` 존재 여부를 다시 확인한 뒤에만 진행한다.

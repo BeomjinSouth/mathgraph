@@ -545,6 +545,9 @@ export class EventHandler {
             case 'KeyN':
                 if (!ctrl) this.app.toolManager?.setTool('numberLine');
                 break;
+            case 'KeyT':
+                if (!ctrl) this.app.toolManager?.setTool('textLabel');
+                break;
 
             // Mk.2: 숨기기/보이기 토글 (H)
             case 'KeyH':

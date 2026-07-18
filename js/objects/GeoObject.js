@@ -54,7 +54,15 @@ export const ObjectType = {
     PYRAMID: 'pyramid',
 
     // Mk.4: 수직선
-    NUMBER_LINE: 'numberLine'
+    NUMBER_LINE: 'numberLine',
+
+    // 시험지용 독립 설명문/수식
+    TEXT_LABEL: 'textLabel',
+
+    // 곡면 입체도형
+    CYLINDER: 'cylinder',
+    CONE: 'cone',
+    SPHERE: 'sphere'
 };
 
 // 라벨 생성기
@@ -302,6 +310,10 @@ export class GeoObject {
             [ObjectType.FUNCTION]: 'function',
             [ObjectType.VECTOR]: 'vector',
             [ObjectType.RIGHT_ANGLE_MARKER]: 'marker',
+            [ObjectType.TEXT_LABEL]: 'text',
+            [ObjectType.CYLINDER]: 'solid',
+            [ObjectType.CONE]: 'solid',
+            [ObjectType.SPHERE]: 'solid',
             [ObjectType.EQUAL_LENGTH_MARKER]: 'marker'
         };
         return iconMap[this.type] || 'line';
@@ -336,7 +348,11 @@ export class GeoObject {
             [ObjectType.EQUAL_LENGTH_MARKER]: '같은 길이 표시',
             [ObjectType.PRISM]: '각기둥',
             [ObjectType.PYRAMID]: '각뿔',
-            [ObjectType.NUMBER_LINE]: '수직선'
+            [ObjectType.NUMBER_LINE]: '수직선',
+            [ObjectType.TEXT_LABEL]: '텍스트',
+            [ObjectType.CYLINDER]: '원기둥',
+            [ObjectType.CONE]: '원뿔',
+            [ObjectType.SPHERE]: '구'
         };
         return nameMap[this.type] || '객체';
     }

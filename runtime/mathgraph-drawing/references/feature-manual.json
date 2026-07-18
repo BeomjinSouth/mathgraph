@@ -1,7 +1,7 @@
 {
-  "manualVersion": 1,
+  "manualVersion": 2,
   "project": "MathGraph",
-  "updatedAt": "2026-06-19",
+  "updatedAt": "2026-07-10",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
@@ -81,9 +81,9 @@
     "recommendedFor": ["pasted image recreation", "whole-photo diagram recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
     "sceneRootShape": {
       "sceneType": "diagram",
-      "nodes": "Array of math entities such as point, segment, vector, circle, arc, sector, lensRegion, polygon, function, numberLine, prism, pyramid.",
+      "nodes": "Array of math entities such as point, segment, vector, circle, arc, sector, lensRegion, polygon, function, numberLine, textLabel, prism, pyramid, cylinder, cone, sphere.",
       "relations": "Array of constraints or annotations such as intersection, midpoint, parallel, perpendicular, rightAngle, equalLength, angleDimension, lengthDimension, tangentFunction.",
-      "unsupported": "Array of unsupported first-class requests such as cylinder, cone, sphere, native histogram, scatterPlot, boxPlot, table, or textLabel.",
+      "unsupported": "Array of unsupported first-class requests such as native statistical charts, tables, nets, annular sectors, or exact function-bounded curved fills.",
       "notes": "Optional source evidence, uncertainty, or crop notes."
     },
     "compiler": {
@@ -167,7 +167,7 @@
       { "name": "locked", "type": "boolean", "scope": "create/update", "note": "Prevents direct dragging when supported." },
       { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels." }
     ],
-    "updateOnlyOrObjectSpecific": ["x", "y", "expression", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
+    "updateOnlyOrObjectSpecific": ["x", "y", "width", "height", "ellipseRatio", "showHiddenLines", "text", "align", "expression", "xMin", "xMax", "yMin", "yMax", "branch", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
   },
   "aiCreatableObjects": [
     {
@@ -256,9 +256,9 @@
       "koreanName": "교점",
       "tags": ["construction", "graph"],
       "requiredFields": ["object1Id", "object2Id"],
-      "optionalFields": ["label", "color", "pointSize"],
+      "optionalFields": ["label", "color", "pointSize", "branch"],
       "template": { "op": "create", "id": "P", "type": "intersection", "object1Id": "l1", "object2Id": "l2", "label": "P" },
-      "notes": ["For multiple intersections, current AI schema has no anchor field. Prefer unambiguous pairs or add explanatory limitation."]
+      "notes": ["For two-valued intersections, branch 0 or 1 selects a deterministic result. Semantic left/right/upper/lower anchor names are not first-class fields."]
     },
     {
       "type": "midpoint",
@@ -328,9 +328,9 @@
       "koreanName": "함수 그래프",
       "tags": ["graph", "function"],
       "requiredFields": ["expression"],
-      "optionalFields": ["label", "color", "lineWidth", "fontSize", "showLabel"],
+      "optionalFields": ["label", "color", "lineWidth", "fontSize", "showLabel", "xMin", "xMax", "yMin", "yMax"],
       "template": { "op": "create", "id": "f", "type": "function", "label": "f", "expression": "x^2 - 2*x + 1" },
-      "notes": ["Use * for multiplication. Parser supports sin, cos, tan, sqrt, abs, log, ln, exp, min, max, pow, pi, e. Runtime UI supports domain edits, but the AI schema does not currently accept xMin/xMax."]
+      "notes": ["Use * for multiplication. Parser supports sin, cos, tan, sqrt, abs, log, ln, exp, min, max, pow, pi, e. AI create/update accepts xMin/xMax/yMin/yMax for visible domain and range clipping."]
     },
     {
       "type": "vector",
@@ -445,14 +445,50 @@
       "notes": ["Uses oblique projection and hidden-edge dashed rendering. Create base points and apex first."]
     },
     {
+      "type": "textLabel",
+      "koreanName": "독립 텍스트",
+      "tags": ["annotation", "exam"],
+      "requiredFields": ["text", "x", "y"],
+      "optionalFields": ["align", "fontSize", "color", "backgroundColor"],
+      "template": { "op": "create", "id": "note_1", "type": "textLabel", "text": "단, x > 0", "x": 1, "y": -2, "align": "left" },
+      "notes": ["Use for standalone conditions, short annotations, and formulas that are not attached to another object."]
+    },
+    {
+      "type": "cylinder",
+      "koreanName": "원기둥",
+      "tags": ["solid", "curved_solid"],
+      "requiredFields": ["x", "y", "width", "height"],
+      "optionalFields": ["ellipseRatio", "showHiddenLines", "label", "color", "lineWidth"],
+      "template": { "op": "create", "id": "cylinder_1", "type": "cylinder", "x": 0, "y": 0, "width": 4, "height": 6, "ellipseRatio": 0.28, "showHiddenLines": true },
+      "notes": ["Editable textbook projection. Hidden back curves are dashed when showHiddenLines is true."]
+    },
+    {
+      "type": "cone",
+      "koreanName": "원뿔",
+      "tags": ["solid", "curved_solid"],
+      "requiredFields": ["x", "y", "width", "height"],
+      "optionalFields": ["ellipseRatio", "showHiddenLines", "label", "color", "lineWidth"],
+      "template": { "op": "create", "id": "cone_1", "type": "cone", "x": 0, "y": 0, "width": 4, "height": 6, "ellipseRatio": 0.28, "showHiddenLines": true },
+      "notes": ["Editable textbook projection with an elliptical base and optional dashed hidden curve."]
+    },
+    {
+      "type": "sphere",
+      "koreanName": "구",
+      "tags": ["solid", "curved_solid"],
+      "requiredFields": ["x", "y", "width", "height"],
+      "optionalFields": ["ellipseRatio", "showHiddenLines", "label", "color", "lineWidth"],
+      "template": { "op": "create", "id": "sphere_1", "type": "sphere", "x": 0, "y": 0, "width": 5, "height": 5, "ellipseRatio": 0.28, "showHiddenLines": true },
+      "notes": ["Editable sphere projection with a great-circle ellipse and optional dashed hidden half."]
+    },
+    {
       "type": "numberLine",
       "koreanName": "수직선",
       "tags": ["number_line", "axis"],
       "requiredFields": ["start", "end", "step", "y"],
       "optionalFields": ["showArrows", "tickHeight", "customMarks", "color", "lineWidth", "fontSize"],
       "template": { "op": "create", "id": "nl_1", "type": "numberLine", "start": -5, "end": 5, "step": 1, "y": 0, "showArrows": true },
-      "validationRules": ["start must be less than end.", "step must be greater than 0.", "customMarks must be an array of {value,label} objects when supplied."],
-      "notes": ["Use customMarks for radical, special, or named marks."]
+      "validationRules": ["start must be less than end.", "step must be greater than 0.", "customMarks must be an array of {value,label,endpoint} objects when supplied.", "endpoint, when supplied, must be open or closed."],
+      "notes": ["Use customMarks for radical, special, named, open, or closed marks. Open endpoints render hollow and closed endpoints render filled."]
     }
   ],
   "runtimeUiTools": [
@@ -474,6 +510,10 @@
     { "tool": "fill", "koreanName": "벡터 채우기", "shortcut": null, "aiCreateType": null },
     { "tool": "prism", "koreanName": "각기둥", "shortcut": null, "aiCreateType": "prism" },
     { "tool": "pyramid", "koreanName": "각뿔", "shortcut": null, "aiCreateType": "pyramid" },
+    { "tool": "cylinder", "koreanName": "원기둥", "shortcut": null, "aiCreateType": "cylinder" },
+    { "tool": "cone", "koreanName": "원뿔", "shortcut": null, "aiCreateType": "cone" },
+    { "tool": "sphere", "koreanName": "구", "shortcut": null, "aiCreateType": "sphere" },
+    { "tool": "textLabel", "koreanName": "텍스트", "shortcut": "T", "aiCreateType": "textLabel" },
     { "tool": "parallel", "koreanName": "평행선", "shortcut": null, "aiCreateType": "parallel" },
     { "tool": "perpendicular", "koreanName": "수선", "shortcut": null, "aiCreateType": "perpendicular" },
     { "tool": "perpendicularBisector", "koreanName": "수직이등분선", "shortcut": null, "aiCreateType": "perpendicularBisector" },
@@ -509,6 +549,7 @@
       "function tangent at x=value",
       "basic function expressions",
       "rectangular prism/cube prompts, including a nested small cube inside an outer rectangular prism",
+      "curved solid prompts for cylinders, cones, and spheres",
       "circle center/radius and circle equations",
       "linear equations into lines"
     ],
@@ -524,7 +565,7 @@
   "interactionAndEditing": {
     "keyboard": ["Ctrl+Z undo", "Ctrl+Y redo", "Delete/Backspace delete selected", "Esc cancel/clear selection", "Ctrl+A select all", "Ctrl+C copy", "Ctrl+V paste", "Space+drag pan"],
     "selection": ["single select", "shift multi-select", "box select", "hidden-object visibility mode"],
-    "properties": ["label", "color", "lineWidth", "point coordinates", "function expression", "function domain through UI", "label reset", "object visibility", "copy/paste/delete"],
+    "properties": ["label or standalone text", "color", "lineWidth", "point coordinates", "function expression and x/y limits", "intersection branch", "curved-solid width/height/ellipse ratio/hidden curves", "number-line open and closed marks", "label reset", "object visibility", "copy/paste/delete"],
     "history": ["create", "delete", "propertyChange", "batch", "drag", "rollback on AI patch failure"]
   },
   "settingsAndView": {
@@ -539,12 +580,22 @@
     "textCommand": "Korean natural language or direct JSON can be submitted through the chat panel.",
     "directJson": "Messages beginning with {, [, or code fences are parsed directly as GraphA operations.",
     "imageAnalysis": "Image upload sends a vision request when API key/provider support is configured.",
-    "configStorage": "Provider, API key, model, reasoning effort, and verbosity are stored in localStorage."
+    "configStorage": "Provider, API key, model, reasoning effort, and verbosity are stored in localStorage.",
+    "supportPreflight": "Before generation, classify requests as supported, approximated, excluded, or unknown. Keep the original prompt on warning/error and expose retry after generation failure."
+  },
+  "teacherWorkflow": {
+    "layout": "Canvas-first workspace with a persistent bottom AI command dock and right-side exam-quality summary.",
+    "projectFiles": "Named versioned mathgraph-project JSON envelopes preserve view and editable objects for later revision.",
+    "qualitySummary": "Reports object count and support status before and after generation.",
+    "excludedCharts": ["barChart", "pieChart", "histogram", "frequencyPolygon", "boxPlot", "dotPlot", "scatterPlot"]
   },
   "exportAndPersistence": {
     "exportFormats": ["PNG", "SVG"],
-    "exportOptions": ["scale 1x/2x/3x for PNG", "include background", "include grid", "include axes"],
-    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "functions", "arc", "sector", "circularSegment", "lensRegion", "polygon", "numberLine", "grid", "axes", "fallback embedded PNG"],
+    "exportOptions": ["scale 1x/2x/3x for PNG", "HWP 80 mm at 300 dpi", "HWP 120 mm at 300 dpi", "print 160 mm at 600 dpi", "include background", "include grid", "include axes"],
+    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "functions", "arc", "sector", "circularSegment", "lensRegion", "polygon", "numberLine", "textLabel", "cylinder", "cone", "sphere", "grid", "axes", "fallback embedded PNG"],
+    "physicalPresets": { "hwpCompact": "80 mm at 300 dpi", "hwpWide": "120 mm at 300 dpi", "printHigh": "160 mm at 600 dpi" },
+    "projectFile": "Exports and imports a named versioned mathgraph-project JSON envelope with view and editable objects.",
+    "projectImportValidation": "Rejects unknown format/version, invalid view data, and non-array object collections before replacing the current project.",
     "localSave": "Saves canvas offset, scale, and ObjectManager JSON to localStorage key graphA_save.",
     "localLoad": "Loads saved object graph and clears history baseline."
   },
@@ -560,27 +611,15 @@
   "knownGapsAndApproximations": [
     {
       "gap": "Statistical chart primitives are not first-class objects.",
-      "currentApproximation": "Use numberLine, segment axes, and polygon bars/regions. State approximation for histogram, frequency polygon, box plot, dot plot, scatter plot."
+      "currentApproximation": "The standard teacher generation workflow explicitly excludes bar/pie charts, histograms, frequency polygons, box plots, dot plots, and scatter plots instead of claiming first-class support."
     },
     {
-      "gap": "Curved solid primitives are not first-class objects.",
-      "currentApproximation": "Use prism/pyramid where possible. Cylinders, cones, spheres, nets, and revolution diagrams require composed points/segments/arcs or future primitives."
-    },
-    {
-      "gap": "Function domain xMin/xMax is runtime/UI-supported but not in current AI JSON schema.",
-      "currentApproximation": "Use visible segments, points, labels, or update manually through UI until schema expands."
-    },
-    {
-      "gap": "Multiple intersections cannot be disambiguated by anchor in the current AI schema.",
-      "currentApproximation": "Use unambiguous object pairs or create explanatory support points/lines. Avoid promising both roots from one intersection operation."
+      "gap": "Two-valued intersections support branch 0 or 1, but do not expose semantic left/right/upper/lower anchor names.",
+      "currentApproximation": "Use branch 0 or 1 after checking object order, or create explicit support points when a semantic side name must remain stable."
     },
     {
       "gap": "Annular sectors and exact function-bounded curved regions are not first-class objects.",
       "currentApproximation": "Use sectors, circles, polygons, and hidden helper points only when approximation is acceptable. State that exact ring-sector cutouts or exact fill-between-functions need future primitives."
-    },
-    {
-      "gap": "Generic text labels independent of objects are not first-class objects.",
-      "currentApproximation": "Use object labels and dimensions where possible."
     }
   ]
 }

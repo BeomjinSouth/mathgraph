@@ -1261,6 +1261,96 @@ test('SemanticValidator rejects copied solution and answer-choice text in proble
     assert.match(result.errors.join('\n'), /must not copy problem prose/);
 });
 
+test('SemanticValidator requires every explicitly requested curved solid', () => {
+    const validator = new SemanticValidator();
+    const result = validator.validateRequestedSolidIntent({
+        operations: [
+            { op: 'create', id: 'outer', type: 'cone', x: 0, y: 0, width: 6, height: 8 }
+        ]
+    }, {
+        prompt: '원뿔 안에 구 그려줘'
+    });
+
+    assert.equal(result.valid, false);
+    assert.match(result.errors.join('\n'), /sphere object/);
+});
+
+test('SemanticValidator requires the requested sphere to stay inside the cone', () => {
+    const validator = new SemanticValidator();
+    const outside = validator.validateRequestedSolidIntent({
+        operations: [
+            { op: 'create', id: 'outer', type: 'cone', x: 0, y: 0, width: 6, height: 8 },
+            { op: 'create', id: 'inner', type: 'sphere', x: 5, y: 0, width: 3, height: 3 }
+        ]
+    }, {
+        prompt: '원뿔 안에 구 그려줘'
+    });
+    const inside = validator.validateRequestedSolidIntent({
+        operations: [
+            { op: 'create', id: 'outer', type: 'cone', x: 0, y: 0, width: 6, height: 8 },
+            { op: 'create', id: 'inner', type: 'sphere', x: 0, y: -0.5, width: 2.4, height: 2.4 }
+        ]
+    }, {
+        prompt: '원뿔 안에 구 그려줘'
+    });
+
+    assert.equal(outside.valid, false);
+    assert.match(outside.errors.join('\n'), /completely inside the cone/);
+    assert.equal(inside.valid, true);
+});
+
+test('processCommand repairs a cone-only response for a sphere-inside-cone request', async () => {
+    const originalFetch = globalThis.fetch;
+    const capturedBodies = [];
+
+    globalThis.fetch = async (url, options) => {
+        capturedBodies.push(JSON.parse(options.body));
+        const repaired = capturedBodies.length > 1;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: repaired ? 'resp_nested_solids_repaired' : 'resp_cone_only',
+                    output: [{
+                        type: 'message',
+                        content: [{
+                            type: 'output_text',
+                            text: JSON.stringify({
+                                operations: repaired
+                                    ? [
+                                        { op: 'create', id: 'outer', type: 'cone', x: 0, y: 0, width: 6, height: 8 },
+                                        { op: 'create', id: 'inner', type: 'sphere', x: 0, y: -0.5, width: 2.4, height: 2.4 }
+                                    ]
+                                    : [
+                                        { op: 'create', id: 'outer', type: 'cone', x: 0, y: 0, width: 6, height: 8 }
+                                    ]
+                            })
+                        }]
+                    }]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+        const result = await service.processCommand('원뿔 안에 구 그려줘', { objects: [] });
+
+        assert.equal(result.success, true);
+        assert.equal(result.repaired, true);
+        assert.equal(capturedBodies.length, 2);
+        assert.match(result.repairErrors.join('\n'), /sphere object/);
+        assert.deepEqual(result.json.operations.map(operation => operation.type), ['cone', 'sphere']);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('AIService builds compact prompt references from the JSON feature manual', async () => {
     const service = new AIService({
         provider: 'local',
@@ -1523,6 +1613,37 @@ test('AIService analyzeImage sends full-photo recreate prompt for image-only inp
     }
 });
 
+test('AIService analyzeImage exposes the owner-proxy error instead of a generic Vision error', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({
+        ok: false,
+        status: 503,
+        async json() {
+            return { error: 'OpenAI 서버 연결 설정을 확인해주세요.' };
+        }
+    });
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            authMode: 'owner',
+            proxyToken: 'owner-token',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+        const result = await service.analyzeImage('data:image/png;base64,AAAA', {
+            mode: 'recreate',
+            context: { objects: [], selectedObjectIds: [] }
+        });
+
+        assert.equal(result.success, false);
+        assert.equal(result.error, 'OpenAI 서버 연결 설정을 확인해주세요.');
+        assert.doesNotMatch(result.error, /Vision API 오류/);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('AIService retries image patch when semantic validation rejects the first response', async () => {
     const originalFetch = globalThis.fetch;
     const capturedBodies = [];
@@ -1653,6 +1774,24 @@ test('local fallback draws nested rectangular prism and small cube prompt', () =
     assert.ok(innerBounds.minY > outerBounds.minY);
     assert.ok(innerBounds.maxY < outerBounds.maxY);
     assert.ok((innerBounds.maxX - innerBounds.minX) < (outerBounds.maxX - outerBounds.minX) / 2);
+});
+
+test('local fallback creates both a cone and a contained sphere', async () => {
+    const service = createAIService();
+    service.config.provider = 'local';
+    service.config.apiKey = '';
+
+    const result = await service.processCommand('원뿔 안에 구 그리고 높이 h를 표시해줘', { objects: [] });
+    const cone = result.json.operations.find(operation => operation.type === 'cone');
+    const sphere = result.json.operations.find(operation => operation.type === 'sphere');
+    const heightLabel = result.json.operations.find(operation => operation.type === 'textLabel');
+
+    assert.equal(result.success, true);
+    assert.ok(cone);
+    assert.ok(sphere);
+    assert.equal(heightLabel.text, 'h');
+    assert.ok(sphere.width < cone.width);
+    assert.ok(sphere.height < cone.height);
 });
 
 test('deterministic fallback draws a labeled rectangular prism', () => {
