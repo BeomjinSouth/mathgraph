@@ -760,8 +760,8 @@ Verify the Vercel output directory is `dist`, the remote build runs tests before
 
 Run focused tests, the full suite, `npm.cmd run vercel-build`, inspect `dist/`, and run `git diff --check`.
 
-- [ ] **Step 4: Commit, push, redeploy, and inspect remote logs**
+- [x] **Step 4: Commit, push, redeploy, and inspect remote logs**
 
 Confirm the Vercel build log reports the full nonzero test count, the deployment is Ready/production, the primary alias is attached, and core static/API routes respond.
 
-- [ ] **Step 5: Repeat production browser smoke and record final outcome**
+- [x] **Step 5: Repeat production browser smoke and record final outcome**

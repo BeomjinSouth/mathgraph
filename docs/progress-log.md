@@ -2798,3 +2798,11 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - 사용자 요청에 따라 Production의 `MATHGRAPH_OWNER_PASSWORD`를 새 값으로 교체했다. 실제 값은 출력하거나 문서·Git에 기록하지 않았다.
 - 환경 변수 변경을 적용하기 위해 Production을 다시 배포했다. 배포 `dpl_4VRML4FDkdVX8MZzsTKmzfW4vc7m`가 `Ready` 상태가 되었고 `https://mathgraph-five.vercel.app` 별칭이 연결됐다.
 - 운영 로그인 화면에서 박범진 계정으로 직접 확인했고 로그인 창이 닫히며 `박범진 · 기본 API` 상태가 표시됐다.
+
+## 2026-07-19 Task 10 complete: remote Vercel gate runs the real suite
+
+- Implemented the dist-based static build: `scripts/build-static.mjs` copies only the runtime whitelist (`index.html`, `favicon.svg`, `css/`, `js/`, `runtime/`) into `dist/`; `vercel.json` now serves `dist`; `vercel-build` runs `node --test` before the builder; `.vercelignore` uploads `tests/`, `tools/`, `.agents/` (needed by the suite) while `dist/` is the only public surface. Added `tests/static-build.test.js` covering the release contract (RED->GREEN).
+- Deployed production `mathgraph-a768zt431` (Ready, 21s build). Remote build log confirms `tests 332 / pass 332 / fail 0` followed by `static build complete` — the 0-test vacuous gate is closed.
+- Production smoke on https://mathgraph-five.vercel.app: HTTP 200, runtime reference asset 200, uploaded sources all 404 (`/tests/`, `/docs/`, `/tools/`, `/.agents/`, `/package.json`, `/scripts/` — previously `package.json` was publicly served from the root output), hardened login returns 401 with the new message, browser smoke green (guest entry, point creation, undo, no console errors), password field/logout/save controls live.
+- README deployment section updated: stale "pre-hardening June release" warning removed; dist build contract documented.
+- All release-plan checklist steps are now closed (the only unchecked item is the intentionally skipped Task 4 design-sheet image generation, annotated in place).
