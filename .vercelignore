@@ -2,14 +2,16 @@
 /node_modules/
 /.git/
 
-# Agent, test, and documentation workspaces are not runtime assets.
+# Local-only workspaces that neither the remote test run nor the runtime needs.
+# tests/, tools/, .agents/ MUST upload: the remote build runs `node --test`
+# and those hold the suite plus the fixtures it reads. Only dist/ is served.
 /.agent/
-/.agents/
 /.claude/
 /docs/
-/tests/
-/tools/
 /tmp/
+
+# Never upload a stale locally-built output; the remote build regenerates dist/.
+/dist/
 
 # Local source PDFs used only for audit/research.
 *.pdf

@@ -689,17 +689,17 @@ Run `npx.cmd vercel env ls` and confirm the three required variable names withou
 git push origin codex/ai-fallback-recovery
 ```
 
-- [ ] **Step 6: Deploy and inspect**
+- [x] **Step 6: Deploy and inspect**
 
 Run `npx.cmd vercel deploy --prod --yes`, inspect the returned URL, confirm `target=production`, `status=Ready`, primary alias attachment, and HTTP 200.
 
 Before direct deployment, ensure user-owned local configuration such as `.claude/` is excluded by `.vercelignore` so it cannot enter the upload bundle.
 
-- [ ] **Step 7: Repeat production browser smoke**
+- [x] **Step 7: Repeat production browser smoke**
 
 Repeat the desktop/mobile core flows against `https://mathgraph-five.vercel.app`, including owner login only when the required password is available without exposing it.
 
-- [ ] **Step 8: Record final outcome and close the goal**
+- [x] **Step 8: Record final outcome and close the goal**
 
 Update `docs/progress-log.md`, commit and push the final log, verify branch synchronization, and mark the goal complete only when every design acceptance criterion has authoritative evidence or the strict repeated external-blocker rule is satisfied.
 
@@ -735,3 +735,33 @@ Use a dedicated login body cap, validate field types/lengths, consume both login
 Run login/auth tests, all 289+ tests, `npm.cmd run vercel-build`, syntax checks, `git diff --check`, and independent security re-review.
 
 - [x] **Step 5: Update release documents, commit, and push**
+
+### Task 10: Make the Remote Vercel Gate Execute the Test Suite
+
+**Files:**
+- Create: `scripts/build-static.mjs`
+- Modify: `package.json`
+- Modify: `vercel.json`
+- Modify: `.vercelignore`
+- Create: `tests/static-build.test.js`
+
+**Release contract:**
+- Vercel receives the test suite so `node --test` cannot silently pass with 0 tests.
+- The build writes only runtime assets (`index.html`, `favicon.svg`, `css/`, `js/`, `runtime/`) to `dist/`.
+- `api/` and `lib/` remain source inputs for Vercel Functions but tests, docs, local agent files, and build tooling are not published as static assets.
+
+- [x] **Step 1: Record the 0-test remote-build finding and target structure**
+
+- [x] **Step 2: Add failing static-build configuration tests**
+
+Verify the Vercel output directory is `dist`, the remote build runs tests before the static builder, and the runtime whitelist excludes local-only workspaces.
+
+- [x] **Step 3: Implement and locally verify the static build**
+
+Run focused tests, the full suite, `npm.cmd run vercel-build`, inspect `dist/`, and run `git diff --check`.
+
+- [ ] **Step 4: Commit, push, redeploy, and inspect remote logs**
+
+Confirm the Vercel build log reports the full nonzero test count, the deployment is Ready/production, the primary alias is attached, and core static/API routes respond.
+
+- [ ] **Step 5: Repeat production browser smoke and record final outcome**

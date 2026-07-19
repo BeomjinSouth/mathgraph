@@ -5,9 +5,9 @@
   "type": "module",
   "description": "Static math graph editor",
   "scripts": {
-    "build": "node --test",
+    "build": "node --test && node scripts/build-static.mjs",
     "test": "node --test",
-    "vercel-build": "node --test",
+    "vercel-build": "node --test && node scripts/build-static.mjs",
     "vercel:dev": "vercel dev",
     "vercel:link": "vercel link",
     "vercel:pull": "vercel pull"

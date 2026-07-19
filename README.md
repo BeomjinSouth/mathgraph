@@ -64,15 +64,17 @@ The app opens with a login landing overlay.
 
 ## Deployment
 
-This repository is configured as a static Vercel project.
+This repository is configured as a static Vercel project. The hardened release
+(name+password owner login, constrained proxy) has been live on the public alias
+since 2026-07-18.
 
-The public alias currently serves the pre-hardening June release. Do not deploy the
-current candidate until the owner restores Vercel authentication and adds/confirms
-`MATHGRAPH_OWNER_PASSWORD`; production inspect and browser smoke must follow.
-
-- `vercel.json` keeps the output directory at the repository root
-- `npm run vercel-build` runs the full `node --test` suite as the release gate;
-  run it locally before `npx vercel deploy --prod --yes`
+- `vercel.json` serves the built `dist/` directory; `scripts/build-static.mjs`
+  copies only the runtime whitelist (`index.html`, `favicon.svg`, `css/`, `js/`,
+  `runtime/`) into it, so uploaded sources (tests, tools, agent references) are
+  never publicly served
+- `npm run vercel-build` runs the full `node --test` suite and then the static
+  builder — both locally and on Vercel, so a remote build fails when tests fail
+  (`tests/`, `tools/`, and `.agents/` upload with the deployment for this reason)
 - `.vercel/project.json` stores the local link to the Vercel project and should stay uncommitted
 - Required environment variables (production):
   - `OPENAI_API_KEY`: used by the owner-mode OpenAI proxy
