@@ -121,6 +121,12 @@ export class SemanticValidator {
             result.addError('problem diagram needs enough visible structure to represent the problem conditions.');
         }
 
+        this.validateLabeledCoordinateLines(ctx, result);
+        this.validateRepeatedPerpendicularFunctionIntersections(ctx, result);
+        this.validateSupportedProblemIntersectionPairs(ctx, result);
+        this.validateParameterizedLinePointSeparation(ctx, result);
+        this.validateParameterizedSourceBindings(data, ctx, result);
+
         return result;
     }
 
@@ -212,6 +218,145 @@ export class SemanticValidator {
             innerX + innerWidth / 2 <= outerX + outerWidth / 2 + epsilon &&
             innerY - innerHeight / 2 >= outerY - outerHeight / 2 - epsilon &&
             innerY + innerHeight / 2 <= outerY + outerHeight / 2 + epsilon;
+    }
+
+    validateLabeledCoordinateLines(ctx, result) {
+        for (const line of ctx.byType('line')) {
+            const axis = this.coordinateLineAxis(line.label);
+            if (!axis) continue;
+
+            const a = this.getPoint(ctx, line.point1Id);
+            const b = this.getPoint(ctx, line.point2Id);
+            if (!a || !b) continue;
+
+            const isAligned = axis === 'horizontal'
+                ? Math.abs(a.y - b.y) <= 1e-6
+                : Math.abs(a.x - b.x) <= 1e-6;
+            if (!isAligned) {
+                const variable = axis === 'horizontal' ? 'y' : 'x';
+                result.addError(
+                    'line labeled ' + variable + '=' + this.coordinateLineParameter(line.label) +
+                    ' must be ' + axis + '; its defining points are not aligned.'
+                );
+            }
+        }
+    }
+
+    coordinateLineAxis(label) {
+        const normalized = String(label || '')
+            .replace(/\$/g, '')
+            .replace(/\\,/g, '')
+            .replace(/\s+/g, '')
+            .toLowerCase();
+        const match = normalized.match(/^([xy])=([\p{L}])$/u);
+        if (!match || match[2] === 'x' || match[2] === 'y') return null;
+        return match[1] === 'y' ? 'horizontal' : 'vertical';
+    }
+
+    coordinateLineParameter(label) {
+        const normalized = String(label || '').replace(/\$/g, '').replace(/\s+/g, '');
+        return normalized.split('=')[1] || '?';
+    }
+
+    validateRepeatedPerpendicularFunctionIntersections(ctx, result) {
+        for (const candidate of ctx.byType('intersection')) {
+            const first = ctx.byId.get(candidate.object1Id);
+            const second = ctx.byId.get(candidate.object2Id);
+            const perpendicular = first?.type === 'perpendicular'
+                ? first
+                : (second?.type === 'perpendicular' ? second : null);
+            const otherObject = perpendicular === first ? second : first;
+            if (!perpendicular || otherObject?.type !== 'function') continue;
+
+            const throughPoint = ctx.byId.get(perpendicular.throughPointId);
+            if (throughPoint?.type !== 'intersection') continue;
+
+            const throughParents = [throughPoint.object1Id, throughPoint.object2Id];
+            if (throughParents.includes(otherObject.id)) {
+                result.addError(
+                    'intersection "' + (candidate.label || candidate.id || '(unnamed)') +
+                    '" repeats the perpendicular through-point on the same function; use the other stated curve for a non-degenerate vertical correspondence.'
+                );
+            }
+        }
+    }
+
+    validateSupportedProblemIntersectionPairs(ctx, result) {
+        for (const intersection of ctx.byType('intersection')) {
+            const first = ctx.byId.get(intersection.object1Id);
+            const second = ctx.byId.get(intersection.object2Id);
+            if (first?.type === 'function' && second?.type === 'function') {
+                result.addError(
+                    'function-function intersections are not supported by the current runtime; represent a constant horizontal relation with a two-point line or use explicit computed points.'
+                );
+            }
+        }
+    }
+
+    validateParameterizedLinePointSeparation(ctx, result) {
+        for (const line of ctx.byType('line')) {
+            if (this.coordinateLineAxis(line.label) !== 'horizontal') continue;
+            const a = this.getPoint(ctx, line.point1Id);
+            const b = this.getPoint(ctx, line.point2Id);
+            if (!a || !b || Math.abs(a.y - b.y) > 1e-6) continue;
+
+            const namedPoints = ctx.byType('point')
+                .filter(point => point.visible !== false)
+                .filter(point => /^[A-Z]$/.test(String(point.label || '').trim()))
+                .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
+                .filter(point => Math.abs(point.y - a.y) <= 1e-6);
+
+            for (let i = 0; i < namedPoints.length; i += 1) {
+                for (let j = i + 1; j < namedPoints.length; j += 1) {
+                    if (Math.abs(namedPoints[i].x - namedPoints[j].x) < 0.25) {
+                        result.addError(
+                            'parameter-line named points are too close to distinguish; choose a non-degenerate representative that separates them by at least 0.25 math units.'
+                        );
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    validateParameterizedSourceBindings(data, ctx, result) {
+        const functions = ctx.byType('function')
+            .filter(operation => /x/i.test(String(operation.expression || '')));
+        if (functions.length !== 2) return;
+
+        const parameterLines = ctx.byType('line')
+            .filter(line => this.coordinateLineAxis(line.label) === 'horizontal');
+        if (parameterLines.length !== 1) return;
+        const parameterLine = parameterLines[0];
+
+        const namedOnParameterLine = ctx.creates
+            .filter(operation => /^[A-Z]$/.test(String(operation.label || '').trim()))
+            .filter(operation => {
+                if (operation.type === 'intersection') {
+                    return [operation.object1Id, operation.object2Id].includes(parameterLine.id);
+                }
+                if (operation.type !== 'point') return false;
+                const linePoint = this.getPoint(ctx, parameterLine.point1Id);
+                return linePoint && Number.isFinite(operation.y) && Math.abs(operation.y - linePoint.y) <= 1e-6;
+            })
+            .map(operation => String(operation.label).trim());
+        if (namedOnParameterLine.length < 2) return;
+
+        const bindings = Array.isArray(data?.sourceBindings) ? data.sourceBindings : [];
+        for (const pointLabel of namedOnParameterLine.slice(0, 2)) {
+            const binding = bindings.find(item => String(item?.pointLabel || '').trim() === pointLabel);
+            const hasParameterLine = Array.isArray(binding?.onObjectLabels) &&
+                binding.onObjectLabels.some(label => this.coordinateLineAxis(label) === 'horizontal');
+            const hasCurve = Array.isArray(binding?.onObjectLabels) && binding.onObjectLabels.length >= 2;
+            const targetLabel = String(binding?.verticalTargetLabel || '').trim();
+            const targetCurve = String(binding?.verticalTargetOnObjectLabel || '').trim();
+            if (!binding || !hasParameterLine || !hasCurve || !targetLabel || /^[A-Z]$/.test(targetLabel) || !targetCurve) {
+                result.addError(
+                    'sourceBindings must preserve each named parameter-line point, its printed curve, and its printed vertical output label and destination curve.'
+                );
+                return;
+            }
+        }
     }
 
     buildContext(operations) {

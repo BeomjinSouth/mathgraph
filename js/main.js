@@ -4244,7 +4244,7 @@ class GraphAApp {
             const imageDataUrl = e.target.result;
             const input = document.getElementById('chatInput');
             const instruction = input?.value.trim() || '';
-            const mode = instruction ? 'patch' : 'recreate';
+            const mode = instruction ? 'patch' : 'problem_diagram';
             const aiContext = this.buildAIContext();
 
             if (instruction) {
@@ -4312,7 +4312,7 @@ class GraphAApp {
                         mode,
                         instruction,
                         context: aiContext,
-                        maxOperations: mode === 'recreate' ? 45 : undefined,
+                        maxOperations: mode === 'patch' ? undefined : 45,
                         modelMeta: this.getAIModelResultMeta(result)
                     });
                 } else if (result.error) {

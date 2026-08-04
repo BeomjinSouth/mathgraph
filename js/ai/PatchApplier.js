@@ -629,6 +629,9 @@ export class PatchApplier {
         if (op.labelOffset && typeof op.labelOffset === 'object') {
             params.labelOffset = this.cloneValue(op.labelOffset);
         }
+        if (op.labelMathPos && typeof op.labelMathPos === 'object') {
+            params.labelMathPos = this.cloneValue(op.labelMathPos);
+        }
 
         return params;
     }

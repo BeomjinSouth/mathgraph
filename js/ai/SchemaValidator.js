@@ -443,11 +443,11 @@ export class SchemaValidator {
         }
 
         const result = ValidationResult.success();
-        const mode = options.mode === 'patch' || options.mode === 'recreate'
+        const mode = ['patch', 'recreate', 'problem_diagram'].includes(options.mode)
             ? options.mode
             : null;
 
-        if (mode === 'recreate') {
+        if (mode === 'recreate' || mode === 'problem_diagram') {
             const maxOperations = Number.isFinite(options.maxOperations)
                 ? options.maxOperations
                 : null;

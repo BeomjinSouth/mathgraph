@@ -161,6 +161,11 @@
       "objectTypes": ["function", "point", "segment", "textLabel"]
     },
     {
+      "id": "graph_parameterized_exponential_vertical_maps",
+      "tags": ["graph", "function", "exponential", "parameter", "vertical_segment", "problem_diagram"],
+      "objectTypes": ["function", "point", "segment", "textLabel"]
+    },
+    {
       "id": "graph_simultaneous_linear_equations",
       "tags": ["graph", "line", "intersection", "equations"],
       "objectTypes": ["point", "line", "intersection", "angleDimension"]

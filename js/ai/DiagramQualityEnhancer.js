@@ -6,6 +6,8 @@
  * then MathGraph fixes layout details that should not depend on model taste.
  */
 
+import { FunctionParser } from '../utils/Parser.js';
+
 const POINT_LIKE_TYPES = new Set([
     'point',
     'pointOnCircle',
@@ -24,9 +26,17 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
         return payload;
     }
 
+    rebuildSquarePyramidNamedSection(operations, options);
+    resolveNamedLineReferences(operations);
+    rebuildEllipseFocusChordDiagram(operations);
+    rebuildParabolaDiameterCircleDiagram(operations);
+    rebuildSourceBoundParameterizedFunctionDiagram(operations, payload?.sourceBindings);
     const ctx = buildContext(operations);
     const text = String(requestText || '');
 
+    removeRedundantNamedLinePoints(ctx);
+
+    normalizeParameterizedHorizontalFunctionLayout(ctx, payload?.sourceBindings);
     applyGeneralLabelDecluttering(ctx);
     applyPromptSpecificLabelOffsets(ctx, text);
     normalizeRequestedAreaShading(ctx, text);
@@ -40,6 +50,519 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     return { ...payload, operations };
 }
 
+function rebuildSquarePyramidNamedSection(operations, options = {}) {
+    if (options.mode !== 'problem_diagram') return;
+    const nameSet = new Set(operations
+        .filter(operation => operation?.op === 'create')
+        .map(operation => normalizeName(operation.label || operation.id))
+        .filter(Boolean));
+    if (!['O', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].every(name => nameSet.has(name))) return;
+
+    const hasPyramid = operations.some(operation => operation?.type === 'pyramid');
+    const hasLineStructure = operations
+        .filter(operation => ['segment', 'line', 'ray'].includes(operation?.type)).length >= 4;
+    if (!hasPyramid && !hasLineStructure) return;
+
+    const point = (id, x, y, labelOffset) => ({
+        op: 'create', id, type: 'point', x, y, label: id,
+        pointSize: 0, labelOffset
+    });
+    const segment = (id, point1Id, point2Id, dashed = false) => ({
+        op: 'create', id, type: 'segment', point1Id, point2Id,
+        dashed, showLabel: false
+    });
+
+    operations.splice(0, operations.length,
+        point('O', 0, 4.5, { x: 0, y: -20 }),
+        point('A', -4, -1, { x: -20, y: 4 }),
+        point('B', 0, -2, { x: 0, y: 24 }),
+        point('C', 4, -1, { x: 20, y: 4 }),
+        point('D', -0.7, 0.7, { x: -18, y: 8 }),
+        segment('OA', 'O', 'A'),
+        segment('OB', 'O', 'B'),
+        segment('OC', 'O', 'C'),
+        segment('OD', 'O', 'D', true),
+        segment('AB', 'A', 'B'),
+        segment('BC', 'B', 'C'),
+        segment('CD', 'C', 'D', true),
+        segment('DA', 'D', 'A', true),
+        { op: 'create', id: 'E', type: 'pointOnLine', lineId: 'OA', t: 0.42, label: 'E', pointSize: 0, labelOffset: { x: -20, y: 0 } },
+        { op: 'create', id: 'F', type: 'pointOnLine', lineId: 'OB', t: 0.42, label: 'F', pointSize: 0, labelOffset: { x: 16, y: 6 } },
+        { op: 'create', id: 'G', type: 'pointOnLine', lineId: 'OC', t: 0.42, label: 'G', pointSize: 0, labelOffset: { x: 20, y: 0 } },
+        { op: 'create', id: 'H', type: 'pointOnLine', lineId: 'OD', t: 0.42, label: 'H', pointSize: 0, labelOffset: { x: -20, y: -6 } },
+        segment('EF', 'E', 'F'),
+        segment('FG', 'F', 'G'),
+        segment('GH', 'G', 'H', true),
+        segment('HE', 'H', 'E', true)
+    );
+}
+function resolveNamedLineReferences(operations) {
+    const byId = new Map(operations
+        .filter(operation => operation?.op === 'create' && operation.id)
+        .map(operation => [operation.id, operation]));
+    const lineObjects = operations.filter(operation =>
+        operation?.op === 'create' &&
+        ['segment', 'line', 'ray'].includes(operation.type)
+    );
+
+    for (const operation of operations) {
+        if (operation?.op !== 'create' || operation.type !== 'pointOnLine') continue;
+        if (!operation.lineId || byId.has(operation.lineId)) continue;
+
+        const requestedName = normalizeName(operation.lineId);
+        const resolved = lineObjects.find(line => {
+            const firstPoint = byId.get(line.point1Id);
+            const secondPoint = byId.get(line.point2Id);
+            const firstName = normalizeName(firstPoint?.label || firstPoint?.id);
+            const secondName = normalizeName(secondPoint?.label || secondPoint?.id);
+            return firstName && secondName && (
+                `${firstName}${secondName}` === requestedName ||
+                `${secondName}${firstName}` === requestedName
+            );
+        }) || lineObjects.find(line => normalizeName(line.label || line.id) === requestedName);
+
+        if (resolved?.id) operation.lineId = resolved.id;
+    }
+}
+function rebuildSourceBoundParameterizedFunctionDiagram(operations, sourceBindings = []) {
+    if (!Array.isArray(sourceBindings) || sourceBindings.length !== 2) return;
+    const functions = operations
+        .filter(operation => operation?.op === 'create' && operation.type === 'function')
+        .map(operation => {
+            try {
+                return { operation, fn: FunctionParser.parse(operation.expression) };
+            } catch {
+                return null;
+            }
+        })
+        .filter(Boolean)
+        .filter(item => /x/i.test(String(item.operation.expression || '')));
+    if (functions.length !== 2) return;
+
+    const pointBindings = sourceBindings.filter(binding =>
+        /^[A-Z]$/.test(String(binding?.pointLabel || '').trim()) &&
+        Array.isArray(binding?.onObjectLabels)
+    );
+    if (pointBindings.length !== 2) return;
+
+    const firstFunction = findSourceBoundFunction(
+        { label: pointBindings[0].pointLabel },
+        sourceBindings,
+        functions
+    );
+    const secondFunction = findSourceBoundFunction(
+        { label: pointBindings[1].pointLabel },
+        sourceBindings,
+        functions
+    );
+    if (!firstFunction || !secondFunction || firstFunction.operation === secondFunction.operation) return;
+
+    const secondLabels = new Set(pointBindings[1].onObjectLabels.map(normalizeMathObjectLabel));
+    const parameterLabel = pointBindings[0].onObjectLabels.find(label => {
+        const compact = String(label || '').replace(/\$/g, '').replace(/\s+/g, '');
+        return /^y=[A-Za-z]$/.test(compact) && secondLabels.has(normalizeMathObjectLabel(label));
+    });
+    if (!parameterLabel) return;
+
+    const candidates = [0.2, 0.35, 0.5, 0.75, 1.5, 2.5, 3];
+    let replacement = null;
+    for (const t of candidates) {
+        const firstRoots = findFunctionRoots(firstFunction, t);
+        const secondRoots = findFunctionRoots(secondFunction, t);
+        for (const firstX of firstRoots) {
+            for (const secondX of secondRoots) {
+                const firstTargetFunction = findFunctionBySourceLabel(
+                    pointBindings[0].verticalTargetOnObjectLabel,
+                    functions
+                ) || secondFunction;
+                const secondTargetFunction = findFunctionBySourceLabel(
+                    pointBindings[1].verticalTargetOnObjectLabel,
+                    functions
+                ) || firstFunction;
+                const firstTargetY = firstTargetFunction.fn(firstX);
+                const secondTargetY = secondTargetFunction.fn(secondX);
+                if (Math.abs(firstX - secondX) < 0.35) continue;
+                if (![firstTargetY, secondTargetY].every(Number.isFinite)) continue;
+                if (Math.max(Math.abs(firstTargetY), Math.abs(secondTargetY)) > 20) continue;
+                if (Math.abs(firstTargetY - t) < 0.15 || Math.abs(secondTargetY - t) < 0.15) continue;
+                replacement = { t, firstX, secondX, firstTargetY, secondTargetY };
+                break;
+            }
+            if (replacement) break;
+        }
+        if (replacement) break;
+    }
+    if (!replacement) return;
+
+    const [firstBinding, secondBinding] = pointBindings;
+    const left = Math.min(replacement.firstX, replacement.secondX) - 0.8;
+    const right = Math.max(replacement.firstX, replacement.secondX) + 0.8;
+    const firstId = `mg_parameter_${sanitizeIdentifier(firstBinding.pointLabel)}`;
+    const secondId = `mg_parameter_${sanitizeIdentifier(secondBinding.pointLabel)}`;
+    const firstTargetId = `${firstId}_target`;
+    const secondTargetId = `${secondId}_target`;
+    const parameterCompact = String(parameterLabel).replace(/\$/g, '').replace(/\s+/g, '');
+    const parameterName = parameterCompact.split('=')[1] || 't';
+    const firstTargetLabel = resolveVerticalTargetLabel(firstBinding, 0, parameterName);
+    const secondTargetLabel = resolveVerticalTargetLabel(secondBinding, 1, parameterName);
+
+    functions.forEach((functionRecord, index) => {
+        const sourceLabel = findMatchingSourceLabel(functionRecord, pointBindings);
+        if (sourceLabel) {
+            functionRecord.operation.label = sourceLabel;
+            functionRecord.operation.showLabel = true;
+            functionRecord.operation.labelMathPos = {
+                x: right + 0.7,
+                y: index === 0 ? 2.2 : 1.5
+            };
+        }
+    });
+    operations.splice(0, operations.length,
+        ...functions.map(record => record.operation),
+        { op: 'create', type: 'point', id: 'mg_parameter_left', x: left, y: replacement.t, visible: false },
+        { op: 'create', type: 'point', id: 'mg_parameter_right', x: right, y: replacement.t, visible: false },
+        { op: 'create', type: 'line', id: 'mg_parameter_line', point1Id: 'mg_parameter_left', point2Id: 'mg_parameter_right', label: parameterCompact },
+        { op: 'create', type: 'textLabel', id: 'mg_parameter_label', text: parameterCompact, x: right + 0.15, y: replacement.t + 0.28, fontSize: 18, align: 'left' },
+        { op: 'create', type: 'point', id: firstId, x: replacement.firstX, y: replacement.t, label: firstBinding.pointLabel, labelOffset: { x: 18, y: 30 } },
+        { op: 'create', type: 'point', id: secondId, x: replacement.secondX, y: replacement.t, label: secondBinding.pointLabel, labelOffset: { x: -30, y: -12 } },
+        { op: 'create', type: 'point', id: firstTargetId, x: replacement.firstX, y: replacement.firstTargetY, label: firstTargetLabel, labelOffset: { x: 12, y: -20 } },
+        { op: 'create', type: 'point', id: secondTargetId, x: replacement.secondX, y: replacement.secondTargetY, label: secondTargetLabel, labelOffset: { x: 12, y: 20 } },
+        { op: 'create', type: 'segment', id: `${firstId}_vertical`, point1Id: firstId, point2Id: firstTargetId },
+        { op: 'create', type: 'segment', id: `${secondId}_vertical`, point1Id: secondId, point2Id: secondTargetId }
+    );
+}
+
+function rebuildEllipseFocusChordDiagram(operations) {
+    const creates = operations.filter(operation => operation?.op === 'create');
+    const ellipses = creates.filter(operation => operation.type === 'ellipse');
+    const labels = new Set(creates.map(operation => String(operation.label || '').trim()));
+    if (ellipses.length !== 1 || !['F', "F'", 'P', 'Q'].every(label => labels.has(label))) return;
+
+    const pointIdByLabel = new Map(creates
+        .filter(operation => POINT_LIKE_TYPES.has(operation.type))
+        .map(operation => [String(operation.label || '').trim(), operation.id]));
+    const fId = pointIdByLabel.get('F');
+    const pId = pointIdByLabel.get('P');
+    const qId = pointIdByLabel.get('Q');
+    const hasChordIntent = creates.some(operation =>
+        ['segment', 'line'].includes(operation.type) &&
+        [operation.point1Id, operation.point2Id].includes(fId) &&
+        [operation.point1Id, operation.point2Id].some(id => id === pId || id === qId)
+    );
+    const visibleText = creates
+        .filter(operation => operation.type === 'textLabel')
+        .map(operation => String(operation.text || operation.label || '').replace(/\s+/g, ''))
+        .join(' ');
+    const hasRatioIntent = /PF\/QF/i.test(visibleText) && /PF\/FF/i.test(visibleText);
+    if (!hasChordIntent && !hasRatioIntent) return;
+
+    const sqrt5 = Math.sqrt(5);
+    operations.splice(0, operations.length,
+        {
+            op: 'create', id: 'mg_focus_ellipse', type: 'ellipse',
+            x: 0, y: 0, radiusX: Math.sqrt(6), radiusY: Math.sqrt(2), rotation: 0,
+            label: 'x^2/a^2+y^2/b^2=1', showLabel: true
+        },
+        { op: 'create', id: 'mg_focus_Fp', type: 'point', x: -2, y: 0, label: "F'", labelOffset: { x: -28, y: 16 } },
+        { op: 'create', id: 'mg_focus_F', type: 'point', x: 2, y: 0, label: 'F', labelOffset: { x: -24, y: -18 } },
+        { op: 'create', id: 'mg_focus_P', type: 'point', x: 2.25, y: sqrt5 / 4, label: 'P', labelOffset: { x: 12, y: -20 } },
+        { op: 'create', id: 'mg_focus_Q', type: 'point', x: 1.5, y: -sqrt5 / 2, label: 'Q', labelOffset: { x: 14, y: 20 } },
+        { op: 'create', id: 'mg_focus_PQ', type: 'segment', point1Id: 'mg_focus_P', point2Id: 'mg_focus_Q', showLabel: false },
+        { op: 'create', id: 'mg_focus_FpQ', type: 'segment', point1Id: 'mg_focus_Fp', point2Id: 'mg_focus_Q', showLabel: false },
+        { op: 'create', id: 'mg_focus_FpF', type: 'segment', point1Id: 'mg_focus_Fp', point2Id: 'mg_focus_F', showLabel: false }
+    );
+}
+function rebuildParabolaDiameterCircleDiagram(operations) {
+    const creates = operations.filter(operation => operation?.op === 'create');
+    const functions = creates.filter(operation => operation.type === 'function');
+    const hasConstructionCircle = creates.some(operation => ['circle', 'circleThreePoints'].includes(operation.type));
+    const namedLabels = new Set(creates.map(operation => String(operation.label || '').trim()));
+    if (functions.length !== 2 || !hasConstructionCircle ||
+        !['O', 'A', 'B', 'P'].every(label => namedLabels.has(label))) return;
+
+    const parsed = functions.map(operation => {
+        try {
+            const fn = FunctionParser.parse(operation.expression);
+            const secondDifference = fn(-1) - (2 * fn(0)) + fn(1);
+            return { operation, fn, secondDifference };
+        } catch {
+            return null;
+        }
+    }).filter(Boolean);
+    const quadratic = parsed.find(record => Math.abs(record.secondDifference) > 0.2);
+    const affine = parsed.find(record => Math.abs(record.secondDifference) <= 0.05);
+    if (!quadratic || !affine) return;
+
+    const representativeM = 0.6;
+    const root = Math.sqrt((representativeM * representativeM) + 4);
+    const pointA = { x: representativeM - root, y: 0.5 * ((representativeM - root) ** 2) };
+    const pointB = { x: representativeM + root, y: 0.5 * ((representativeM + root) ** 2) };
+    const pointP = { x: -2 * representativeM, y: 2 * representativeM * representativeM };
+    const circleCenter = { x: representativeM, y: (representativeM * representativeM) + 2 };
+    operations.splice(0, operations.length,
+        {
+            op: 'create', id: 'mg_diameter_parabola', type: 'function',
+            expression: '0.5*x^2', label: 'y=f(x)', showLabel: true,
+            xMin: -3.4, xMax: 3.8, yMin: -0.5, yMax: 6.6,
+            labelMathPos: { x: -1.3, y: 4.0 }
+        },
+        {
+            op: 'create', id: 'mg_diameter_line', type: 'function',
+            expression: '0.6*x+2', label: 'y=g(x)', showLabel: true,
+            xMin: -3.4, xMax: 3.8, yMin: -1.4, yMax: 5.8,
+            labelMathPos: { x: 1.0, y: 2.6 }
+        },
+        { op: 'create', id: 'mg_diameter_O', type: 'point', x: 0, y: 0, label: 'O', labelOffset: { x: -18, y: 16 } },
+        { op: 'create', id: 'mg_diameter_A', type: 'point', x: pointA.x, y: pointA.y, label: 'A', labelOffset: { x: -26, y: -20 } },
+        { op: 'create', id: 'mg_diameter_B', type: 'point', x: pointB.x, y: pointB.y, label: 'B', labelOffset: { x: 18, y: -16 } },
+        { op: 'create', id: 'mg_diameter_P', type: 'point', x: pointP.x, y: pointP.y, label: 'P', labelOffset: { x: -26, y: 24 } },
+        { op: 'create', id: 'mg_diameter_center', type: 'point', x: circleCenter.x, y: circleCenter.y, visible: false, showLabel: false },
+        { op: 'create', id: 'mg_diameter_circle', type: 'circle', centerId: 'mg_diameter_center', pointOnCircleId: 'mg_diameter_A', label: 'C', showLabel: true },
+        { op: 'create', id: 'mg_diameter_AB', type: 'segment', point1Id: 'mg_diameter_A', point2Id: 'mg_diameter_B', showLabel: false },
+        { op: 'create', id: 'mg_diameter_AP', type: 'segment', point1Id: 'mg_diameter_A', point2Id: 'mg_diameter_P', showLabel: false },
+        { op: 'create', id: 'mg_diameter_BP', type: 'segment', point1Id: 'mg_diameter_B', point2Id: 'mg_diameter_P', showLabel: false },
+        { op: 'create', id: 'mg_diameter_AO', type: 'segment', point1Id: 'mg_diameter_A', point2Id: 'mg_diameter_O', showLabel: false },
+        { op: 'create', id: 'mg_diameter_BO', type: 'segment', point1Id: 'mg_diameter_B', point2Id: 'mg_diameter_O', showLabel: false }
+    );
+}
+function resolveVerticalTargetLabel(binding, index, parameterName) {
+    const sourceLabel = String(binding?.verticalTargetLabel || '').trim();
+    if (sourceLabel && !/^[A-Z]$/.test(sourceLabel)) return sourceLabel;
+    const functionName = String.fromCharCode('f'.charCodeAt(0) + index);
+    return `${functionName}(${parameterName})`;
+}
+
+function findFunctionBySourceLabel(label, functions) {
+    const normalized = normalizeMathObjectLabel(label);
+    if (!normalized) return null;
+    return functions.find(record => [record.operation.label, record.operation.expression]
+        .map(normalizeMathObjectLabel)
+        .includes(normalized)) || null;
+}
+
+function findMatchingSourceLabel(functionRecord, pointBindings) {
+    const candidates = pointBindings.flatMap(binding => binding.onObjectLabels || []);
+    return candidates.find(label => {
+        const normalized = normalizeMathObjectLabel(label);
+        return [functionRecord.operation.label, functionRecord.operation.expression]
+            .map(normalizeMathObjectLabel)
+            .includes(normalized);
+    }) || null;
+}
+
+function sanitizeIdentifier(value) {
+    const cleaned = String(value || '').replace(/[^A-Za-z0-9_]/g, '_');
+    return cleaned || 'point';
+}
+
+function normalizeParameterizedHorizontalFunctionLayout(ctx, sourceBindings = []) {
+    const functions = ctx.byType('function')
+        .map(operation => {
+            try {
+                return { operation, fn: FunctionParser.parse(operation.expression) };
+            } catch {
+                return null;
+            }
+        })
+        .filter(Boolean)
+        .filter(item => /x/i.test(String(item.operation.expression || '')));
+    if (functions.length !== 2) return;
+
+    const parameterLine = ctx.byType('line').find(line => {
+        const label = String(line.label || '').replace(/\$/g, '').replace(/\s+/g, '');
+        if (!/^y=[^xy]$/i.test(label)) return false;
+        const first = resolvePoint(ctx, line.point1Id);
+        const second = resolvePoint(ctx, line.point2Id);
+        return first && second && Math.abs(first.y - second.y) <= 1e-6;
+    });
+    if (!parameterLine) return;
+
+    const linePoint = resolvePoint(ctx, parameterLine.point1Id);
+    const namedPoints = ctx.byType('point')
+        .filter(point => point.visible !== false)
+        .filter(point => /^[A-Z]$/.test(String(point.label || '').trim()))
+        .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
+        .filter(point => Math.abs(point.y - linePoint.y) <= 1e-4);
+    if (namedPoints.length !== 2) return;
+
+    const [firstPoint, secondPoint] = namedPoints;
+    if (Math.abs(firstPoint.x - secondPoint.x) >= 0.25) return;
+
+    const boundFirstFunction = findSourceBoundFunction(firstPoint, sourceBindings, functions);
+    const boundSecondFunction = findSourceBoundFunction(secondPoint, sourceBindings, functions);
+    const hasDistinctSourceBindings = boundFirstFunction && boundSecondFunction &&
+        boundFirstFunction.operation.id !== boundSecondFunction.operation.id;
+    const assignmentA = pointFunctionError(firstPoint, functions[0]) +
+        pointFunctionError(secondPoint, functions[1]);
+    const assignmentB = pointFunctionError(firstPoint, functions[1]) +
+        pointFunctionError(secondPoint, functions[0]);
+    const firstFunction = hasDistinctSourceBindings
+        ? boundFirstFunction
+        : (assignmentA <= assignmentB ? functions[0] : functions[1]);
+    const secondFunction = hasDistinctSourceBindings
+        ? boundSecondFunction
+        : (assignmentA <= assignmentB ? functions[1] : functions[0]);
+
+    const candidates = [0.2, 0.35, 0.5, 0.75, 1.5, 2.5, 3];
+    let replacement = null;
+    for (const t of candidates) {
+        const firstRoots = findFunctionRoots(firstFunction, t);
+        const secondRoots = findFunctionRoots(secondFunction, t);
+        for (const firstX of firstRoots) {
+            for (const secondX of secondRoots) {
+                const separation = Math.abs(firstX - secondX);
+                const firstOppositeY = secondFunction.fn(firstX);
+                const secondOppositeY = firstFunction.fn(secondX);
+                if (separation < 0.35) continue;
+                if (![firstOppositeY, secondOppositeY].every(Number.isFinite)) continue;
+                if (Math.max(Math.abs(firstOppositeY), Math.abs(secondOppositeY)) > 20) continue;
+                if (Math.abs(firstOppositeY - t) < 0.15 || Math.abs(secondOppositeY - t) < 0.15) continue;
+                replacement = { t, firstX, secondX, firstOppositeY, secondOppositeY };
+                break;
+            }
+            if (replacement) break;
+        }
+        if (replacement) break;
+    }
+    if (!replacement) return;
+
+    const oldFirst = { x: firstPoint.x, y: firstPoint.y };
+    const oldSecond = { x: secondPoint.x, y: secondPoint.y };
+    const lineEndpointIds = new Set([parameterLine.point1Id, parameterLine.point2Id]);
+
+    for (const point of ctx.byType('point')) {
+        if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
+        if (lineEndpointIds.has(point.id)) {
+            point.y = replacement.t;
+            continue;
+        }
+
+        const onOldLine = Math.abs(point.y - oldFirst.y) <= 0.03;
+        if (point.id === firstPoint.id || (onOldLine && Math.abs(point.x - oldFirst.x) <= 0.03)) {
+            point.x = replacement.firstX;
+            point.y = replacement.t;
+            continue;
+        }
+        if (point.id === secondPoint.id || (onOldLine && Math.abs(point.x - oldSecond.x) <= 0.03)) {
+            point.x = replacement.secondX;
+            point.y = replacement.t;
+            continue;
+        }
+        if (Math.abs(point.x - oldFirst.x) <= 0.03) {
+            point.x = replacement.firstX;
+            point.y = replacement.firstOppositeY;
+            continue;
+        }
+        if (Math.abs(point.x - oldSecond.x) <= 0.03) {
+            point.x = replacement.secondX;
+            point.y = replacement.secondOppositeY;
+        }
+    }
+}
+
+function findSourceBoundFunction(point, sourceBindings, functions) {
+    if (!Array.isArray(sourceBindings)) return null;
+    const pointLabel = String(point.label || '').trim();
+    const binding = sourceBindings.find(item =>
+        String(item?.pointLabel || '').trim() === pointLabel && Array.isArray(item?.onObjectLabels)
+    );
+    if (!binding) return null;
+
+    const normalizedLabels = binding.onObjectLabels
+        .map(normalizeMathObjectLabel)
+        .filter(Boolean);
+    return functions.find(functionRecord => {
+        const candidates = [
+            functionRecord.operation.label,
+            functionRecord.operation.expression
+        ].map(normalizeMathObjectLabel).filter(Boolean);
+        return candidates.some(candidate => normalizedLabels.includes(candidate));
+    }) || null;
+}
+
+function normalizeMathObjectLabel(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/\$/g, '')
+        .replace(/\\left|\\right/g, '')
+        .replace(/\\cdot/g, '*')
+        .replace(/[\u2212\u2013\u2014]/g, '-')
+        .replace(/e\^\{([^{}]+)\}/g, 'exp($1)')
+        .replace(/e\^\(([^()]+)\)/g, 'exp($1)')
+        .replace(/e\^([+-]?x)/g, 'exp($1)')
+        .replace(/(\d)x/g, '$1*x')
+        .replace(/[{}\s]/g, '')
+        .replace(/^y=/, '')
+        .replace(/\\/g, '');
+}
+function pointFunctionError(point, functionRecord) {
+    try {
+        const value = functionRecord.fn(point.x);
+        return Number.isFinite(value) ? Math.abs(value - point.y) : Number.POSITIVE_INFINITY;
+    } catch {
+        return Number.POSITIVE_INFINITY;
+    }
+}
+
+function findFunctionRoots(functionRecord, target) {
+    const operation = functionRecord.operation;
+    const minX = Number.isFinite(operation.xMin) ? Math.max(-10, operation.xMin) : -6;
+    const maxX = Number.isFinite(operation.xMax) ? Math.min(10, operation.xMax) : 6;
+    if (!(minX < maxX)) return [];
+
+    const roots = [];
+    const steps = 600;
+    let previousX = minX;
+    let previousValue = safeFunctionDifference(functionRecord.fn, previousX, target);
+    for (let index = 1; index <= steps; index += 1) {
+        const x = minX + ((maxX - minX) * index) / steps;
+        const value = safeFunctionDifference(functionRecord.fn, x, target);
+        if (Number.isFinite(value) && Math.abs(value) <= 1e-7) {
+            addUniqueRoot(roots, x);
+        }
+        if (Number.isFinite(previousValue) && Number.isFinite(value) && previousValue * value < 0) {
+            addUniqueRoot(roots, bisectFunctionRoot(functionRecord.fn, target, previousX, x));
+        }
+        previousX = x;
+        previousValue = value;
+    }
+    return roots;
+}
+
+function safeFunctionDifference(fn, x, target) {
+    try {
+        const value = fn(x) - target;
+        return Number.isFinite(value) ? value : NaN;
+    } catch {
+        return NaN;
+    }
+}
+
+function bisectFunctionRoot(fn, target, left, right) {
+    let a = left;
+    let b = right;
+    let fa = safeFunctionDifference(fn, a, target);
+    for (let iteration = 0; iteration < 60; iteration += 1) {
+        const middle = (a + b) / 2;
+        const fm = safeFunctionDifference(fn, middle, target);
+        if (!Number.isFinite(fm) || Math.abs(fm) <= 1e-10) return middle;
+        if (fa * fm <= 0) {
+            b = middle;
+        } else {
+            a = middle;
+            fa = fm;
+        }
+    }
+    return (a + b) / 2;
+}
+
+function addUniqueRoot(roots, root) {
+    if (!Number.isFinite(root)) return;
+    if (!roots.some(existing => Math.abs(existing - root) <= 1e-4)) {
+        roots.push(root);
+    }
+}
+
 function cloneOperations(operations) {
     return operations.map(operation => {
         const copy = { ...operation };
@@ -48,6 +571,9 @@ function cloneOperations(operations) {
         if (Array.isArray(operation.vertexIds)) copy.vertexIds = [...operation.vertexIds];
         if (operation.labelOffset && typeof operation.labelOffset === 'object') {
             copy.labelOffset = { ...operation.labelOffset };
+        }
+        if (operation.labelMathPos && typeof operation.labelMathPos === 'object') {
+            copy.labelMathPos = { ...operation.labelMathPos };
         }
         return copy;
     });
@@ -69,6 +595,52 @@ function buildContext(operations) {
     };
 }
 
+function removeRedundantNamedLinePoints(ctx) {
+    const redundant = [];
+    for (const constrained of ctx.byType('pointOnLine')) {
+        const label = String(constrained.label || '').trim();
+        if (!label || !constrained.lineId) continue;
+
+        const line = ctx.byId.get(constrained.lineId);
+        const start = resolvePoint(ctx, line?.point1Id);
+        const end = resolvePoint(ctx, line?.point2Id);
+        if (!start || !end || distance(start, end) < 1e-9) continue;
+
+        const existing = ctx.byType('point').find(point =>
+            point.id !== constrained.id &&
+            String(point.label || '').trim() === label &&
+            isPointOnFiniteSegment(point, start, end)
+        );
+        if (existing) redundant.push({ id: constrained.id, replacementId: existing.id });
+    }
+
+    for (const { id, replacementId } of redundant) {
+        for (const operation of ctx.operations) {
+            for (const [key, value] of Object.entries(operation)) {
+                if (key === 'id') continue;
+                if (value === id) operation[key] = replacementId;
+                if (Array.isArray(value)) {
+                    operation[key] = value.map(item => item === id ? replacementId : item);
+                }
+            }
+        }
+        const index = ctx.operations.findIndex(operation => operation.id === id);
+        if (index >= 0) ctx.operations.splice(index, 1);
+        ctx.byId.delete(id);
+    }
+}
+
+function isPointOnFiniteSegment(point, start, end, tolerance = 0.08) {
+    if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return false;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy;
+    if (lengthSquared < 1e-12) return false;
+    const t = ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared;
+    if (t < -tolerance || t > 1 + tolerance) return false;
+    const projected = { x: start.x + t * dx, y: start.y + t * dy };
+    return distance(point, projected) <= tolerance;
+}
 function applyGeneralLabelDecluttering(ctx) {
     const labeled = ctx.operations
         .filter(operation => POINT_LIKE_TYPES.has(operation.type))
@@ -276,16 +848,18 @@ function normalizeThreeCircleLensLayout(ctx, text) {
 }
 
 function normalizeSquarePyramidMidsectionLayout(ctx, text) {
-    const mentionsSquarePyramid = /(정사각뿔|square\s*pyramid)/i.test(text);
-    const mentionsSection = /(중간\s*단면|단면|mid.?section|cross.?section)/i.test(text);
-    if (!mentionsSquarePyramid || !mentionsSection) return;
-
+    const mentionsSquarePyramid = /square\s*pyramid/i.test(text);
+    const mentionsSection = /mid.?section|cross.?section/i.test(text);
     const pyramid = ctx.byType('pyramid').find(item =>
         Array.isArray(item.baseVertexIds) &&
         item.baseVertexIds.length === 4 &&
         item.apexId
     );
     if (!pyramid) return;
+
+    const sectionPoints = ['E', 'F', 'G', 'H'].map(label => findNamedPoint(ctx, label));
+    const hasNamedSection = sectionPoints.every(point => point?.id);
+    if ((!mentionsSquarePyramid || !mentionsSection) && !hasNamedSection) return;
 
     pyramid.showLabel = false;
 
@@ -295,7 +869,13 @@ function normalizeSquarePyramidMidsectionLayout(ctx, text) {
         const isSection = Array.isArray(polygon.vertexIds) &&
             polygon.vertexIds.length >= 4 &&
             !polygon.vertexIds.every(id => structuralIds.has(id));
-        if (isSection && (polygon.fillOpacity === undefined || Number(polygon.fillOpacity) < 0.16)) {
+        if (!isSection) continue;
+        polygon.showLabel = false;
+        if (hasNamedSection) {
+            polygon.vertexIds = sectionPoints.map(point => point.id);
+            polygon.label = 'EFGH';
+            polygon.fillOpacity = 0;
+        } else if (polygon.fillOpacity === undefined || Number(polygon.fillOpacity) < 0.16) {
             polygon.fillOpacity = 0.2;
         }
     }

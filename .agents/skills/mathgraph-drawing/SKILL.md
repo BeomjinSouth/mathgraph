@@ -44,6 +44,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - There is no first-class `annularSector` yet; when a prompt accepts approximation, use a normal sector plus an inner circle outline rather than claiming a true ring-sector cutout.
 - For function-bounded curved regions, use a polygon through explicit boundary/sample points and hide helper vertices with `visible:false`; exact curved fills need future primitives.
 - For piecewise functions, clip every function with `xMin`/`xMax`. Mark excluded endpoints with `pointStyle:"open"` and included endpoints with `pointStyle:"closed"`; do not imitate an open endpoint with a separate circle.
+- For parameterized graph problems with no fixed parameter value, choose a valid non-degenerate representative that keeps named points and construction lines distinct; avoid limit, boundary, or special values that collapse the diagram.
 - Use `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` for current solid support. Curved solids use editable textbook projections with optional dashed hidden curves; nets and revolution sweeps remain unsupported.
 - For `prism`, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds` so the runtime can keep front edges solid and hidden rear edges dashed.
 - For `pyramid`, keep `apexId` out of `baseVertexIds` and place the apex far enough from the base centroid to read as a real apex.
@@ -66,6 +67,7 @@ Before returning final JSON, check:
 - Root shape is exactly an object with `operations`.
 - Every `create` has a supported `type`.
 - Required fields for that type are present.
+- An unspecified representative parameter satisfies the stated domain, keeps required intersections and segments non-degenerate, and is not presented as the answer.
 - References point to existing canvas IDs or IDs created earlier in the same batch.
 - `polygon.vertexIds`, `prism.baseVertexIds`, and `pyramid.baseVertexIds` contain at least three point IDs.
 - `pyramid.apexId` is not one of the base vertices.

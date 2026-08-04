@@ -161,6 +161,11 @@
       "objectTypes": ["function", "point", "segment", "textLabel"]
     },
     {
+      "id": "graph_parameterized_exponential_vertical_maps",
+      "tags": ["graph", "function", "exponential", "parameter", "vertical_segment", "problem_diagram"],
+      "objectTypes": ["function", "point", "segment", "textLabel"]
+    },
+    {
       "id": "graph_conic_gallery",
       "tags": ["graph", "conic", "ellipse", "hyperbola", "parabola"],
       "objectTypes": ["ellipse", "hyperbola", "parabola", "point", "line", "textLabel"]

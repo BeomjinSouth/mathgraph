@@ -350,6 +350,15 @@ const operationProperties = {
         },
         required: ['x', 'y'],
         additionalProperties: false
+    },
+    labelMathPos: {
+        type: ['object', 'null'],
+        properties: {
+            x: NULLABLE_NUMBER,
+            y: NULLABLE_NUMBER
+        },
+        required: ['x', 'y'],
+        additionalProperties: false
     }
 };
 
@@ -378,6 +387,59 @@ export const GRAPH_OPERATIONS_RESPONSE_FORMAT = {
     schema: GRAPH_OPERATIONS_JSON_SCHEMA
 };
 
+const sourceBindingSchema = {
+    type: 'object',
+    properties: {
+        pointLabel: NULLABLE_STRING,
+        onObjectLabels: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Printed object labels that contain the named point, in source-text order.'
+        },
+        verticalTargetLabel: NULLABLE_STRING,
+        verticalTargetOnObjectLabel: NULLABLE_STRING
+    },
+    required: ['pointLabel', 'onObjectLabels', 'verticalTargetLabel', 'verticalTargetOnObjectLabel'],
+    additionalProperties: false
+};
+
+export const GRAPH_IMAGE_OPERATIONS_RESPONSE_FORMAT = {
+    type: 'json_schema',
+    name: 'graph_image_operations',
+    description: 'GraphA operations plus source-grounded named-point bindings extracted from a math image.',
+    strict: true,
+    schema: {
+        type: 'object',
+        properties: {
+            operations: GRAPH_OPERATIONS_JSON_SCHEMA.properties.operations,
+            sourceBindings: {
+                type: 'array',
+                items: sourceBindingSchema,
+                description: 'Bindings explicitly stated in the uploaded source. Use an empty array when none are stated.'
+            }
+        },
+        required: ['operations', 'sourceBindings'],
+        additionalProperties: false
+    }
+};
+
+export const GRAPH_IMAGE_BINDINGS_RESPONSE_FORMAT = {
+    type: 'json_schema',
+    name: 'graph_image_source_bindings',
+    description: 'Source-grounded named-point bindings extracted from a math image.',
+    strict: true,
+    schema: {
+        type: 'object',
+        properties: {
+            sourceBindings: {
+                type: 'array',
+                items: sourceBindingSchema
+            }
+        },
+        required: ['sourceBindings'],
+        additionalProperties: false
+    }
+};
 export function stripNullFields(value) {
     if (Array.isArray(value)) {
         return value.map(item => stripNullFields(item));
@@ -455,6 +517,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
    - For standalone textbook arrows or direction arrows, create a vector with hidden helper endpoint points. Do not invent an unsupported arrow type.
    - Hide helper points with visible:false when they only shape a region.
    - For piecewise-function endpoints, use pointStyle:"open" for excluded hollow points and pointStyle:"closed" for included filled points.
+   - For a parameterized graph with no fixed parameter value, choose a valid non-degenerate representative that keeps named intersections and construction lines distinct. Do not use a limit, boundary, or special value when it collapses the diagram, and do not present the representative as an answer.
    - If a named point lies on a segment, create the segment first and then create the named point as pointOnLine with lineId referencing that segment and t between 0 and 1.
    - For an internal division ratio AP:PB=m:n, use pointOnLine t=m/(m+n). Do not replace one requested segment with two non-collinear segments.
 
@@ -572,6 +635,7 @@ export const PROBLEM_SITUATION_GRAPH_GUIDANCE = [
     '문제를 풀거나 정답을 말하지 말고, 문제 상황을 이해하는 데 쓸 수 있는 GraphA 그래프/도식만 생성하세요.',
     '문제에서 변수, 좌표축, 함수식, 방정식, 부등식, 수직선, 도형 조건, 길이/각/접선/교점/음영 조건을 추출하세요.',
     '명시된 그림이 없더라도 조건을 설명하는 데 가장 유용한 좌표평면 그래프, 함수 그래프, 수직선, 기하 도식, 또는 영역 그림을 선택하세요.',
+    '매개변수 값이 정해지지 않았으면 조건을 만족하면서 이름 붙은 점과 보조선이 겹치지 않는 비퇴화 대표값을 선택하세요. 극한값·경계값·특수값이 도식을 겹치게 하면 피하고, 대표값을 정답처럼 표시하지 마세요.',
     '문제 본문, 선택지, 긴 설명 문장은 객체로 복사하지 말고, 도식 이해에 필요한 점 이름, 축 이름, 짧은 라벨, 함수식만 사용하세요.',
     '점이 선분 위에 있다고 명시되면 선분을 먼저 만든 뒤 pointOnLine으로 종속시키고, 내분비가 주어지면 t를 정확히 계산하세요.',
     '같은 선분 위의 점들을 서로 다른 비공선 선분으로 나누어 표현하지 마세요.',
@@ -588,6 +652,8 @@ export const PROBLEM_DIAGRAM_GRAPH_GUIDANCE = [
     'Do not copy problem body text, answer choices, or long explanation sentences into labels. Use only point names, axis names, short length/angle labels, formulas, and region names.',
     'Extract drawable structure: coordinate axes, functions, equations, inequalities, number lines, plane figures, circles, tangents, intersections, similarity conditions, length/angle markers, and shaded regions.',
     'If no figure is explicitly provided, choose the most useful coordinate graph, function graph, number line, plane-geometry diagram, solid diagram, or region diagram for understanding the conditions.',
+    'For an unspecified parameter, choose a valid non-degenerate representative value that keeps named intersections and construction lines visibly distinct. Separate named points on the parameter line by at least 0.25 math units. Do not use a limit, boundary, or special value when it collapses the diagram, and do not present the representative as an answer.',
+    'Do not create function-function intersection objects; the runtime does not support them. Represent y=constant with a two-point horizontal line when it must intersect a function, or use explicit computed point coordinates.',
     'Default visual style is monochrome Korean exam paper style: thin black lines, sparse hatching or light shading when needed, no decoration, no heavy colors.',
     'Shade a named triangle or quadrilateral only when its area value, maximum, or minimum is the actual question target. Use a black polygon with fillOpacity 0.18-0.24. If area is merely given as 25, compared as a ratio, or used as an intermediate condition while another value is asked, keep the polygon unfilled.',
     'Hide helper points with visible:false or pointSize:0. Keep labels sparse and avoid overlap.',
@@ -1505,7 +1571,7 @@ export class AIService {
             },
             text: {
                 verbosity,
-                format: GRAPH_OPERATIONS_RESPONSE_FORMAT
+                format: options.responseFormat || GRAPH_OPERATIONS_RESPONSE_FORMAT
             },
             ...(previousResponseId && { previous_response_id: previousResponseId })
         };
@@ -2861,7 +2927,8 @@ export class AIService {
         const instruction = typeof promptOrOptions?.instruction === 'string'
             ? promptOrOptions.instruction.trim()
             : '';
-        const mode = promptOrOptions?.mode === 'patch' || promptOrOptions?.mode === 'recreate'
+        const supportedModes = new Set(['patch', 'recreate', AI_COMMAND_MODE.PROBLEM_DIAGRAM]);
+        const mode = supportedModes.has(promptOrOptions?.mode)
             ? promptOrOptions.mode
             : (instruction ? 'patch' : 'recreate');
 
@@ -2874,7 +2941,9 @@ export class AIService {
 
     buildImageAnalysisPrompt(instruction = DEFAULT_IMAGE_RECREATE_INSTRUCTION, context = null, mode = 'recreate', referencePrompt = '') {
         const normalizedInstruction = String(instruction || '').trim() || DEFAULT_IMAGE_RECREATE_INSTRUCTION;
-        const normalizedMode = mode === 'patch' ? 'patch' : 'recreate';
+        const normalizedMode = mode === 'patch'
+            ? 'patch'
+            : (mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? AI_COMMAND_MODE.PROBLEM_DIAGRAM : 'recreate');
         const contextPrompt = this.buildCanvasContextPrompt(context);
         const modeGuide = normalizedMode === 'patch'
             ? [
@@ -2906,11 +2975,22 @@ export class AIService {
                 '이미지의 픽셀 자체를 생성하지 말고 GraphA operations[]만 반환하세요.',
                 '내부적으로 먼저 장면 그래프처럼 점/선/원/함수/관계/불확실성을 정리한 뒤, 최종 출력은 GraphA operations[]만 내보내세요.'
             ].join('\n');
+        const effectiveModeGuide = normalizedMode === AI_COMMAND_MODE.PROBLEM_DIAGRAM
+            ? [
+                PROBLEM_SITUATION_GRAPH_GUIDANCE,
+                PROBLEM_DIAGRAM_GRAPH_GUIDANCE,
+                'The uploaded image may contain only a complete math problem and no printed figure. That is not a reason to return an empty operations array.',
+                'Read the formulas, named points, domains, intersections, construction lines, and regions from the image. When those conditions define a drawable situation, operations must not be empty.',
+                'For function problems, preserve each printed function expression exactly, then add the named intersections and construction segments needed to show the stated relationships.',
+                'Also return sourceBindings. For every named point whose incidence is explicitly stated, copy its pointLabel and list the printed curve/line labels containing it in onObjectLabels. Preserve respectively/각각 order exactly. Record the printed y-coordinate/function name (for example f(t), not an invented point letter) in verticalTargetLabel and its destination curve in verticalTargetOnObjectLabel. Do not infer bindings that the source does not state.',
+                modeGuide
+            ].join('\n')
+            : modeGuide;
 
         return [
             '당신은 MathGraph 이미지 참조 변환 모드입니다.',
             '출력은 반드시 GraphA operations[] JSON만이어야 하며 설명 문장은 쓰지 마세요.',
-            modeGuide,
+            effectiveModeGuide,
             referencePrompt,
             `사용자 지시: ${normalizedInstruction}`,
             contextPrompt ? `현재 캔버스 컨텍스트:\n${contextPrompt}` : '',
@@ -2940,22 +3020,50 @@ export class AIService {
             mode: options.mode,
             instruction: options.instruction,
             context: options.context,
-            maxOperations: options.mode === 'recreate' ? IMAGE_RECREATE_OPERATION_BUDGET : undefined
+            maxOperations: options.mode === 'patch' ? undefined : IMAGE_RECREATE_OPERATION_BUDGET
         });
         if (!schemaIntentResult.valid) {
             return schemaIntentResult;
         }
 
-        return this.semanticValidator.validateRequestedSolidIntent(json, {
+        const solidIntentResult = this.semanticValidator.validateRequestedSolidIntent(json, {
             instruction: options.instruction
         });
+        if (!solidIntentResult.valid) {
+            return solidIntentResult;
+        }
+
+        if (options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
+            return this.semanticValidator.validateProblemDiagramIntent(json, {
+                prompt: ''
+            });
+        }
+
+        return solidIntentResult;
+    }
+
+    selectImageRepairReasoningEffort(mode, errors = []) {
+        void errors;
+        return mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? 'low' : 'medium';
     }
 
     buildImageRepairPrompt(originalPrompt, previousJson, errors, options) {
         const hasEmptyOperations = errors.some(error => String(error).includes('operations is empty'));
         const hasOutOfViewCoordinates = errors.some(error => String(error).includes('coordinates must stay within'));
-        const recreateRepairRule = hasEmptyOperations
+        const hasMathematicalRelationMismatch = errors.some(error =>
+            /must be (?:horizontal|vertical)|repeats the perpendicular through-point|function-function intersections are not supported|parameter-line named points are too close|sourceBindings must preserve/i.test(String(error))
+        );
+        const recreateRepairRule = hasMathematicalRelationMismatch
             ? [
+                'Repair cause: MATHEMATICAL_RELATION_MISMATCH.',
+                'A line labeled y=parameter must be horizontal, and a line labeled x=parameter must be vertical. Rebuild its defining helper points so the geometry matches the label.',
+                'When a vertical construction through a point on one curve meets the other stated curve, the new intersection must reference that other curve. It must not repeat the through-point on the same function.',
+                'Do not create an intersection between two function objects because the runtime cannot compute it. For y=constant, use a line defined by two equal-y helper points, or create mathematically computed explicit points.',
+                'Preserve the printed function expressions exactly and keep named points distinct. When a parameter is unspecified, choose a representative that separates named points on the parameter line by at least 0.25 math units.',
+                'Populate sourceBindings for every named point on the parameter line. Each binding must include the printed curve, the parameter line, the printed output expression such as f(t), and the destination curve; never leave these fields empty or replace output expressions with invented point letters.'
+            ].join('\n')
+            : hasEmptyOperations
+                ? [
                 'Repair cause: EMPTY_OPERATIONS.',
                 'Inspect the original image again. If a printed math diagram is visible, reconstruct that diagram first.',
                 'If no printed diagram is visible but the problem statement explicitly describes drawable geometry, use the text as semantic input and construct the exam-style supporting diagram.',
@@ -2979,8 +3087,141 @@ export class AIService {
                 : recreateRepairRule,
             'Previous JSON to repair:',
             JSON.stringify(previousJson).slice(0, 8000),
-            'Return only corrected {"operations":[...]} JSON.'
+            'Return only corrected {"operations":[...],"sourceBindings":[...]} JSON. Preserve source-grounded point bindings while repairing geometry.'
         ].filter(Boolean).join('\n\n');
+    }
+
+    buildIndependentProblemImageRecoveryPrompt(originalPrompt, previousJson, errors) {
+        return [
+            'Fresh independent recovery for a complete math-problem image.',
+            'Ignore the previous conclusion that nothing should be drawn. Inspect the original image from the beginning.',
+            'The image may contain problem text without a printed figure. If the text defines functions, curves, points, segments, regions, or geometric relations, the GraphA operations array must not be empty.',
+            'Extract the printed mathematical relationships before choosing coordinates. Preserve explicit formulas exactly.',
+            'For an unspecified parameter, choose a valid non-degenerate representative that keeps named points and construction lines distinct. Do not choose a limit, boundary, or special value that collapses the diagram.',
+            'Create function objects for printed curves, point objects for named intersections, and segment objects for stated vertical, horizontal, or connecting constructions.',
+            'Do not solve the question, calculate the requested final value, copy the problem prose, or present the representative parameter as an answer.',
+            `Return 2 to ${IMAGE_RECREATE_OPERATION_BUDGET} valid create operations plus source-grounded bindings as strict {"operations":[...],"sourceBindings":[...]} JSON.`,
+            `Previous validation errors:\n- ${errors.join('\n- ')}`,
+            'Previous invalid JSON:',
+            JSON.stringify(previousJson).slice(0, 8000),
+            'Original image-analysis instructions:',
+            originalPrompt
+        ].join('\n\n');
+    }
+
+
+    async recoverProblemImageFromScratch(
+        imageDataUrl,
+        originalPrompt,
+        failedJson,
+        errors,
+        options,
+        initialAttempt
+    ) {
+        if (options.mode !== AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
+            return null;
+        }
+
+        const recoveryPrompt = this.buildIndependentProblemImageRecoveryPrompt(
+            originalPrompt,
+            failedJson || { operations: [] },
+            errors
+        );
+        const recoveryAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, recoveryPrompt, {
+            model: this.selectOpenAIImageModel(options, 'repair'),
+            reasoningEffort: 'medium',
+            detail: 'high'
+        });
+        if (!recoveryAttempt.json) {
+            return {
+                success: false,
+                error: '문제 사진을 새로 분석했지만 도형 JSON을 읽지 못했습니다. 다시 시도해 주세요.',
+                message: recoveryAttempt.content,
+                validationErrors: errors
+            };
+        }
+
+        const recoveredJson = this.enhanceDiagramQuality(
+            recoveryAttempt.json,
+            options.instruction,
+            options.context,
+            options.mode
+        );
+        const recoveredIntentResult = this.validateImageAnalysisIntent(recoveredJson, options);
+        if (!recoveredIntentResult.valid) {
+            return {
+                success: false,
+                error: formatAIValidationMessage(recoveredIntentResult.errors),
+                message: recoveryAttempt.content,
+                json: recoveredJson,
+                validationErrors: recoveredIntentResult.errors
+            };
+        }
+
+        return {
+            success: true,
+            json: recoveredJson,
+            message: recoveryAttempt.content,
+            repaired: true,
+            recovered: true,
+            repairErrors: errors,
+            model: recoveryAttempt.requestBody.model,
+            initialModel: initialAttempt?.requestBody?.model,
+            mode: options.mode
+        };
+    }
+    shouldExtractProblemImageSourceBindings(errors = []) {
+        return errors.some(error => /sourceBindings must preserve/i.test(String(error)));
+    }
+
+    async recoverMissingProblemImageSourceBindings(imageDataUrl, failedJson, errors, options, initialAttempt) {
+        if (options.mode !== AI_COMMAND_MODE.PROBLEM_DIAGRAM ||
+            !this.shouldExtractProblemImageSourceBindings(errors)) {
+            return null;
+        }
+
+        const prompt = [
+            'Extract only source-grounded relationships from this printed math problem image.',
+            'For every named point on a parameter line, return pointLabel and onObjectLabels containing the parameter line and the exact printed curve.',
+            'Preserve respectively/각각 order exactly.',
+            'verticalTargetLabel is the printed y-coordinate or function expression such as f(t), never an invented point letter.',
+            'verticalTargetOnObjectLabel is the exact printed destination curve met by the vertical construction.',
+            'Do not return drawing operations and do not solve the problem. Return an empty sourceBindings array only when the image states no such relationships.'
+        ].join('\n');
+
+        try {
+            const bindingAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, prompt, {
+                model: this.selectOpenAIImageModel(options, 'first'),
+                reasoningEffort: 'low',
+                detail: 'high',
+                responseFormat: GRAPH_IMAGE_BINDINGS_RESPONSE_FORMAT
+            });
+            const sourceBindings = bindingAttempt.json?.sourceBindings;
+            if (!Array.isArray(sourceBindings) || sourceBindings.length === 0) return null;
+
+            const reboundJson = this.enhanceDiagramQuality(
+                { ...failedJson, sourceBindings },
+                options.instruction,
+                options.context,
+                options.mode
+            );
+            const reboundValidation = this.validateImageAnalysisIntent(reboundJson, options);
+            if (!reboundValidation.valid) return null;
+
+            return {
+                success: true,
+                json: reboundJson,
+                message: bindingAttempt.content,
+                repaired: true,
+                sourceBindingRecovered: true,
+                repairErrors: errors,
+                model: bindingAttempt.requestBody.model,
+                initialModel: initialAttempt?.requestBody?.model,
+                mode: options.mode
+            };
+        } catch {
+            return null;
+        }
     }
 
     async callOpenAIImageAnalysis(imageDataUrl, promptText, requestOptions = {}) {
@@ -2997,7 +3238,8 @@ export class AIService {
         ], {
             reasoningEffort: requestOptions.reasoningEffort || 'medium',
             model: requestOptions.model || this.config.model || DEFAULT_OPENAI_MODEL,
-            previousResponseId: requestOptions.previousResponseId
+            previousResponseId: requestOptions.previousResponseId,
+            responseFormat: requestOptions.responseFormat || GRAPH_IMAGE_OPERATIONS_RESPONSE_FORMAT
         });
         this.lastRequestModel = requestBody.model;
         const transport = this.buildOpenAITransport();
@@ -3050,7 +3292,7 @@ export class AIService {
             if (this.config.provider === 'openai') {
                 const firstAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, promptText, {
                     model: this.selectOpenAIImageModel(options, 'first'),
-                    reasoningEffort: 'medium',
+                    reasoningEffort: options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? 'low' : 'medium',
                     detail: 'high'
                 });
                 const json = firstAttempt.json
@@ -3064,15 +3306,27 @@ export class AIService {
                             success: true,
                             json,
                             message: firstAttempt.content,
-                            model: firstAttempt.requestBody.model
+                            model: firstAttempt.requestBody.model,
+                            mode: options.mode
                         };
+                    }
+
+                    const sourceBindingRecovery = await this.recoverMissingProblemImageSourceBindings(
+                        imageDataUrl,
+                        json,
+                        intentResult.errors,
+                        options,
+                        firstAttempt
+                    );
+                    if (sourceBindingRecovery) {
+                        return sourceBindingRecovery;
                     }
 
                     const repairPrompt = this.buildImageRepairPrompt(promptText, json, intentResult.errors, options);
                     const repairAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, repairPrompt, {
-                        previousResponseId: this.lastResponseId,
+                        previousResponseId: options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? undefined : this.lastResponseId,
                         model: this.selectOpenAIImageModel(options, 'repair'),
-                        reasoningEffort: 'medium',
+                        reasoningEffort: this.selectImageRepairReasoningEffort(options.mode, intentResult.errors),
                         detail: 'high'
                     });
 
@@ -3092,8 +3346,21 @@ export class AIService {
                                 repaired: true,
                                 repairErrors: intentResult.errors,
                                 model: repairAttempt.requestBody.model,
-                                initialModel: firstAttempt.requestBody.model
+                                initialModel: firstAttempt.requestBody.model,
+                                mode: options.mode
                             };
+                        }
+
+                        const recoveryResult = await this.recoverProblemImageFromScratch(
+                            imageDataUrl,
+                            promptText,
+                            repairedJson,
+                            [...intentResult.errors, ...repairedIntentResult.errors],
+                            options,
+                            firstAttempt
+                        );
+                        if (recoveryResult) {
+                            return recoveryResult;
                         }
 
                         return {
@@ -3105,12 +3372,36 @@ export class AIService {
                         };
                     }
 
+                    const recoveryResult = await this.recoverProblemImageFromScratch(
+                        imageDataUrl,
+                        promptText,
+                        json,
+                        [...intentResult.errors, 'repair response did not contain valid GraphA JSON.'],
+                        options,
+                        firstAttempt
+                    );
+                    if (recoveryResult) {
+                        return recoveryResult;
+                    }
+
                     return {
                         success: false,
                         error: 'AI가 보낸 도형 데이터를 읽지 못했습니다. 다시 시도해 주세요.',
                         message: repairAttempt.content,
                         validationErrors: intentResult.errors
                     };
+                }
+
+                const recoveryResult = await this.recoverProblemImageFromScratch(
+                    imageDataUrl,
+                    promptText,
+                    { operations: [] },
+                    ['initial response did not contain valid GraphA JSON.'],
+                    options,
+                    firstAttempt
+                );
+                if (recoveryResult) {
+                    return recoveryResult;
                 }
 
                 return { success: false, error: 'AI가 보낸 도형 데이터를 읽지 못했습니다. 다시 시도해 주세요.', message: firstAttempt.content };
@@ -3147,7 +3438,7 @@ export class AIService {
                     const enhancedJson = this.enhanceDiagramQuality(json, options.instruction, options.context, options.mode);
                     const intentResult = this.validateImageAnalysisIntent(enhancedJson, options);
                     if (intentResult.valid) {
-                        return { success: true, json: enhancedJson, message: content };
+                        return { success: true, json: enhancedJson, message: content, mode: options.mode };
                     }
                     return {
                         success: false,
