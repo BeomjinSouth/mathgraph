@@ -470,35 +470,26 @@ test('semantic relation repairs get focused guidance without carrying slow reaso
 });
 
 
-test('problem-image recovery starts fresh after empty and invalid JSON responses', async () => {
+test('problem-image scene recovery retries once after local coverage validation fails', async () => {
     const originalFetch = globalThis.fetch;
     const capturedBodies = [];
     globalThis.fetch = async (_url, options) => {
         const body = JSON.parse(options.body);
         capturedBodies.push(body);
         const attempt = capturedBodies.length;
-        const operations = attempt < 3
-            ? []
-            : [
-                {
-                    op: 'create',
-                    id: 'curve_mixed',
-                    type: 'function',
-                    expression: 'exp(2*x)-exp(-x)+1',
-                    xMin: -1.2,
-                    xMax: 0.65,
-                    showLabel: false
-                },
-                {
-                    op: 'create',
-                    id: 'curve_exp',
-                    type: 'function',
-                    expression: 'exp(2*x)',
-                    xMin: -1.2,
-                    xMax: 0.65,
-                    showLabel: false
-                }
-            ];
+        const scene = attempt === 1
+            ? { nodes: [], relations: [], mustDraw: [], sourceBindings: [] }
+            : {
+                nodes: [
+                    { id: 'curve_mixed', kind: 'function', text: 'exp(2*x)-exp(-x)+1', numbers: [-1.2, 0.65], refs: [], groups: [] },
+                    { id: 'curve_exp', kind: 'function', text: 'exp(2*x)', numbers: [-1.2, 0.65], refs: [], groups: [] }
+                ],
+                relations: [],
+                mustDraw: [
+                    { id: 'curves', description: 'Two stated curves', nodeIds: ['curve_mixed', 'curve_exp'], relationIds: [], required: true, evidence: 'printed equations' }
+                ],
+                sourceBindings: []
+            };
 
         return {
             ok: true,
@@ -509,7 +500,7 @@ test('problem-image recovery starts fresh after empty and invalid JSON responses
                         type: 'message',
                         content: [{
                             type: 'output_text',
-                            text: attempt === 2 ? 'unable to provide structured JSON' : JSON.stringify({ operations })
+                            text: JSON.stringify({ scene })
                         }]
                     }]
                 };
@@ -534,16 +525,16 @@ test('problem-image recovery starts fresh after empty and invalid JSON responses
 
         assert.equal(result.success, true);
         assert.equal(result.mode, AI_COMMAND_MODE.PROBLEM_DIAGRAM);
-        assert.equal(result.recovered, true);
-        assert.equal(capturedBodies.length, 3);
-        assert.match(capturedBodies[0].input[1].content[0].text, /problem_diagram/);
-        assert.equal(capturedBodies[0].reasoning.effort, 'low');
+        assert.equal(result.repaired, true);
+        assert.equal(result.sceneCompiled, true);
+        assert.equal(capturedBodies.length, 2);
+        assert.match(capturedBodies[0].input[1].content[0].text, /math teacher/i);
+        assert.equal(capturedBodies[0].reasoning.effort, 'medium');
+        assert.equal(capturedBodies[0].input[1].content[1].detail, 'original');
         assert.equal('previous_response_id' in capturedBodies[1], false);
-        assert.equal(capturedBodies[1].reasoning.effort, 'low');
-        assert.equal('previous_response_id' in capturedBodies[2], false);
-        assert.equal(capturedBodies[2].reasoning.effort, 'medium');
-        assert.match(capturedBodies[2].input[1].content[0].text, /fresh independent recovery/i);
-        assert.match(capturedBodies[2].input[1].content[0].text, /must not be empty/i);
+        assert.equal(capturedBodies[1].reasoning.effort, 'medium');
+        assert.match(capturedBodies[1].input[1].content[0].text, /local compilation or source coverage/i);
+        assert.match(capturedBodies[1].input[1].content[0].text, /mustDraw audit list is empty/i);
     } finally {
         globalThis.fetch = originalFetch;
     }

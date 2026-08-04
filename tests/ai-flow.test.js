@@ -323,7 +323,7 @@ test('AIService defaults to current OpenAI reference model', () => {
     });
 
     assert.equal(service.config.model, DEFAULT_OPENAI_MODEL);
-    assert.equal(DEFAULT_OPENAI_MODEL, 'gpt-5.5');
+    assert.equal(DEFAULT_OPENAI_MODEL, 'gpt-5.6-luna');
 });
 
 test('AIService builds OpenAI Responses request with strict Structured Outputs', () => {

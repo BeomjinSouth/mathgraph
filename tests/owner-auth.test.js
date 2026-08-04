@@ -98,6 +98,9 @@ test('safeEqual compares constant-time without leaking on length mismatch', () =
 });
 
 test('isModelAllowed only accepts whitelisted models', () => {
+    assert.equal(isModelAllowed('gpt-5.6-luna'), true);
+    assert.equal(isModelAllowed('gpt-5.6-terra'), true);
+    assert.equal(isModelAllowed('gpt-5.6-sol'), true);
     assert.equal(isModelAllowed('gpt-5.5'), true);
     assert.equal(isModelAllowed('gpt-5.4-mini'), true);
     assert.equal(isModelAllowed('evil-model'), false);
@@ -190,7 +193,7 @@ test('proxy numeric settings accept only finite positive safe integers', () => {
             process.env.MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS = invalid;
             process.env.MATHGRAPH_PROXY_TIMEOUT_MS = invalid;
             assert.equal(sanitizeProxyRequestBody({ model: 'gpt-5.5', input: [] }).max_output_tokens, 16384, invalid);
-            assert.equal(getProxyTimeoutMs(), 120000, invalid);
+            assert.equal(getProxyTimeoutMs(), 240000, invalid);
         }
     } finally {
         if (originalMaxOutput === undefined) delete process.env.MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS;

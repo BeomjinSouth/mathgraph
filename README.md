@@ -87,11 +87,13 @@ since 2026-07-18.
   - `MATHGRAPH_OWNER_NAME`: overrides the default owner name
   - `MATHGRAPH_OWNER_TOKEN_TTL_MS`: owner-session token lifetime (default 12h)
   - `MATHGRAPH_LOGIN_RATE_WINDOW_MS` / `MATHGRAPH_LOGIN_RATE_MAX`: login attempt rate limit (default 10 tries / 15 min, enforced for both address-wide and address+account buckets)
-  - `MATHGRAPH_PROXY_ALLOWED_MODELS`: comma-separated proxy model allow-list override
+  - `MATHGRAPH_PROXY_ALLOWED_MODELS`: comma-separated proxy model allow-list override; defaults include GPT-5.6 Luna, Terra, and Sol plus the retained GPT-5.5/5.4 families
   - `MATHGRAPH_PROXY_MAX_BODY_BYTES`: proxy request body cap (default 10 MB)
   - `MATHGRAPH_PROXY_RATE_WINDOW_MS` / `MATHGRAPH_PROXY_RATE_MAX`: proxy rate limit (default 30 requests / 60 s per verified owner subject, enforced per serverless instance)
   - `MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS`: forced `max_output_tokens` on proxied requests (default 16384)
-  - `MATHGRAPH_PROXY_TIMEOUT_MS`: upstream OpenAI request timeout (default 120 s)
+  - `MATHGRAPH_PROXY_TIMEOUT_MS`: upstream OpenAI request timeout (default 240 s)
+- `api/openai-responses.js` has a 300-second Vercel function duration so the
+  proxy can return its own 240-second timeout response instead of being cut off first.
 - Fixed login request defenses:
   - login JSON is capped at 8 KB; names at 128 characters; passwords at 1024 characters
   - attacker-controlled address/name key parts are SHA-256 hashed; login and proxy use separate per-instance stores capped at 2048 buckets each

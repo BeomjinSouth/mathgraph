@@ -9,8 +9,15 @@ import { parseAIJSONPayload } from './JSONUtils.js';
 import { SchemaValidator } from './SchemaValidator.js';
 import { SemanticValidator } from './SemanticValidator.js';
 import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
+import {
+    PROBLEM_SCENE_RESPONSE_FORMAT,
+    PROBLEM_SCENE_SYSTEM_PROMPT,
+    buildProblemScenePrompt,
+    compileProblemScenePayload,
+    validateProblemSceneCoverage
+} from './ProblemScenePipeline.js';
 
-export const DEFAULT_OPENAI_MODEL = 'gpt-5.5';
+export const DEFAULT_OPENAI_MODEL = 'gpt-5.6-luna';
 
 export const AI_COMMAND_MODE = Object.freeze({
     COMMAND: 'command',
@@ -20,7 +27,7 @@ export const AI_COMMAND_MODE = Object.freeze({
 });
 
 export const IMAGE_RECREATE_OPERATION_BUDGET = 45;
-export const OPENAI_IMAGE_FAST_MODEL = 'gpt-5.4-mini';
+export const OPENAI_IMAGE_FAST_MODEL = 'gpt-5.6-luna';
 export const AI_IMAGE_PREPROCESS_MAX_LONG_EDGE = 1800;
 export const AI_IMAGE_PREPROCESS_MIN_LONG_EDGE = 1200;
 export const AI_IMAGE_PREPROCESS_MIN_CROP_LONG_EDGE = 900;
@@ -36,10 +43,10 @@ export function formatAIValidationMessage(errors = []) {
     return '도형 데이터를 적용하지 못했습니다. 사진의 도형 조건이 잘 보이는지 확인한 뒤 다시 시도해 주세요.';
 }
 
-export async function fetchWithTimeout(url, init = {}, timeoutMs = 125000) {
+export async function fetchWithTimeout(url, init = {}, timeoutMs = 250000) {
     const normalizedTimeoutMs = Number.isSafeInteger(timeoutMs) && timeoutMs > 0
         ? timeoutMs
-        : 125000;
+        : 250000;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), normalizedTimeoutMs);
     try {
@@ -55,7 +62,10 @@ export async function fetchWithTimeout(url, init = {}, timeoutMs = 125000) {
 }
 
 export const OPENAI_MODEL_OPTIONS = [
-    { value: 'gpt-5.5', label: 'GPT-5.5 (권장)' },
+    { value: 'gpt-5.6-luna', label: 'GPT-5.6 Luna (권장 · 비용 절약)' },
+    { value: 'gpt-5.6-terra', label: 'GPT-5.6 Terra (성능 · 비용 균형)' },
+    { value: 'gpt-5.6-sol', label: 'GPT-5.6 Sol (최고 성능)' },
+    { value: 'gpt-5.5', label: 'GPT-5.5 (고성능)' },
     { value: 'gpt-5.5-pro', label: 'GPT-5.5 Pro (고난도/느림)' },
     { value: 'gpt-5.4', label: 'GPT-5.4 (균형)' },
     { value: 'gpt-5.4-mini', label: 'GPT-5.4 Mini (빠름/저렴)' },
@@ -70,9 +80,12 @@ export const GEMINI_MODEL_OPTIONS = [
 const OPENAI_MODEL_ROUTING_RANK = {
     'gpt-5.4-nano': 1,
     'gpt-5.4-mini': 2,
-    'gpt-5.4': 3,
-    'gpt-5.5': 4,
-    'gpt-5.5-pro': 5
+    'gpt-5.6-luna': 3,
+    'gpt-5.4': 4,
+    'gpt-5.6-terra': 5,
+    'gpt-5.5': 6,
+    'gpt-5.6-sol': 7,
+    'gpt-5.5-pro': 8
 };
 
 const DRAWING_REFERENCE_PATH_SETS = [
@@ -1578,7 +1591,7 @@ export class AIService {
     }
 
     normalizeReasoningEffort(value) {
-        const allowed = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']);
+        const allowed = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']);
         return allowed.has(value) ? value : 'low';
     }
 
@@ -3224,6 +3237,130 @@ export class AIService {
         }
     }
 
+    async callOpenAIProblemSceneAnalysis(imageDataUrl, promptText, requestOptions = {}) {
+        const requestBody = this.buildOpenAIRequestBodyFromInput([
+            { role: 'developer', content: PROBLEM_SCENE_SYSTEM_PROMPT },
+            {
+                role: 'user',
+                content: [
+                    { type: 'input_text', text: promptText },
+                    { type: 'input_image', image_url: imageDataUrl, detail: requestOptions.detail || 'original' }
+                ]
+            }
+        ], {
+            reasoningEffort: requestOptions.reasoningEffort || 'medium',
+            model: requestOptions.model || OPENAI_IMAGE_FAST_MODEL,
+            responseFormat: PROBLEM_SCENE_RESPONSE_FORMAT
+        });
+        this.lastRequestModel = requestBody.model;
+        const transport = this.buildOpenAITransport();
+        const response = await fetchWithTimeout(transport.url, {
+            method: 'POST',
+            headers: transport.headers,
+            body: JSON.stringify(requestBody)
+        });
+        if (!response.ok) {
+            throw new Error(await this.extractApiErrorMessage(response, 'OpenAI 문제 사진 분석 오류'));
+        }
+        const data = await response.json();
+        const content = extractOpenAIResponseText(data);
+        return { data, content, json: this.extractJSON(content), requestBody };
+    }
+
+    compileProblemSceneAttempt(attempt, options) {
+        if (!attempt?.json?.scene) {
+            return { valid: false, errors: ['problem scene response is missing scene data.'] };
+        }
+        const compiled = compileProblemScenePayload(attempt.json);
+        const coverage = validateProblemSceneCoverage(attempt.json.scene, compiled);
+        if (!coverage.valid) {
+            return { valid: false, errors: coverage.errors, compiled };
+        }
+        const graphJson = this.enhanceDiagramQuality({
+            operations: compiled.operations,
+            sourceBindings: compiled.sourceBindings
+        }, options.instruction, options.context, options.mode);
+        const intent = this.validateImageAnalysisIntent(graphJson, options);
+        if (!intent.valid) {
+            return { valid: false, errors: intent.errors, compiled, graphJson };
+        }
+        return { valid: true, compiled, graphJson };
+    }
+
+    mergeOpenAIUsage(...attempts) {
+        const usage = {};
+        for (const attempt of attempts) {
+            for (const [key, value] of Object.entries(attempt?.data?.usage || {})) {
+                if (typeof value === 'number') usage[key] = (usage[key] || 0) + value;
+            }
+        }
+        return usage;
+    }
+
+    async analyzeProblemImageAsScene(imageDataUrl, options, referencePrompt = '') {
+        const promptText = buildProblemScenePrompt(referencePrompt);
+        const model = this.selectOpenAIImageModel(options, 'first');
+        const requestOptions = { model, reasoningEffort: 'medium', detail: 'original' };
+        const firstAttempt = await this.callOpenAIProblemSceneAnalysis(
+            imageDataUrl,
+            promptText,
+            requestOptions
+        );
+        const firstResult = this.compileProblemSceneAttempt(firstAttempt, options);
+        if (firstResult.valid) {
+            return {
+                success: true,
+                json: firstResult.graphJson,
+                scene: firstAttempt.json.scene,
+                message: firstAttempt.content,
+                model: firstAttempt.requestBody.model,
+                mode: options.mode,
+                sceneCompiled: true,
+                requestCount: 1,
+                usage: this.mergeOpenAIUsage(firstAttempt)
+            };
+        }
+
+        const repairPrompt = [
+            promptText,
+            'The previous scene failed local compilation or source coverage checks.',
+            `Fix every issue and return the complete scene again:\n- ${firstResult.errors.join('\n- ')}`,
+            `Previous scene:\n${JSON.stringify(firstAttempt.json?.scene || {}).slice(0, 8000)}`
+        ].join('\n\n');
+        const repairAttempt = await this.callOpenAIProblemSceneAnalysis(
+            imageDataUrl,
+            repairPrompt,
+            requestOptions
+        );
+        const repairResult = this.compileProblemSceneAttempt(repairAttempt, options);
+        if (repairResult.valid) {
+            return {
+                success: true,
+                json: repairResult.graphJson,
+                scene: repairAttempt.json.scene,
+                message: repairAttempt.content,
+                model: repairAttempt.requestBody.model,
+                initialModel: firstAttempt.requestBody.model,
+                mode: options.mode,
+                sceneCompiled: true,
+                repaired: true,
+                repairErrors: firstResult.errors,
+                requestCount: 2,
+                usage: this.mergeOpenAIUsage(firstAttempt, repairAttempt)
+            };
+        }
+
+        return {
+            success: false,
+            error: formatAIValidationMessage(repairResult.errors),
+            message: repairAttempt.content,
+            scene: repairAttempt.json?.scene,
+            validationErrors: repairResult.errors,
+            requestCount: 2,
+            usage: this.mergeOpenAIUsage(firstAttempt, repairAttempt)
+        };
+    }
+
     async callOpenAIImageAnalysis(imageDataUrl, promptText, requestOptions = {}) {
         const imageDetail = requestOptions.detail || 'high';
         const requestBody = this.buildOpenAIRequestBodyFromInput([
@@ -3289,6 +3426,15 @@ export class AIService {
         );
 
         try {
+            if (this.config.provider === 'openai' &&
+                options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
+                return await this.analyzeProblemImageAsScene(
+                    imageDataUrl,
+                    options,
+                    referencePrompt
+                );
+            }
+
             if (this.config.provider === 'openai') {
                 const firstAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, promptText, {
                     model: this.selectOpenAIImageModel(options, 'first'),

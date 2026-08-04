@@ -27,6 +27,9 @@ const COMMON_FIELDS = [
 const NODE_KIND_ALIASES = new Map(Object.entries({
     point: 'point',
     point2d: 'point',
+    pointonline: 'pointOnLine',
+    pointonsegment: 'pointOnLine',
+    pointoncircle: 'pointOnCircle',
     segment: 'segment',
     linesegment: 'segment',
     line: 'line',
@@ -96,6 +99,8 @@ const UNSUPPORTED_NODE_KINDS = new Set([
 
 export const SCENE_GRAPH_SUPPORTED_NODE_KINDS = [
     'point',
+    'pointOnLine',
+    'pointOnCircle',
     'segment',
     'line',
     'ray',
@@ -161,16 +166,26 @@ export class SceneGraphCompiler {
             this.addUnsupportedWarning(item, 'scene.unsupported');
         }
 
-        for (const node of nodes) {
-            if (normalizeNodeKind(node?.kind ?? node?.type) === 'point') {
-                this.addNode(node);
+        const pendingNodes = [...nodes];
+        let previousPendingCount = Number.POSITIVE_INFINITY;
+        while (pendingNodes.length > 0 && pendingNodes.length < previousPendingCount) {
+            previousPendingCount = pendingNodes.length;
+            for (let index = 0; index < pendingNodes.length;) {
+                const node = pendingNodes[index];
+                const dependencies = this.nodeDependencies(node);
+                if (dependencies.every(id => this.createdIds.has(id))) {
+                    this.addNode(node);
+                    pendingNodes.splice(index, 1);
+                } else {
+                    index += 1;
+                }
             }
         }
 
-        for (const node of nodes) {
-            if (normalizeNodeKind(node?.kind ?? node?.type) !== 'point') {
-                this.addNode(node);
-            }
+        for (const node of pendingNodes) {
+            const missing = this.nodeDependencies(node).filter(id => !this.createdIds.has(id));
+            const id = ref(node?.id ?? node?.name) || 'unnamed';
+            this.warn(`Scene node "${id}" has unresolved dependencies: ${missing.join(', ') || 'unknown'}.`);
         }
 
         for (const relation of relations) {
@@ -260,6 +275,21 @@ export class SceneGraphCompiler {
         };
     }
 
+    nodeDependencies(node) {
+        const kind = normalizeNodeKind(node?.kind ?? node?.type);
+        const refs = refsFrom(node?.refs);
+        const groups = groupsFrom(node?.groups);
+        if (kind === 'point' || kind === 'function' || kind === 'numberLine' ||
+            kind === 'ellipse' || kind === 'hyperbola' || kind === 'parabola' ||
+            kind === 'cylinder' || kind === 'cone' || kind === 'sphere' || kind === 'textLabel') {
+            return [];
+        }
+        if (kind === 'prism') return groups.flat();
+        if (kind === 'pyramid') return [...(groups[0] || []), ...refs.slice(0, 1)];
+        if (refs.length > 0) return refs;
+        return legacyNodeDependencies(node, kind);
+    }
+
     addNode(node) {
         if (!node || typeof node !== 'object') {
             this.warn('Scene node skipped because it is not an object.');
@@ -283,6 +313,12 @@ export class SceneGraphCompiler {
         switch (kind) {
             case 'point':
                 this.addPoint(node);
+                break;
+            case 'pointOnLine':
+                this.addPointOnLine(node);
+                break;
+            case 'pointOnCircle':
+                this.addPointOnCircle(node);
                 break;
             case 'segment':
             case 'line':
@@ -359,8 +395,8 @@ export class SceneGraphCompiler {
                     object1Id: ['object1Id', 'object1', 'line1', 'curve1'],
                     object2Id: ['object2Id', 'object2', 'line2', 'curve2']
                 }, {
-                    ...(Number.isInteger(numberFrom(relation.branch))
-                        ? { branch: numberFrom(relation.branch) }
+                    ...(Number.isInteger(numberFrom(relation.branch ?? numbersFrom(relation)[0]))
+                        ? { branch: numberFrom(relation.branch ?? numbersFrom(relation)[0]) }
                         : {})
                 });
                 break;
@@ -422,7 +458,7 @@ export class SceneGraphCompiler {
                 this.addRelationObject(relation, 'tangentFunction', {
                     functionId: ['functionId', 'function']
                 }, {
-                    x: numberFrom(relation.x ?? relation.atX)
+                    x: numberFrom(relation.x ?? relation.atX ?? numbersFrom(relation)[0])
                 });
                 break;
             default:
@@ -437,8 +473,9 @@ export class SceneGraphCompiler {
             return null;
         }
 
-        const x = numberFrom(forced.x ?? node.x ?? node.position?.x ?? node.coordinates?.x);
-        const y = numberFrom(forced.y ?? node.y ?? node.position?.y ?? node.coordinates?.y);
+        const numbers = numbersFrom(node);
+        const x = numberFrom(forced.x ?? node.x ?? node.position?.x ?? node.coordinates?.x ?? numbers[0]);
+        const y = numberFrom(forced.y ?? node.y ?? node.position?.y ?? node.coordinates?.y ?? numbers[1]);
         if (!Number.isFinite(x) || !Number.isFinite(y)) {
             this.warn(`Point "${id}" skipped because x/y coordinates are missing.`);
             return null;
@@ -458,10 +495,39 @@ export class SceneGraphCompiler {
         return id;
     }
 
+    addPointOnLine(node) {
+        const id = this.nodeId(node, 'pointOnLine');
+        const refs = refsFrom(node.refs);
+        const numbers = numbersFrom(node);
+        const lineId = ref(firstValue(node, ['lineId', 'line', 'segmentId', 'segment'])) || refs[0];
+        const t = numberFrom(node.t ?? numbers[0]);
+        if (!lineId || !Number.isFinite(t)) {
+            this.warn('pointOnLine skipped because lineId and t are required.');
+            return;
+        }
+        this.addOperation({ op: 'create', id, type: 'pointOnLine', lineId, t, ...commonFields(node) });
+        this.createdIds.add(id);
+    }
+
+    addPointOnCircle(node) {
+        const id = this.nodeId(node, 'pointOnCircle');
+        const refs = refsFrom(node.refs);
+        const numbers = numbersFrom(node);
+        const circleId = ref(firstValue(node, ['circleId', 'circle'])) || refs[0];
+        const angle = numberFrom(node.angle ?? numbers[0]);
+        if (!circleId || !Number.isFinite(angle)) {
+            this.warn('pointOnCircle skipped because circleId and angle are required.');
+            return;
+        }
+        this.addOperation({ op: 'create', id, type: 'pointOnCircle', circleId, angle, ...commonFields(node) });
+        this.createdIds.add(id);
+    }
+
     addTwoPointObject(node, type, firstAliases, secondAliases) {
         const id = this.nodeId(node, type);
-        const first = ref(firstValue(node, firstAliases));
-        const second = ref(firstValue(node, secondAliases));
+        const refs = refsFrom(node.refs);
+        const first = ref(firstValue(node, firstAliases)) || refs[0];
+        const second = ref(firstValue(node, secondAliases)) || refs[1];
         if (!first || !second) {
             this.warn(`${type} "${id}" skipped because endpoint references are missing.`);
             return;
@@ -485,8 +551,10 @@ export class SceneGraphCompiler {
 
     addCircle(node) {
         const id = this.nodeId(node, 'circle');
-        const centerId = ref(firstValue(node, ['centerId', 'center']));
-        const pointOnCircleId = ref(firstValue(node, ['pointOnCircleId', 'pointOnCircle', 'through', 'radiusPoint']));
+        const refs = refsFrom(node.refs);
+        const numbers = numbersFrom(node);
+        const centerId = ref(firstValue(node, ['centerId', 'center'])) || refs[0];
+        const pointOnCircleId = ref(firstValue(node, ['pointOnCircleId', 'pointOnCircle', 'through', 'radiusPoint'])) || refs[1];
 
         if (centerId && pointOnCircleId) {
             this.addOperation({
@@ -516,7 +584,7 @@ export class SceneGraphCompiler {
             return;
         }
 
-        const radius = numberFrom(node.radius);
+        const radius = numberFrom(node.radius ?? numbers[0]);
         const centerPosition = centerId ? this.pointPositions.get(centerId) : null;
         if (centerId && Number.isFinite(radius) && radius > 0 && centerPosition) {
             const supportId = `${id}_radius_point`;
@@ -543,7 +611,8 @@ export class SceneGraphCompiler {
 
     addCircleThreePoints(node) {
         const id = this.nodeId(node, 'circleThreePoints');
-        const points = refsFrom(firstValue(node, ['points', 'throughPoints', 'pointIds']));
+        const points = refsFrom(firstValue(node, ['points', 'throughPoints', 'pointIds']))
+            .concat(refsFrom(node.refs));
         const point1Id = ref(node.point1Id ?? node.point1) || points[0];
         const point2Id = ref(node.point2Id ?? node.point2) || points[1];
         const point3Id = ref(node.point3Id ?? node.point3) || points[2];
@@ -565,9 +634,10 @@ export class SceneGraphCompiler {
 
     addCircleRegion(node, type) {
         const id = this.nodeId(node, type);
-        const circleId = ref(firstValue(node, ['circleId', 'circle']));
-        const startPointId = ref(firstValue(node, ['startPointId', 'startPoint', 'start']));
-        const endPointId = ref(firstValue(node, ['endPointId', 'endPoint', 'end']));
+        const refs = refsFrom(node.refs);
+        const circleId = ref(firstValue(node, ['circleId', 'circle'])) || refs[0];
+        const startPointId = ref(firstValue(node, ['startPointId', 'startPoint', 'start'])) || refs[1];
+        const endPointId = ref(firstValue(node, ['endPointId', 'endPoint', 'end'])) || refs[2];
         if (!circleId || !startPointId || !endPointId) {
             this.warn(`${type} "${id}" skipped because circle/start/end references are required.`);
             return;
@@ -580,7 +650,7 @@ export class SceneGraphCompiler {
             circleId,
             startPointId,
             endPointId,
-            ...(node.mode === 'major' || node.mode === 'minor' ? { mode: node.mode } : {}),
+            ...(['major', 'minor'].includes(node.mode ?? node.text) ? { mode: node.mode ?? node.text } : {}),
             ...commonFields(node)
         });
         this.createdIds.add(id);
@@ -588,7 +658,8 @@ export class SceneGraphCompiler {
 
     addLensRegion(node) {
         const id = this.nodeId(node, 'lensRegion');
-        const circleRefs = refsFrom(firstValue(node, ['circleIds', 'circles']));
+        const circleRefs = refsFrom(firstValue(node, ['circleIds', 'circles']))
+            .concat(refsFrom(node.refs));
         const circle1Id = ref(firstValue(node, ['circle1Id', 'circle1', 'firstCircle', 'leftCircle'])) || circleRefs[0];
         const circle2Id = ref(firstValue(node, ['circle2Id', 'circle2', 'secondCircle', 'rightCircle'])) || circleRefs[1];
         if (!circle1Id || !circle2Id) {
@@ -609,7 +680,8 @@ export class SceneGraphCompiler {
 
     addPolygon(node) {
         const id = this.nodeId(node, 'polygon');
-        const vertexIds = refsFrom(firstValue(node, ['vertexIds', 'vertices', 'points', 'pointIds']));
+        const vertexIds = refsFrom(firstValue(node, ['vertexIds', 'vertices', 'points', 'pointIds']))
+            .concat(refsFrom(node.refs));
         if (vertexIds.length < 3) {
             this.warn(`Polygon "${id}" skipped because at least three vertex ids are required.`);
             return;
@@ -626,7 +698,8 @@ export class SceneGraphCompiler {
 
     addFunction(node) {
         const id = this.nodeId(node, 'function');
-        const expression = normalizeFunctionExpression(firstString(node, ['expression', 'equation', 'formula']));
+        const numbers = numbersFrom(node);
+        const expression = normalizeFunctionExpression(firstString(node, ['expression', 'equation', 'formula', 'text']));
         if (!expression) {
             this.warn(`Function "${id}" skipped because expression is missing.`);
             return;
@@ -636,10 +709,10 @@ export class SceneGraphCompiler {
             id,
             type: 'function',
             expression,
-            ...(Number.isFinite(numberFrom(node.xMin)) ? { xMin: numberFrom(node.xMin) } : {}),
-            ...(Number.isFinite(numberFrom(node.xMax)) ? { xMax: numberFrom(node.xMax) } : {}),
-            ...(Number.isFinite(numberFrom(node.yMin)) ? { yMin: numberFrom(node.yMin) } : {}),
-            ...(Number.isFinite(numberFrom(node.yMax)) ? { yMax: numberFrom(node.yMax) } : {}),
+            ...(Number.isFinite(numberFrom(node.xMin ?? numbers[0])) ? { xMin: numberFrom(node.xMin ?? numbers[0]) } : {}),
+            ...(Number.isFinite(numberFrom(node.xMax ?? numbers[1])) ? { xMax: numberFrom(node.xMax ?? numbers[1]) } : {}),
+            ...(Number.isFinite(numberFrom(node.yMin ?? numbers[2])) ? { yMin: numberFrom(node.yMin ?? numbers[2]) } : {}),
+            ...(Number.isFinite(numberFrom(node.yMax ?? numbers[3])) ? { yMax: numberFrom(node.yMax ?? numbers[3]) } : {}),
             ...commonFields(node)
         });
         this.createdIds.add(id);
@@ -647,9 +720,10 @@ export class SceneGraphCompiler {
 
     addConic(node, type) {
         const id = this.nodeId(node, type);
-        const x = numberFrom(node.x ?? node.centerX ?? node.vertexX ?? 0);
-        const y = numberFrom(node.y ?? node.centerY ?? node.vertexY ?? 0);
-        const rotation = numberFrom(node.rotation);
+        const numbers = numbersFrom(node);
+        const x = numberFrom(node.x ?? node.centerX ?? node.vertexX ?? numbers[0] ?? 0);
+        const y = numberFrom(node.y ?? node.centerY ?? node.vertexY ?? numbers[1] ?? 0);
+        const rotation = numberFrom(node.rotation ?? numbers[4]);
         const operation = {
             op: 'create',
             id,
@@ -660,15 +734,15 @@ export class SceneGraphCompiler {
         };
 
         if (type === 'ellipse') {
-            operation.radiusX = numberFrom(node.radiusX ?? node.a ?? node.semiMajor);
-            operation.radiusY = numberFrom(node.radiusY ?? node.b ?? node.semiMinor);
+            operation.radiusX = numberFrom(node.radiusX ?? node.a ?? node.semiMajor ?? numbers[2]);
+            operation.radiusY = numberFrom(node.radiusY ?? node.b ?? node.semiMinor ?? numbers[3]);
         } else if (type === 'hyperbola') {
-            operation.a = numberFrom(node.a ?? node.transverseRadius);
-            operation.b = numberFrom(node.b ?? node.conjugateRadius);
-            operation.orientation = node.orientation ?? 'horizontal';
+            operation.a = numberFrom(node.a ?? node.transverseRadius ?? numbers[2]);
+            operation.b = numberFrom(node.b ?? node.conjugateRadius ?? numbers[3]);
+            operation.orientation = node.orientation ?? node.text ?? 'horizontal';
         } else {
-            operation.p = numberFrom(node.p ?? node.focalLength ?? node.focusDistance);
-            operation.orientation = node.orientation ?? 'right';
+            operation.p = numberFrom(node.p ?? node.focalLength ?? node.focusDistance ?? numbers[2]);
+            operation.orientation = node.orientation ?? node.text ?? 'right';
         }
 
         if (Number.isFinite(rotation)) operation.rotation = rotation;
@@ -688,10 +762,11 @@ export class SceneGraphCompiler {
 
     addNumberLine(node) {
         const id = this.nodeId(node, 'numberLine');
-        const start = numberFrom(node.start ?? node.min);
-        const end = numberFrom(node.end ?? node.max);
-        const step = numberFrom(node.step ?? node.interval ?? 1);
-        const y = numberFrom(node.y ?? node.yLine ?? 0);
+        const numbers = numbersFrom(node);
+        const start = numberFrom(node.start ?? node.min ?? numbers[0]);
+        const end = numberFrom(node.end ?? node.max ?? numbers[1]);
+        const step = numberFrom(node.step ?? node.interval ?? numbers[2] ?? 1);
+        const y = numberFrom(node.y ?? node.yLine ?? numbers[3] ?? 0);
         if (!Number.isFinite(start) || !Number.isFinite(end)) {
             this.warn(`Number line "${id}" skipped because start/end are required.`);
             return;
@@ -714,10 +789,11 @@ export class SceneGraphCompiler {
 
     addCurvedSolid(node, type) {
         const id = this.nodeId(node, type);
-        const x = numberFrom(node.x ?? node.centerX ?? 0);
-        const y = numberFrom(node.y ?? node.centerY ?? 0);
-        const width = numberFrom(node.width ?? (Number.isFinite(numberFrom(node.radius)) ? numberFrom(node.radius) * 2 : undefined));
-        const height = numberFrom(node.height ?? (type === 'sphere' ? width : undefined));
+        const numbers = numbersFrom(node);
+        const x = numberFrom(node.x ?? node.centerX ?? numbers[0] ?? 0);
+        const y = numberFrom(node.y ?? node.centerY ?? numbers[1] ?? 0);
+        const width = numberFrom(node.width ?? numbers[2] ?? (Number.isFinite(numberFrom(node.radius)) ? numberFrom(node.radius) * 2 : undefined));
+        const height = numberFrom(node.height ?? numbers[3] ?? (type === 'sphere' ? width : undefined));
         if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
             this.warn(`${type} "${id}" skipped because positive x/y/width/height values are required.`);
             return;
@@ -730,7 +806,7 @@ export class SceneGraphCompiler {
             y,
             width,
             height,
-            ...(Number.isFinite(numberFrom(node.ellipseRatio)) ? { ellipseRatio: numberFrom(node.ellipseRatio) } : {}),
+            ...(Number.isFinite(numberFrom(node.ellipseRatio ?? numbers[4])) ? { ellipseRatio: numberFrom(node.ellipseRatio ?? numbers[4]) } : {}),
             ...(node.showHiddenLines !== undefined ? { showHiddenLines: Boolean(node.showHiddenLines) } : {}),
             ...commonFields(node)
         });
@@ -740,8 +816,9 @@ export class SceneGraphCompiler {
     addTextLabel(node) {
         const id = this.nodeId(node, 'textLabel');
         const text = String(node.text ?? node.content ?? '').trim();
-        const x = numberFrom(node.x ?? 0);
-        const y = numberFrom(node.y ?? 0);
+        const numbers = numbersFrom(node);
+        const x = numberFrom(node.x ?? numbers[0] ?? 0);
+        const y = numberFrom(node.y ?? numbers[1] ?? 0);
         if (!text || !Number.isFinite(x) || !Number.isFinite(y)) {
             this.warn(`Text label "${id}" skipped because text and x/y are required.`);
             return;
@@ -761,8 +838,9 @@ export class SceneGraphCompiler {
 
     addPrism(node) {
         const id = this.nodeId(node, 'prism');
-        const baseVertexIds = refsFrom(firstValue(node, ['baseVertexIds', 'baseVertices', 'base']));
-        const topVertexIds = refsFrom(firstValue(node, ['topVertexIds', 'topVertices', 'top']));
+        const groups = groupsFrom(node.groups);
+        const baseVertexIds = refsFrom(firstValue(node, ['baseVertexIds', 'baseVertices', 'base'])).concat(groups[0] || []);
+        const topVertexIds = refsFrom(firstValue(node, ['topVertexIds', 'topVertices', 'top'])).concat(groups[1] || []);
         if (baseVertexIds.length < 3 || topVertexIds.length !== baseVertexIds.length) {
             this.warn(`Prism "${id}" skipped because base/top vertices must have matching lengths of at least three.`);
             return;
@@ -780,8 +858,10 @@ export class SceneGraphCompiler {
 
     addPyramid(node) {
         const id = this.nodeId(node, 'pyramid');
-        const baseVertexIds = refsFrom(firstValue(node, ['baseVertexIds', 'baseVertices', 'base']));
-        const apexId = ref(firstValue(node, ['apexId', 'apex', 'top']));
+        const groups = groupsFrom(node.groups);
+        const refs = refsFrom(node.refs);
+        const baseVertexIds = refsFrom(firstValue(node, ['baseVertexIds', 'baseVertices', 'base'])).concat(groups[0] || []);
+        const apexId = ref(firstValue(node, ['apexId', 'apex', 'top'])) || refs[0];
         if (baseVertexIds.length < 3 || !apexId) {
             this.warn(`Pyramid "${id}" skipped because base vertices and apex are required.`);
             return;
@@ -800,8 +880,11 @@ export class SceneGraphCompiler {
     addRelationObject(relation, type, refAliases, extraFields = {}) {
         const id = this.nodeId(relation, type);
         const fields = {};
+        const compactRefs = refsFrom(relation.refs);
+        let compactIndex = 0;
         for (const [field, aliases] of Object.entries(refAliases)) {
-            fields[field] = ref(firstValue(relation, aliases));
+            fields[field] = ref(firstValue(relation, aliases)) || compactRefs[compactIndex];
+            compactIndex += 1;
             if (!fields[field]) {
                 this.warn(`${type} "${id}" skipped because ${field} is missing.`);
                 return;
@@ -864,6 +947,29 @@ function normalizeKey(value) {
         .replace(/[\s_-]+/g, '');
 }
 
+function legacyNodeDependencies(node, kind) {
+    const aliasesByKind = {
+        pointOnLine: ['lineId', 'line', 'segmentId', 'segment'],
+        pointOnCircle: ['circleId', 'circle'],
+        segment: ['point1Id', 'point1', 'from', 'start', 'point2Id', 'point2', 'to', 'end'],
+        line: ['point1Id', 'point1', 'from', 'start', 'point2Id', 'point2', 'to', 'end'],
+        ray: ['originId', 'origin', 'from', 'start', 'directionPointId', 'directionPoint', 'to', 'end'],
+        vector: ['startPointId', 'startPoint', 'from', 'start', 'endPointId', 'endPoint', 'to', 'end'],
+        circle: ['centerId', 'center', 'pointOnCircleId', 'pointOnCircle', 'through', 'radiusPoint'],
+        circleThreePoints: ['point1Id', 'point1', 'point2Id', 'point2', 'point3Id', 'point3'],
+        arc: ['circleId', 'circle', 'startPointId', 'startPoint', 'endPointId', 'endPoint'],
+        sector: ['circleId', 'circle', 'startPointId', 'startPoint', 'endPointId', 'endPoint'],
+        circularSegment: ['circleId', 'circle', 'startPointId', 'startPoint', 'endPointId', 'endPoint'],
+        lensRegion: ['circle1Id', 'circle1', 'circle2Id', 'circle2']
+    };
+    const aliases = aliasesByKind[kind] || [];
+    const dependencies = aliases.map(alias => ref(node?.[alias])).filter(Boolean);
+    if (kind === 'polygon') dependencies.push(...refsFrom(node?.vertexIds ?? node?.vertices ?? node?.points));
+    if (kind === 'prism') dependencies.push(...refsFrom(node?.baseVertexIds), ...refsFrom(node?.topVertexIds));
+    if (kind === 'pyramid') dependencies.push(...refsFrom(node?.baseVertexIds), ref(node?.apexId ?? node?.apex));
+    return [...new Set(dependencies.filter(Boolean))];
+}
+
 function firstValue(object, aliases) {
     for (const alias of aliases) {
         if (object?.[alias] !== undefined && object?.[alias] !== null) {
@@ -894,6 +1000,17 @@ function refsFrom(value) {
     return value.map(item => ref(item)).filter(Boolean);
 }
 
+function numbersFrom(source) {
+    return Array.isArray(source?.numbers)
+        ? source.numbers.map(item => numberFrom(item))
+        : [];
+}
+
+function groupsFrom(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map(group => refsFrom(group));
+}
+
 function numberFrom(value) {
     if (typeof value === 'number') return value;
     if (typeof value === 'string' && value.trim() !== '') {
@@ -905,9 +1022,15 @@ function numberFrom(value) {
 
 function commonFields(source) {
     const fields = {};
+    const style = source?.style && typeof source.style === 'object' ? source.style : {};
     for (const field of COMMON_FIELDS) {
-        if (source?.[field] !== undefined) {
-            fields[field] = cloneValue(source[field]);
+        const value = source?.[field] !== undefined ? source[field] : style[field];
+        if (field === 'labelOffset' && Array.isArray(value)) {
+            if (value.length === 2) fields.labelOffset = { x: value[0], y: value[1] };
+            continue;
+        }
+        if (value !== undefined && value !== null) {
+            fields[field] = cloneValue(value);
         }
     }
     return fields;

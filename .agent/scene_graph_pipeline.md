@@ -44,3 +44,17 @@ Remaining follow-up:
 - add crop metadata and scene-node ids to saved evidence;
 - add first-class chart and curved-solid primitives where exact textbook parity is impossible with current objects;
 - add visual comparison/eval cases for source crop versus compiled render.
+
+## 2026-08-05 Live Problem-Image Activation
+
+The production failures confirmed the architectural gap described above. The live image-only path still asked a vision model to author the final, wide `operations[]` schema directly. Valid JSON therefore did not imply that the source relationships were preserved, and every retry resent the expensive image.
+
+This implementation activates the scene boundary for `problem_diagram` requests:
+
+1. GPT-5.6 Luna reads the image once and returns a compact scene with source-grounded `mustDraw` items.
+2. `SceneGraphCompiler` resolves node dependencies and compiles the scene locally.
+3. A coverage gate checks that every required source item maps to compiled operation ids.
+4. Only invalid scenes use a bounded image retry; successful scenes do not pay for a second model call.
+5. Patch and generic image-recreate behavior remain on the existing operation contract.
+
+The model migration is tier-aware. Luna replaces the former low-cost image worker and becomes the app default requested by the owner; older models remain available in the picker. The migration also makes image detail and reasoning explicit and raises the proxy/client timeout without enabling Pro mode or other optional GPT-5.6 features.
