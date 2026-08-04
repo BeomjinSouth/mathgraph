@@ -3014,3 +3014,30 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - 최종 운영 배포: `dpl_54BvD4zGuVSw8i6EmzH33GxF3Es7`.
 - 직접 주소: `https://mathgraph-4foeijanm-beomjinsouths-projects.vercel.app`.
 - 운영 별칭: `https://mathgraph-five.vercel.app`.
+
+## 2026-08-05 문제 사진 관계 해석 파이프라인 운영 연결
+
+### 원인과 구현
+
+- 기존 사진 전용 경로는 `gpt-5.4-mini`가 문제 읽기와 넓은 GraphA `operations[]` 작성을 한 번에 맡았다. 사용하지 않는 필드까지 요구하는 구조화 출력, 필수 원문 요소 대조 부족, 이미지 재전송 중심 복구가 빈 연산·시간 초과·관계 누락의 주원인이었다.
+- `gpt-5.6-luna`가 간결한 문제 장면을 만들고, 앱의 `SceneGraphCompiler`가 의존 순서에 따라 GraphA 연산으로 변환하도록 실제 `problem_diagram` 경로를 교체했다.
+- `mustDraw` 항목을 최종 연산 ID와 대조한다. 누락, 끊어진 참조, 화면 밖 좌표, 반원을 원으로 대체한 결과, 빠진 색칠 영역, 중복 식별자와 중복 점 이름을 성공으로 처리하지 않는다.
+- 첫 장면이 유효하면 추가 이미지 호출 없이 끝내고, 검증 실패 때에만 같은 Luna 모델로 장면 전체를 한 번 보정한다.
+- 기본 모델과 사진 모델을 `gpt-5.6-luna`, 사진 상세도를 `original`, 추론 수준을 `medium`으로 바꿨다. 브라우저 제한은 250초, 프록시는 240초, Vercel 함수는 300초로 늘렸다.
+
+### 검증
+
+- 선분 위의 점, 반원, 함수·교점, 입체도형과 색칠 단면, 중복 교점 거부를 서로 다른 장면 회귀 테스트로 확인했다.
+- `npm.cmd run vercel-build`: 전체 372/372 테스트 통과 후 정적 `dist` 빌드 완료.
+- `git diff --check`, Vercel Production 필수 환경 변수 이름 확인, 운영 별칭 HTTP 200 확인을 통과했다.
+- 첫 운영 점검에서는 역함수 문제 사진이 Luna로 12개 객체를 만들었지만, P·Q를 보조점과 교점으로 중복 생성한 사실을 객체 목록에서 발견했다. 이를 성공으로 보지 않고 중복 ID·중복 점 이름 거부 규칙과 회귀 테스트를 추가했다.
+- 최종 배포 뒤 같은 사진만 다시 업로드했다. 별도 텍스트 입력이나 수동 보정 없이 `gpt-5.6-luna`가 7개 객체를 생성했다. 함수 `f`, 역함수 `f⁻¹`, 기울기 -1인 직선, 교점 `P=(3,1)`, `Q=(1,3)`이 확인되었고 브라우저 경고·오류는 0건이었다.
+- 실제 이미지 API 비용을 줄이기 위해 최종 운영 호출은 대표 사진 한 장으로 제한했다. 나머지 도형군은 장면 컴파일·검증 회귀 테스트로 확인했다.
+
+### 커밋과 배포
+
+- 주요 구현 커밋: `1c9f50a` (`feat: 문제 사진 관계 해석 파이프라인 연결`).
+- 운영 점검 수정 커밋: `f4c29f7` (`fix: 중복 교점 장면 거부`).
+- 최종 운영 배포: `dpl_pRy1APJZuPramNfoYDUVRwL1ytck`.
+- 직접 주소: `https://mathgraph-b2y2v6k9q-beomjinsouths-projects.vercel.app`.
+- 운영 별칭: `https://mathgraph-five.vercel.app`.
