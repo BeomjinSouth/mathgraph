@@ -59,6 +59,9 @@ The app opens with a login landing overlay.
   circles and number lines), property-panel edits (label, color, point size, line
   width, coordinates, function expression/ranges, dimension text/format), algebra
   creation (a circle expression is one atomic undo step), AI patches, and paste.
+- AI operations and project files support editable `ellipse`, `hyperbola`, and
+  `parabola` objects with translation, rotation, selection, drag, canvas
+  rendering, and SVG export.
 - Save/load to browser storage is available from the toolbar and the command
   palette (Ctrl+K).
 

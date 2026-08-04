@@ -38,6 +38,10 @@ const NODE_KIND_ALIASES = new Map(Object.entries({
     circle: 'circle',
     circlethreepoints: 'circleThreePoints',
     circumcircle: 'circleThreePoints',
+    ellipse: 'ellipse',
+    oval: 'ellipse',
+    hyperbola: 'hyperbola',
+    parabola: 'parabola',
     arc: 'arc',
     sector: 'sector',
     circularsegment: 'circularSegment',
@@ -97,6 +101,9 @@ export const SCENE_GRAPH_SUPPORTED_NODE_KINDS = [
     'vector',
     'circle',
     'circleThreePoints',
+    'ellipse',
+    'hyperbola',
+    'parabola',
     'arc',
     'sector',
     'circularSegment',
@@ -291,6 +298,11 @@ export class SceneGraphCompiler {
                 break;
             case 'circleThreePoints':
                 this.addCircleThreePoints(node);
+                break;
+            case 'ellipse':
+            case 'hyperbola':
+            case 'parabola':
+                this.addConic(node, kind);
                 break;
             case 'arc':
             case 'sector':
@@ -632,6 +644,47 @@ export class SceneGraphCompiler {
         this.createdIds.add(id);
     }
 
+    addConic(node, type) {
+        const id = this.nodeId(node, type);
+        const x = numberFrom(node.x ?? node.centerX ?? node.vertexX ?? 0);
+        const y = numberFrom(node.y ?? node.centerY ?? node.vertexY ?? 0);
+        const rotation = numberFrom(node.rotation);
+        const operation = {
+            op: 'create',
+            id,
+            type,
+            x,
+            y,
+            ...commonFields(node)
+        };
+
+        if (type === 'ellipse') {
+            operation.radiusX = numberFrom(node.radiusX ?? node.a ?? node.semiMajor);
+            operation.radiusY = numberFrom(node.radiusY ?? node.b ?? node.semiMinor);
+        } else if (type === 'hyperbola') {
+            operation.a = numberFrom(node.a ?? node.transverseRadius);
+            operation.b = numberFrom(node.b ?? node.conjugateRadius);
+            operation.orientation = node.orientation ?? 'horizontal';
+        } else {
+            operation.p = numberFrom(node.p ?? node.focalLength ?? node.focusDistance);
+            operation.orientation = node.orientation ?? 'right';
+        }
+
+        if (Number.isFinite(rotation)) operation.rotation = rotation;
+        const requiredNumbers = type === 'ellipse'
+            ? [operation.radiusX, operation.radiusY]
+            : type === 'hyperbola'
+                ? [operation.a, operation.b]
+                : [operation.p];
+        if (![x, y, ...requiredNumbers].every(Number.isFinite) || requiredNumbers.some(value => value <= 0)) {
+            this.warn(`${type} "${id}" skipped because its coordinates and size parameters must be finite positive numbers.`);
+            return;
+        }
+
+        this.addOperation(operation);
+        this.createdIds.add(id);
+    }
+
     addNumberLine(node) {
         const id = this.nodeId(node, 'numberLine');
         const start = numberFrom(node.start ?? node.min);
@@ -873,7 +926,14 @@ function copyAllowedUpdateFields(source) {
         'step',
         'showArrows',
         'tickHeight',
-        'customMarks'
+        'customMarks',
+        'radiusX',
+        'radiusY',
+        'a',
+        'b',
+        'p',
+        'orientation',
+        'rotation'
     ]) {
         if (source?.[field] !== undefined) {
             fields[field] = cloneValue(source[field]);

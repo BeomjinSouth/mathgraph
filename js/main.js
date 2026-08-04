@@ -2850,6 +2850,26 @@ class GraphAApp {
             `r="${screenRadius.toFixed(2)}" ${this.buildSVGStrokeAttributes(obj, { fill, fillOpacity })} />`;
     }
 
+    buildSVGConicMarkup(obj) {
+        if (!obj.valid || typeof obj.getPolylines !== 'function') return '';
+
+        const polylines = obj.getPolylines(this.canvas.getVisibleBounds(), 360);
+        const isEllipse = obj.type === 'ellipse';
+        const fill = isEllipse && obj.fillOpacity > 0 ? (obj.fillColor || obj.color) : 'none';
+        const fillOpacity = isEllipse && obj.fillOpacity > 0 ? obj.fillOpacity : null;
+        const paths = polylines
+            .filter(points => Array.isArray(points) && points.length >= 2)
+            .map(points => {
+                const screenPoints = points.map(point => this.canvas.toScreen(point));
+                return `<path d="${this.buildSVGPath(screenPoints, isEllipse)}" ` +
+                    `${this.buildSVGStrokeAttributes(obj, { fill, fillOpacity })} />`;
+            });
+
+        if (paths.length === 0) return '';
+        return `<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}">` +
+            paths.join('') + '</g>';
+    }
+
     sampleArcScreenPoints(obj, samples = 64) {
         if (!obj.center || !obj.valid) return [];
 
@@ -3166,6 +3186,10 @@ class GraphAApp {
             case 'circle':
             case 'circleThreePoints':
                 return this.buildSVGCircleMarkup(obj);
+            case 'ellipse':
+            case 'hyperbola':
+            case 'parabola':
+                return this.buildSVGConicMarkup(obj);
             case 'function':
                 return this.buildSVGFunctionMarkup(obj);
             case 'arc':

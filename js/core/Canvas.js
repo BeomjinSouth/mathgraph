@@ -575,6 +575,56 @@ export class Canvas {
     }
 
     /**
+     * 수학 좌표 점들을 잇는 매끄러운 폴리라인을 그린다.
+     */
+    drawPolyline(points, options = {}) {
+        if (!Array.isArray(points) || points.length < 2) return;
+
+        const ctx = this.ctx;
+        const screenPoints = points.map(point => this.toScreen(point));
+        const {
+            color = '#000000',
+            width = 2,
+            dashed = false,
+            dashPattern = [5, 5],
+            highlighted = false,
+            selected = false,
+            closed = false,
+            fillColor = null
+        } = options;
+
+        const trace = () => {
+            ctx.beginPath();
+            ctx.moveTo(screenPoints[0].x, screenPoints[0].y);
+            for (let i = 1; i < screenPoints.length; i++) {
+                ctx.lineTo(screenPoints[i].x, screenPoints[i].y);
+            }
+            if (closed) ctx.closePath();
+        };
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.setLineDash(dashed ? dashPattern : []);
+
+        if (selected) {
+            ctx.strokeStyle = 'rgba(99, 102, 241, 0.3)';
+            ctx.lineWidth = width + 6;
+            trace();
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = highlighted ? width + 1 : width;
+        trace();
+        if (fillColor && closed) {
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    /**
      * 무한 직선 그리기
      */
     drawLine(p1, p2, options = {}) {

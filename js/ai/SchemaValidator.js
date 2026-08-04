@@ -34,7 +34,7 @@ export class SchemaValidator {
     constructor() {
         this.validTypes = [
             'point', 'pointOnLine', 'pointOnCircle', 'circleCenterPoint',
-            'segment', 'line', 'ray', 'circle', 'circleThreePoints',
+            'segment', 'line', 'ray', 'circle', 'circleThreePoints', 'ellipse', 'hyperbola', 'parabola',
             'intersection', 'midpoint', 'parallel', 'perpendicular',
             'perpendicularBisector', 'angleBisector', 'tangentCircle', 'tangentFunction', 'function',
             'vector', 'rightAngleMarker', 'equalLengthMarker',
@@ -56,6 +56,9 @@ export class SchemaValidator {
             ray: ['originId', 'directionPointId'],
             circle: ['centerId', 'pointOnCircleId'],
             circleThreePoints: ['point1Id', 'point2Id', 'point3Id'],
+            ellipse: ['x', 'y', 'radiusX', 'radiusY'],
+            hyperbola: ['x', 'y', 'a', 'b', 'orientation'],
+            parabola: ['x', 'y', 'p', 'orientation'],
             intersection: ['object1Id', 'object2Id'],
             midpoint: ['segmentId'],
             parallel: ['baseLineId', 'throughPointId'],
@@ -243,6 +246,29 @@ export class SchemaValidator {
             if (op.showHiddenLines !== undefined && typeof op.showHiddenLines !== 'boolean') {
                 errors.push(`${prefix}: ${op.type} showHiddenLines must be a boolean.`);
             }
+        }
+
+        const conicNumericFields = ['radiusX', 'radiusY', 'a', 'b', 'p', 'rotation'];
+        for (const field of conicNumericFields) {
+            if (op[field] !== undefined && !Number.isFinite(op[field])) {
+                errors.push(`${prefix}: ${field} must be a finite number.`);
+            }
+        }
+        for (const field of ['radiusX', 'radiusY', 'a', 'b', 'p']) {
+            if (Number.isFinite(op[field]) && op[field] <= 0) {
+                errors.push(`${prefix}: ${field} must be greater than 0.`);
+            }
+        }
+        if (op.type === 'hyperbola' && op.orientation !== undefined &&
+            !['horizontal', 'vertical'].includes(op.orientation)) {
+            errors.push(`${prefix}: hyperbola orientation must be horizontal or vertical.`);
+        }
+        if (op.type === 'parabola' && op.orientation !== undefined &&
+            !['right', 'left', 'up', 'down'].includes(op.orientation)) {
+            errors.push(`${prefix}: parabola orientation must be right, left, up, or down.`);
+        }
+        if (op.type === 'ellipse' && op.orientation !== undefined) {
+            errors.push(`${prefix}: ellipse uses rotation and does not use orientation.`);
         }
 
         if (op.text !== undefined && typeof op.text !== 'string') {

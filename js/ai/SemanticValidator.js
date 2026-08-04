@@ -89,7 +89,7 @@ export class SemanticValidator {
             result.addError(`problem diagram must not copy problem prose, solution text, or answer choices into labels: ${copiedText.slice(0, 3).join(', ')}`);
         }
 
-        const hasGraphPrompt = /함수|그래프|좌표|좌표평면|직선|포물선|이차|일차|방정식|부등식|교점|접선|graph|function|line|parabola|quadratic|linear|inequality|intersection|tangent/.test(prompt);
+        const hasGraphPrompt = /함수|그래프|좌표|좌표평면|직선|타원|쌍곡선|포물선|이차|일차|방정식|부등식|교점|접선|graph|function|line|ellipse|hyperbola|parabola|quadratic|linear|inequality|intersection|tangent/.test(prompt);
         const hasGeometryPrompt = /삼각형|사각형|다각형|도형|원|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직|길이|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
         const hasNumberLinePrompt = /수직선|실수|근호|제곱근|number line|numberline|radical/.test(prompt);
         const hasSolidPrompt = /입체|직육면체|정육면체|각기둥|각뿔|원기둥|원뿔|구|solid|prism|pyramid|cube|cylinder|cone|sphere/.test(prompt);
@@ -100,8 +100,8 @@ export class SemanticValidator {
             !/삼각형|사각형|다각형|도형|원\s|접선|반지름|지름|호|부채꼴|각|닮음|평행|triangle|circle|polygon|angle|similar|parallel/.test(prompt)
         );
 
-        if (hasGraphPrompt && !this.hasAnyType(ctx, ['function', 'line', 'ray', 'vector', 'numberLine', 'intersection'])) {
-            result.addError('graph/function problem diagram needs a graph object such as function, line, ray, vector, numberLine, or intersection.');
+        if (hasGraphPrompt && !this.hasAnyType(ctx, ['function', 'ellipse', 'hyperbola', 'parabola', 'line', 'ray', 'vector', 'numberLine', 'intersection'])) {
+            result.addError('graph/function problem diagram needs a graph object such as function, conic, line, ray, vector, numberLine, or intersection.');
         }
         if (effectiveGeometryPrompt && !this.hasAnyType(ctx, ['polygon', 'circle', 'circleThreePoints', 'arc', 'sector', 'circularSegment', 'lensRegion', 'segment', 'angleDimension', 'lengthDimension'])) {
             result.addError('geometry problem diagram needs geometric objects such as polygon, circle, arc/sector, segment, or markers.');

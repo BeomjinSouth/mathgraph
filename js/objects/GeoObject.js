@@ -27,6 +27,10 @@ export const ObjectType = {
     CIRCLE: 'circle',
     CIRCLE_THREE_POINTS: 'circleThreePoints',
 
+    ELLIPSE: 'ellipse',
+    HYPERBOLA: 'hyperbola',
+    PARABOLA: 'parabola',
+
     // Mk.2: 곡선/영역 도형
     ARC: 'arc',
     SECTOR: 'sector',
@@ -100,6 +104,12 @@ const labelGenerators = {
             const idx = (i++ - letters.length) % letters.length;
             return letters[idx] + (base + 1);
         };
+    })(),
+
+    conic: (() => {
+        const counts = { ellipse: 0, hyperbola: 0, parabola: 0 };
+        const prefixes = { ellipse: 'e', hyperbola: 'h', parabola: 'p' };
+        return type => `${prefixes[type]}${++counts[type]}`;
     })()
 };
 
@@ -129,6 +139,9 @@ export function generateLabel(type) {
     }
     if (type === ObjectType.FUNCTION) {
         return labelGenerators.function();
+    }
+    if ([ObjectType.ELLIPSE, ObjectType.HYPERBOLA, ObjectType.PARABOLA].includes(type)) {
+        return labelGenerators.conic(type);
     }
     return '';
 }
@@ -304,6 +317,9 @@ export class GeoObject {
             [ObjectType.RAY]: 'line',
             [ObjectType.CIRCLE]: 'circle',
             [ObjectType.CIRCLE_THREE_POINTS]: 'circle',
+            [ObjectType.ELLIPSE]: 'function',
+            [ObjectType.HYPERBOLA]: 'function',
+            [ObjectType.PARABOLA]: 'function',
             [ObjectType.LENS_REGION]: 'circle',
             [ObjectType.CLOSED_REGION]: 'polygon',
             [ObjectType.POLYGON]: 'polygon',
@@ -333,6 +349,9 @@ export class GeoObject {
             [ObjectType.RAY]: '반직선',
             [ObjectType.CIRCLE]: '원',
             [ObjectType.CIRCLE_THREE_POINTS]: '세점원',
+            [ObjectType.ELLIPSE]: '타원',
+            [ObjectType.HYPERBOLA]: '쌍곡선',
+            [ObjectType.PARABOLA]: '포물선',
             [ObjectType.LENS_REGION]: '렌즈 영역',
             [ObjectType.CLOSED_REGION]: '닫힌 영역',
             [ObjectType.POLYGON]: '다각형',

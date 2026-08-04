@@ -152,6 +152,43 @@ export class PatchApplier {
                 );
                 break;
 
+            case 'ellipse':
+                object = this.objectManager.createEllipse(
+                    resolvedOp.radiusX,
+                    resolvedOp.radiusY,
+                    {
+                        ...commonParams,
+                        x: resolvedOp.x,
+                        y: resolvedOp.y,
+                        rotation: resolvedOp.rotation ?? 0
+                    }
+                );
+                break;
+
+            case 'hyperbola':
+                object = this.objectManager.createHyperbola(
+                    resolvedOp.a,
+                    resolvedOp.b,
+                    {
+                        ...commonParams,
+                        x: resolvedOp.x,
+                        y: resolvedOp.y,
+                        orientation: resolvedOp.orientation,
+                        rotation: resolvedOp.rotation ?? 0
+                    }
+                );
+                break;
+
+            case 'parabola':
+                object = this.objectManager.createParabola(resolvedOp.p, {
+                    ...commonParams,
+                    x: resolvedOp.x,
+                    y: resolvedOp.y,
+                    orientation: resolvedOp.orientation,
+                    rotation: resolvedOp.rotation ?? 0
+                });
+                break;
+
             case 'intersection':
                 object = this.objectManager.createIntersection(
                     resolvedOp.object1Id,
@@ -433,6 +470,13 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'yMin', op.yMin);
         this.applyPropertyUpdate(object, 'yMax', op.yMax);
         this.applyPropertyUpdate(object, 'branch', op.branch);
+        this.applyPropertyUpdate(object, 'radiusX', op.radiusX);
+        this.applyPropertyUpdate(object, 'radiusY', op.radiusY);
+        this.applyPropertyUpdate(object, 'a', op.a);
+        this.applyPropertyUpdate(object, 'b', op.b);
+        this.applyPropertyUpdate(object, 'p', op.p);
+        this.applyPropertyUpdate(object, 'orientation', op.orientation);
+        this.applyPropertyUpdate(object, 'rotation', op.rotation);
 
         if (op.labelOffset !== undefined && 'labelOffset' in object) {
             this.recordPropertyChange(object, 'labelOffset', object.labelOffset, op.labelOffset);

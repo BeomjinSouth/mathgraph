@@ -9,6 +9,7 @@ import { FreePoint, PointOnLine, PointOnCircle, IntersectionPoint, Midpoint, Cir
 import { Segment, Line, Ray, ParallelLine, PerpendicularLine, PerpendicularBisector, AngleBisector } from '../objects/Line.js';
 import { Circle, CircleThreePoints, TangentCircle } from '../objects/Circle.js';
 import { FunctionGraph, TangentFunction } from '../objects/Function.js';
+import { Ellipse, Hyperbola, Parabola } from '../objects/Conic.js';
 import { Vector } from '../objects/Vector.js';
 import { RightAngleMarker, EqualLengthMarker } from '../objects/Marker.js';
 import { Arc, Sector, CircularSegment } from '../objects/Arc.js'; // Mk.2
@@ -524,6 +525,18 @@ export class ObjectManager {
                 obj = new CircleThreePoints(data.point1Id, data.point2Id, data.point3Id, data);
                 break;
 
+            case ObjectType.ELLIPSE:
+                obj = new Ellipse(data.radiusX, data.radiusY, data);
+                break;
+
+            case ObjectType.HYPERBOLA:
+                obj = new Hyperbola(data.a, data.b, data);
+                break;
+
+            case ObjectType.PARABOLA:
+                obj = new Parabola(data.p, data);
+                break;
+
             case ObjectType.TANGENT_CIRCLE:
             case 'tangentCircle':
                 obj = new TangentCircle(data.circleId, data.tangentPointId, data);
@@ -666,6 +679,18 @@ export class ObjectManager {
 
     createCircleThreePoints(point1Id, point2Id, point3Id, params = {}) {
         return this.addObject(new CircleThreePoints(point1Id, point2Id, point3Id, params));
+    }
+
+    createEllipse(radiusX, radiusY, params = {}) {
+        return this.addObject(new Ellipse(radiusX, radiusY, params));
+    }
+
+    createHyperbola(a, b, params = {}) {
+        return this.addObject(new Hyperbola(a, b, params));
+    }
+
+    createParabola(p, params = {}) {
+        return this.addObject(new Parabola(p, params));
     }
 
     createIntersection(object1Id, object2Id, anchor = null, params = {}) {

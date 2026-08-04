@@ -1,7 +1,7 @@
 {
-  "manualVersion": 2,
+  "manualVersion": 3,
   "project": "MathGraph",
-  "updatedAt": "2026-07-10",
+  "updatedAt": "2026-08-04",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
@@ -82,7 +82,7 @@
     "recommendedFor": ["pasted image recreation", "whole-photo diagram recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
     "sceneRootShape": {
       "sceneType": "diagram",
-      "nodes": "Array of math entities such as point, segment, vector, circle, arc, sector, lensRegion, polygon, function, numberLine, textLabel, prism, pyramid, cylinder, cone, sphere.",
+      "nodes": "Array of math entities such as point, segment, vector, circle, ellipse, hyperbola, parabola, arc, sector, lensRegion, polygon, function, numberLine, textLabel, prism, pyramid, cylinder, cone, sphere.",
       "relations": "Array of constraints or annotations such as intersection, midpoint, parallel, perpendicular, rightAngle, equalLength, angleDimension, lengthDimension, tangentFunction.",
       "unsupported": "Array of unsupported first-class requests such as native statistical charts, tables, nets, annular sectors, or exact function-bounded curved fills.",
       "notes": "Optional source evidence, uncertainty, or crop notes."
@@ -128,6 +128,9 @@
       "ray",
       "circle",
       "circleThreePoints",
+      "ellipse",
+      "hyperbola",
+      "parabola",
       "intersection",
       "midpoint",
       "parallel",
@@ -168,7 +171,7 @@
       { "name": "locked", "type": "boolean", "scope": "create/update", "note": "Prevents direct dragging when supported." },
       { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels." }
     ],
-    "updateOnlyOrObjectSpecific": ["x", "y", "width", "height", "ellipseRatio", "showHiddenLines", "text", "align", "expression", "xMin", "xMax", "yMin", "yMax", "branch", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
+    "updateOnlyOrObjectSpecific": ["x", "y", "width", "height", "radiusX", "radiusY", "a", "b", "p", "orientation", "rotation", "ellipseRatio", "showHiddenLines", "text", "align", "expression", "xMin", "xMax", "yMin", "yMax", "branch", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
   },
   "aiCreatableObjects": [
     {
@@ -332,6 +335,33 @@
       "optionalFields": ["label", "color", "lineWidth", "fontSize", "showLabel", "xMin", "xMax", "yMin", "yMax"],
       "template": { "op": "create", "id": "f", "type": "function", "label": "f", "expression": "x^2 - 2*x + 1" },
       "notes": ["Use * for multiplication. Parser supports sin, cos, tan, sqrt, abs, log, ln, exp, min, max, pow, pi, e. AI create/update accepts xMin/xMax/yMin/yMax for visible domain and range clipping."]
+    },
+    {
+      "type": "ellipse",
+      "koreanName": "타원",
+      "tags": ["graph", "conic", "ellipse"],
+      "requiredFields": ["x", "y", "radiusX", "radiusY"],
+      "optionalFields": ["rotation", "label", "color", "lineWidth", "dashed", "fillColor", "fillOpacity"],
+      "template": { "op": "create", "id": "ellipse_1", "type": "ellipse", "x": 0, "y": 0, "radiusX": 5, "radiusY": 3 },
+      "notes": ["x/y are the center. radiusX/radiusY must be positive. rotation is in radians."]
+    },
+    {
+      "type": "hyperbola",
+      "koreanName": "쌍곡선",
+      "tags": ["graph", "conic", "hyperbola"],
+      "requiredFields": ["x", "y", "a", "b", "orientation"],
+      "optionalFields": ["rotation", "label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "hyperbola_1", "type": "hyperbola", "x": 0, "y": 0, "a": 2, "b": 3, "orientation": "horizontal" },
+      "notes": ["orientation is horizontal or vertical. a/b must be positive. rotation is in radians."]
+    },
+    {
+      "type": "parabola",
+      "koreanName": "포물선",
+      "tags": ["graph", "conic", "parabola"],
+      "requiredFields": ["x", "y", "p", "orientation"],
+      "optionalFields": ["rotation", "label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "parabola_1", "type": "parabola", "x": -2, "y": 0, "p": 1.5, "orientation": "right" },
+      "notes": ["x/y are the vertex. p is the positive focal distance. orientation is right, left, up, or down; rotation is in radians."]
     },
     {
       "type": "vector",
@@ -593,7 +623,7 @@
   "exportAndPersistence": {
     "exportFormats": ["PNG", "SVG"],
     "exportOptions": ["scale 1x/2x/3x for PNG", "HWP 80 mm at 300 dpi", "HWP 120 mm at 300 dpi", "print 160 mm at 600 dpi", "include background", "include grid", "include axes"],
-    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "functions", "arc", "sector", "circularSegment", "lensRegion", "polygon", "numberLine", "textLabel", "cylinder", "cone", "sphere", "grid", "axes", "fallback embedded PNG"],
+    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "ellipses", "hyperbolas", "parabolas", "functions", "arc", "sector", "circularSegment", "lensRegion", "polygon", "numberLine", "textLabel", "cylinder", "cone", "sphere", "grid", "axes", "fallback embedded PNG"],
     "physicalPresets": { "hwpCompact": "80 mm at 300 dpi", "hwpWide": "120 mm at 300 dpi", "printHigh": "160 mm at 600 dpi" },
     "projectFile": "Exports and imports a named versioned mathgraph-project JSON envelope with view and editable objects.",
     "projectImportValidation": "Rejects unknown format/version, invalid view data, and non-array object collections before replacing the current project.",
@@ -617,6 +647,10 @@
     {
       "gap": "Two-valued intersections support branch 0 or 1, but do not expose semantic left/right/upper/lower anchor names.",
       "currentApproximation": "Use branch 0 or 1 after checking object order, or create explicit support points when a semantic side name must remain stable."
+    },
+    {
+      "gap": "Ellipse, hyperbola, and parabola are first-class drawable objects, but automatic conic intersections, point-on-conic constraints, and conic tangents are not first-class yet.",
+      "currentApproximation": "Create explicitly calculated free points and ordinary lines when their numeric coordinates are known; do not claim that those helpers stay constrained after conic parameter edits."
     },
     {
       "gap": "Annular sectors and exact function-bounded curved regions are not first-class objects.",

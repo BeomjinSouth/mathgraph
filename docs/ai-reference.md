@@ -141,7 +141,7 @@ Preferred pipeline for recreate-mode image/PDF work:
 2. Compile that scene graph into GraphA operations with app-owned deterministic code.
 3. Validate the compiled operations with `SchemaValidator`, reference checks, semantic validators, and rendered canvas checks.
 
-The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `vector`, `circle`, `arc`, `sector`, `lensRegion`, `polygon`, `function`, `numberLine`, `textLabel`, `prism`, `pyramid`, `cylinder`, `cone`, and `sphere`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
+The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `vector`, `circle`, `ellipse`, `hyperbola`, `parabola`, `arc`, `sector`, `lensRegion`, `polygon`, `function`, `numberLine`, `textLabel`, `prism`, `pyramid`, `cylinder`, `cone`, and `sphere`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
 
 Unsupported scene nodes such as native statistical charts, tables, solid nets, annular sectors, and exact function-bounded curved fills are returned as warnings instead of invalid GraphA. Curved solids and independent text are now first-class GraphA objects.
 
@@ -222,6 +222,9 @@ These object types are currently supported by the AI validator and runtime patch
 - `ray`
 - `circle`
 - `circleThreePoints`
+- `ellipse`
+- `hyperbola`
+- `parabola`
 - `intersection`
 - `midpoint`
 - `parallel`
@@ -256,6 +259,7 @@ Important:
 - `arc`, `sector`, and `circularSegment` are supported in the current runtime.
 - Use `lensRegion` for the exact filled overlap of two intersecting circles.
 - Use `polygon` for triangles, quadrilaterals, and straight-edged filled plane regions that are defined by existing point IDs.
+- Use `ellipse`, `hyperbola`, and `parabola` for conic curves instead of polygon or short-segment approximations. Their optional `rotation` is measured in radians.
 - `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` are supported in the current runtime; curved solids expose editable textbook projections and optional dashed hidden curves.
 - `numberLine` is supported in the validated AI patch flow with numeric `start`, `end`, `step`, and `y` fields plus optional open/closed custom marks.
 - There is no separate first-class `arrow` create type. Use `vector` for standalone textbook arrows, direction arrows, and directed annotation segments.
@@ -642,6 +646,7 @@ For complex live OpenAI drawing prompts, include the following context when it m
 - For standalone arrows in textbook-style figures, use `vector` with hidden helper endpoints. Do not emit an unsupported `arrow` type.
 - For `angleDimension`, make `point1Id` and `point2Id` distinct from `vertexId`, far enough from the vertex to render an arc, and non-collinear. If a right-angle mark would be too small at a crowded vertex, add a larger `angleDimension` with `arcRadius` at least `0.7` and `showValue:false`.
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, include exact coordinates for the intended visible points and the exact equations for reference lines.
+- Automatic conic intersections, point-on-conic constraints, and conic tangents are not first-class yet. Explicit helper points do not stay constrained after conic parameter edits.
 - For concentric circles or fixed-radius tangency diagrams, state the shared center id and numeric radii. Current GraphA has no first-class `annularSector`; use a normal `sector` plus an inner circle outline unless a future primitive is added.
 - For curved regions bounded by functions, use a polygon through explicit boundary/sample points and hide helper points; do not claim exact curved fill unless a first-class region primitive exists.
 - For nested polyhedral solids, use first-class `prism` and `pyramid` objects rather than hand-drawn segment bundles. Use `cylinder`, `cone`, and `sphere` for curved-solid textbook projections. For prisms, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds`; make the outer projection broad enough to read, keep cross-section polygons substantial when requested, put every inner-solid vertex inside the outer solid's screen-projection region, and leave visible margins so inner solids do not look cramped against the boundary.
@@ -696,6 +701,12 @@ For complex live OpenAI drawing prompts, include the following context when it m
 - Avoid unsupported legacy shapes like `action`, `changes`, or a generic `tangent` type.
 
 ## 9. Maintenance Notes
+
+### 2026-08-04 First-Class Conics
+
+- Added editable `ellipse`, `hyperbola`, and `parabola` objects with rotation-aware sampling, selection, drag, persistence, and SVG paths.
+- Added strict AI fields, validation, patch creation/update, scene-graph compilation, compact retrieval routing, and synthetic training data for conics.
+- Conic intersections, constrained points, and conic tangents remain explicit known gaps.
 
 ### 2026-07-10 Teacher Exam Production Workflow
 

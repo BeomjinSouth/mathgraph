@@ -1,7 +1,7 @@
 {
-  "version": 2,
+  "version": 3,
   "project": "MathGraph",
-  "updatedAt": "2026-07-10",
+  "updatedAt": "2026-08-04",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
   "referenceFiles": [
     {
@@ -32,7 +32,7 @@
       "exampleTags": ["solid"]
     },
     {
-      "ifPromptMentions": ["함수", "그래프", "접선", "교점", "연립", "직선", "포물선", "이차함수"],
+      "ifPromptMentions": ["함수", "그래프", "접선", "교점", "연립", "직선", "타원", "쌍곡선", "포물선", "이차함수"],
       "loadChunks": ["contract-core", "objects-graph", "objects-plane-core"],
       "exampleTags": ["graph", "function"]
     },
@@ -106,7 +106,7 @@
     {
       "id": "objects-graph",
       "file": "feature-manual.json",
-      "objectTypes": ["function", "tangentFunction", "intersection", "line", "segment", "point"]
+      "objectTypes": ["function", "ellipse", "hyperbola", "parabola", "tangentFunction", "intersection", "line", "segment", "point"]
     },
     {
       "id": "objects-number-line",
@@ -154,6 +154,11 @@
       "id": "graph_parabola_tangent_x_intercept",
       "tags": ["graph", "function", "tangent", "intersection"],
       "objectTypes": ["function", "tangentFunction", "point", "line", "intersection"]
+    },
+    {
+      "id": "graph_conic_gallery",
+      "tags": ["graph", "conic", "ellipse", "hyperbola", "parabola"],
+      "objectTypes": ["ellipse", "hyperbola", "parabola", "point", "line", "textLabel"]
     },
     {
       "id": "graph_simultaneous_linear_equations",

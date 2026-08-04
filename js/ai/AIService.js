@@ -198,7 +198,7 @@ export function chooseImagePreprocessPlan(imageSize, cropBounds = null, options 
 
 const GRAPH_OPERATION_TYPES = [
     'point', 'pointOnLine', 'pointOnCircle', 'circleCenterPoint',
-    'segment', 'line', 'ray', 'circle', 'circleThreePoints',
+    'segment', 'line', 'ray', 'circle', 'circleThreePoints', 'ellipse', 'hyperbola', 'parabola',
     'intersection', 'midpoint', 'parallel', 'perpendicular',
     'perpendicularBisector', 'angleBisector', 'tangentCircle', 'tangentFunction', 'function',
     'vector', 'rightAngleMarker', 'equalLengthMarker',
@@ -252,6 +252,16 @@ const operationProperties = {
     y: NULLABLE_NUMBER,
     width: NULLABLE_NUMBER,
     height: NULLABLE_NUMBER,
+    radiusX: NULLABLE_NUMBER,
+    radiusY: NULLABLE_NUMBER,
+    a: NULLABLE_NUMBER,
+    b: NULLABLE_NUMBER,
+    p: NULLABLE_NUMBER,
+    rotation: NULLABLE_NUMBER,
+    orientation: {
+        type: ['string', 'null'],
+        enum: ['horizontal', 'vertical', 'right', 'left', 'up', 'down', null]
+    },
     ellipseRatio: NULLABLE_NUMBER,
     showHiddenLines: NULLABLE_BOOLEAN,
     xMin: NULLABLE_NUMBER,
@@ -429,6 +439,8 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
    - For prism objects, use baseVertexIds for the near/front face and topVertexIds for the shifted rear face so visible front edges stay solid and hidden rear edges become dashed.
    - For pyramid objects, apexId must not be included in baseVertexIds and the apex must be visually separated from the base centroid.
    - For cylinders, cones, and spheres, use the first-class cylinder/cone/sphere objects with x, y, width, and height. Hidden curved edges are rendered automatically.
+   - For ellipses, hyperbolas, and geometric parabolas, use the first-class ellipse/hyperbola/parabola objects instead of polygons or short segment chains.
+   - rotation is measured in radians. Hyperbola orientation is horizontal/vertical; parabola orientation is right/left/up/down.
    - When the user names multiple solids, create every named solid. A single outer solid is not a complete response.
    - For containment requests such as "a sphere inside a cone", make the inner solid smaller and place its full bounds inside the outer solid.
    - Use textLabel with text, x, and y for standalone conditions, annotations, and formulas that are not attached to another object.
@@ -458,6 +470,9 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - ray: originId, directionPointId  
 - circle: centerId, pointOnCircleId
 - circleThreePoints: point1Id, point2Id, point3Id
+- ellipse: x, y, radiusX, radiusY (optional rotation)
+- hyperbola: x, y, a, b, orientation (optional rotation)
+- parabola: x, y, p, orientation (optional rotation)
 - intersection: object1Id, object2Id
 - midpoint: segmentId
 - parallel: baseLineId, throughPointId
@@ -564,7 +579,7 @@ export const PROBLEM_DIAGRAM_GRAPH_GUIDANCE = [
     'If no figure is explicitly provided, choose the most useful coordinate graph, function graph, number line, plane-geometry diagram, solid diagram, or region diagram for understanding the conditions.',
     'Default visual style is monochrome Korean exam paper style: thin black lines, sparse hatching or light shading when needed, no decoration, no heavy colors.',
     'Hide helper points with visible:false or pointSize:0. Keep labels sparse and avoid overlap.',
-    'For cylinder, cone, or sphere prompts, use the matching first-class curved-solid object. For unsupported chart families, use a disclosed approximation only when reasonable.',
+    'For ellipse, hyperbola, geometric parabola, cylinder, cone, or sphere prompts, use the matching first-class object. For unsupported chart families, use a disclosed approximation only when reasonable.',
     'When a condition is ambiguous, draw exact numeric elements first and arrange the rest in a mathematically natural representative layout.'
 ].join('\n');
 
@@ -1313,7 +1328,7 @@ export class AIService {
             add('point', 'segment', 'polygon', 'prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'textLabel');
             includeKnownGaps = true;
         };
-        const addGraph = () => add('point', 'segment', 'line', 'vector', 'function', 'tangentFunction', 'intersection', 'polygon');
+        const addGraph = () => add('point', 'segment', 'line', 'vector', 'function', 'ellipse', 'hyperbola', 'parabola', 'tangentFunction', 'intersection', 'polygon');
         const addNumberLine = () => add('numberLine', 'point', 'segment');
         const addChart = () => {
             add('point', 'segment', 'polygon', 'numberLine', 'line');
@@ -1347,8 +1362,8 @@ export class AIService {
             addSolid();
         }
 
-        if (/graph|function|parabola|linear|quadratic|intersection|tangent/.test(text) ||
-            /그래프|함수|직선|이차|일차|교점|접점|접선/.test(text)) {
+        if (/graph|function|ellipse|hyperbola|parabola|linear|quadratic|intersection|tangent/.test(text) ||
+            /그래프|함수|타원|쌍곡선|포물선|직선|이차|일차|교점|접점|접선/.test(text)) {
             addGraph();
         }
 
