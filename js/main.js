@@ -2778,11 +2778,12 @@ class GraphAApp {
         const radius = obj.pointSize !== undefined ? Math.max(0, Number(obj.pointSize) || 0) : 4;
         if (radius <= 0) return '';
 
-        const fill = this.escapeSVG(obj.color || '#000000');
+        const stroke = this.escapeSVG(obj.color || '#000000');
+        const fill = obj.pointStyle === 'open' ? this.escapeSVG(this.canvas.backgroundColor || '#ffffff') : stroke;
 
         return [
             `<g data-type="${this.escapeSVG(obj.type)}" data-id="${this.escapeSVG(obj.id)}">`,
-            `<circle cx="${screen.x.toFixed(2)}" cy="${screen.y.toFixed(2)}" r="${(radius + 1.5).toFixed(2)}" fill="${fill}" />`,
+            `<circle cx="${screen.x.toFixed(2)}" cy="${screen.y.toFixed(2)}" r="${(radius + 1.5).toFixed(2)}" fill="${stroke}" />`,
             `<circle cx="${screen.x.toFixed(2)}" cy="${screen.y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${fill}" />`,
             '</g>'
         ].join('');

@@ -160,6 +160,7 @@
       { "name": "visible", "type": "boolean", "scope": "create/update", "note": "Whether object renders and can be selected without show-hidden mode." },
       { "name": "lineWidth", "type": "number", "scope": "create/update", "note": "Stroke width." },
       { "name": "pointSize", "type": "number", "scope": "create/update", "note": "Point radius/size." },
+      { "name": "pointStyle", "type": "\"closed\" | \"open\"", "scope": "create/update", "note": "Closed points are filled; open points are hollow and use the canvas background inside." },
       { "name": "fontSize", "type": "number", "scope": "create/update", "note": "Label size." },
       { "name": "dashed", "type": "boolean", "scope": "create/update", "note": "Dashed stroke toggle." },
       { "name": "fillColor", "type": "hex color string", "scope": "create/update", "note": "Area fill color for circle, polygon, sector, circularSegment, and lensRegion. Default fill is #000000 with opacity." },
@@ -176,7 +177,7 @@
       "koreanName": "자유점",
       "tags": ["plane", "support"],
       "requiredFields": ["x", "y"],
-      "optionalFields": ["label", "color", "pointSize", "fontSize", "showLabel", "locked"],
+      "optionalFields": ["label", "color", "pointSize", "pointStyle", "fontSize", "showLabel", "locked"],
       "template": { "op": "create", "id": "A", "type": "point", "x": 0, "y": 0, "label": "A" },
       "notes": ["Use points as dependencies for almost every geometric construction."]
     },
@@ -185,7 +186,7 @@
       "koreanName": "선 위의 점",
       "tags": ["plane", "construction"],
       "requiredFields": ["lineId"],
-      "optionalFields": ["t", "label"],
+      "optionalFields": ["t", "label", "pointStyle"],
       "template": { "op": "create", "id": "M", "type": "pointOnLine", "lineId": "AB", "t": 0.5, "label": "M" },
       "notes": ["t defaults to 0.5. Use an existing segment/line/ray-like object ID."]
     },
@@ -194,7 +195,7 @@
       "koreanName": "원 위의 점",
       "tags": ["circle", "construction"],
       "requiredFields": ["circleId"],
-      "optionalFields": ["angle", "label"],
+      "optionalFields": ["angle", "label", "pointStyle"],
       "template": { "op": "create", "id": "P", "type": "pointOnCircle", "circleId": "c1", "angle": 0, "label": "P" },
       "notes": ["angle is in radians and defaults to 0."]
     },
@@ -203,7 +204,7 @@
       "koreanName": "원의 중심점",
       "tags": ["circle", "construction"],
       "requiredFields": ["circleId"],
-      "optionalFields": ["label"],
+      "optionalFields": ["label", "pointStyle"],
       "template": { "op": "create", "id": "O", "type": "circleCenterPoint", "circleId": "c1", "label": "O" },
       "notes": ["Use when a circle already exists and a visible/dependent center point is needed."]
     },
@@ -257,7 +258,7 @@
       "koreanName": "교점",
       "tags": ["construction", "graph"],
       "requiredFields": ["object1Id", "object2Id"],
-      "optionalFields": ["label", "color", "pointSize", "branch"],
+      "optionalFields": ["label", "color", "pointSize", "pointStyle", "branch"],
       "template": { "op": "create", "id": "P", "type": "intersection", "object1Id": "l1", "object2Id": "l2", "label": "P" },
       "notes": ["For two-valued intersections, branch 0 or 1 selects a deterministic result. Semantic left/right/upper/lower anchor names are not first-class fields."]
     },
@@ -266,7 +267,7 @@
       "koreanName": "중점",
       "tags": ["construction"],
       "requiredFields": ["segmentId"],
-      "optionalFields": ["label", "color", "pointSize"],
+      "optionalFields": ["label", "color", "pointSize", "pointStyle"],
       "template": { "op": "create", "id": "M", "type": "midpoint", "segmentId": "AB", "label": "M" },
       "notes": ["Create or identify the segment first."]
     },

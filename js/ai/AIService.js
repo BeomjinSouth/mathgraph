@@ -325,6 +325,10 @@ const operationProperties = {
     visible: NULLABLE_BOOLEAN,
     lineWidth: NULLABLE_NUMBER,
     pointSize: NULLABLE_NUMBER,
+    pointStyle: {
+        type: ['string', 'null'],
+        enum: ['closed', 'open', null]
+    },
     fontSize: NULLABLE_NUMBER,
     arcRadius: NULLABLE_NUMBER,
     showValue: NULLABLE_BOOLEAN,
@@ -450,6 +454,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
    - For nested solids, keep inner vertices inside the outer projection and separate multiple inner solids so they do not overlap visually.
    - For standalone textbook arrows or direction arrows, create a vector with hidden helper endpoint points. Do not invent an unsupported arrow type.
    - Hide helper points with visible:false when they only shape a region.
+   - For piecewise-function endpoints, use pointStyle:"open" for excluded hollow points and pointStyle:"closed" for included filled points.
    - If a named point lies on a segment, create the segment first and then create the named point as pointOnLine with lineId referencing that segment and t between 0 and 1.
    - For an internal division ratio AP:PB=m:n, use pointOnLine t=m/(m+n). Do not replace one requested segment with two non-collinear segments.
 
@@ -586,6 +591,7 @@ export const PROBLEM_DIAGRAM_GRAPH_GUIDANCE = [
     'Default visual style is monochrome Korean exam paper style: thin black lines, sparse hatching or light shading when needed, no decoration, no heavy colors.',
     'Shade a named triangle or quadrilateral only when its area value, maximum, or minimum is the actual question target. Use a black polygon with fillOpacity 0.18-0.24. If area is merely given as 25, compared as a ratio, or used as an intermediate condition while another value is asked, keep the polygon unfilled.',
     'Hide helper points with visible:false or pointSize:0. Keep labels sparse and avoid overlap.',
+    'Use pointStyle:"open" for excluded endpoints of piecewise functions and pointStyle:"closed" for included endpoints.',
     'For ellipse, hyperbola, geometric parabola, cylinder, cone, or sphere prompts, use the matching first-class object. For unsupported chart families, use a disclosed approximation only when reasonable.',
     'When the problem says a named point lies on a segment, create that segment first and use pointOnLine with t in [0,1]; preserve any internal-division ratio exactly.',
     'When a condition is ambiguous, draw exact numeric elements first and arrange the rest in a mathematically natural representative layout.'

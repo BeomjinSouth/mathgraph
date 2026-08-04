@@ -14,6 +14,7 @@ const COMMON_FIELDS = [
     'visible',
     'lineWidth',
     'pointSize',
+    'pointStyle',
     'fontSize',
     'dashed',
     'fillColor',

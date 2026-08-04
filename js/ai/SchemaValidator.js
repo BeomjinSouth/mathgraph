@@ -220,6 +220,18 @@ export class SchemaValidator {
             }
         }
 
+        if (op.pointStyle !== undefined) {
+            const pointTypes = [
+                'point', 'pointOnLine', 'pointOnCircle',
+                'circleCenterPoint', 'intersection', 'midpoint'
+            ];
+            if (!['closed', 'open'].includes(op.pointStyle)) {
+                errors.push(`${prefix}: pointStyle must be "closed" or "open".`);
+            } else if (op.op === 'create' && op.type && !pointTypes.includes(op.type)) {
+                errors.push(`${prefix}: pointStyle is supported only for point-like objects.`);
+            }
+        }
+
         if (op.type === 'textLabel') {
             if (typeof op.text !== 'string' || op.text.trim().length === 0) {
                 errors.push(`${prefix}: textLabel text must be a non-empty string.`);

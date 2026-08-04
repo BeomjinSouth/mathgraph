@@ -156,6 +156,11 @@
       "objectTypes": ["function", "tangentFunction", "point", "line", "intersection"]
     },
     {
+      "id": "graph_piecewise_open_closed_points",
+      "tags": ["graph", "function", "piecewise", "open_endpoint", "closed_endpoint"],
+      "objectTypes": ["function", "point", "segment", "textLabel"]
+    },
+    {
       "id": "graph_simultaneous_linear_equations",
       "tags": ["graph", "line", "intersection", "equations"],
       "objectTypes": ["point", "line", "intersection", "angleDimension"]

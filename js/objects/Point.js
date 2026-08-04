@@ -28,6 +28,7 @@ export class FreePoint extends GeoObject {
 
         canvas.drawPoint(this.position, {
             radius: this.pointSize,
+            pointStyle: this.pointStyle,
             color: this.color,
             highlighted: this.highlighted,
             selected: this.selected
@@ -188,6 +189,7 @@ export class PointOnLine extends GeoObject {
 
         canvas.drawPoint(this.position, {
             radius: this.pointSize,
+            pointStyle: this.pointStyle,
             color: this.color,
             highlighted: this.highlighted,
             selected: this.selected
@@ -287,6 +289,7 @@ export class PointOnCircle extends GeoObject {
 
         canvas.drawPoint(this.position, {
             radius: this.pointSize,
+            pointStyle: this.pointStyle,
             color: this.color,
             highlighted: this.highlighted,
             selected: this.selected
@@ -499,6 +502,7 @@ export class IntersectionPoint extends GeoObject {
 
         canvas.drawPoint(this.position, {
             radius: this.pointSize,
+            pointStyle: this.pointStyle,
             color: this.color,
             highlighted: this.highlighted,
             selected: this.selected
@@ -575,6 +579,7 @@ export class Midpoint extends GeoObject {
 
         canvas.drawPoint(this.position, {
             radius: this.pointSize,
+            pointStyle: this.pointStyle,
             color: this.color,
             highlighted: this.highlighted,
             selected: this.selected
@@ -642,6 +647,7 @@ export class CircleCenterPoint extends GeoObject {
 
         canvas.drawPoint(this.position, {
             radius: this.pointSize,
+            pointStyle: this.pointStyle,
             color: this.color,
             highlighted: this.highlighted,
             selected: this.selected

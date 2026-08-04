@@ -43,6 +43,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For concentric-circle or fixed-radius prompts, reuse the same center id and create radius points at the requested distance.
 - There is no first-class `annularSector` yet; when a prompt accepts approximation, use a normal sector plus an inner circle outline rather than claiming a true ring-sector cutout.
 - For function-bounded curved regions, use a polygon through explicit boundary/sample points and hide helper vertices with `visible:false`; exact curved fills need future primitives.
+- For piecewise functions, clip every function with `xMin`/`xMax`. Mark excluded endpoints with `pointStyle:"open"` and included endpoints with `pointStyle:"closed"`; do not imitate an open endpoint with a separate circle.
 - Use `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` for current solid support. Curved solids use editable textbook projections with optional dashed hidden curves; nets and revolution sweeps remain unsupported.
 - For `prism`, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds` so the runtime can keep front edges solid and hidden rear edges dashed.
 - For `pyramid`, keep `apexId` out of `baseVertexIds` and place the apex far enough from the base centroid to read as a real apex.
@@ -72,6 +73,7 @@ Before returning final JSON, check:
 - `numberLine.start < numberLine.end` and `numberLine.step > 0`.
 - `numberLine.customMarks[].endpoint`, when present, is `open` or `closed`.
 - `function` range limits satisfy `xMin < xMax` and `yMin < yMax` when both bounds are present; `intersection.branch` is `0` or `1` when supplied.
+- Piecewise-function endpoints use `pointStyle:"open"` or `pointStyle:"closed"` consistently with interval inclusion, and every function is clipped to its intended domain.
 - `cylinder`, `cone`, and `sphere` have finite `x`, `y`, positive `width`/`height`, and a sensible `ellipseRatio`; `textLabel` has non-empty `text` and finite `x`, `y`.
 - A point described as lying on a segment resolves to that segment at 0 <= t <= 1; any internal-division ratio matches the requested order.
 - A named polygon whose area is the requested value, maximum, or minimum has a light fill; polygons whose area is only a given condition remain unfilled unless the source image itself is shaded.

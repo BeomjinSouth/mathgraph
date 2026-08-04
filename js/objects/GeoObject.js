@@ -169,6 +169,7 @@ export class GeoObject {
         this.color = params.color || DEFAULT_OBJECT_COLOR;
         this.lineWidth = params.lineWidth !== undefined ? params.lineWidth : 3;
         this.pointSize = params.pointSize !== undefined ? params.pointSize : 6;
+        this.pointStyle = params.pointStyle === 'open' ? 'open' : 'closed';
         this.fontSize = params.fontSize !== undefined ? params.fontSize : 30;
         this.dashed = params.dashed || false;
 
@@ -294,6 +295,7 @@ export class GeoObject {
             color: this.color,
             lineWidth: this.lineWidth,
             pointSize: this.pointSize,
+            pointStyle: this.pointStyle,
             fontSize: this.fontSize,
             dashed: this.dashed,
             visible: this.visible,

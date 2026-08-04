@@ -496,7 +496,8 @@ export class Canvas {
             borderColor = '#000000',
             borderWidth = 1.5,
             highlighted = false,
-            selected = false
+            selected = false,
+            pointStyle = 'closed'
         } = options;
 
         const baseRadius = Math.max(0, Number(radius) || 0);
@@ -521,7 +522,7 @@ export class Canvas {
         ctx.fill();
 
         // 점
-        ctx.fillStyle = color;
+        ctx.fillStyle = pointStyle === 'open' ? (this.backgroundColor || '#ffffff') : color;
         ctx.beginPath();
         ctx.arc(screen.x, screen.y, r, 0, Math.PI * 2);
         ctx.fill();

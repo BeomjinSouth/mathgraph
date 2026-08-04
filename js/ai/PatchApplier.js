@@ -442,6 +442,7 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'visible', op.visible);
         this.applyPropertyUpdate(object, 'lineWidth', op.lineWidth);
         this.applyPropertyUpdate(object, 'pointSize', op.pointSize);
+        this.applyPropertyUpdate(object, 'pointStyle', op.pointStyle);
         this.applyPropertyUpdate(object, 'fontSize', op.fontSize);
         this.applyPropertyUpdate(object, 'dashed', op.dashed);
         this.applyPropertyUpdate(object, 'fillColor', op.fillColor);
@@ -601,6 +602,7 @@ export class PatchApplier {
             'visible',
             'lineWidth',
             'pointSize',
+            'pointStyle',
             'fontSize',
             'arcRadius',
             'showValue',

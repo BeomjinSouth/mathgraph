@@ -286,6 +286,7 @@ Most object types accept the following optional properties:
 | `visible` | boolean | Visibility flag |
 | `lineWidth` | number | Stroke width |
 | `pointSize` | number | Point radius/size. Use `0` to hide the point body completely, including selected/highlight feedback; labels can still render when `showLabel` is true. |
+| `pointStyle` | `"closed"` or `"open"` | Point marker style. `closed` is the filled default; `open` draws a hollow endpoint with the canvas background inside. |
 | `fontSize` | number | Label size |
 | `labelOffset` | object | Screen-space label offset such as `{ "x": 14, "y": -12 }` |
 | `dashed` | boolean | Dashed stroke toggle |
@@ -310,6 +311,8 @@ Reference fields should point to existing object IDs unless the referenced objec
   "y": 0
 }
 ```
+
+For a piecewise function, clip each function object with `xMin` and `xMax`, then place explicit point objects at the endpoints. Use `"pointStyle": "open"` for an excluded endpoint and `"pointStyle": "closed"` for an included endpoint.
 
 ### 6.2 Point Helpers
 
