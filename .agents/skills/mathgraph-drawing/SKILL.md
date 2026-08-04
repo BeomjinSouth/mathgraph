@@ -37,6 +37,8 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Use `lensRegion` for the exact filled overlap of two intersecting circles instead of approximating the lens with a polygon.
 - If a polygon is only a construction boundary or outline, set `fillOpacity:0`; use positive fill opacity only for requested shaded regions.
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, provide exact coordinates for the intended visible points and exact support-line equations.
+- When a named point lies on a segment, create the segment first and use pointOnLine with lineId referencing that segment and t between 0 and 1.
+- For internal division AP:PB=m:n, use t=m/(m+n) from A toward B; verify collinearity, between-ness, and the requested ratio before returning JSON.
 - For concentric-circle or fixed-radius prompts, reuse the same center id and create radius points at the requested distance.
 - There is no first-class `annularSector` yet; when a prompt accepts approximation, use a normal sector plus an inner circle outline rather than claiming a true ring-sector cutout.
 - For function-bounded curved regions, use a polygon through explicit boundary/sample points and hide helper vertices with `visible:false`; exact curved fills need future primitives.
@@ -70,4 +72,5 @@ Before returning final JSON, check:
 - `numberLine.customMarks[].endpoint`, when present, is `open` or `closed`.
 - `function` range limits satisfy `xMin < xMax` and `yMin < yMax` when both bounds are present; `intersection.branch` is `0` or `1` when supplied.
 - `cylinder`, `cone`, and `sphere` have finite `x`, `y`, positive `width`/`height`, and a sensible `ellipseRatio`; `textLabel` has non-empty `text` and finite `x`, `y`.
+- A point described as lying on a segment resolves to that segment at 0 <= t <= 1; any internal-division ratio matches the requested order.
 - Styling fields are simple values: hex colors, numeric widths/opacities, booleans for toggles. Default color fields, when included, should be `#000000`.

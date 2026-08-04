@@ -1,5 +1,5 @@
 {
-  "manualVersion": 3,
+  "manualVersion": 4,
   "project": "MathGraph",
   "updatedAt": "2026-08-04",
   "language": "ko",
@@ -53,6 +53,7 @@
     "When a right-angle mark sits on a crowded point or radial center, add a larger angleDimension with arcRadius at least 0.7 and showValue:false instead of relying only on the default small rightAngleMarker.",
     "Use labelOffset on required labels near tangency points, angle markers, collinear construction points, or crowded intersections; hiding helper labels is not enough when requested labels remain close to geometry.",
     "For focus/directrix, tangent-from-point, feasible-region, and named construction-point prompts, create the named points at the exact requested coordinates and create reference lines from support points on the exact equation.",
+    "When a named point lies on a segment, create the segment first and create the named point as pointOnLine with lineId referencing that segment and t in [0,1]. For AP:PB=m:n use t=m/(m+n), then verify collinearity and the ratio.",
     "For concentric circles and fixed-radius tangency diagrams, reuse the same center id and place radius points at the requested numeric distance.",
     "For annular-sector-like requests, current GraphA has no first-class annularSector. Use a normal sector plus inner circle outline only when approximation is acceptable.",
     "For function-bounded curved fills, approximate with a polygon through explicit boundary/sample points and hide helper vertices unless a future first-class region exists.",

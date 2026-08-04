@@ -1034,6 +1034,8 @@ test('AIService builds image prompts for recreation and targeted patching', () =
     assert.match(recreatePrompt, /풀이 과정, 계산, 정답 또는 문제에 없는 조건은 만들지/);
     assert.match(recreatePrompt, /화면 픽셀이 아니라 수학 좌표/);
     assert.match(recreatePrompt, /GraphA operations\[\]/);
+    assert.match(recreatePrompt, /pointOnLine\(lineId=PQ, t는 0~1\)/);
+    assert.match(recreatePrompt, /t를 m\/\(m\+n\)/);
     assert.match(recreatePrompt, new RegExp(DEFAULT_IMAGE_RECREATE_INSTRUCTION.slice(0, 12)));
 
     const patchPrompt = service.buildImageAnalysisPrompt('점 A만 빨간색으로 바꿔줘', {
@@ -1066,6 +1068,8 @@ test('AIService adds problem-situation graphing guidance for full problem text',
     assert.match(joined, /문제 상황 그래프 생성/);
     assert.match(joined, /문제를 풀거나 정답을 말하지 말고/);
     assert.match(joined, /조건을 설명하는 데 가장 유용한/);
+    assert.match(joined, /pointOnLine으로 종속/);
+    assert.match(joined, /t를 정확히 계산/);
 });
 
 test('AIService detects full Korean problems as problem_diagram mode', () => {

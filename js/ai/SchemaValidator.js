@@ -308,6 +308,9 @@ export class SchemaValidator {
         if (op.type === 'pointOnLine' && op.angle !== undefined) {
             errors.push(`${prefix}: pointOnLine uses "t"; "angle" is only for pointOnCircle.`);
         }
+        if (op.type === 'pointOnLine' && op.t !== undefined && !Number.isFinite(op.t)) {
+            errors.push(prefix + ': pointOnLine t must be a finite number.');
+        }
 
         if (op.type === 'function' && typeof op.expression === 'string' && op.expression.includes('=')) {
             errors.push(`${prefix}: function expression must omit "y=" and contain only the right-hand side.`);
@@ -337,12 +340,14 @@ export class SchemaValidator {
 
         const newIds = new Set();
         const deletedIds = new Set();
+        const createdById = new Map();
 
         for (let i = 0; i < operations.length; i++) {
             const op = operations[i];
 
             if (op.op === 'create' && op.id) {
                 newIds.add(op.id);
+                createdById.set(op.id, op);
             }
 
             if ((op.op === 'update' || op.op === 'delete') && op.id) {
@@ -369,6 +374,15 @@ export class SchemaValidator {
                     } else if (deletedIds.has(refId)) {
                         result.addError(`operations[${i}]: ${field}="${refId}" was deleted earlier in the batch.`);
                     }
+                }
+            }
+
+            if (op.op === 'create' && op.type === 'pointOnLine' && Number.isFinite(op.t)) {
+                const referencedObject = createdById.get(op.lineId);
+                if (referencedObject?.type === 'segment' && (op.t < 0 || op.t > 1)) {
+                    result.addError(
+                        'operations[' + i + ']: pointOnLine t must stay between 0 and 1 when lineId references a segment.'
+                    );
                 }
             }
 

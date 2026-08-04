@@ -72,6 +72,7 @@ When text looks like a full textbook-style problem, `AIService.detectCommandMode
 - create a useful supporting graph or diagram even when the problem did not explicitly say "draw";
 - do not solve the problem, state the answer, copy full prose, or recreate answer choices as standalone text objects;
 - keep the default presentation monochrome and exam-like, with hidden helper points and sparse labels;
+- encode a named point on a segment as pointOnLine after creating the segment, with 0 <= t <= 1; for AP:PB=m:n, use t=m/(m+n);
 - keep the final output in the same strict GraphA `operations[]` contract.
 
 Problem-diagram outputs are accepted only after schema validation, reference validation, and `SemanticValidator.validateProblemDiagramIntent()`. If a provider-backed OpenAI result fails those checks, the existing command repair flow retries once with the validation errors. In local/guest mode without a provider key, full problem interpretation is limited to known deterministic templates; otherwise the chat returns a clear OpenAI-connection-required message instead of broad generic fallback output.

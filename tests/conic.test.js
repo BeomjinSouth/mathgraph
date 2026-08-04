@@ -130,6 +130,47 @@ test('AI schema and PatchApplier create and update all conic types', () => {
     assert.match(invalid.errors.join('\n'), /p must be greater than 0/);
 });
 
+test('ellipse focus-chord fixture keeps F on segment PQ with PF:FQ = 1:2', () => {
+    const sqrt5 = Math.sqrt(5);
+    const operations = [
+        { op: 'create', id: 'ellipse', type: 'ellipse', x: 0, y: 0, radiusX: 6, radiusY: 4 },
+        { op: 'create', id: 'P', type: 'point', x: 12 / sqrt5, y: 4 / sqrt5, label: 'P' },
+        { op: 'create', id: 'Q', type: 'point', x: 6 / sqrt5, y: -8 / sqrt5, label: 'Q' },
+        { op: 'create', id: 'PQ', type: 'segment', point1Id: 'P', point2Id: 'Q' },
+        { op: 'create', id: 'F', type: 'pointOnLine', lineId: 'PQ', t: 1 / 3, label: 'F' },
+        { op: 'create', id: 'Fp', type: 'point', x: -2 * sqrt5, y: 0, label: 'F′' }
+    ];
+
+    const validator = new SchemaValidator();
+    const validation = validator.validate({ operations });
+    const references = validator.validateReferences({ operations }, new Set());
+    assert.equal(validation.valid, true, validation.errors.join('\n'));
+    assert.equal(references.valid, true, references.errors.join('\n'));
+
+    const manager = new ObjectManager();
+    const result = new PatchApplier(manager, createHistoryStub()).apply({ operations });
+    assert.equal(result.success, true, result.message);
+
+    const objectByLabel = label => manager.getAllObjects().find(object => object.label === label);
+    const p = objectByLabel('P').getPosition();
+    const q = objectByLabel('Q').getPosition();
+    const f = objectByLabel('F').getPosition();
+    const cross = (f.x - p.x) * (q.y - p.y) - (f.y - p.y) * (q.x - p.x);
+    assert.ok(Math.abs(cross) < 1e-9);
+    assert.ok(f.x >= Math.min(p.x, q.x) && f.x <= Math.max(p.x, q.x));
+    assert.ok(f.y >= Math.min(p.y, q.y) && f.y <= Math.max(p.y, q.y));
+    assert.ok(Math.abs(Math.hypot(f.x - p.x, f.y - p.y) /
+        Math.hypot(q.x - f.x, q.y - f.y) - 0.5) < 1e-9);
+    assert.ok(Math.abs(f.x - 2 * sqrt5) < 1e-9);
+    assert.ok(Math.abs(f.y) < 1e-9);
+
+    const outOfSegment = validator.validateReferences({
+        operations: [...operations.slice(0, 4), { op: 'create', id: 'bad', type: 'pointOnLine', lineId: 'PQ', t: 1.2 }]
+    }, new Set());
+    assert.equal(outOfSegment.valid, false);
+    assert.match(outOfSegment.errors.join('\n'), /between 0 and 1/);
+});
+
 test('scene compiler and strict OpenAI schema expose conics', () => {
     const compiled = compileSceneGraph({
         nodes: [

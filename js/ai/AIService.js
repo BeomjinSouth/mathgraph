@@ -449,6 +449,8 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
    - For nested solids, keep inner vertices inside the outer projection and separate multiple inner solids so they do not overlap visually.
    - For standalone textbook arrows or direction arrows, create a vector with hidden helper endpoint points. Do not invent an unsupported arrow type.
    - Hide helper points with visible:false when they only shape a region.
+   - If a named point lies on a segment, create the segment first and then create the named point as pointOnLine with lineId referencing that segment and t between 0 and 1.
+   - For an internal division ratio AP:PB=m:n, use pointOnLine t=m/(m+n). Do not replace one requested segment with two non-collinear segments.
 
 ## JSON 스키마
 
@@ -565,6 +567,8 @@ export const PROBLEM_SITUATION_GRAPH_GUIDANCE = [
     '문제에서 변수, 좌표축, 함수식, 방정식, 부등식, 수직선, 도형 조건, 길이/각/접선/교점/음영 조건을 추출하세요.',
     '명시된 그림이 없더라도 조건을 설명하는 데 가장 유용한 좌표평면 그래프, 함수 그래프, 수직선, 기하 도식, 또는 영역 그림을 선택하세요.',
     '문제 본문, 선택지, 긴 설명 문장은 객체로 복사하지 말고, 도식 이해에 필요한 점 이름, 축 이름, 짧은 라벨, 함수식만 사용하세요.',
+    '점이 선분 위에 있다고 명시되면 선분을 먼저 만든 뒤 pointOnLine으로 종속시키고, 내분비가 주어지면 t를 정확히 계산하세요.',
+    '같은 선분 위의 점들을 서로 다른 비공선 선분으로 나누어 표현하지 마세요.',
     '조건이 모호하면 정확한 수치가 주어진 요소를 우선 그리고, 남은 요소는 수학적으로 자연스러운 대표 배치로 구성하세요.'
 ].join('\n');
 
@@ -580,6 +584,7 @@ export const PROBLEM_DIAGRAM_GRAPH_GUIDANCE = [
     'Default visual style is monochrome Korean exam paper style: thin black lines, sparse hatching or light shading when needed, no decoration, no heavy colors.',
     'Hide helper points with visible:false or pointSize:0. Keep labels sparse and avoid overlap.',
     'For ellipse, hyperbola, geometric parabola, cylinder, cone, or sphere prompts, use the matching first-class object. For unsupported chart families, use a disclosed approximation only when reasonable.',
+    'When the problem says a named point lies on a segment, create that segment first and use pointOnLine with t in [0,1]; preserve any internal-division ratio exactly.',
     'When a condition is ambiguous, draw exact numeric elements first and arrange the rest in a mathematically natural representative layout.'
 ].join('\n');
 
@@ -2879,6 +2884,8 @@ export class AIService {
                 '문제 본문은 점의 소속 관계, 공통 꼭짓점, 도형의 종류, 평행/수직/등거리 같은 조건을 추출하는 의미 입력으로 사용하되 캔버스에 본문 자체를 복사하지 마세요.',
                 '풀이 과정, 계산, 정답 또는 문제에 없는 조건은 만들지 마세요.',
                 '참조 이미지의 주요 점, 선, 곡선, 축, 눈금, 교점, 접점, 평행/수직 관계, 음영, 점선/실선, 짧은 라벨의 상대 위치를 최대한 보존하세요.',
+                '점 F가 선분 PQ 위에 있다는 식의 소속 관계는 P,Q와 선분 PQ를 먼저 만든 뒤 pointOnLine(lineId=PQ, t는 0~1)으로 표현하세요.',
+                '내분비 AP:PB=m:n이 주어지면 pointOnLine의 t를 m/(m+n)로 두고, 한 선분을 서로 일직선이 아닌 두 선분으로 잘못 나누지 마세요.',
                 '점, 선분, 직선, 원, 호, 다각형, 함수, 수직선, 치수, 입체 도형 등 현재 스키마가 지원하는 객체만 사용하세요.',
                 '좌표평면 함수 그래프 사진은 매끄러운 곡선을 polygon이나 짧은 선분 묶음으로 만들지 말고 function 객체로 복원하세요.',
                 '보이는 식이 y=x+2이면 function expression은 "x+2", y=2√x이면 "2*sqrt(x)"처럼 오른쪽 식만 사용하고, 라벨에는 보이는 수식을 보존하세요.',

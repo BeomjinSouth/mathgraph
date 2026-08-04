@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "project": "MathGraph",
   "updatedAt": "2026-08-04",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
@@ -159,6 +159,11 @@
       "id": "graph_conic_gallery",
       "tags": ["graph", "conic", "ellipse", "hyperbola", "parabola"],
       "objectTypes": ["ellipse", "hyperbola", "parabola", "point", "line", "textLabel"]
+    },
+    {
+      "id": "graph_ellipse_focus_on_chord",
+      "tags": ["graph", "conic", "ellipse", "focus", "point_on_segment", "internal_division"],
+      "objectTypes": ["ellipse", "point", "segment", "pointOnLine"]
     },
     {
       "id": "graph_simultaneous_linear_equations",
