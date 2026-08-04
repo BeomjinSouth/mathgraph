@@ -36,6 +36,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Use `polygon` for triangles, quadrilaterals, shaded regions, bars, and other filled plane regions.
 - Use `lensRegion` for the exact filled overlap of two intersecting circles instead of approximating the lens with a polygon.
 - If a polygon is only a construction boundary or outline, set `fillOpacity:0`; use positive fill opacity only for requested shaded regions.
+- When the question directly asks for the value, maximum, or minimum of a named triangle or quadrilateral area, create that named polygon and use fillOpacity from 0.18 to 0.24. Do not shade when area is only a given condition, comparison, or ratio and another quantity is being asked.
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, provide exact coordinates for the intended visible points and exact support-line equations.
 - When a named point lies on a segment, create the segment first and use pointOnLine with lineId referencing that segment and t between 0 and 1.
 - For internal division AP:PB=m:n, use t=m/(m+n) from A toward B; verify collinearity, between-ness, and the requested ratio before returning JSON.
@@ -73,4 +74,5 @@ Before returning final JSON, check:
 - `function` range limits satisfy `xMin < xMax` and `yMin < yMax` when both bounds are present; `intersection.branch` is `0` or `1` when supplied.
 - `cylinder`, `cone`, and `sphere` have finite `x`, `y`, positive `width`/`height`, and a sensible `ellipseRatio`; `textLabel` has non-empty `text` and finite `x`, `y`.
 - A point described as lying on a segment resolves to that segment at 0 <= t <= 1; any internal-division ratio matches the requested order.
+- A named polygon whose area is the requested value, maximum, or minimum has a light fill; polygons whose area is only a given condition remain unfilled unless the source image itself is shaded.
 - Styling fields are simple values: hex colors, numeric widths/opacities, booleans for toggles. Default color fields, when included, should be `#000000`.

@@ -1,5 +1,5 @@
 {
-  "manualVersion": 4,
+  "manualVersion": 5,
   "project": "MathGraph",
   "updatedAt": "2026-08-04",
   "language": "ko",
@@ -48,6 +48,7 @@
     "Problem diagram mode must create the exam figure only: no solution text, no copied body prose, no copied answer choices, and no long explanatory labels.",
     "Problem diagram mode defaults to monochrome exam style: thin black strokes, sparse hatching/light shading, concise labels, and hidden helper points with visible:false or pointSize:0.",
     "For construction-only polygons that should look like outlines, set fillOpacity:0; omit positive fill unless a shaded region is requested.",
+    "When a named triangle or quadrilateral area is the value, maximum, or minimum asked by the question, create that polygon with fillOpacity 0.18 to 0.24. When area is only a given value, comparison, ratio, or intermediate condition and another quantity is asked, keep the polygon unfilled unless the source image itself is shaded.",
     "For two-circle lens overlaps, use lensRegion with circle1Id and circle2Id instead of polygon approximations.",
     "For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough from the vertex to render a visible non-degenerate arc.",
     "When a right-angle mark sits on a crowded point or radial center, add a larger angleDimension with arcRadius at least 0.7 and showValue:false instead of relying only on the default small rightAngleMarker.",
@@ -73,6 +74,7 @@
     "skips": ["selected-object patch mode", "projection rewriting for coordinate-heavy prompts"],
     "rules": [
       "Add screen-space labelOffset values for crowded visible point labels, tangent labels such as T1/T2, and Euler-line labels O/G/H.",
+      "Create or strengthen a light polygon fill for a named triangle or quadrilateral only when its area value, maximum, or minimum is the actual question target.",
       "Add a larger hidden-label angleDimension aid for right-angle requests when a rightAngleMarker alone may be visually weak.",
       "Expand prism cross-section prompts so the outer projection is broad and the section polygon spans a substantial middle portion.",
       "Expand and recenter triangular-pyramid-inside-triangular-prism prompts so the inner solid has visible projection margins."

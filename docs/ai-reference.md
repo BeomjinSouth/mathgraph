@@ -644,6 +644,7 @@ For complex live OpenAI drawing prompts, include the following context when it m
 - Hide helper points with `visible:false` when they only shape a region or construction and should not appear as extra dots.
 - For two-circle lens regions, use `lensRegion` for the filled overlap. Add direct upper/lower point objects only when A and B must be distinct visible lens endpoints.
 - For construction-only polygons that should look like outlines, set `fillOpacity:0`; use positive `fillOpacity` only when the prompt requests a shaded region.
+- If the question directly asks for a named triangle or quadrilateral area, its maximum, or its minimum, create that polygon with fillOpacity between 0.18 and 0.24. If area is only a given value, ratio, or intermediate condition and another quantity is asked, keep the polygon unfilled unless the source image is shaded.
 - For standalone arrows in textbook-style figures, use `vector` with hidden helper endpoints. Do not emit an unsupported `arrow` type.
 - For `angleDimension`, make `point1Id` and `point2Id` distinct from `vertexId`, far enough from the vertex to render an arc, and non-collinear. If a right-angle mark would be too small at a crowded vertex, add a larger `angleDimension` with `arcRadius` at least `0.7` and `showValue:false`.
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, include exact coordinates for the intended visible points and the exact equations for reference lines.

@@ -29,6 +29,7 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
 
     applyGeneralLabelDecluttering(ctx);
     applyPromptSpecificLabelOffsets(ctx, text);
+    normalizeRequestedAreaShading(ctx, text);
     addLargeRightAngleAids(ctx, text);
     normalizeThreeCircleLensLayout(ctx, text);
     normalizeSquarePyramidMidsectionLayout(ctx, text);
@@ -115,6 +116,91 @@ function applyPromptSpecificLabelOffsets(ctx, text) {
             }
         }
     }
+}
+
+function normalizeRequestedAreaShading(ctx, text) {
+    const targetName = extractRequestedAreaTarget(text);
+    if (!targetName) return;
+
+    const targetTokens = tokenizePointNames(targetName);
+    if (targetTokens.length < 3) return;
+
+    const pointOperations = targetTokens.map(token => findNamedPoint(ctx, token));
+    if (pointOperations.some(operation => !operation?.id)) return;
+
+    const targetIds = pointOperations.map(operation => operation.id);
+    let polygon = ctx.byType('polygon').find(operation =>
+        Array.isArray(operation.vertexIds) &&
+        hasSameCyclicVertices(ctx, operation.vertexIds, targetTokens)
+    );
+
+    if (!polygon) {
+        polygon = {
+            op: 'create',
+            id: uniqueId(ctx, `area_${targetTokens.join('')}`),
+            type: 'polygon',
+            vertexIds: targetIds,
+            fillColor: '#000000',
+            fillOpacity: 0.18,
+            showLabel: false
+        };
+
+        const dependencyEnd = Math.max(...targetIds.map(id =>
+            ctx.operations.findIndex(operation => operation.id === id)
+        )) + 1;
+        ctx.operations.splice(Math.max(0, dependencyEnd), 0, polygon);
+        ctx.byId.set(polygon.id, polygon);
+    }
+
+    polygon.fillColor = polygon.fillColor || '#000000';
+    if (!Number.isFinite(Number(polygon.fillOpacity)) || Number(polygon.fillOpacity) < 0.18) {
+        polygon.fillOpacity = 0.18;
+    }
+    polygon.showLabel = false;
+}
+
+function extractRequestedAreaTarget(text) {
+    const source = String(text || '');
+    const namedArea = /(삼각형|사각형|다각형)\s*([A-Z](?:['′’])?\d*(?:\s*[A-Z](?:['′’])?\d*){2,7})\s*의\s*넓이/gi;
+    let match;
+
+    while ((match = namedArea.exec(source)) !== null) {
+        const tail = source.slice(namedArea.lastIndex);
+        const clause = tail.split(/[.。?\n]/, 1)[0].slice(0, 80);
+        const asksDirectly = /^\s*(?:(?:의\s*)?(?:값|최댓값|최솟값)(?:은|는|을|를)?|(?:을|를)\s*)(?:\s*(?:구하|찾|계산|얼마|몇|최대|최소)|\s*$)/i.test(clause);
+        const asksAsQuestion = /^\s*(?:은|는)\s*(?:얼마|몇)/i.test(clause);
+        const alias = clause.match(/^\s*(?:을|를)\s*([A-Za-z])\s*라\s*(?:하자|하고|할\s*때)/);
+        const asksViaAlias = alias
+            ? new RegExp(`${alias[1]}\\s*의\\s*(?:값|최댓값|최솟값)|${alias[1]}\\s*[=^]`, 'i').test(source.slice(namedArea.lastIndex))
+            : false;
+
+        if (asksDirectly || asksAsQuestion || asksViaAlias) {
+            return match[2].replace(/\s+/g, '');
+        }
+    }
+
+    return null;
+}
+
+function tokenizePointNames(name) {
+    return String(name || '').match(/[A-Z](?:['′’])?\d*/gi) || [];
+}
+
+function hasSameCyclicVertices(ctx, vertexIds, targetTokens) {
+    if (vertexIds.length !== targetTokens.length) return false;
+    const actual = vertexIds.map(id => {
+        const operation = ctx.byId.get(id);
+        return normalizeName(operation?.label || operation?.id || id);
+    });
+    const expected = targetTokens.map(normalizeName);
+    return isCyclicSequence(actual, expected) || isCyclicSequence([...actual].reverse(), expected);
+}
+
+function isCyclicSequence(actual, expected) {
+    const doubled = [...actual, ...actual];
+    return actual.some((_, start) =>
+        expected.every((value, offset) => doubled[start + offset] === value)
+    );
 }
 
 function addLargeRightAngleAids(ctx, text) {
@@ -479,7 +565,7 @@ function visibleName(operation) {
 }
 
 function normalizeName(value) {
-    return String(value || '').replace(/\s+/g, '').toUpperCase();
+    return String(value || '').replace(/[′’]/g, "'").replace(/\s+/g, '').toUpperCase();
 }
 
 function hasUsableLabelOffset(operation) {

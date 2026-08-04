@@ -1004,6 +1004,66 @@ test('AIService recenters cramped triangular pyramid inside triangular prism lay
     assert.ok(minMargin >= 0.25);
 });
 
+test('AIService shades the named polygon when its area is the quantity being optimized', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: [
+            { op: 'create', id: 'P', type: 'point', x: -2, y: 4, label: 'P' },
+            { op: 'create', id: 'Q', type: 'point', x: -2, y: 0, label: 'Q' },
+            { op: 'create', id: 'O', type: 'point', x: 0, y: 0, label: 'O' },
+            { op: 'create', id: 'R', type: 'point', x: 0, y: 1, label: 'R' },
+            { op: 'create', id: 'PQ', type: 'segment', point1Id: 'P', point2Id: 'Q' },
+            { op: 'create', id: 'QO', type: 'segment', point1Id: 'Q', point2Id: 'O' },
+            { op: 'create', id: 'OR', type: 'segment', point1Id: 'O', point2Id: 'R' },
+            { op: 'create', id: 'RP', type: 'segment', point1Id: 'R', point2Id: 'P' }
+        ]
+    }, '사각형 PQOR의 넓이의 최댓값을 구하여라.');
+
+    const target = enhanced.operations.find(operation => operation.type === 'polygon');
+    assert.deepEqual(target.vertexIds, ['P', 'Q', 'O', 'R']);
+    assert.equal(target.fillColor, '#000000');
+    assert.ok(target.fillOpacity >= 0.18);
+    assert.equal(target.showLabel, false);
+});
+
+test('AIService strengthens a zero-opacity target polygon when the question asks for its area', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 4, y: 0, label: 'B' },
+            { op: 'create', id: 'C', type: 'point', x: 1, y: 3, label: 'C' },
+            { op: 'create', id: 'ABC', type: 'polygon', vertexIds: ['A', 'B', 'C'], fillOpacity: 0 }
+        ]
+    }, '삼각형 ABC의 넓이를 구하시오.');
+
+    const target = enhanced.operations.find(operation => operation.id === 'ABC');
+    assert.equal(target.fillColor, '#000000');
+    assert.ok(target.fillOpacity >= 0.18);
+});
+
+test('AIService does not shade polygons when area is only a given condition', () => {
+    const service = createAIService();
+    const cases = [
+        '사각형 ADCB의 넓이가 25이다. 두 직선 사이의 거리 d에 대하여 d^2의 값을 구하시오.',
+        '삼각형 ABP의 넓이가 삼각형 AOB의 넓이의 5배일 때 f(k)×g(-k)를 구하시오.',
+        "삼각형 FF'Q의 넓이가 4√5일 때 b^2의 값을 구하시오."
+    ];
+
+    for (const prompt of cases) {
+        const enhanced = service.enhanceDiagramQuality({
+            operations: [
+                { op: 'create', id: 'A', type: 'point', x: 0, y: 0, label: 'A' },
+                { op: 'create', id: 'B', type: 'point', x: 4, y: 0, label: 'B' },
+                { op: 'create', id: 'C', type: 'point', x: 1, y: 3, label: 'C' }
+            ]
+        }, prompt);
+
+        assert.equal(enhanced.operations.some(operation => operation.type === 'polygon'), false, prompt);
+    }
+});
+
+
 test('extractOpenAIResponseText supports output_text and parsed responses', () => {
     assert.equal(
         extractOpenAIResponseText({
@@ -1036,6 +1096,8 @@ test('AIService builds image prompts for recreation and targeted patching', () =
     assert.match(recreatePrompt, /GraphA operations\[\]/);
     assert.match(recreatePrompt, /pointOnLine\(lineId=PQ, t는 0~1\)/);
     assert.match(recreatePrompt, /t를 m\/\(m\+n\)/);
+    assert.match(recreatePrompt, /넓이 자체나 그 최댓값·최솟값/);
+    assert.match(recreatePrompt, /주어진 조건·비율이고 다른 값을 묻는다면 채우지/);
     assert.match(recreatePrompt, new RegExp(DEFAULT_IMAGE_RECREATE_INSTRUCTION.slice(0, 12)));
 
     const patchPrompt = service.buildImageAnalysisPrompt('점 A만 빨간색으로 바꿔줘', {
@@ -1070,6 +1132,8 @@ test('AIService adds problem-situation graphing guidance for full problem text',
     assert.match(joined, /조건을 설명하는 데 가장 유용한/);
     assert.match(joined, /pointOnLine으로 종속/);
     assert.match(joined, /t를 정확히 계산/);
+    assert.match(joined, /넓이의 최댓값 또는 최솟값을 직접 요구하면/);
+    assert.match(joined, /주어진 조건·비율일 뿐 다른 값을 묻는 문제는 채우지/);
 });
 
 test('AIService detects full Korean problems as problem_diagram mode', () => {
