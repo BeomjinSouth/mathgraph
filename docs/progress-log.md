@@ -2831,3 +2831,8 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 
 - pbj-advisory-gpt를 Pro 모드로 3회 사용했다. 빈 연산 구조 검증, 복구 요청의 원본 이미지 유지, 오류별 복구 지시, 중복 재시도 제한을 채택했다. 참조 ID 전체 검증 선행과 검증기 통합은 이번 실패 원인보다 범위가 넓어 보류했다.
 - Vercel CLI 인증은 beomjinsouth로 확인됐지만, 현재 Production 환경 변수 목록에는 OPENAI_API_KEY, MATHGRAPH_LOGIN_SECRET, MATHGRAPH_OWNER_PASSWORD가 모두 없다. 필수 변수를 복구하기 전에는 배포하지 않았다.
+
+### Git
+
+- 구현·검증 변경을 d17882f (fix: 이미지 문제문 도형 복구)로 커밋했다.
+- codex/ai-fallback-recovery 브랜치를 origin에 푸시했다.
