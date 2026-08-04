@@ -15,8 +15,10 @@ import {
     OPENAI_IMAGE_FAST_MODEL,
     AI_IMAGE_PREPROCESS_MAX_LONG_EDGE,
     AI_IMAGE_PREPROCESS_MIN_LONG_EDGE,
+    AI_IMAGE_MAX_ABS_COORDINATE,
     chooseImagePreprocessPlan,
-    extractOpenAIResponseText
+    extractOpenAIResponseText,
+    formatAIValidationMessage
 } from '../js/ai/AIService.js';
 import { SchemaValidator } from '../js/ai/SchemaValidator.js';
 import { SemanticValidator } from '../js/ai/SemanticValidator.js';
@@ -1026,6 +1028,11 @@ test('AIService builds image prompts for recreation and targeted patching', () =
     assert.match(recreatePrompt, /사진이 문제 전체 페이지/);
     assert.match(recreatePrompt, /상대 위치를 최대한 보존/);
     assert.match(recreatePrompt, /문제 본문, 보기, 긴 설명/);
+    assert.match(recreatePrompt, /우선순위 1/);
+    assert.match(recreatePrompt, /우선순위 2/);
+    assert.match(recreatePrompt, /의미 입력으로 사용하되 캔버스에 본문 자체를 복사하지/);
+    assert.match(recreatePrompt, /풀이 과정, 계산, 정답 또는 문제에 없는 조건은 만들지/);
+    assert.match(recreatePrompt, /화면 픽셀이 아니라 수학 좌표/);
     assert.match(recreatePrompt, /GraphA operations\[\]/);
     assert.match(recreatePrompt, new RegExp(DEFAULT_IMAGE_RECREATE_INSTRUCTION.slice(0, 12)));
 
@@ -1613,6 +1620,190 @@ test('AIService analyzeImage sends full-photo recreate prompt for image-only inp
     }
 });
 
+test('AIService repairs pixel-style image coordinates into the visible GraphA range', async () => {
+    const originalFetch = globalThis.fetch;
+    const capturedBodies = [];
+    globalThis.fetch = async (url, options) => {
+        capturedBodies.push(JSON.parse(options.body));
+        const firstCall = capturedBodies.length === 1;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: firstCall ? 'resp_pixel_coordinates' : 'resp_math_coordinates',
+                    output: [{
+                        type: 'message',
+                        content: [{
+                            type: 'output_text',
+                            text: firstCall
+                                ? '{"operations":[{"op":"create","id":"O","type":"point","x":300,"y":80,"label":"O"}]}'
+                                : '{"operations":[{"op":"create","id":"O","type":"point","x":0,"y":4,"label":"O"}]}'
+                        }]
+                    }]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+        const imageDataUrl = 'data:image/png;base64,PIXEL_COORDINATES';
+        const result = await service.analyzeImage(imageDataUrl, {
+            mode: 'recreate',
+            context: { objects: [], selectedObjectIds: [] }
+        });
+
+        assert.equal(result.success, true);
+        assert.equal(result.repaired, true);
+        assert.match(result.repairErrors.join('\n'), /coordinates must stay within/);
+        assert.equal(capturedBodies.length, 2);
+        assert.match(capturedBodies[1].input[1].content[0].text, /OUT_OF_VIEW_COORDINATES/);
+        assert.match(capturedBodies[1].input[1].content[0].text, new RegExp(`\\+/-${AI_IMAGE_MAX_ABS_COORDINATE}`));
+        assert.deepEqual(capturedBodies[1].input[1].content[1], {
+            type: 'input_image',
+            image_url: imageDataUrl,
+            detail: 'high'
+        });
+        assert.equal(result.json.operations[0].x, 0);
+        assert.equal(result.json.operations[0].y, 4);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+test('AIService repairs empty image operations with the original image and problem-text fallback', async () => {
+    const originalFetch = globalThis.fetch;
+    const capturedBodies = [];
+    const targetOperations = [
+        ['O', 0, 4],
+        ['A', -4, -2],
+        ['B', 0, -3],
+        ['C', 4, -2],
+        ['D', 0, -1],
+        ['E', -1.5, 1.75],
+        ['F', 0, 1.25],
+        ['G', 1.5, 1.75],
+        ['H', 0, 2.25]
+    ].map(([id, x, y]) => ({ op: 'create', id, type: 'point', x, y, label: id }));
+    targetOperations.push(
+        { op: 'create', id: 'outer_pyramid', type: 'pyramid', baseVertexIds: ['A', 'B', 'C', 'D'], apexId: 'O' },
+        { op: 'create', id: 'inner_pyramid', type: 'pyramid', baseVertexIds: ['E', 'F', 'G', 'H'], apexId: 'O' }
+    );
+
+    globalThis.fetch = async (url, options) => {
+        capturedBodies.push(JSON.parse(options.body));
+        const firstCall = capturedBodies.length === 1;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: firstCall ? 'resp_empty_recreate' : 'resp_repaired_recreate',
+                    output: [{
+                        type: 'message',
+                        content: [{
+                            type: 'output_text',
+                            text: firstCall
+                                ? '{"operations":[]}'
+                                : JSON.stringify({ operations: targetOperations })
+                        }]
+                    }]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+        const imageDataUrl = 'data:image/png;base64,PROBLEM_IMAGE';
+        const result = await service.analyzeImage(imageDataUrl, {
+            mode: 'recreate',
+            context: { objects: [], selectedObjectIds: [] }
+        });
+
+        assert.equal(result.success, true);
+        assert.equal(result.repaired, true);
+        assert.match(result.repairErrors.join('\n'), /operations is empty/);
+        assert.equal(capturedBodies.length, 2);
+        assert.equal(capturedBodies[1].previous_response_id, 'resp_empty_recreate');
+        assert.equal(capturedBodies[1].model, DEFAULT_OPENAI_MODEL);
+        for (const body of capturedBodies) {
+            assert.deepEqual(body.input[1].content[1], {
+                type: 'input_image',
+                image_url: imageDataUrl,
+                detail: 'high'
+            });
+        }
+        assert.match(capturedBodies[1].input[1].content[0].text, /EMPTY_OPERATIONS/);
+        assert.match(capturedBodies[1].input[1].content[0].text, /problem statement explicitly describes drawable geometry/);
+
+        const pointLabels = new Set(
+            result.json.operations
+                .filter(operation => operation.type === 'point')
+                .map(operation => operation.label)
+        );
+        assert.deepEqual(pointLabels, new Set(['O', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']));
+        const pyramids = result.json.operations.filter(operation => operation.type === 'pyramid');
+        assert.equal(pyramids.length, 2);
+        assert.ok(pyramids.every(pyramid => pyramid.apexId === 'O'));
+        assert.deepEqual(pyramids[0].baseVertexIds, ['A', 'B', 'C', 'D']);
+        assert.deepEqual(pyramids[1].baseVertexIds, ['E', 'F', 'G', 'H']);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('AIService stops after one empty image repair and returns Korean recovery guidance', async () => {
+    const originalFetch = globalThis.fetch;
+    let requestCount = 0;
+    globalThis.fetch = async () => {
+        requestCount += 1;
+        return {
+            ok: true,
+            async json() {
+                return {
+                    id: `resp_empty_${requestCount}`,
+                    output: [{
+                        type: 'message',
+                        content: [{ type: 'output_text', text: '{"operations":[]}' }]
+                    }]
+                };
+            }
+        };
+    };
+
+    try {
+        const service = new AIService({
+            provider: 'openai',
+            apiKey: 'test-key',
+            model: 'gpt-5.4-mini',
+            save() { }
+        });
+        const result = await service.analyzeImage('data:image/png;base64,EMPTY_TWICE', {
+            mode: 'recreate',
+            context: { objects: [], selectedObjectIds: [] }
+        });
+
+        assert.equal(result.success, false);
+        assert.equal(requestCount, 2);
+        assert.match(result.error, /사진이나 문제문에서 그릴 도형을 찾지 못했습니다/);
+        assert.doesNotMatch(result.error, /operations is empty|JSON validation|semantic validation/i);
+        assert.equal(
+            formatAIValidationMessage(['operations is empty.']),
+            result.error
+        );
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
 test('AIService analyzeImage exposes the owner-proxy error instead of a generic Vision error', async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () => ({

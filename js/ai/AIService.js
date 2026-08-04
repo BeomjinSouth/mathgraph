@@ -26,6 +26,15 @@ export const AI_IMAGE_PREPROCESS_MIN_LONG_EDGE = 1200;
 export const AI_IMAGE_PREPROCESS_MIN_CROP_LONG_EDGE = 900;
 export const AI_IMAGE_PREPROCESS_CROP_PADDING_RATIO = 0.06;
 export const AI_IMAGE_PREPROCESS_JPEG_QUALITY = 0.92;
+export const AI_IMAGE_MAX_ABS_COORDINATE = 20;
+
+export function formatAIValidationMessage(errors = []) {
+    const messages = Array.isArray(errors) ? errors.map(error => String(error)) : [String(errors)];
+    if (messages.some(message => message.includes('operations is empty'))) {
+        return '사진이나 문제문에서 그릴 도형을 찾지 못했습니다. 도형 조건이 보이도록 다시 촬영하거나, 입력칸에 필요한 도형을 적어 다시 시도해 주세요.';
+    }
+    return '도형 데이터를 적용하지 못했습니다. 사진의 도형 조건이 잘 보이는지 확인한 뒤 다시 시도해 주세요.';
+}
 
 export async function fetchWithTimeout(url, init = {}, timeoutMs = 125000) {
     const normalizedTimeoutMs = Number.isSafeInteger(timeoutMs) && timeoutMs > 0
@@ -410,7 +419,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 ## 중요 규칙
 1. JSON만 출력하세요. "그렸습니다" 같은 텍스트 없이 순수 JSON만 출력합니다.
 2. 참조 순서를 준수하세요. 참조되는 객체(점)가 먼저 정의되어야 합니다.
-3. 정수 좌표를 권장합니다. 예: (2, 0), (-3, 5)
+3. GraphA의 x, y는 화면 픽셀이 아니라 수학 좌표입니다. 좌표가 명시되지 않은 도식은 기본 화면에서 보이도록 각 점을 -20~20 안에 두고, 정수 또는 0.5 단위 좌표를 권장합니다.
 4. 필수 필드를 포함하세요.
 5. 기본 도형 색상은 #000000입니다. 사용자가 색을 명시적으로 요청하지 않으면 여러 색을 넣지 마세요.
 6. Visual fidelity guardrails:
@@ -2849,7 +2858,11 @@ export class AIService {
             ].join('\n')
             : [
                 '작업 모드: 이미지 재현.',
-                '사진이 문제 전체 페이지이거나 주변 여백이 많아도, 그 안의 수학 도식/그래프/그림 영역을 찾아 GraphA 객체로 새로 재구성하세요.',
+                'GraphA의 x, y는 화면 픽셀이 아니라 수학 좌표입니다. 좌표가 명시되지 않은 도식의 모든 점은 기본 화면에서 보이도록 -20~20 안에 배치하세요.',
+                '우선순위 1: 사진이 문제 전체 페이지이거나 주변 여백이 많아도, 인쇄된 수학 도식/그래프/그림이 보이면 그 영역을 찾아 GraphA 객체로 새로 재구성하세요.',
+                '우선순위 2: 인쇄된 도식이 없지만 문제 본문이 도형을 명시적으로 설명하면, 본문에서 도형 조건을 읽어 시험지용 보조 도형을 새로 구성하세요.',
+                '문제 본문은 점의 소속 관계, 공통 꼭짓점, 도형의 종류, 평행/수직/등거리 같은 조건을 추출하는 의미 입력으로 사용하되 캔버스에 본문 자체를 복사하지 마세요.',
+                '풀이 과정, 계산, 정답 또는 문제에 없는 조건은 만들지 마세요.',
                 '참조 이미지의 주요 점, 선, 곡선, 축, 눈금, 교점, 접점, 평행/수직 관계, 음영, 점선/실선, 짧은 라벨의 상대 위치를 최대한 보존하세요.',
                 '점, 선분, 직선, 원, 호, 다각형, 함수, 수직선, 치수, 입체 도형 등 현재 스키마가 지원하는 객체만 사용하세요.',
                 '좌표평면 함수 그래프 사진은 매끄러운 곡선을 polygon이나 짧은 선분 묶음으로 만들지 말고 function 객체로 복원하세요.',
@@ -2879,6 +2892,18 @@ export class AIService {
     }
 
     validateImageAnalysisIntent(json, options) {
+        const schemaResult = this.schemaValidator.validate(json);
+        if (!schemaResult.valid) {
+            return schemaResult;
+        }
+
+        const coordinateResult = this.semanticValidator.validateImageCoordinateRange(json, {
+            maxAbsCoordinate: AI_IMAGE_MAX_ABS_COORDINATE
+        });
+        if (!coordinateResult.valid) {
+            return coordinateResult;
+        }
+
         const schemaIntentResult = this.schemaValidator.validateIntent(json, {
             mode: options.mode,
             instruction: options.instruction,
@@ -2895,13 +2920,31 @@ export class AIService {
     }
 
     buildImageRepairPrompt(originalPrompt, previousJson, errors, options) {
+        const hasEmptyOperations = errors.some(error => String(error).includes('operations is empty'));
+        const hasOutOfViewCoordinates = errors.some(error => String(error).includes('coordinates must stay within'));
+        const recreateRepairRule = hasEmptyOperations
+            ? [
+                'Repair cause: EMPTY_OPERATIONS.',
+                'Inspect the original image again. If a printed math diagram is visible, reconstruct that diagram first.',
+                'If no printed diagram is visible but the problem statement explicitly describes drawable geometry, use the text as semantic input and construct the exam-style supporting diagram.',
+                'Do not copy the problem prose to the canvas, solve the problem, state an answer, or invent unstated conditions.',
+                `Return at least one valid operation and at most ${IMAGE_RECREATE_OPERATION_BUDGET} operations.`
+            ].join('\n')
+            : hasOutOfViewCoordinates
+                ? [
+                    'Repair cause: OUT_OF_VIEW_COORDINATES.',
+                    `GraphA x and y are math coordinates, not screen pixels. Keep every point within +/-${AI_IMAGE_MAX_ABS_COORDINATE} so the result is visible in the default view.`,
+                    'Scale the whole diagram together and preserve collinearity, shared vertices, containment, and relative positions.',
+                    'Do not change the mathematical relationships while rescaling.'
+                ].join('\n')
+                : `Repair rule: reduce the result to at most ${IMAGE_RECREATE_OPERATION_BUDGET} operations and ignore dense decorative grids/page text.`;
         return [
             originalPrompt,
             'The previous GraphA JSON failed local semantic validation.',
             `Validation errors:\n- ${errors.join('\n- ')}`,
             options.mode === 'patch'
                 ? 'Repair rule: if selected ids are provided, update/delete the selected ids directly. Do not create unrelated objects for strict selected-object edits.'
-                : `Repair rule: reduce the result to at most ${IMAGE_RECREATE_OPERATION_BUDGET} operations and ignore dense decorative grids/page text.`,
+                : recreateRepairRule,
             'Previous JSON to repair:',
             JSON.stringify(previousJson).slice(0, 8000),
             'Return only corrected {"operations":[...]} JSON.'
@@ -3023,7 +3066,7 @@ export class AIService {
 
                         return {
                             success: false,
-                            error: `AI patch semantic validation failed after repair: ${repairedIntentResult.errors.join(' ')}`,
+                            error: formatAIValidationMessage(repairedIntentResult.errors),
                             message: repairAttempt.content,
                             json: repairedJson,
                             validationErrors: repairedIntentResult.errors
@@ -3032,13 +3075,13 @@ export class AIService {
 
                     return {
                         success: false,
-                        error: 'Repair response JSON parsing failed.',
+                        error: 'AI가 보낸 도형 데이터를 읽지 못했습니다. 다시 시도해 주세요.',
                         message: repairAttempt.content,
                         validationErrors: intentResult.errors
                     };
                 }
 
-                return { success: false, error: 'JSON parsing failed.', message: firstAttempt.content };
+                return { success: false, error: 'AI가 보낸 도형 데이터를 읽지 못했습니다. 다시 시도해 주세요.', message: firstAttempt.content };
 
             } else if (this.config.provider === 'gemini') {
                 // Gemini Vision
@@ -3076,7 +3119,7 @@ export class AIService {
                     }
                     return {
                         success: false,
-                        error: `AI patch semantic validation failed: ${intentResult.errors.join(' ')}`,
+                        error: formatAIValidationMessage(intentResult.errors),
                         message: content,
                         json: enhancedJson,
                         validationErrors: intentResult.errors

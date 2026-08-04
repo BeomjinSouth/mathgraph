@@ -124,6 +124,32 @@ export class SemanticValidator {
         return result;
     }
 
+    validateImageCoordinateRange(data, options = {}) {
+        const operations = data?.operations || (Array.isArray(data) ? data : []);
+        if (!Array.isArray(operations)) {
+            return ValidationResult.failure('image coordinate validation requires operations to be an array.');
+        }
+
+        const maxAbsCoordinate = Number.isFinite(options.maxAbsCoordinate)
+            ? Math.abs(options.maxAbsCoordinate)
+            : 20;
+        const outOfViewPoints = operations.filter(operation =>
+            operation?.op === 'create' &&
+            operation.type === 'point' &&
+            Number.isFinite(operation.x) &&
+            Number.isFinite(operation.y) &&
+            (Math.abs(operation.x) > maxAbsCoordinate || Math.abs(operation.y) > maxAbsCoordinate)
+        );
+        if (outOfViewPoints.length > 0) {
+            const ids = outOfViewPoints.slice(0, 4).map(point => point.id || '(no id)').join(', ');
+            return ValidationResult.failure(
+                `image recreate point coordinates must stay within +/-${maxAbsCoordinate} math units for the default view; out-of-range point(s): ${ids}.`
+            );
+        }
+
+        return ValidationResult.success();
+    }
+
     validateRequestedSolidIntent(data, options = {}) {
         const operations = data?.operations || (Array.isArray(data) ? data : []);
         if (!Array.isArray(operations)) {

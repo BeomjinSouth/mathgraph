@@ -107,11 +107,13 @@ Important boundary:
 
 - This is vector-object reconstruction and patching. It is not pixel-level image editing or mask-based raster inpainting.
 - True raster edits would require a separate Images API edit workflow and, for precise local changes, a mask UI with same-size alpha-channel masks.
-- Full-photo recreate mode should prioritize the diagram area, preserve axes/ticks/labels/intersections/tangencies/shading/dashed strokes, and ignore dense problem prose unless it is needed for the figure.
+- Full-photo recreate mode should prioritize a visible diagram and preserve axes/ticks/labels/intersections/tangencies/shading/dashed strokes. If no diagram is printed but the problem text explicitly describes drawable geometry, it should use those conditions to construct an editable supporting diagram without copying the prose or solving the problem.
 - Patch-mode responses run semantic intent validation after schema/reference validation:
   - If selected ids exist and the instruction asks to mutate the selected part, at least one selected id must be updated or deleted.
   - Strict selected-object edits such as "only this point" cannot create new objects or mutate unselected ids.
-  - OpenAI image analysis retries once with the semantic validation errors before failing.
+- OpenAI image analysis runs structural and semantic validation before accepting a result. Empty operations therefore enter the existing one-time repair path instead of reaching the canvas validator as a false success.
+- The repair request includes the original image again. When the failure is an empty operation list, the repair prompt rechecks for a visible diagram and then falls back to explicit drawable conditions in the problem text.
+- Image reconstruction uses GraphA math coordinates rather than screen pixels. Point coordinates outside +/-20 enter the same one-time repair path, which rescales the whole diagram while preserving geometric relationships.
 - Image recreation has an operation budget of 45 operations. Dense textbook grids, page text, and decorative elements should be simplified or ignored unless explicitly requested.
 
 ## 1.2.1 Image Cost Controls

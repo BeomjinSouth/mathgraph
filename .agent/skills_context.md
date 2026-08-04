@@ -1399,6 +1399,16 @@
 - Update the tracking docs as the task evolves.
 - Use `implementation_plan.md` only when a fuller roadmap is needed.
 
+## 2026-08-04 Image problem diagram recovery skills
+
+- mathgraph-drawing: kept first-class pyramid operations, dependency ordering, monochrome labels, and hidden-edge behavior aligned with the runtime contract.
+- openai-vibecoding-context and openai-docs: verified the Responses request shape using input_text, input_image, and strict structured output.
+- pbj-ui-copy: changed the internal English validator failure into Korean guidance that tells the user what to retry.
+- frontend-testing-debugging, playwright-interactive, and browser:control-in-app-browser: reproduced the upload flow and checked the rendered result, requests, console, and visible status.
+- pbj-advisory-gpt: independently reviewed the failure path and the exact source image. Its first geometry output revealed pixel-style coordinates, leading to the added math-coordinate range guard.
+- routing-personal-playbooks: returned no active routing rules, so only project and general standards were applied.
+- solo-ai-workbench: kept observable gates separate: unit/build verification, local rendered browser evidence, Git push, and production deployment.
+
 ## Useful References
 
 - Docs:

@@ -2929,3 +2929,22 @@ Restore the accumulated AI drawing quality in the teacher-facing `AI 시험 그�
 - Confirmed Vercel authentication and the required Production variables, deployed successfully, and verified the production alias with a rendered cone-plus-sphere smoke test.
 
 ---
+
+## 2026-08-04 Image-only problem diagram recovery
+
+### State
+
+- Implementation and local browser verification complete.
+- Production deployment blocked because the current Production environment listing contains none of the required OpenAI/login variables.
+
+### Changes
+
+- Treat an empty image-analysis operation list as a failed preflight and route it through the existing single repair attempt.
+- Prioritize a visible printed diagram; when none exists, use only explicit drawable problem conditions without copying prose, solving, answering, or inventing conditions.
+- Reject image-generated point coordinates outside ±20 GraphA math units and request proportional rescaling.
+- Replace internal validator text with actionable Korean recovery guidance.
+
+### Evidence
+
+- Focused AI flow: 73/73 passed; full suite and release build: 335/335 passed.
+- In-app browser: the same source image produced one empty first response, a second request with the identical image, and an accepted 11-object O-ABCD/O-EFGH diagram with dashed hidden edges.

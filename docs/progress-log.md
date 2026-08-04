@@ -2806,3 +2806,28 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - Production smoke on https://mathgraph-five.vercel.app: HTTP 200, runtime reference asset 200, uploaded sources all 404 (`/tests/`, `/docs/`, `/tools/`, `/.agents/`, `/package.json`, `/scripts/` — previously `package.json` was publicly served from the root output), hardened login returns 401 with the new message, browser smoke green (guest entry, point creation, undo, no console errors), password field/logout/save controls live.
 - README deployment section updated: stale "pre-hardening June release" warning removed; dist build contract documented.
 - All release-plan checklist steps are now closed (the only unchecked item is the intentionally skipped Task 4 design-sheet image generation, annotated in place).
+
+## 2026-08-04 이미지 문제문 도형 자동 복구
+
+### 원인과 수정
+
+- 이미지 단독 재현에서 OpenAI가 {"operations":[]}를 반환하면 의도 검증이 이를 통과시켜, 기존 1회 복구 전에 UI의 구조 검증에서 operations is empty.가 노출됐다.
+- 이미지 응답의 구조를 의미 검증보다 먼저 검사하도록 바꾸어 빈 연산을 기존 1회 복구로 보냈다. 복구 응답도 비어 있으면 재시도하지 않고 한국어 안내를 표시한다.
+- 인쇄 도식이 보이면 이를 우선 재현하고, 도식이 없을 때에는 문제문에 명시된 도형 조건만 사용하도록 재현·복구 프롬프트와 런타임 매뉴얼을 맞췄다. 본문 복사, 풀이, 정답, 조건 추측은 금지했다.
+- 독립 자문이 실제 문제 이미지를 분석한 첫 결과에서 화면 픽셀 좌표를 반환하는 추가 문제를 발견했다. GraphA 기본 화면에서 점 좌표 절댓값을 20 이하로 제한하고, 초과하면 기하 관계와 같은 내분비를 보존하여 축소하도록 한 번 복구한다.
+- 사용자 화면에는 내부 영문 검증 문구 대신 사진의 도식 또는 문제 조건이 선명한지 확인하라는 한국어 안내를 표시한다.
+
+### 검증
+
+- 관련 AI 흐름 단위 테스트: 73/73 통과.
+- npm.cmd test: 335/335 통과.
+- npm.cmd run vercel-build: 335/335 통과 후 정적 dist 빌드 완료.
+- git diff --check: 통과.
+- 같은 문제 이미지를 로컬 앱에 업로드하고 첫 응답을 빈 연산으로 모의했다. 브라우저에서 정확히 한 번 복구 요청이 발생했고, 첫 요청과 복구 요청에 같은 PNG input_image가 포함됐다.
+- 모델 표시는 gpt-5.4-mini → gpt-5.5였고, 최종 상태는 11 created였다.
+- 무격자·무축 화면에서 O-ABCD와 O-EFGH가 꼭짓점 O를 공유하고, E/F/G/H가 각각 OA/OB/OC/OD 위 같은 비율에 있으며 숨은선이 점선으로 표시되는 것을 확인했다.
+
+### 자문과 외부 상태
+
+- pbj-advisory-gpt를 Pro 모드로 3회 사용했다. 빈 연산 구조 검증, 복구 요청의 원본 이미지 유지, 오류별 복구 지시, 중복 재시도 제한을 채택했다. 참조 ID 전체 검증 선행과 검증기 통합은 이번 실패 원인보다 범위가 넓어 보류했다.
+- Vercel CLI 인증은 beomjinsouth로 확인됐지만, 현재 Production 환경 변수 목록에는 OPENAI_API_KEY, MATHGRAPH_LOGIN_SECRET, MATHGRAPH_OWNER_PASSWORD가 모두 없다. 필수 변수를 복구하기 전에는 배포하지 않았다.

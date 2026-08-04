@@ -51,7 +51,8 @@ import {
     OPENAI_MODEL_OPTIONS,
     GEMINI_MODEL_OPTIONS,
     AI_IMAGE_PREPROCESS_JPEG_QUALITY,
-    chooseImagePreprocessPlan
+    chooseImagePreprocessPlan,
+    formatAIValidationMessage
 } from './ai/AIService.js';
 import { parseAIJSONPayload } from './ai/JSONUtils.js';
 
@@ -3938,12 +3939,13 @@ class GraphAApp {
         const validationResult = this.schemaValidator.parseAndValidate(jsonInput);
 
         if (!validationResult.valid) {
+            const message = formatAIValidationMessage(validationResult.errors);
             this.addChatMessage(
-                `⚠️ JSON 검증 실패:\n• ${validationResult.errors.join('\n• ')}`,
+                `⚠️ ${message}`,
                 'assistant'
             );
             console.error('AI JSON 검증 실패:', validationResult.errors);
-            const message = validationResult.errors.join(' ');
+
             this.setTeacherWorkflowState('error', { message });
             return false;
         }
@@ -4240,7 +4242,7 @@ class GraphAApp {
             // 로딩 메시지
             const loadingText = mode === 'patch'
                 ? '이미지와 요청을 바탕으로 필요한 부분만 수정 중입니다...'
-                : '사진 속 도식과 그래프를 GraphA 객체로 재구성 중입니다...';
+                : '사진의 도식이나 문제 조건을 바탕으로 도형을 구성 중입니다...';
             const loadingMessage = this.addChatMessage(loadingText, 'assistant');
 
             try {
@@ -4278,7 +4280,7 @@ class GraphAApp {
                     this.addChatMessage(
                         mode === 'patch'
                             ? '요청한 부분 수정 패치를 만들었습니다.'
-                            : '사진 속 도식과 그래프를 인식했습니다.',
+                            : '사진의 도식이나 문제 조건을 바탕으로 도형을 만들었습니다.',
                         'assistant'
                     );
                     this.processAIJSON(result.json, {
