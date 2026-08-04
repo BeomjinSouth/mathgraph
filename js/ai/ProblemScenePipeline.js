@@ -135,6 +135,8 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'First identify every point, segment, line, curve, circle, arc, region, solid, axis, label, and construction that the source requires.',
     'Then choose a clear non-degenerate coordinate layout within -20 to 20 while preserving incidence, order, collinearity, containment, and the printed relative positions.',
     'Use direct point nodes for explicit or computed coordinates. Use pointOnLine or pointOnCircle when the source explicitly places a point on that object.',
+    'Every scene item id must be globally unique across nodes and relations.',
+    'A named intersection must exist only as an intersection relation. Never also create a point node with the same id or label; use distinct hidden helper points to define its line.',
     'Order is not important; MathGraph resolves dependencies locally.',
     'Use mustDraw as an audit list. Every required visual fact must name the scene nodeIds or relationIds that implement it.',
     'A printed shaded face or requested area region must be a polygon, sector, circularSegment, or lensRegion node with fillOpacity between 0.18 and 0.24.',
@@ -184,11 +186,32 @@ export function validateProblemSceneCoverage(scene, compiled) {
     const errors = [];
     const operations = Array.isArray(compiled?.operations) ? compiled.operations : [];
     const operationIds = new Set(operations.map(operation => operation?.id).filter(Boolean));
-    const sceneIds = new Set([
+    const sceneItems = [
         ...(Array.isArray(scene?.nodes) ? scene.nodes : []),
         ...(Array.isArray(scene?.relations) ? scene.relations : [])
-    ].map(item => item?.id).filter(Boolean));
+    ];
+    const sceneIds = new Set(sceneItems.map(item => item?.id).filter(Boolean));
     const mustDraw = Array.isArray(scene?.mustDraw) ? scene.mustDraw : [];
+
+    const seenIds = new Set();
+    const seenPointLabels = new Set();
+    const pointKinds = new Set(['point', 'pointonline', 'pointonsegment', 'pointoncircle', 'intersection', 'midpoint']);
+    for (const item of sceneItems) {
+        if (!item?.id) continue;
+        if (seenIds.has(item.id)) {
+            errors.push(`scene id "${item.id}" is duplicated across nodes or relations.`);
+        }
+        seenIds.add(item.id);
+
+        const kind = String(item.kind || item.type || '').toLowerCase().replace(/[\s_-]+/g, '');
+        const label = typeof item.label === 'string' ? item.label.trim() : '';
+        if (label && pointKinds.has(kind)) {
+            if (seenPointLabels.has(label)) {
+                errors.push(`named point label "${label}" is duplicated across scene items.`);
+            }
+            seenPointLabels.add(label);
+        }
+    }
 
     if (operations.length === 0) {
         errors.push('problem scene compiled to an empty operations array.');
@@ -229,7 +252,7 @@ export function validateProblemSceneCoverage(scene, compiled) {
     }
 
     for (const warning of compiled?.warnings || []) {
-        if (/skipped|unresolved/i.test(String(warning))) {
+        if (/skipped|unresolved|duplicate/i.test(String(warning))) {
             errors.push(String(warning));
         }
     }

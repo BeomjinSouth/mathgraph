@@ -229,6 +229,35 @@ test('analytic scenes compile functions, construction lines, and intersections f
     assert.equal(compiled.sourceBindings[0].pointLabel, 'P');
 });
 
+test('coverage rejects a named point duplicated as both a helper node and an intersection', () => {
+    const payload = scenePayload({
+        nodes: [
+            node('curve', 'function', { text: 'sqrt(x-2)', numbers: [2, 8] }),
+            node('H1', 'point', { numbers: [0, 4] }),
+            node('H2', 'point', { numbers: [4, 0] }),
+            node('line_l', 'line', { refs: ['H1', 'H2'], label: 'l' }),
+            node('P', 'point', { label: 'P', numbers: [4, 0] })
+        ],
+        relations: [
+            node('P', 'intersection', { label: 'P', refs: ['line_l', 'curve'], numbers: [0] })
+        ],
+        mustDraw: [{
+            id: 'intersection-p',
+            description: 'P is the intersection of l and f',
+            nodeIds: ['curve', 'line_l'],
+            relationIds: ['P'],
+            required: true,
+            evidence: 'printed relation'
+        }]
+    });
+    const compiled = compileProblemScenePayload(payload);
+    const validation = validateProblemSceneCoverage(payload.scene, compiled);
+
+    assert.equal(validation.valid, false);
+    assert.match(validation.errors.join('\n'), /id "P" is duplicated/);
+    assert.match(compiled.warnings.join('\n'), /relation "P".*duplicated/);
+});
+
 test('image-only problem diagrams use one Luna scene call and local compilation on success', async () => {
     const service = new AIService({
         provider: 'openai',

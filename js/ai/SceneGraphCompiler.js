@@ -299,6 +299,12 @@ export class SceneGraphCompiler {
         const rawKind = node.kind ?? node.type;
         const normalizedKey = normalizeKey(rawKind);
         const kind = normalizeNodeKind(rawKind);
+        const declaredId = ref(node.id ?? node.name);
+
+        if (declaredId && this.createdIds.has(declaredId)) {
+            this.warn(`Scene node "${declaredId}" skipped because its id is duplicated.`);
+            return;
+        }
 
         if (UNSUPPORTED_NODE_KINDS.has(normalizedKey)) {
             this.addUnsupportedWarning(node, `node:${node.id || normalizedKey}`);
@@ -384,6 +390,11 @@ export class SceneGraphCompiler {
         }
 
         const kind = normalizeRelationKind(relation.kind ?? relation.type);
+        const declaredId = ref(relation.id ?? relation.name);
+        if (declaredId && this.createdIds.has(declaredId)) {
+            this.warn(`Scene relation "${declaredId}" skipped because its id is duplicated.`);
+            return;
+        }
         if (!kind) {
             this.warn(`Scene relation "${relation.id || '(no id)'}" skipped because it has no kind.`);
             return;
