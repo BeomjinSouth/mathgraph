@@ -728,7 +728,10 @@ function applyFunctionLabelDecluttering(ctx) {
 
     for (const record of functions) {
         const operation = record.operation;
-        if (isFinitePoint(operation.labelMathPos)) {
+        // A newly generated scene may contain a model-suggested position that is
+        // outside the usable canvas. Recompute creates; preserve existing labels
+        // only when an update is intentionally keeping a user-pinned position.
+        if (isFinitePoint(operation.labelMathPos) && operation.op !== 'create') {
             occupiedLabels.push(functionLabelRect(operation, operation.labelMathPos, sceneBounds));
             continue;
         }
@@ -743,7 +746,8 @@ function applyFunctionLabelDecluttering(ctx) {
         const stride = Math.max(1, Math.floor((end - start) / 18));
         for (let index = start; index < end; index += stride) {
             const curvePoint = curve[index];
-            for (const placement of functionLabelPlacements(curvePoint, labelSize)) {
+            for (const rawPlacement of functionLabelPlacements(curvePoint, labelSize)) {
+                const placement = constrainFunctionLabelPlacement(rawPlacement, labelSize, sceneBounds);
                 const rect = labelRect(placement, labelSize);
                 const score = scoreFunctionLabelRect(rect, {
                     sceneBounds,
@@ -777,6 +781,15 @@ function functionLabelPlacements(curvePoint, size) {
         { x: curvePoint.x + gap, y: curvePoint.y - size.height - gap },
         { x: curvePoint.x - size.width - gap, y: curvePoint.y - size.height - gap }
     ];
+}
+
+function constrainFunctionLabelPlacement(placement, size, bounds) {
+    const maxX = Math.max(bounds.minX, bounds.maxX - size.width);
+    const maxY = Math.max(bounds.minY, bounds.maxY - size.height);
+    return {
+        x: Math.min(maxX, Math.max(bounds.minX, placement.x)),
+        y: Math.min(maxY, Math.max(bounds.minY, placement.y))
+    };
 }
 
 function estimateFunctionLabelSize(operation, sceneBounds) {
@@ -815,11 +828,15 @@ function scoreFunctionLabelRect(rect, obstacles) {
     };
     const margin = Math.max(0.16, (obstacles.sceneBounds.maxX - obstacles.sceneBounds.minX) * 0.018);
 
-    if (rect.minX < obstacles.sceneBounds.minX - margin ||
-        rect.maxX > obstacles.sceneBounds.maxX + margin ||
-        rect.minY < obstacles.sceneBounds.minY - margin ||
-        rect.maxY > obstacles.sceneBounds.maxY + margin) {
-        score -= 45;
+    const overflow =
+        Math.max(0, obstacles.sceneBounds.minX - rect.minX) +
+        Math.max(0, rect.maxX - obstacles.sceneBounds.maxX) +
+        Math.max(0, obstacles.sceneBounds.minY - rect.minY) +
+        Math.max(0, rect.maxY - obstacles.sceneBounds.maxY);
+    if (overflow > margin) {
+        // A partially clipped formula is harder to read than a nearby line crossing.
+        // Make staying inside the inferred scene a hard preference, not a small tie-breaker.
+        score -= 1600 + overflow * 240;
     }
 
     for (const point of obstacles.pointObstacles) {

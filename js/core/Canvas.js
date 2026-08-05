@@ -1481,8 +1481,7 @@ export class Canvas {
 
         for (const part of parts) {
             if (part.type === 'radical') {
-                ctx.font = romanFont;
-                const radicalWidth = Math.max(ctx.measureText('√').width, fontSize * 0.52);
+                const radicalWidth = Math.max(6, fontSize * 0.68);
                 const radicandWidth = this.measureMathExpression(part.radicand, ctx, fontSize);
                 totalWidth += radicalWidth + radicandWidth + Math.max(2, fontSize * 0.08);
                 continue;
@@ -1558,18 +1557,20 @@ export class Canvas {
 
         for (const part of parts) {
             if (part.type === 'radical') {
-                ctx.font = romanFont;
-                const radicalWidth = Math.max(ctx.measureText('√').width, fontSize * 0.52);
+                const radicalWidth = Math.max(6, fontSize * 0.68);
                 const padding = Math.max(2, fontSize * 0.08);
                 const radicandWidth = this.measureMathExpression(part.radicand, ctx, fontSize);
-                const radicandX = currentX + radicalWidth + padding * 0.25;
+                const radicandX = currentX + radicalWidth;
+                const topY = startY - fontSize * 0.88;
 
-                ctx.fillText('√', currentX, startY);
                 ctx.strokeStyle = color;
                 ctx.lineWidth = Math.max(1, fontSize * 0.04);
                 ctx.beginPath();
-                ctx.moveTo(radicandX, startY - fontSize * 0.9);
-                ctx.lineTo(radicandX + radicandWidth + padding * 0.5, startY - fontSize * 0.9);
+                ctx.moveTo(currentX, startY - fontSize * 0.34);
+                ctx.lineTo(currentX + radicalWidth * 0.2, startY - fontSize * 0.34);
+                ctx.lineTo(currentX + radicalWidth * 0.38, startY - fontSize * 0.06);
+                ctx.lineTo(currentX + radicalWidth * 0.64, topY);
+                ctx.lineTo(radicandX + radicandWidth + padding * 0.5, topY);
                 ctx.stroke();
                 this.renderMathExpression(part.radicand, ctx, radicandX, startY, fontSize, color);
                 currentX += radicalWidth + radicandWidth + padding;

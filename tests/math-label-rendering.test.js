@@ -153,7 +153,7 @@ test('math label parsing turns sqrt syntax into a radical part', () => {
     ]);
 });
 
-test('math label rendering draws a radical sign and never prints sqrt', () => {
+test('math label rendering draws one continuous radical path and never prints sqrt', () => {
     const canvas = createCanvasFacade();
     const ctx = createRecordingContext();
     const parts = canvas.parseMathExpression('f(x)=sqrt(x-2)');
@@ -163,9 +163,12 @@ test('math label rendering draws a radical sign and never prints sqrt', () => {
     const renderedText = ctx.calls
         .filter(call => call[0] === 'fillText')
         .map(call => call[1]);
-    assert.ok(renderedText.includes('\u221a'));
+    assert.equal(renderedText.includes('\u221a'), false, 'do not splice a font glyph onto a separate overbar');
     assert.equal(renderedText.some(text => String(text).toLowerCase().includes('sqrt')), false);
-    assert.ok(ctx.calls.some(call => call[0] === 'lineTo'), 'radical should include an overbar');
+    assert.ok(
+        ctx.calls.filter(call => call[0] === 'lineTo').length >= 4,
+        'radical hook and overbar should be a single continuous path'
+    );
 });
 
 test('latex sqrt groups use the same radical rendering structure', () => {

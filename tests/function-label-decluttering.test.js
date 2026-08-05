@@ -43,11 +43,35 @@ test('AI quality pass preserves a deliberately pinned function label', () => {
     const pinned = { x: -4, y: 5 };
     const enhanced = enhanceDiagramQuality({
         operations: [
-            { op: 'create', id: 'f', type: 'function', expression: 'x^2', label: 'f', labelMathPos: pinned },
+            { op: 'update', id: 'f', type: 'function', expression: 'x^2', label: 'f', labelMathPos: pinned },
             { op: 'create', id: 'A', type: 'point', x: 0, y: 0, label: 'A' }
         ]
     });
     assert.deepEqual(enhanced.operations[0].labelMathPos, pinned);
+});
+
+test('AI quality pass keeps automatically placed formulas inside the inferred scene', () => {
+    const enhanced = enhanceDiagramQuality({
+        operations: [
+            { op: 'create', id: 'f', type: 'function', expression: 'sqrt(x-2)', label: 'f', labelMathPos: { x: 9, y: 1 } },
+            { op: 'create', id: 'inverse', type: 'function', expression: 'x^2+2', label: 'f^-1' },
+            { op: 'create', id: 'lineStart', type: 'point', x: 0, y: 6, visible: false, showLabel: false },
+            { op: 'create', id: 'lineEnd', type: 'point', x: 6, y: 0, visible: false, showLabel: false },
+            { op: 'create', id: 'line', type: 'line', point1Id: 'lineStart', point2Id: 'lineEnd', label: 'l' },
+            { op: 'create', id: 'P', type: 'intersection', object1Id: 'f', object2Id: 'line', branch: 0, label: 'P' },
+            { op: 'create', id: 'Q', type: 'intersection', object1Id: 'inverse', object2Id: 'line', branch: 1, label: 'Q' }
+        ]
+    });
+    const functions = enhanced.operations.filter(operation => operation.type === 'function');
+    const inferredMinX = -1.25;
+    const inferredMaxX = 7.25;
+    const estimatedWidth = (inferredMaxX - inferredMinX) * 0.46;
+
+    for (const operation of functions) {
+        assert.notEqual(operation.labelMathPos.x, 9, 'model-proposed edge position should be recomputed');
+        assert.ok(operation.labelMathPos.x >= inferredMinX - 0.1);
+        assert.ok(operation.labelMathPos.x + estimatedWidth <= inferredMaxX + 0.1);
+    }
 });
 
 test('automatic function anchors do not disable labelOffset or become pinned state', () => {
