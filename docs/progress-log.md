@@ -3116,3 +3116,23 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 ### Deployment
 
 - No production deployment was attempted in this task.
+
+## 2026-08-05 Problem-image geometric-condition validation
+
+### Change
+
+- Added static-coordinate validation for every equal-length marker in a compiled problem scene.
+- Added required-angle-leg validation so a named target angle cannot be applied without both drawn sides.
+- Added source guidance to preserve a named whole side when another point splits it.
+- Added regression tests for the reported isosceles-triangle failure: false equality markers, a correct construction, and a missing BD leg for angle DBC.
+
+### Verification
+
+- Focused problem-scene tests: 15/15 passed.
+- `npm.cmd test`: 384/384 passed.
+- `npm.cmd run vercel-build`: 384/384 passed and built `dist`.
+- `git diff --check`: passed.
+
+### Boundaries
+
+- No live OpenAI image request or production deployment was attempted; the repair behavior was verified with deterministic mock scene data.

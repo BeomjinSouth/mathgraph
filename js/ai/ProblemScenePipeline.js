@@ -143,6 +143,8 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'Every marker or dimension must reference real scene objects. For example, AD=BC requires segment nodes AD and BC before an equalLengthMarker, and a requested angle requires the segments or rays that visibly define it.',
     'Treat equal-length statements as equivalence classes. Keep independent classes separate: AB=AC and AD=BC are two groups, not AB=AC=AD=BC.',
     'For angle notation ∠XYZ, Y is the vertex and angleDimension refs must be [Y,X,Z]. Display an angle explicitly stated in the source at that same vertex; never replace it with a derived angle at another vertex.',
+    'When a point splits a named side, keep the whole side as a segment when a source condition names it; never substitute a subsegment such as CD for AC.',
+    'When the question names an angle to find, draw both legs from its vertex even when one is absent from the printed sketch. Do not display its answer value.',
     'Unlabeled construction helpers must have label=null and visible=false. Shading polygons and outline polygons must have label=null unless the source explicitly prints a region name.',
     'Order is not important; MathGraph resolves dependencies locally.',
     'Use mustDraw as an audit list. Every required visual fact must name the scene nodeIds or relationIds that implement it.',
@@ -458,6 +460,127 @@ export function validateProblemSceneCoverage(scene, compiled) {
             errors.push(String(warning));
         }
     }
+    errors.push(...validateResolvedEqualLengthMarkers(operations));
+    errors.push(...validateRequiredAngleLegs(scene, operations));
 
     return { valid: errors.length === 0, errors };
+}
+
+function validateResolvedEqualLengthMarkers(operations) {
+    const operationMap = new Map(
+        operations.filter(operation => operation?.id).map(operation => [operation.id, operation])
+    );
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const errors = [];
+
+    for (const marker of operations) {
+        if (marker?.type !== 'equalLengthMarker') continue;
+
+        const firstSegment = operationMap.get(marker.segment1Id);
+        const secondSegment = operationMap.get(marker.segment2Id);
+        if (!firstSegment || !secondSegment) continue;
+        if (firstSegment.type !== 'segment' || secondSegment.type !== 'segment') {
+            errors.push(`equalLengthMarker "${marker.id || marker.segment1Id}" must reference finite segment operations.`);
+            continue;
+        }
+
+        const firstGeometry = resolveLineGeometry(firstSegment, pointPositions);
+        const secondGeometry = resolveLineGeometry(secondSegment, pointPositions);
+        if (!firstGeometry || !secondGeometry) continue;
+
+        const firstLength = firstGeometry.point1.distanceTo(firstGeometry.point2);
+        const secondLength = secondGeometry.point1.distanceTo(secondGeometry.point2);
+        if (!Number.isFinite(firstLength) || !Number.isFinite(secondLength)) continue;
+
+        const difference = Math.abs(firstLength - secondLength);
+        const tolerance = Math.max(0.04, Math.max(firstLength, secondLength) * 0.015);
+        if (difference <= tolerance) continue;
+
+        errors.push(
+            `equalLengthMarker "${marker.id || marker.segment1Id}" references ${firstSegment.id} and ${secondSegment.id}, but resolved length ${firstSegment.id}=${formatGeometryLength(firstLength)} and ${secondSegment.id}=${formatGeometryLength(secondLength)} differ by ${formatGeometryLength(difference)} (tolerance ${formatGeometryLength(tolerance)}).`
+        );
+    }
+
+    return errors;
+}
+
+function formatGeometryLength(value) {
+    return Number(value.toFixed(3)).toString();
+}
+
+function validateRequiredAngleLegs(scene, operations) {
+    const pointIdsByName = collectPointIdsByName(operations);
+    const requiredItems = Array.isArray(scene?.mustDraw)
+        ? scene.mustDraw.filter(item => item?.required !== false)
+        : [];
+    const errors = new Set();
+
+    for (const item of requiredItems) {
+        const text = `${item.description || ''} ${item.evidence || ''}`;
+        for (const angleName of extractAngleNames(text)) {
+            const [firstPointName, vertexName, secondPointName] = [...angleName];
+            const vertexIds = pointIdsByName.get(vertexName);
+            const firstPointIds = pointIdsByName.get(firstPointName);
+            const secondPointIds = pointIdsByName.get(secondPointName);
+            if (!vertexIds?.size || !firstPointIds?.size || !secondPointIds?.size) continue;
+
+            if (!hasDrawnAngleLeg(operations, vertexIds, firstPointIds)) {
+                errors.add(`required angle \u2220${angleName} has no drawn leg ${vertexName}${firstPointName}.`);
+            }
+            if (!hasDrawnAngleLeg(operations, vertexIds, secondPointIds)) {
+                errors.add(`required angle \u2220${angleName} has no drawn leg ${vertexName}${secondPointName}.`);
+            }
+        }
+    }
+
+    return [...errors];
+}
+
+function collectPointIdsByName(operations) {
+    const pointTypes = new Set(['point', 'pointOnLine', 'pointOnCircle', 'midpoint', 'intersection', 'circleCenterPoint']);
+    const pointIdsByName = new Map();
+
+    for (const operation of operations) {
+        if (!pointTypes.has(operation?.type)) continue;
+        for (const name of [operation.id, operation.label]) {
+            const normalized = normalizeAnglePointName(name);
+            if (!normalized) continue;
+            if (!pointIdsByName.has(normalized)) pointIdsByName.set(normalized, new Set());
+            pointIdsByName.get(normalized).add(operation.id);
+        }
+    }
+
+    return pointIdsByName;
+}
+
+function extractAngleNames(text) {
+    return [...String(text || '').matchAll(/\u2220\s*([A-Za-z])\s*([A-Za-z])\s*([A-Za-z])/g)]
+        .map(match => `${match[1]}${match[2]}${match[3]}`.toUpperCase());
+}
+
+function hasDrawnAngleLeg(operations, vertexIds, armIds) {
+    return operations.some(operation => {
+        if (operation?.visible === false) return false;
+        if (isLineOperation(operation)) {
+            const [firstId, secondId] = linePointIds(operation);
+            return connectsPointSets(firstId, secondId, vertexIds, armIds);
+        }
+        if (operation?.type === 'polygon' && Array.isArray(operation.vertexIds)) {
+            const vertexIdsInPolygon = operation.vertexIds;
+            return vertexIdsInPolygon.some((pointId, index) => {
+                const nextPointId = vertexIdsInPolygon[(index + 1) % vertexIdsInPolygon.length];
+                return connectsPointSets(pointId, nextPointId, vertexIds, armIds);
+            });
+        }
+        return false;
+    });
+}
+
+function connectsPointSets(firstId, secondId, vertexIds, armIds) {
+    return (vertexIds.has(firstId) && armIds.has(secondId)) ||
+        (vertexIds.has(secondId) && armIds.has(firstId));
+}
+
+function normalizeAnglePointName(value) {
+    return typeof value === 'string' ? value.trim().toUpperCase() : '';
 }

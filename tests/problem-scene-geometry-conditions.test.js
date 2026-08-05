@@ -1,0 +1,127 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+    compileProblemScenePayload,
+    validateProblemSceneCoverage
+} from '../js/ai/ProblemScenePipeline.js';
+
+const style = {
+    color: null,
+    lineWidth: null,
+    dashed: null,
+    fillColor: null,
+    fillOpacity: null,
+    visible: null,
+    pointStyle: null,
+    labelOffset: []
+};
+
+const item = (id, kind, overrides = {}) => ({
+    id,
+    kind,
+    label: null,
+    refs: [],
+    groups: [],
+    numbers: [],
+    text: '',
+    style,
+    ...overrides
+});
+
+function scenePayload(nodes, relations) {
+    return {
+        scene: {
+            diagramType: 'plane_geometry',
+            sourceHasPrintedFigure: false,
+            constructionSummary: 'Draw the required triangle and its length conditions.',
+            confidence: 0.9,
+            nodes,
+            relations,
+            mustDraw: [{
+                id: 'length-conditions',
+                description: 'AB=AC and AD=BC',
+                nodeIds: ['AB', 'AC', 'AD', 'BC'],
+                relationIds: relations.map(relation => relation.id),
+                required: true,
+                evidence: 'printed equal-length conditions'
+            }],
+            sourceBindings: [],
+            unsupported: []
+        }
+    };
+}
+
+test('coverage rejects equal-length markers whose resolved segment lengths differ', () => {
+    const payload = scenePayload([
+        item('A', 'point', { label: 'A', numbers: [8, 0] }),
+        item('B', 'point', { label: 'B', numbers: [1.39, 7.88] }),
+        item('C', 'point', { label: 'C', numbers: [0, 0] }),
+        item('D', 'pointOnLine', { label: 'D', refs: ['AC'], numbers: [0.65] }),
+        item('AB', 'segment', { refs: ['A', 'B'] }),
+        item('AC', 'segment', { refs: ['A', 'C'] }),
+        item('AD', 'segment', { refs: ['A', 'D'] }),
+        item('BC', 'segment', { refs: ['B', 'C'] }),
+        item('CD', 'segment', { refs: ['C', 'D'] })
+    ], [
+        item('equal_ab_cd', 'equalLengthMarker', { refs: ['AB', 'CD'] }),
+        item('equal_ad_bc', 'equalLengthMarker', { refs: ['AD', 'BC'] })
+    ]);
+
+    const validation = validateProblemSceneCoverage(payload.scene, compileProblemScenePayload(payload));
+
+    assert.equal(validation.valid, false);
+    assert.match(validation.errors.join('\n'), /equalLengthMarker "equal_ab_cd"/);
+    assert.match(validation.errors.join('\n'), /equalLengthMarker "equal_ad_bc"/);
+    assert.match(validation.errors.join('\n'), /length AB=/);
+});
+
+test('coverage accepts equal-length markers whose resolved segment lengths agree', () => {
+    const side = 10;
+    const base = 2 * side * Math.sin(Math.PI / 18);
+    const payload = scenePayload([
+        item('A', 'point', { label: 'A', numbers: [0, 0] }),
+        item('B', 'point', { label: 'B', numbers: [side - base * Math.cos((4 * Math.PI) / 9), base * Math.sin((4 * Math.PI) / 9)] }),
+        item('C', 'point', { label: 'C', numbers: [side, 0] }),
+        item('D', 'pointOnLine', { label: 'D', refs: ['AC'], numbers: [base / side] }),
+        item('AB', 'segment', { refs: ['A', 'B'] }),
+        item('AC', 'segment', { refs: ['A', 'C'] }),
+        item('AD', 'segment', { refs: ['A', 'D'] }),
+        item('BC', 'segment', { refs: ['B', 'C'] }),
+        item('BD', 'segment', { refs: ['B', 'D'] })
+    ], [
+        item('equal_ab_ac', 'equalLengthMarker', { refs: ['AB', 'AC'] }),
+        item('equal_ad_bc', 'equalLengthMarker', { refs: ['AD', 'BC'] })
+    ]);
+
+    assert.deepEqual(
+        validateProblemSceneCoverage(payload.scene, compileProblemScenePayload(payload)),
+        { valid: true, errors: [] }
+    );
+});
+
+test('coverage rejects a requested angle whose required leg is absent', () => {
+    const payload = scenePayload([
+        item('A', 'point', { label: 'A', numbers: [0, 0] }),
+        item('B', 'point', { label: 'B', numbers: [2, 3] }),
+        item('C', 'point', { label: 'C', numbers: [5, 0] }),
+        item('D', 'pointOnLine', { label: 'D', refs: ['AC'], numbers: [0.6] }),
+        item('AB', 'segment', { refs: ['A', 'B'] }),
+        item('AC', 'segment', { refs: ['A', 'C'] }),
+        item('BC', 'segment', { refs: ['B', 'C'] })
+    ], []);
+
+    payload.scene.mustDraw = [{
+        id: 'requested-angle',
+        description: 'Find \u2220DBC',
+        nodeIds: ['B', 'D', 'C', 'BC'],
+        relationIds: [],
+        required: true,
+        evidence: 'requested angle \u2220DBC'
+    }];
+
+    const validation = validateProblemSceneCoverage(payload.scene, compileProblemScenePayload(payload));
+
+    assert.equal(validation.valid, false);
+    assert.match(validation.errors.join('\n'), /required angle \u2220DBC has no drawn leg BD/);
+});
