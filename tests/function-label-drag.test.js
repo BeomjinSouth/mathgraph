@@ -79,6 +79,7 @@ test('select tool drags a function formula label from its rendered bounds', () =
     const app = makeApp(objectManager, canvas);
     const tool = new SelectTool();
 
+    const anchor = func.getLabelPosition(canvas);
     const bounds = func.getLabelBounds(canvas);
     const labelScreenPoint = new Vec2(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     const labelMathPoint = canvas.toMath(labelScreenPoint);
@@ -95,8 +96,8 @@ test('select tool drags a function formula label from its rendered bounds', () =
 
     assert.equal(tool.isDragging, false);
     assert.equal(app.historyManager.endCount, 1);
-    assert.ok(Math.abs(func._labelMathPos.x - 0.5) < 1e-9);
-    assert.ok(Math.abs(func._labelMathPos.y - 0.25) < 1e-9);
+    assert.ok(Math.abs(func._labelMathPos.x - (anchor.x + 0.5)) < 1e-9);
+    assert.ok(Math.abs(func._labelMathPos.y - (anchor.y + 0.25)) < 1e-9);
 });
 
 test('select tool does not start a no-op function drag when clicking only the curve', () => {
