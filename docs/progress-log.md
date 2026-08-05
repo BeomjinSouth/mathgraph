@@ -3172,3 +3172,14 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - Codex 내장 브라우저에서 진단 API 4개가 실제 `window.app`에 연결된 것을 확인했다. 7개 단계가 저장된 뒤 새로고침해도 같은 `traceId`로 복원됐고, 내보낸 JSON에는 검증용 API 키·인증 헤더·프롬프트가 없었다. 검증용 로그는 삭제했으며 브라우저 경고·오류는 0건이었다.
 - 2026-08-05 재확인 결과 Vercel CLI는 `beomjinsouth`로 인증되어 있고, Production에는 `OPENAI_API_KEY`, `MATHGRAPH_LOGIN_SECRET`, `MATHGRAPH_OWNER_PASSWORD`가 모두 암호화 상태로 존재한다. 값은 읽거나 출력하지 않았다.
 - 최신 Production 배포 `dpl_FEsexwtbvzkVxQwRkS3Rt4zeNYWU`는 Ready이고 `https://mathgraph-five.vercel.app`에 연결되어 있지만 13:00에 생성되어 15:54의 구현 커밋보다 앞선다. 따라서 이번 진단 기능은 아직 운영 반영 전이며 이 감사에서는 새 배포를 실행하지 않았다.
+
+## 2026-08-05 — 이미지 재현 진단 로그 운영 배포
+
+- 사용자 명시 요청으로 `codex/ai-fallback-recovery`(64fb72a)를 `origin/main`에 푸시했다. `main`이 이 브랜치의 조상이어서 fast-forward로 전진했고 병합 충돌은 없었다.
+- 푸시 전에 `main` 체크아웃에서 `npm run vercel-build`를 다시 실행해 테스트 390/390 통과와 정적 빌드 완료를 확인했다.
+- 같은 커밋에서 `npx vercel deploy --prod --yes`로 새 Production 배포를 만들었다: `dpl_9HRp75sTAm4myH4NWGdjD16ie18u`, 상태 Ready.
+- 원격 빌드 로그에서 `ℹ tests 390`, `ℹ pass 390`, `ℹ fail 0`, `static build complete`를 확인했다.
+- 운영 별칭 검증: `https://mathgraph-five.vercel.app/js/ai/ImageAnalysisTrace.js`가 HTTP 200으로 서빙되고 저장 키 `graphA_image_debug_traces_v1`을 포함하며, 운영 `main.js`에 `ImageAnalysisTrace` 임포트와 `exportLastImageDebugTrace` API가 포함된 것을 확인했다.
+- 함께 정리한 원격 상태: 레거시 `master`(OpenAI 문서 인벤토리 3커밋)를 `origin/master`로 보존 푸시했고, `codex/teacher-workflow-20260710`은 이미 원격과 일치했으며 `codex/ai-fallback-recovery`에 완전 포함되어 있다.
+- 배포 직후라 운영 트래픽이 없어 런타임 오류 스캔은 실행하지 않았다.
+- 이것으로 운영 사이트에서도 이미지 재현 실패 시 `window.app.exportLastImageDebugTrace()`로 진단 보고서를 회수할 수 있다.
