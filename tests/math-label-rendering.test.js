@@ -141,7 +141,7 @@ test('math label rendering draws a fraction bar instead of slash text', () => {
 });
 
 function radicalBarY(ctx) {
-    // 라디칼 경로의 마지막 lineTo가 덮개(가로줄) 우측 끝이다.
+    // 라디칼 경로에서 가장 위에 그려지는 lineTo가 덮개(가로줄)다.
     const lineTos = ctx.calls.filter(call => call[0] === 'lineTo');
     assert.ok(lineTos.length > 0);
     return Math.min(...lineTos.map(call => call[2]));
@@ -167,4 +167,43 @@ test('radical vinculum rises further for superscript radicands', () => {
     canvas.renderMathExpression(canvas.parseMathExpression('sqrt(x^2)'), superCtx, 0, 0, 30, '#000000');
 
     assert.ok(radicalBarY(superCtx) < radicalBarY(plainCtx));
+});
+
+test('math label parsing turns sqrt syntax into a radical part', () => {
+    const canvas = createCanvasFacade();
+    const parts = canvas.parseMathExpression('f(x)=sqrt(x-2)');
+
+    assert.deepEqual(parts, [
+        { type: 'normal', text: 'f(x)=' },
+        {
+            type: 'radical',
+            radicand: [{ type: 'normal', text: 'x\u22122' }]
+        }
+    ]);
+});
+
+test('math label rendering draws one continuous radical path and never prints sqrt', () => {
+    const canvas = createCanvasFacade();
+    const ctx = createRecordingContext();
+    const parts = canvas.parseMathExpression('f(x)=sqrt(x-2)');
+
+    canvas.renderMathExpression(parts, ctx, 0, 0, 30, '#000000');
+
+    const renderedText = ctx.calls
+        .filter(call => call[0] === 'fillText')
+        .map(call => call[1]);
+    assert.equal(renderedText.includes('\u221a'), false, 'do not splice a font glyph onto a separate overbar');
+    assert.equal(renderedText.some(text => String(text).toLowerCase().includes('sqrt')), false);
+    assert.ok(
+        ctx.calls.filter(call => call[0] === 'lineTo').length >= 4,
+        'radical hook and overbar should be a single continuous path'
+    );
+});
+
+test('latex sqrt groups use the same radical rendering structure', () => {
+    const canvas = createCanvasFacade();
+    const parts = canvas.parseMathExpression('y=\\sqrt{x+1}');
+
+    assert.equal(parts[1].type, 'radical');
+    assert.deepEqual(parts[1].radicand, [{ type: 'normal', text: 'x+1' }]);
 });
