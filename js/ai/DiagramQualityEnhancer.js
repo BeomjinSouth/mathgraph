@@ -7,6 +7,7 @@
  */
 
 import { FunctionParser } from '../utils/Parser.js';
+import Geometry, { Vec2 } from '../utils/Geometry.js';
 
 const POINT_LIKE_TYPES = new Set([
     'point',
@@ -39,6 +40,7 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     normalizeParameterizedHorizontalFunctionLayout(ctx, payload?.sourceBindings);
     normalizePrismParallelProjection(ctx, text);
     applyGeneralLabelDecluttering(ctx);
+    applyFunctionLabelDecluttering(ctx);
     applyPromptSpecificLabelOffsets(ctx, text);
     normalizeRequestedAreaShading(ctx, text);
     addLargeRightAngleAids(ctx, text);
@@ -705,6 +707,279 @@ function applyGeneralLabelDecluttering(ctx) {
     }
 }
 
+function applyFunctionLabelDecluttering(ctx) {
+    const functions = ctx.byType('function')
+        .filter(operation => operation.visible !== false && operation.showLabel !== false)
+        .map(operation => {
+            try {
+                return { operation, fn: FunctionParser.parse(operation.expression) };
+            } catch {
+                return null;
+            }
+        })
+        .filter(Boolean);
+    if (functions.length === 0) return;
+
+    const pointObstacles = visiblePointRecords(ctx).map(record => record.point);
+    const sceneBounds = functionLabelSceneBounds(functions, pointObstacles);
+    const lineObstacles = collectLineObstacles(ctx, sceneBounds);
+    const curveSamples = functions.flatMap(record => sampleFunctionRecord(record, sceneBounds, 72));
+    const occupiedLabels = [];
+
+    for (const record of functions) {
+        const operation = record.operation;
+        if (isFinitePoint(operation.labelMathPos)) {
+            occupiedLabels.push(functionLabelRect(operation, operation.labelMathPos, sceneBounds));
+            continue;
+        }
+
+        const labelSize = estimateFunctionLabelSize(operation, sceneBounds);
+        const curve = sampleFunctionRecord(record, sceneBounds, 36);
+        if (curve.length === 0) continue;
+
+        let best = null;
+        const start = Math.max(0, Math.floor(curve.length * 0.12));
+        const end = Math.max(start + 1, Math.ceil(curve.length * 0.88));
+        const stride = Math.max(1, Math.floor((end - start) / 18));
+        for (let index = start; index < end; index += stride) {
+            const curvePoint = curve[index];
+            for (const placement of functionLabelPlacements(curvePoint, labelSize)) {
+                const rect = labelRect(placement, labelSize);
+                const score = scoreFunctionLabelRect(rect, {
+                    sceneBounds,
+                    pointObstacles,
+                    lineObstacles,
+                    curveSamples,
+                    occupiedLabels,
+                    ownFunctionId: operation.id,
+                    preferredX: sceneBounds.minX + (sceneBounds.maxX - sceneBounds.minX) * 0.62
+                });
+                if (!best || score > best.score) {
+                    best = { score, placement, rect };
+                }
+            }
+        }
+
+        if (!best) continue;
+        operation.labelMathPos = {
+            x: roundCoordinate(best.placement.x),
+            y: roundCoordinate(best.placement.y)
+        };
+        occupiedLabels.push(best.rect);
+    }
+}
+
+function functionLabelPlacements(curvePoint, size) {
+    const gap = Math.max(0.18, size.height * 0.38);
+    return [
+        { x: curvePoint.x + gap, y: curvePoint.y + gap },
+        { x: curvePoint.x - size.width - gap, y: curvePoint.y + gap },
+        { x: curvePoint.x + gap, y: curvePoint.y - size.height - gap },
+        { x: curvePoint.x - size.width - gap, y: curvePoint.y - size.height - gap }
+    ];
+}
+
+function estimateFunctionLabelSize(operation, sceneBounds) {
+    const label = String(operation.label || '').trim();
+    const expression = String(operation.expression || '').trim();
+    const text = /^(?:y\s*=|[a-z]\s*\(\s*x\s*\)\s*=)/i.test(label)
+        ? label
+        : label
+            ? `${label}(x) = ${expression}`
+            : `y = ${expression}`;
+    const span = Math.max(4, sceneBounds.maxX - sceneBounds.minX);
+    return {
+        width: Math.min(span * 0.46, Math.max(1.35, text.length * 0.19)),
+        height: Math.max(0.48, Math.min(0.75, span * 0.065))
+    };
+}
+
+function functionLabelRect(operation, position, sceneBounds) {
+    return labelRect(position, estimateFunctionLabelSize(operation, sceneBounds));
+}
+
+function labelRect(position, size) {
+    return {
+        minX: position.x,
+        maxX: position.x + size.width,
+        minY: position.y,
+        maxY: position.y + size.height
+    };
+}
+
+function scoreFunctionLabelRect(rect, obstacles) {
+    let score = 0;
+    const center = {
+        x: (rect.minX + rect.maxX) / 2,
+        y: (rect.minY + rect.maxY) / 2
+    };
+    const margin = Math.max(0.16, (obstacles.sceneBounds.maxX - obstacles.sceneBounds.minX) * 0.018);
+
+    if (rect.minX < obstacles.sceneBounds.minX - margin ||
+        rect.maxX > obstacles.sceneBounds.maxX + margin ||
+        rect.minY < obstacles.sceneBounds.minY - margin ||
+        rect.maxY > obstacles.sceneBounds.maxY + margin) {
+        score -= 45;
+    }
+
+    for (const point of obstacles.pointObstacles) {
+        const separation = distancePointToRect(point, rect);
+        if (separation <= margin) score -= 150;
+        else score += Math.min(4, separation);
+    }
+    for (const line of obstacles.lineObstacles) {
+        if (segmentIntersectsRect(line.start, line.end, expandRect(rect, margin))) score -= 90;
+    }
+    for (const sample of obstacles.curveSamples) {
+        if (sample.functionId === obstacles.ownFunctionId && distance(sample, center) < margin) continue;
+        if (pointInRect(sample, expandRect(rect, margin))) score -= 14;
+    }
+    for (const occupied of obstacles.occupiedLabels) {
+        if (rectsOverlap(expandRect(rect, margin), expandRect(occupied, margin))) score -= 220;
+    }
+
+    score -= Math.abs(center.x - obstacles.preferredX) * 0.35;
+    score += center.y * 0.01;
+    return score;
+}
+
+function functionLabelSceneBounds(functions, pointObstacles) {
+    const xValues = pointObstacles.map(point => point.x);
+    const yValues = pointObstacles.map(point => point.y);
+    for (const { operation } of functions) {
+        if (Number.isFinite(operation.xMin)) xValues.push(operation.xMin);
+        if (Number.isFinite(operation.xMax)) xValues.push(operation.xMax);
+        if (Number.isFinite(operation.yMin)) yValues.push(operation.yMin);
+        if (Number.isFinite(operation.yMax)) yValues.push(operation.yMax);
+    }
+    let minX = xValues.length ? Math.min(...xValues) : -6;
+    let maxX = xValues.length ? Math.max(...xValues) : 6;
+    if (maxX - minX < 4) {
+        minX -= 2;
+        maxX += 2;
+    }
+    minX = Math.max(-20, minX - 0.8);
+    maxX = Math.min(20, maxX + 0.8);
+
+    const provisional = { minX, maxX, minY: -20, maxY: 20 };
+    for (const record of functions) {
+        for (const point of sampleFunctionRecord(record, provisional, 60)) yValues.push(point.y);
+    }
+    let minY = yValues.length ? Math.min(...yValues) : -6;
+    let maxY = yValues.length ? Math.max(...yValues) : 6;
+    if (maxY - minY < 4) {
+        minY -= 2;
+        maxY += 2;
+    }
+    return {
+        minX,
+        maxX,
+        minY: Math.max(-20, minY - 0.8),
+        maxY: Math.min(20, maxY + 0.8)
+    };
+}
+
+function sampleFunctionRecord(record, bounds, count) {
+    const minX = Number.isFinite(record.operation.xMin) ? Math.max(bounds.minX, record.operation.xMin) : bounds.minX;
+    const maxX = Number.isFinite(record.operation.xMax) ? Math.min(bounds.maxX, record.operation.xMax) : bounds.maxX;
+    if (!(minX < maxX)) return [];
+    const points = [];
+    for (let index = 0; index <= count; index += 1) {
+        const x = minX + ((maxX - minX) * index) / count;
+        let y;
+        try {
+            y = record.fn(x);
+        } catch {
+            continue;
+        }
+        if (!Number.isFinite(y)) continue;
+        if (Number.isFinite(record.operation.yMin) && y < record.operation.yMin) continue;
+        if (Number.isFinite(record.operation.yMax) && y > record.operation.yMax) continue;
+        if (y < bounds.minY || y > bounds.maxY) continue;
+        points.push({ x, y, functionId: record.operation.id });
+    }
+    return points;
+}
+
+function collectLineObstacles(ctx, bounds) {
+    const result = [];
+    const diagonal = Math.hypot(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
+    for (const operation of ctx.operations) {
+        if (!['line', 'segment', 'ray', 'vector'].includes(operation.type) || operation.visible === false) continue;
+        const start = resolvePoint(ctx, operation.point1Id);
+        const end = resolvePoint(ctx, operation.point2Id);
+        if (!start || !end) continue;
+        const direction = normalize(subtract(end, start));
+        if (!direction || operation.type === 'segment' || operation.type === 'vector') {
+            result.push({ start, end });
+            continue;
+        }
+        if (operation.type === 'ray') {
+            result.push({
+                start,
+                end: { x: start.x + direction.x * diagonal * 2, y: start.y + direction.y * diagonal * 2 }
+            });
+            continue;
+        }
+        const center = averagePoint([start, end]);
+        result.push({
+            start: { x: center.x - direction.x * diagonal, y: center.y - direction.y * diagonal },
+            end: { x: center.x + direction.x * diagonal, y: center.y + direction.y * diagonal }
+        });
+    }
+    return result;
+}
+
+function distancePointToRect(point, rect) {
+    const dx = Math.max(rect.minX - point.x, 0, point.x - rect.maxX);
+    const dy = Math.max(rect.minY - point.y, 0, point.y - rect.maxY);
+    return Math.hypot(dx, dy);
+}
+
+function pointInRect(point, rect) {
+    return point.x >= rect.minX && point.x <= rect.maxX && point.y >= rect.minY && point.y <= rect.maxY;
+}
+
+function expandRect(rect, margin) {
+    return {
+        minX: rect.minX - margin,
+        maxX: rect.maxX + margin,
+        minY: rect.minY - margin,
+        maxY: rect.maxY + margin
+    };
+}
+
+function rectsOverlap(a, b) {
+    return a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY;
+}
+
+function segmentIntersectsRect(start, end, rect) {
+    if (pointInRect(start, rect) || pointInRect(end, rect)) return true;
+    const corners = [
+        { x: rect.minX, y: rect.minY },
+        { x: rect.maxX, y: rect.minY },
+        { x: rect.maxX, y: rect.maxY },
+        { x: rect.minX, y: rect.maxY }
+    ];
+    for (let index = 0; index < corners.length; index += 1) {
+        if (segmentsIntersect(start, end, corners[index], corners[(index + 1) % corners.length])) return true;
+    }
+    return false;
+}
+
+function segmentsIntersect(a, b, c, d) {
+    const cross = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    const abC = cross(a, b, c);
+    const abD = cross(a, b, d);
+    const cdA = cross(c, d, a);
+    const cdB = cross(c, d, b);
+    return abC * abD <= 0 && cdA * cdB <= 0;
+}
+
+function isFinitePoint(value) {
+    return Number.isFinite(value?.x) && Number.isFinite(value?.y);
+}
+
 function applyPromptSpecificLabelOffsets(ctx, text) {
     if (/접선|tangent/i.test(text)) {
         for (const record of visiblePointRecords(ctx)) {
@@ -1238,7 +1513,66 @@ function resolvePoint(ctx, id) {
         const p2 = resolvePoint(ctx, segment?.point2Id);
         return p1 && p2 ? { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 } : null;
     }
+    if (operation.type === 'pointOnLine') {
+        const line = ctx.byId.get(operation.lineId);
+        const p1 = resolvePoint(ctx, line?.point1Id);
+        const p2 = resolvePoint(ctx, line?.point2Id);
+        const t = Number(operation.t);
+        return p1 && p2 && Number.isFinite(t)
+            ? { x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t }
+            : null;
+    }
+    if (operation.type === 'intersection') {
+        return resolveOperationIntersection(ctx, operation);
+    }
     return null;
+}
+
+function resolveOperationIntersection(ctx, operation) {
+    const first = ctx.byId.get(operation.object1Id);
+    const second = ctx.byId.get(operation.object2Id);
+    if (!first || !second) return null;
+    const lineTypes = new Set(['line', 'segment', 'ray']);
+    if (lineTypes.has(first.type) && lineTypes.has(second.type)) {
+        const a = resolvePoint(ctx, first.point1Id);
+        const b = resolvePoint(ctx, first.point2Id);
+        const c = resolvePoint(ctx, second.point1Id);
+        const d = resolvePoint(ctx, second.point2Id);
+        if (!a || !b || !c || !d) return null;
+        const result = Geometry.lineLineIntersection(
+            new Vec2(a.x, a.y),
+            new Vec2(b.x, b.y),
+            new Vec2(c.x, c.y),
+            new Vec2(d.x, d.y)
+        );
+        return result ? { x: result.x, y: result.y } : null;
+    }
+
+    const functionOperation = first.type === 'function' ? first : second.type === 'function' ? second : null;
+    const lineOperation = lineTypes.has(first.type) ? first : lineTypes.has(second.type) ? second : null;
+    if (!functionOperation || !lineOperation) return null;
+    const p1 = resolvePoint(ctx, lineOperation.point1Id);
+    const p2 = resolvePoint(ctx, lineOperation.point2Id);
+    if (!p1 || !p2) return null;
+    let fn;
+    try {
+        fn = FunctionParser.parse(functionOperation.expression);
+    } catch {
+        return null;
+    }
+    const intersections = Geometry.functionLineIntersection(
+        fn,
+        new Vec2(p1.x, p1.y),
+        new Vec2(p2.x, p2.y),
+        {
+            lineType: lineOperation.type,
+            domainMin: Number.isFinite(functionOperation.xMin) ? functionOperation.xMin : null,
+            domainMax: Number.isFinite(functionOperation.xMax) ? functionOperation.xMax : null
+        }
+    );
+    const branch = Number.isInteger(operation.branch) ? operation.branch : 0;
+    const result = intersections[branch] || intersections[0];
+    return result ? { x: result.x, y: result.y } : null;
 }
 
 function uniqueId(ctx, base) {

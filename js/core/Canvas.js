@@ -1167,7 +1167,11 @@ export class Canvas {
 
         while (i < text.length) {
             const latexFraction = this.parseLatexFractionAt(text, i);
-            if (latexFraction) {
+            const radical = this.parseRadicalAt(text, i);
+            if (radical) {
+                parts.push(radical.part);
+                i = radical.nextIndex;
+            } else if (latexFraction) {
                 parts.push(latexFraction.part);
                 i = latexFraction.nextIndex;
             } else if (text[i] === '^') {
@@ -1214,7 +1218,9 @@ export class Canvas {
                     text[i] !== '^' &&
                     text[i] !== '_' &&
                     text[i] !== '*' &&
-                    !text.startsWith('\\frac', i)) {
+                    !text.startsWith('\\frac', i) &&
+                    !text.startsWith('\\sqrt', i) &&
+                    !text.toLowerCase().startsWith('sqrt(', i)) {
                     normalText += text[i];
                     i++;
                 }
@@ -1362,6 +1368,35 @@ export class Canvas {
         };
     }
 
+    parseRadicalAt(text, index) {
+        const source = String(text ?? '');
+        if (source.toLowerCase().startsWith('sqrt(', index)) {
+            const openIndex = index + 'sqrt'.length;
+            const closeIndex = this.findMatchingCloseParen(source, openIndex);
+            if (closeIndex === -1) return null;
+            return {
+                part: {
+                    type: 'radical',
+                    radicand: this.parseMathExpression(source.slice(openIndex + 1, closeIndex))
+                },
+                nextIndex: closeIndex + 1
+            };
+        }
+        if (!source.startsWith('\\sqrt', index)) return null;
+        let cursor = index + '\\sqrt'.length;
+        while (cursor < source.length && /\s/.test(source[cursor])) cursor++;
+        if (source[cursor] !== '{') return null;
+        const radicand = this.readBracedGroup(source, cursor);
+        if (!radicand) return null;
+        return {
+            part: {
+                type: 'radical',
+                radicand: this.parseMathExpression(radicand.text)
+            },
+            nextIndex: radicand.end + 1
+        };
+    }
+
     readBracedGroup(text, openIndex) {
         if (text[openIndex] !== '{') return null;
 
@@ -1445,6 +1480,13 @@ export class Canvas {
             'log', 'ln', 'exp', 'lim', 'max', 'min', 'abs'];
 
         for (const part of parts) {
+            if (part.type === 'radical') {
+                ctx.font = romanFont;
+                const radicalWidth = Math.max(ctx.measureText('√').width, fontSize * 0.52);
+                const radicandWidth = this.measureMathExpression(part.radicand, ctx, fontSize);
+                totalWidth += radicalWidth + radicandWidth + Math.max(2, fontSize * 0.08);
+                continue;
+            }
             if (part.type === 'fraction') {
                 const fractionFontSize = fontSize * 0.72;
                 const padding = Math.max(4, fontSize * 0.14);
@@ -1515,6 +1557,24 @@ export class Canvas {
         ctx.textBaseline = 'bottom';
 
         for (const part of parts) {
+            if (part.type === 'radical') {
+                ctx.font = romanFont;
+                const radicalWidth = Math.max(ctx.measureText('√').width, fontSize * 0.52);
+                const padding = Math.max(2, fontSize * 0.08);
+                const radicandWidth = this.measureMathExpression(part.radicand, ctx, fontSize);
+                const radicandX = currentX + radicalWidth + padding * 0.25;
+
+                ctx.fillText('√', currentX, startY);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = Math.max(1, fontSize * 0.04);
+                ctx.beginPath();
+                ctx.moveTo(radicandX, startY - fontSize * 0.9);
+                ctx.lineTo(radicandX + radicandWidth + padding * 0.5, startY - fontSize * 0.9);
+                ctx.stroke();
+                this.renderMathExpression(part.radicand, ctx, radicandX, startY, fontSize, color);
+                currentX += radicalWidth + radicandWidth + padding;
+                continue;
+            }
             if (part.type === 'fraction') {
                 const fractionFontSize = fontSize * 0.72;
                 const padding = Math.max(4, fontSize * 0.14);

@@ -139,3 +139,39 @@ test('math label rendering draws a fraction bar instead of slash text', () => {
     assert.ok(renderedText.includes('8'));
     assert.ok(ctx.calls.some(call => call[0] === 'lineTo'));
 });
+
+test('math label parsing turns sqrt syntax into a radical part', () => {
+    const canvas = createCanvasFacade();
+    const parts = canvas.parseMathExpression('f(x)=sqrt(x-2)');
+
+    assert.deepEqual(parts, [
+        { type: 'normal', text: 'f(x)=' },
+        {
+            type: 'radical',
+            radicand: [{ type: 'normal', text: 'x\u22122' }]
+        }
+    ]);
+});
+
+test('math label rendering draws a radical sign and never prints sqrt', () => {
+    const canvas = createCanvasFacade();
+    const ctx = createRecordingContext();
+    const parts = canvas.parseMathExpression('f(x)=sqrt(x-2)');
+
+    canvas.renderMathExpression(parts, ctx, 0, 0, 30, '#000000');
+
+    const renderedText = ctx.calls
+        .filter(call => call[0] === 'fillText')
+        .map(call => call[1]);
+    assert.ok(renderedText.includes('\u221a'));
+    assert.equal(renderedText.some(text => String(text).toLowerCase().includes('sqrt')), false);
+    assert.ok(ctx.calls.some(call => call[0] === 'lineTo'), 'radical should include an overbar');
+});
+
+test('latex sqrt groups use the same radical rendering structure', () => {
+    const canvas = createCanvasFacade();
+    const parts = canvas.parseMathExpression('y=\\sqrt{x+1}');
+
+    assert.equal(parts[1].type, 'radical');
+    assert.deepEqual(parts[1].radicand, [{ type: 'normal', text: 'x+1' }]);
+});
