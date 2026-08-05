@@ -10,6 +10,10 @@ import { SchemaValidator } from './SchemaValidator.js';
 import { SemanticValidator } from './SemanticValidator.js';
 import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
 import {
+    diffImageAnalysisOperations,
+    recordImageAnalysisStage
+} from './ImageAnalysisTrace.js';
+import {
     PROBLEM_SCENE_RESPONSE_FORMAT,
     PROBLEM_SCENE_SYSTEM_PROMPT,
     buildProblemScenePrompt,
@@ -2934,7 +2938,8 @@ export class AIService {
             return {
                 instruction,
                 mode: 'recreate',
-                context: null
+                context: null,
+                trace: null
             };
         }
 
@@ -2949,7 +2954,8 @@ export class AIService {
         return {
             instruction: instruction || DEFAULT_IMAGE_RECREATE_INSTRUCTION,
             mode,
-            context: promptOrOptions?.context || null
+            context: promptOrOptions?.context || null,
+            trace: promptOrOptions?.trace || null
         };
     }
 
@@ -3278,20 +3284,102 @@ export class AIService {
         return { data, content, json: this.extractJSON(content), requestBody };
     }
 
-    compileProblemSceneAttempt(attempt, options) {
-        if (!attempt?.json?.scene) {
+    compileProblemSceneAttempt(attempt, options, attemptNumber = 1, requestDurationMs = null) {
+        const trace = options?.trace || null;
+        const scene = attempt?.json?.scene || null;
+        recordImageAnalysisStage(trace, 'model_scene', {
+            attempt: attemptNumber,
+            status: scene ? 'ok' : 'error',
+            durationMs: requestDurationMs,
+            summary: scene
+                ? `모델이 ${scene.nodes?.length || 0}개 노드의 장면을 반환했습니다.`
+                : '모델 응답에 구조화된 장면이 없습니다.',
+            errors: scene ? [] : ['problem scene response is missing scene data.'],
+            meta: {
+                provider: 'openai',
+                model: attempt?.requestBody?.model || this.lastRequestModel || this.config.model,
+                responseId: attempt?.data?.id || null,
+                diagramType: scene?.diagramType || null
+            },
+            snapshot: scene
+        });
+
+        if (!scene) {
             return { valid: false, errors: ['problem scene response is missing scene data.'] };
         }
-        const compiled = compileProblemScenePayload(attempt.json);
-        const coverage = validateProblemSceneCoverage(attempt.json.scene, compiled);
+
+        const compileStartedAt = Date.now();
+        let compiled;
+        try {
+            compiled = compileProblemScenePayload(attempt.json);
+        } catch (error) {
+            const errors = [error?.message || String(error)];
+            recordImageAnalysisStage(trace, 'scene_compile', {
+                attempt: attemptNumber,
+                status: 'error',
+                durationMs: Date.now() - compileStartedAt,
+                summary: '장면을 GraphA 작업으로 컴파일하지 못했습니다.',
+                errors
+            });
+            return { valid: false, errors };
+        }
+        recordImageAnalysisStage(trace, 'scene_compile', {
+            attempt: attemptNumber,
+            status: Array.isArray(compiled.warnings) && compiled.warnings.length ? 'warning' : 'ok',
+            durationMs: Date.now() - compileStartedAt,
+            summary: `${compiled.operations?.length || 0}개 작업으로 컴파일했습니다.`,
+            warnings: compiled.warnings || [],
+            snapshot: compiled
+        });
+
+        const coverageStartedAt = Date.now();
+        const coverage = validateProblemSceneCoverage(scene, compiled);
+        recordImageAnalysisStage(trace, 'coverage_validation', {
+            attempt: attemptNumber,
+            status: coverage.valid ? 'ok' : 'error',
+            durationMs: Date.now() - coverageStartedAt,
+            summary: coverage.valid
+                ? '모델이 선언한 필수 장면 요소가 모두 컴파일됐습니다.'
+                : '필수 장면 요소 검사에 실패했습니다.',
+            errors: coverage.errors || [],
+            snapshot: {
+                mustDrawCount: scene.mustDraw?.length || 0,
+                compiledOperationCount: compiled.operations?.length || 0
+            }
+        });
         if (!coverage.valid) {
             return { valid: false, errors: coverage.errors, compiled };
         }
+
+        const enhancementStartedAt = Date.now();
         const graphJson = this.enhanceDiagramQuality({
             operations: compiled.operations,
             sourceBindings: compiled.sourceBindings
         }, options.instruction, options.context, options.mode);
+        recordImageAnalysisStage(trace, 'quality_enhancement', {
+            attempt: attemptNumber,
+            status: 'ok',
+            durationMs: Date.now() - enhancementStartedAt,
+            summary: '결정적 도형 보정을 적용하고 전후 작업을 비교했습니다.',
+            snapshot: graphJson,
+            changes: diffImageAnalysisOperations(compiled.operations, graphJson?.operations)
+        });
+
+        const semanticStartedAt = Date.now();
         const intent = this.validateImageAnalysisIntent(graphJson, options);
+        recordImageAnalysisStage(trace, 'semantic_validation', {
+            attempt: attemptNumber,
+            status: intent.valid ? 'ok' : 'error',
+            durationMs: Date.now() - semanticStartedAt,
+            summary: intent.valid
+                ? '보정된 작업이 이미지 재현 요청의 의미 검사를 통과했습니다.'
+                : '보정된 작업이 이미지 재현 요청의 의미 검사에 실패했습니다.',
+            errors: intent.errors || [],
+            snapshot: {
+                operationCount: graphJson?.operations?.length || 0,
+                sourceBindingCount: graphJson?.sourceBindings?.length || 0
+            }
+        });
         if (!intent.valid) {
             return { valid: false, errors: intent.errors, compiled, graphJson };
         }
@@ -3312,12 +3400,18 @@ export class AIService {
         const promptText = buildProblemScenePrompt(referencePrompt);
         const model = this.selectOpenAIImageModel(options, 'first');
         const requestOptions = { model, reasoningEffort: 'medium', detail: 'original' };
+        const firstStartedAt = Date.now();
         const firstAttempt = await this.callOpenAIProblemSceneAnalysis(
             imageDataUrl,
             promptText,
             requestOptions
         );
-        const firstResult = this.compileProblemSceneAttempt(firstAttempt, options);
+        const firstResult = this.compileProblemSceneAttempt(
+            firstAttempt,
+            options,
+            1,
+            Date.now() - firstStartedAt
+        );
         if (firstResult.valid) {
             return {
                 success: true,
@@ -3338,12 +3432,18 @@ export class AIService {
             `Fix every issue and return the complete scene again:\n- ${firstResult.errors.join('\n- ')}`,
             `Previous scene:\n${JSON.stringify(firstAttempt.json?.scene || {}).slice(0, 8000)}`
         ].join('\n\n');
+        const repairStartedAt = Date.now();
         const repairAttempt = await this.callOpenAIProblemSceneAnalysis(
             imageDataUrl,
             repairPrompt,
             requestOptions
         );
-        const repairResult = this.compileProblemSceneAttempt(repairAttempt, options);
+        const repairResult = this.compileProblemSceneAttempt(
+            repairAttempt,
+            options,
+            2,
+            Date.now() - repairStartedAt
+        );
         if (repairResult.valid) {
             return {
                 success: true,
@@ -3416,14 +3516,18 @@ export class AIService {
      * @param {string|object} promptOrOptions - 분석 지시 또는 { instruction, mode, context }
      */
     async analyzeImage(imageDataUrl, promptOrOptions = DEFAULT_IMAGE_RECREATE_INSTRUCTION) {
-        if (!this.hasProviderCredentials()) {
-            return {
-                success: false,
-                error: 'AI API 키가 설정되지 않았습니다. 설정에서 API 키를 입력해주세요.'
-            };
-        }
-
         const options = this.normalizeImageAnalysisOptions(promptOrOptions);
+        const trace = options.trace || null;
+        if (!this.hasProviderCredentials()) {
+            const error = 'AI API 키가 설정되지 않았습니다. 설정에서 API 키를 입력해주세요.';
+            recordImageAnalysisStage(trace, 'model_scene', {
+                status: 'error',
+                summary: 'AI 자격 증명이 없어 이미지 분석을 시작하지 못했습니다.',
+                errors: [error],
+                meta: { provider: this.config.provider }
+            });
+            return { success: false, error };
+        }
         const referencePrompt = await this.buildDrawingReferencePrompt(
             `${options.mode}\n${options.instruction}`,
             options.context,
@@ -3447,17 +3551,53 @@ export class AIService {
             }
 
             if (this.config.provider === 'openai') {
+                const firstStartedAt = Date.now();
                 const firstAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, promptText, {
                     model: this.selectOpenAIImageModel(options, 'first'),
                     reasoningEffort: options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? 'low' : 'medium',
                     detail: 'high'
                 });
+                recordImageAnalysisStage(trace, 'model_scene', {
+                    attempt: 1,
+                    status: firstAttempt.json ? 'ok' : 'error',
+                    durationMs: Date.now() - firstStartedAt,
+                    summary: firstAttempt.json
+                        ? '모델이 GraphA 작업을 반환했습니다.'
+                        : '모델 응답에서 GraphA 작업을 읽지 못했습니다.',
+                    errors: firstAttempt.json ? [] : ['initial response did not contain valid GraphA JSON.'],
+                    meta: {
+                        provider: 'openai',
+                        model: firstAttempt.requestBody?.model || this.lastRequestModel,
+                        responseId: firstAttempt.data?.id || null
+                    },
+                    snapshot: firstAttempt.json
+                });
                 const json = firstAttempt.json
                     ? this.enhanceDiagramQuality(firstAttempt.json, options.instruction, options.context, options.mode)
                     : null;
+                recordImageAnalysisStage(trace, 'quality_enhancement', {
+                    attempt: 1,
+                    status: json ? 'ok' : 'not_run',
+                    summary: json
+                        ? 'GraphA 작업에 결정적 도형 보정을 적용했습니다.'
+                        : '모델 작업이 없어 도형 보정을 실행하지 못했습니다.',
+                    snapshot: json,
+                    changes: json
+                        ? diffImageAnalysisOperations(firstAttempt.json?.operations, json.operations)
+                        : null
+                });
 
                 if (json) {
                     const intentResult = this.validateImageAnalysisIntent(json, options);
+                    recordImageAnalysisStage(trace, 'semantic_validation', {
+                        attempt: 1,
+                        status: intentResult.valid ? 'ok' : 'error',
+                        summary: intentResult.valid
+                            ? '작업이 이미지 요청의 의미 검사를 통과했습니다.'
+                            : '작업이 이미지 요청의 의미 검사에 실패했습니다.',
+                        errors: intentResult.errors || [],
+                        snapshot: { operationCount: json.operations?.length || 0 }
+                    });
                     if (intentResult.valid) {
                         return {
                             success: true,
@@ -3480,11 +3620,27 @@ export class AIService {
                     }
 
                     const repairPrompt = this.buildImageRepairPrompt(promptText, json, intentResult.errors, options);
+                    const repairStartedAt = Date.now();
                     const repairAttempt = await this.callOpenAIImageAnalysis(imageDataUrl, repairPrompt, {
                         previousResponseId: options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? undefined : this.lastResponseId,
                         model: this.selectOpenAIImageModel(options, 'repair'),
                         reasoningEffort: this.selectImageRepairReasoningEffort(options.mode, intentResult.errors),
                         detail: 'high'
+                    });
+                    recordImageAnalysisStage(trace, 'model_scene', {
+                        attempt: 2,
+                        status: repairAttempt.json ? 'ok' : 'error',
+                        durationMs: Date.now() - repairStartedAt,
+                        summary: repairAttempt.json
+                            ? '수정 요청에서 GraphA 작업을 반환했습니다.'
+                            : '수정 요청에서 GraphA 작업을 읽지 못했습니다.',
+                        errors: repairAttempt.json ? [] : ['repair response did not contain valid GraphA JSON.'],
+                        meta: {
+                            provider: 'openai',
+                            model: repairAttempt.requestBody?.model || this.lastRequestModel,
+                            responseId: repairAttempt.data?.id || null
+                        },
+                        snapshot: repairAttempt.json
                     });
 
                     if (repairAttempt.json) {
@@ -3494,7 +3650,26 @@ export class AIService {
                             options.context,
                             options.mode
                         );
+                        recordImageAnalysisStage(trace, 'quality_enhancement', {
+                            attempt: 2,
+                            status: 'ok',
+                            summary: '수정된 GraphA 작업에 결정적 도형 보정을 적용했습니다.',
+                            snapshot: repairedJson,
+                            changes: diffImageAnalysisOperations(
+                                repairAttempt.json?.operations,
+                                repairedJson.operations
+                            )
+                        });
                         const repairedIntentResult = this.validateImageAnalysisIntent(repairedJson, options);
+                        recordImageAnalysisStage(trace, 'semantic_validation', {
+                            attempt: 2,
+                            status: repairedIntentResult.valid ? 'ok' : 'error',
+                            summary: repairedIntentResult.valid
+                                ? '수정된 작업이 의미 검사를 통과했습니다.'
+                                : '수정된 작업도 의미 검사에 실패했습니다.',
+                            errors: repairedIntentResult.errors || [],
+                            snapshot: { operationCount: repairedJson.operations?.length || 0 }
+                        });
                         if (repairedIntentResult.valid) {
                             return {
                                 success: true,
@@ -3590,10 +3765,36 @@ export class AIService {
                 const data = await response.json();
                 const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
                 const json = this.extractJSON(content);
+                recordImageAnalysisStage(trace, 'model_scene', {
+                    attempt: 1,
+                    status: json ? 'ok' : 'error',
+                    summary: json
+                        ? 'Gemini가 GraphA 작업을 반환했습니다.'
+                        : 'Gemini 응답에서 GraphA 작업을 읽지 못했습니다.',
+                    errors: json ? [] : ['Gemini response did not contain valid GraphA JSON.'],
+                    meta: { provider: 'gemini', model: 'gemini-1.5-flash' },
+                    snapshot: json
+                });
 
                 if (json) {
                     const enhancedJson = this.enhanceDiagramQuality(json, options.instruction, options.context, options.mode);
+                    recordImageAnalysisStage(trace, 'quality_enhancement', {
+                        attempt: 1,
+                        status: 'ok',
+                        summary: 'Gemini 작업에 결정적 도형 보정을 적용했습니다.',
+                        snapshot: enhancedJson,
+                        changes: diffImageAnalysisOperations(json.operations, enhancedJson.operations)
+                    });
                     const intentResult = this.validateImageAnalysisIntent(enhancedJson, options);
+                    recordImageAnalysisStage(trace, 'semantic_validation', {
+                        attempt: 1,
+                        status: intentResult.valid ? 'ok' : 'error',
+                        summary: intentResult.valid
+                            ? 'Gemini 작업이 의미 검사를 통과했습니다.'
+                            : 'Gemini 작업이 의미 검사에 실패했습니다.',
+                        errors: intentResult.errors || [],
+                        snapshot: { operationCount: enhancedJson.operations?.length || 0 }
+                    });
                     if (intentResult.valid) {
                         return { success: true, json: enhancedJson, message: content, mode: options.mode };
                     }
@@ -3610,8 +3811,18 @@ export class AIService {
 
             return { success: false, error: '지원하지 않는 프로바이더입니다.' };
         } catch (error) {
+            const message = error?.message || String(error);
+            recordImageAnalysisStage(trace, 'model_scene', {
+                status: 'error',
+                summary: '이미지 분석 요청 또는 응답 처리 중 예외가 발생했습니다.',
+                errors: [message],
+                meta: {
+                    provider: this.config.provider,
+                    model: this.lastRequestModel || this.config.model
+                }
+            });
             console.error('이미지 분석 오류:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: message };
         }
     }
 }

@@ -2948,3 +2948,30 @@ Restore the accumulated AI drawing quality in the teacher-facing `AI 시험 그�
 
 - Focused AI flow: 73/73 passed; full suite and release build: 335/335 passed.
 - In-app browser: the same source image produced one empty first response, a second request with the identical image, and an accepted 11-object O-ABCD/O-EFGH diagram with dashed hidden edges.
+
+---
+
+## 2026-08-05 이미지 재현 진단 로그 구현
+
+### 완료 항목
+
+- `ImageAnalysisTrace`에 보고서 생성, 민감정보 제거, 단계 기록, 작업 차이 계산, 크기 제한, 최근 5건 보존을 구현했다.
+- `AIService`에 모델 장면, 장면 컴파일, 필수 요소 검사, 결정적 보정, 의미 검증 기록을 연결했다.
+- `GraphAApp`에 입력 전처리와 스키마·참조·의미·패치 적용 기록을 연결했다.
+- `getImageDebugTraces()`, `getLastImageDebugTrace()`, `exportLastImageDebugTrace()`, `clearImageDebugTraces()`를 제공한다.
+- 모든 내부 단계가 성공해도 자동 원본 대조가 없으면 성공 확정 대신 `source_fidelity_unverified`로 끝낸다.
+
+### 검증
+
+- 진단 단위 테스트: 6/6 통과.
+- 관련 AI·장면 회귀 테스트: 97/97 통과.
+- `npm.cmd test`: 390/390 통과.
+- `npm.cmd run vercel-build`: 390/390 통과 후 정적 빌드 완료.
+- Playwright: 저장·조회·내보내기·새로고침 보존과 민감정보 제거 통과, 콘솔 오류와 페이지 오류 0건.
+- `node --check`와 `git diff --check`: 통과.
+
+### 경계
+
+- 실제 OpenAI 이미지 호출은 실행하지 않았다.
+- 운영 배포는 실행하지 않았다.
+- 자동 원본-결과 시각 비교는 후속 범위다.

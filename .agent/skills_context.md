@@ -1419,3 +1419,11 @@
 - Commands:
   - `git status --short --branch`
   - `npm test`
+
+## 2026-08-05 이미지 재현 진단 로그 작업 기준
+
+- `routing-personal-playbooks`: 활성 라우팅을 찾지 못해 프로젝트 규칙과 일반 기준만 적용했다.
+- `solo-ai-workbench`: 격리 작업 생성을 시도했으나 `main`에서 기존 `tmp/`, `output/`, PDF가 미추적으로 보여 중단됐다. 사용자 파일을 삭제·이동·숨김 처리하지 않고, 다른 쓰기 작업이 커밋된 뒤 깨끗한 현재 브랜치에서 순차 작업했다.
+- `mathgraph-drawing`: 문제 사진의 고수준 장면→결정적 컴파일→GraphA 작업 경계를 그대로 진단 단계로 사용했다.
+- `openai-vibecoding-context`: 이미지 입력과 구조화 출력의 현재 공식 문서를 확인하고, 원본 대조가 없는 구조 검증을 시각적 일치로 과장하지 않았다.
+- `playwright`: 실제 브라우저에서 전역 조회 API, 로컬 저장, 내보내기, 새로고침 보존, 콘솔·페이지 오류를 확인했다.

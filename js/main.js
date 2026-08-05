@@ -54,6 +54,12 @@ import {
     chooseImagePreprocessPlan,
     formatAIValidationMessage
 } from './ai/AIService.js';
+import {
+    ImageAnalysisTraceStore,
+    createImageAnalysisTrace,
+    finalizeImageAnalysisTrace,
+    recordImageAnalysisStage
+} from './ai/ImageAnalysisTrace.js';
 import { parseAIJSONPayload } from './ai/JSONUtils.js';
 
 // Mk.2: UI 모듈
@@ -103,6 +109,8 @@ class GraphAApp {
         this.schemaValidator = new SchemaValidator();
         this.patchApplier = new PatchApplier(this.objectManager, this.historyManager);
         this.aiService = new AIService();
+        this.imageDebugTraceStore = new ImageAnalysisTraceStore();
+        this.activeImageDebugTrace = null;
         this.lastImageReference = null;
         this.authSession = this.loadAuthSession();
         this.applyAuthSession(this.authSession, { persist: false, syncUi: false });
@@ -3939,6 +3947,42 @@ class GraphAApp {
         }
     }
 
+    getImageDebugTraces() {
+        const traces = this.imageDebugTraceStore.getAll();
+        if (!this.activeImageDebugTrace ||
+            traces.some(trace => trace.traceId === this.activeImageDebugTrace.traceId)) {
+            return traces;
+        }
+        return [...traces, this.activeImageDebugTrace].slice(-5);
+    }
+
+    getLastImageDebugTrace() {
+        return this.imageDebugTraceStore.getLast() || this.activeImageDebugTrace;
+    }
+
+    clearImageDebugTraces() {
+        this.imageDebugTraceStore.clear();
+        this.activeImageDebugTrace = null;
+    }
+
+    exportLastImageDebugTrace() {
+        const trace = this.getLastImageDebugTrace();
+        return trace ? JSON.stringify(trace, null, 2) : '';
+    }
+
+    completeImageDebugTrace(trace, completion = {}) {
+        if (!trace) return null;
+        finalizeImageAnalysisTrace(trace, completion);
+        const stored = this.imageDebugTraceStore.save(trace);
+        this.activeImageDebugTrace = stored;
+        console.info(`[ImageTrace ${stored.traceId}]`, {
+            status: stored.status,
+            outcome: stored.outcome?.code || null,
+            suspectedStage: stored.suspectedStage
+        });
+        return stored;
+    }
+
     buildAIContext() {
         return {
             objects: this.objectManager.getAllObjects().map(o => {
@@ -3960,6 +4004,26 @@ class GraphAApp {
      * Mk.2: AI JSON 패치 처리
      */
     processAIJSON(jsonInput, intentOptions = {}) {
+        const trace = intentOptions.trace || null;
+        const applyStartedAt = Date.now();
+        const objectCountBefore = this.objectManager.getAllObjects().length;
+        const recordCanvasApply = ({
+            status,
+            checkpoint,
+            summary,
+            errors = [],
+            snapshot = {}
+        }) => recordImageAnalysisStage(trace, 'canvas_apply', {
+            status,
+            durationMs: Date.now() - applyStartedAt,
+            summary,
+            errors,
+            meta: { checkpoint },
+            snapshot: {
+                objectCountBefore,
+                ...snapshot
+            }
+        });
         // 1. 스키마 검증
         const validationResult = this.schemaValidator.parseAndValidate(jsonInput);
 
@@ -3972,6 +4036,12 @@ class GraphAApp {
             console.error('AI JSON 검증 실패:', validationResult.errors);
 
             this.setTeacherWorkflowState('error', { message });
+            recordCanvasApply({
+                status: 'error',
+                checkpoint: 'schema',
+                summary: 'GraphA 작업의 스키마 검증에 실패했습니다.',
+                errors: validationResult.errors
+            });
             return false;
         }
 
@@ -3982,6 +4052,12 @@ class GraphAApp {
         } catch (e) {
             this.addChatMessage(`⚠️ JSON 파싱 실패: ${e.message}`, 'assistant');
             this.setTeacherWorkflowState('error', { message: e.message });
+            recordCanvasApply({
+                status: 'error',
+                checkpoint: 'parse',
+                summary: 'GraphA 작업 JSON을 파싱하지 못했습니다.',
+                errors: [e.message]
+            });
             return false;
         }
 
@@ -3997,6 +4073,13 @@ class GraphAApp {
             console.error('AI 참조 검증 실패:', refResult.errors);
             const message = refResult.errors.join(' ');
             this.setTeacherWorkflowState('error', { message });
+            recordCanvasApply({
+                status: 'error',
+                checkpoint: 'references',
+                summary: 'GraphA 작업의 객체 참조 검증에 실패했습니다.',
+                errors: refResult.errors,
+                snapshot: { operationCount: data.operations?.length || 0 }
+            });
             return false;
         }
 
@@ -4017,6 +4100,13 @@ class GraphAApp {
             console.error('AI semantic validation failed:', intentResult.errors);
             const message = intentResult.errors.join(' ');
             this.setTeacherWorkflowState('error', { message });
+            recordCanvasApply({
+                status: 'error',
+                checkpoint: 'intent',
+                summary: '캔버스 적용 전 의미 검증에 실패했습니다.',
+                errors: intentResult.errors,
+                snapshot: { operationCount: data.operations?.length || 0 }
+            });
             return false;
         }
 
@@ -4030,6 +4120,20 @@ class GraphAApp {
             });
             this.setTeacherWorkflowState('complete');
             this.updateTeacherQualitySummary();
+            recordCanvasApply({
+                status: 'ok',
+                checkpoint: 'patch',
+                summary: 'GraphA 작업을 캔버스에 적용했습니다.',
+                snapshot: {
+                    operationCount: data.operations?.length || 0,
+                    objectCountAfter: this.objectManager.getAllObjects().length,
+                    createdObjects: (patchResult.createdObjects || []).map(object => (
+                        typeof object?.toJSON === 'function'
+                            ? object.toJSON()
+                            : { id: object?.id || null, type: object?.type || null }
+                    ))
+                }
+            });
             return true;
         } else {
             this.addChatMessage(
@@ -4038,6 +4142,13 @@ class GraphAApp {
             );
             console.error('AI 패치 적용 실패:', patchResult);
             this.setTeacherWorkflowState('error', { message: patchResult.message });
+            recordCanvasApply({
+                status: 'error',
+                checkpoint: 'patch',
+                summary: 'GraphA 작업을 캔버스에 적용하지 못했습니다.',
+                errors: patchResult.errors || [patchResult.message],
+                snapshot: { operationCount: data.operations?.length || 0 }
+            });
             return false;
         }
     }
@@ -4246,6 +4357,18 @@ class GraphAApp {
             const instruction = input?.value.trim() || '';
             const mode = instruction ? 'patch' : 'problem_diagram';
             const aiContext = this.buildAIContext();
+            const trace = createImageAnalysisTrace({
+                source: options.source || 'upload',
+                mode,
+                input: {
+                    mimeType: file?.type || null,
+                    fileBytes: Number.isFinite(file?.size) ? file.size : null,
+                    instructionProvided: Boolean(instruction),
+                    instructionLength: instruction.length
+                }
+            });
+            this.activeImageDebugTrace = trace;
+            this.imageDebugTraceStore.save(trace);
 
             if (instruction) {
                 this.addChatMessage(instruction, 'user');
@@ -4273,18 +4396,40 @@ class GraphAApp {
             try {
                 let analysisImageDataUrl = imageDataUrl;
                 let preprocessing = null;
+                const preprocessStartedAt = Date.now();
                 try {
                     const preparedImage = await this.prepareImageForAI(imageDataUrl, { mode });
                     analysisImageDataUrl = preparedImage.dataUrl;
                     preprocessing = preparedImage.metadata;
+                    recordImageAnalysisStage(trace, 'input_preparation', {
+                        status: 'ok',
+                        durationMs: Date.now() - preprocessStartedAt,
+                        summary: preprocessing?.usedOriginal
+                            ? '원본 크기의 이미지를 분석 입력으로 사용했습니다.'
+                            : '이미지를 안전 범위로 잘라내거나 축소했습니다.',
+                        snapshot: preprocessing
+                    });
                 } catch (preprocessError) {
+                    const message = preprocessError?.message || String(preprocessError);
                     console.warn('AI image preprocessing skipped:', preprocessError);
                     preprocessing = {
                         failed: true,
-                        error: preprocessError?.message || String(preprocessError)
+                        error: message
                     };
+                    recordImageAnalysisStage(trace, 'input_preparation', {
+                        status: 'warning',
+                        durationMs: Date.now() - preprocessStartedAt,
+                        summary: '이미지 전처리를 건너뛰고 원본 입력을 사용했습니다.',
+                        warnings: [message],
+                        snapshot: {
+                            mimeType: file?.type || null,
+                            fileBytes: Number.isFinite(file?.size) ? file.size : null,
+                            usedOriginal: true
+                        }
+                    });
                 }
 
+                this.imageDebugTraceStore.save(trace);
                 this.lastImageReference = {
                     imageDataUrl,
                     processedImageDataUrl: analysisImageDataUrl,
@@ -4298,7 +4443,8 @@ class GraphAApp {
                 const result = await this.aiService.analyzeImage(analysisImageDataUrl, {
                     instruction,
                     mode,
-                    context: aiContext
+                    context: aiContext,
+                    trace
                 });
 
                 if (result.success && result.json) {
@@ -4308,22 +4454,70 @@ class GraphAApp {
                             : '사진의 수학적 관계를 확인하여 편집 가능한 도형으로 만들었습니다.',
                         'assistant'
                     );
-                    this.processAIJSON(result.json, {
+                    const applied = this.processAIJSON(result.json, {
                         mode,
                         instruction,
                         context: aiContext,
                         maxOperations: mode === 'patch' ? undefined : 45,
-                        modelMeta: this.getAIModelResultMeta(result)
+                        modelMeta: this.getAIModelResultMeta(result),
+                        trace
+                    });
+                    this.completeImageDebugTrace(trace, {
+                        success: applied,
+                        outcome: applied ? 'applied' : 'canvas_apply_failed'
                     });
                 } else if (result.error) {
+                    recordImageAnalysisStage(trace, 'canvas_apply', {
+                        status: 'not_run',
+                        summary: '이미지 분석 실패로 캔버스 적용을 실행하지 않았습니다.',
+                        warnings: [result.error]
+                    });
+                    this.completeImageDebugTrace(trace, {
+                        success: false,
+                        outcome: 'analysis_failed',
+                        error: result.error
+                    });
                     this.addChatMessage(`❌ ${result.error}`, 'assistant');
                 } else {
+                    const error = '이미지에서 도형을 인식하지 못했습니다.';
+                    recordImageAnalysisStage(trace, 'model_scene', {
+                        status: 'error',
+                        summary: error,
+                        errors: [error]
+                    });
+                    recordImageAnalysisStage(trace, 'canvas_apply', {
+                        status: 'not_run',
+                        summary: '모델 장면이 없어 캔버스 적용을 실행하지 않았습니다.'
+                    });
+                    this.completeImageDebugTrace(trace, {
+                        success: false,
+                        outcome: 'no_diagram',
+                        error
+                    });
                     this.addChatMessage('이미지에서 도형을 인식하지 못했습니다. 다시 시도해주세요.', 'assistant');
                 }
             } catch (error) {
+                const message = error?.message || '이미지 분석 중 오류가 발생했습니다.';
+                recordImageAnalysisStage(trace, 'canvas_apply', {
+                    status: 'error',
+                    summary: '이미지 분석 조정 또는 캔버스 적용 중 예외가 발생했습니다.',
+                    errors: [message]
+                });
+                this.completeImageDebugTrace(trace, {
+                    success: false,
+                    outcome: 'unexpected_error',
+                    error: message
+                });
                 console.error('이미지 분석 처리 실패:', error);
-                this.addChatMessage(`❌ ${error.message || '이미지 분석 중 오류가 발생했습니다.'}`, 'assistant');
+                this.addChatMessage(`❌ ${message}`, 'assistant');
             } finally {
+                if (!trace.completedAt) {
+                    this.completeImageDebugTrace(trace, {
+                        success: false,
+                        outcome: 'incomplete',
+                        error: '이미지 분석이 종료 상태 없이 끝났습니다.'
+                    });
+                }
                 this.removeChatMessage(loadingMessage);
             }
         };

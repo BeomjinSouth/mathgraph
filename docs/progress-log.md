@@ -3136,3 +3136,31 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 ### Boundaries
 
 - No live OpenAI image request or production deployment was attempted; the repair behavior was verified with deterministic mock scene data.
+
+## 2026-08-05 이미지 재현 단계별 진단 로그
+
+### 원인과 구현
+
+- 기존에는 마지막 모델명·응답 ID와 일시적인 콘솔 오류만 남아, 사진과 다른 선이 모델 장면에 있었는지, 컴파일러나 보정기가 추가했는지, 캔버스 적용에서 달라졌는지 사후에 구분할 수 없었다.
+- 이미지 요청마다 `traceId`를 만들고 `input_preparation`, `model_scene`, `scene_compile`, `coverage_validation`, `quality_enhancement`, `semantic_validation`, `canvas_apply` 단계를 기록한다.
+- 보정 전후 작업은 ID를 기준으로 추가·삭제·변경 필드를 계산한다. 따라서 잘못된 대각선이 모델 단계부터 있었는지, 뒤 단계가 새로 만들었는지 구분할 수 있다.
+- 최근 5건을 `graphA_image_debug_traces_v1`에 보존한다. 한 보고서는 300 KB로 제한하고, API 키·인증 헤더·토큰·비밀번호·원본/처리 이미지 데이터 URL·프롬프트·전체 지시문·원문 근거는 제거한다.
+- 저장소 오류나 손상은 이미지 처리 자체를 막지 않는다. 메모리의 마지막 보고서는 계속 조회할 수 있다.
+- 조회 API는 `window.app.getLastImageDebugTrace()`, `window.app.getImageDebugTraces()`, `window.app.exportLastImageDebugTrace()`, `window.app.clearImageDebugTraces()`이다.
+- 원본과 렌더의 자동 시각 비교는 아직 없으므로 내부 단계가 모두 성공해도 `source_fidelity_unverified`로 기록한다.
+
+### 검증
+
+- `node --test tests/image-analysis-trace.test.js`: 6/6 통과.
+- 관련 AI·문제 장면 테스트: 97/97 통과.
+- `npm.cmd test`: 390/390 통과.
+- `npm.cmd run vercel-build`: 390/390 통과 후 `dist` 정적 빌드 완료.
+- `node --check js/ai/ImageAnalysisTrace.js js/ai/AIService.js js/main.js`와 `git diff --check`: 통과.
+- 로컬 Playwright에서 보고서 저장·조회·내보내기와 새로고침 보존을 확인했다. 테스트 API 키·원문 지시·이미지 데이터는 내보낸 JSON에 없었고, 안전한 응답 ID는 남았다. 콘솔 오류와 페이지 오류는 0건이었다.
+- 격리용 `ai-work start`는 `main`에서 기존 미추적 `tmp/`, `output/`, PDF를 감지하여 중단됐다. 사용자 파일을 삭제·이동·숨김 처리하지 않았고, 다른 쓰기 작업이 끝난 깨끗한 현재 브랜치에서 이번 파일만 수정했다.
+
+### 경계와 배포
+
+- 실제 OpenAI 이미지 요청과 실제 문제 사진 재현은 이번 검증에서 실행하지 않았다.
+- 자동 원본-결과 시각 비교와 별도 진단 화면은 구현하지 않았다.
+- 운영 배포는 실행하지 않았다. 현재 지침의 Vercel 인증 및 필수 `MATHGRAPH_OWNER_PASSWORD` 확인 게이트를 유지한다.

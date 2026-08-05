@@ -2074,3 +2074,14 @@
 - Problem: Image recreation could preserve tiny perspective-like coordinate differences between matching prism vertices, making parallel side edges visibly diverge.
 - Goal: Keep AI-generated and image-recreated prisms in one oblique projection while preserving explicit coordinate authoring and selected-object patches.
 - Result: The quality enhancer now replaces a wobbly rear face with one common translation of the near/front face. Focused tests, the full suite, static build, and local canvas application passed.
+
+---
+
+## 2026-08-05 이미지 재현 진단 로그
+
+- 상태: 구현 및 로컬 검증 완료.
+- 문제: 결과가 원본과 달라도 모델 장면, 컴파일, 보정, 검증, 캔버스 적용 중 어느 단계에서 차이가 생겼는지 사후 확인할 기록이 없었다.
+- 목표: 요청별 `traceId`와 단계별 산출물·검증·변경 내역을 최근 5건까지 안전하게 보존한다.
+- 결과: 원본 이미지·API 키·토큰·전체 지시문을 제외한 진단 보고서를 로컬 저장소에 남기고 조회·내보낼 수 있다.
+- 판정 경계: 내부 검사를 모두 통과해도 원본 자동 대조가 없으면 `source_fidelity_unverified`로 기록한다.
+- 제외 범위: 재현 프롬프트·알고리즘 변경, 자동 시각 비교, 별도 진단 화면, 서버 로그 전송.

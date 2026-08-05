@@ -58,3 +58,16 @@ This implementation activates the scene boundary for `problem_diagram` requests:
 5. Patch and generic image-recreate behavior remain on the existing operation contract.
 
 The model migration is tier-aware. Luna replaces the former low-cost image worker and becomes the app default requested by the owner; older models remain available in the picker. The migration also makes image detail and reasoning explicit and raises the proxy/client timeout without enabling Pro mode or other optional GPT-5.6 features.
+
+## 2026-08-05 진단 관측 계층
+
+장면 파이프라인의 각 경계가 요청별 `traceId`에 기록된다.
+
+1. 모델이 반환한 장면 노드와 응답 식별자
+2. 장면 컴파일 결과
+3. `mustDraw` 필수 요소 검사
+4. 결정적 품질 보정 전후 작업 차이
+5. 의미 검증 결과
+6. 캔버스 스키마·참조·의미·패치 적용 결과
+
+이 기록은 내부 변환이 시작된 지점을 좁히기 위한 것이다. 원본 이미지와 최종 렌더를 자동 비교하지 않으므로, 모든 단계가 통과해도 최종 상태는 `source_fidelity_unverified`이다. 원본 이미지, 원문 지시, API 키와 인증 토큰은 기록하지 않는다.
