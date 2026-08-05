@@ -8,6 +8,7 @@
 
 import { compileSceneGraph } from './SceneGraphCompiler.js';
 import Geometry, { Vec2 } from '../utils/Geometry.js';
+import { FunctionParser } from '../utils/Parser.js';
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
 const NULLABLE_NUMBER = { type: ['number', 'null'] };
@@ -462,8 +463,134 @@ export function validateProblemSceneCoverage(scene, compiled) {
     }
     errors.push(...validateResolvedEqualLengthMarkers(operations));
     errors.push(...validateRequiredAngleLegs(scene, operations));
+    errors.push(...validateSourceBindingIncidence(scene, operations));
 
     return { valid: errors.length === 0, errors };
+}
+
+/**
+ * sourceBindings가 선언한 점-객체 소속 관계를 컴파일된 좌표로 검산합니다.
+ * 좌표를 확정할 수 없거나 대상 객체가 모호하면 검사하지 않습니다(오탐 방지).
+ */
+export function validateSourceBindingIncidence(scene, operations = []) {
+    const bindings = Array.isArray(scene?.sourceBindings) ? scene.sourceBindings : [];
+    if (bindings.length === 0) return [];
+
+    const operationMap = new Map(
+        operations.filter(operation => operation?.id).map(operation => [operation.id, operation])
+    );
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const pointTypes = new Set(['point', 'pointOnLine', 'pointOnCircle', 'midpoint', 'intersection']);
+    const pointByName = new Map();
+    for (const operation of operations) {
+        if (!pointTypes.has(operation?.type)) continue;
+        for (const name of [operation.label, operation.id]) {
+            const trimmed = typeof name === 'string' ? name.trim() : '';
+            if (trimmed && !pointByName.has(trimmed)) pointByName.set(trimmed, operation);
+        }
+    }
+
+    const circles = operations.filter(isCircleOperation);
+    const errors = [];
+
+    for (const binding of bindings) {
+        const pointLabel = typeof binding?.pointLabel === 'string' ? binding.pointLabel.trim() : '';
+        const pointOperation = pointByName.get(pointLabel);
+        const position = pointOperation ? pointPositions.get(pointOperation.id) : null;
+        if (!pointLabel || !position) continue;
+        // 구성 자체가 소속을 보장하는 경우는 검산이 불필요합니다.
+        const structurallyBound = new Set([
+            pointOperation.circleId,
+            pointOperation.lineId,
+            pointOperation.object1Id,
+            pointOperation.object2Id
+        ].filter(Boolean));
+
+        for (const rawLabel of Array.isArray(binding.onObjectLabels) ? binding.onObjectLabels : []) {
+            const normalized = normalizeIncidenceLabel(rawLabel);
+            if (!normalized) continue;
+
+            if (normalized === 'x-axis') {
+                if (Math.abs(position.y) > 0.05) {
+                    errors.push(`sourceBinding point "${pointLabel}" is declared on "x-axis" but resolves to y=${formatGeometryLength(position.y)} (tolerance 0.05).`);
+                }
+                continue;
+            }
+            if (normalized === 'y-axis') {
+                if (Math.abs(position.x) > 0.05) {
+                    errors.push(`sourceBinding point "${pointLabel}" is declared on "y-axis" but resolves to x=${formatGeometryLength(position.x)} (tolerance 0.05).`);
+                }
+                continue;
+            }
+
+            const circle = resolveIncidenceCircle(normalized, circles);
+            if (circle) {
+                if (structurallyBound.has(circle.id)) continue;
+                const geometry = resolveCircleGeometry(circle, pointPositions);
+                if (!geometry) continue;
+                const distanceFromCenter = geometry.center.distanceTo(position);
+                const difference = Math.abs(distanceFromCenter - geometry.radius);
+                const tolerance = Math.max(0.05, geometry.radius * 0.03);
+                if (difference > tolerance) {
+                    errors.push(`sourceBinding point "${pointLabel}" is declared on circle "${circle.id}" but resolved center distance ${formatGeometryLength(distanceFromCenter)} differs from radius ${formatGeometryLength(geometry.radius)} by ${formatGeometryLength(difference)} (tolerance ${formatGeometryLength(tolerance)}).`);
+                }
+                continue;
+            }
+
+            const functionOperation = resolveIncidenceFunction(normalized, operations);
+            if (functionOperation) {
+                let value;
+                try {
+                    value = FunctionParser.parse(functionOperation.expression)(position.x);
+                } catch {
+                    continue;
+                }
+                if (!Number.isFinite(value)) continue;
+                const difference = Math.abs(value - position.y);
+                const tolerance = Math.max(0.1, Math.abs(value) * 0.03);
+                if (difference > tolerance) {
+                    errors.push(`sourceBinding point "${pointLabel}" is declared on "${String(rawLabel).trim()}" but the curve gives y=${formatGeometryLength(value)} at x=${formatGeometryLength(position.x)} while the point has y=${formatGeometryLength(position.y)} (difference ${formatGeometryLength(difference)}, tolerance ${formatGeometryLength(tolerance)}).`);
+                }
+            }
+        }
+    }
+
+    return errors;
+}
+
+function normalizeIncidenceLabel(value) {
+    const text = String(value ?? '').toLowerCase().replace(/[\s$]+/g, '');
+    if (!text) return '';
+    if (/^(x-?axis|x축)$/.test(text)) return 'x-axis';
+    if (/^(y-?axis|y축)$/.test(text)) return 'y-axis';
+    if (/^(circle|원)$/.test(text)) return 'circle';
+    return text;
+}
+
+function resolveIncidenceCircle(normalizedLabel, circles) {
+    const matched = circles.filter(circle =>
+        normalizeIncidenceLabel(circle.label) === normalizedLabel ||
+        normalizeIncidenceLabel(circle.id) === normalizedLabel
+    );
+    if (matched.length === 1) return matched[0];
+    if (normalizedLabel === 'circle' && circles.length === 1) return circles[0];
+    return null;
+}
+
+function resolveIncidenceFunction(normalizedLabel, operations) {
+    const functions = operations.filter(operation =>
+        operation?.type === 'function' && typeof operation.expression === 'string'
+    );
+    const matched = functions.filter(operation => {
+        const candidates = [
+            operation.label,
+            operation.id,
+            operation.expression,
+            `y=${operation.expression}`
+        ];
+        return candidates.some(candidate => normalizeIncidenceLabel(candidate) === normalizedLabel);
+    });
+    return matched.length === 1 ? matched[0] : null;
 }
 
 function validateResolvedEqualLengthMarkers(operations) {
