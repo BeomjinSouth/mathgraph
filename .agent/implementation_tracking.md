@@ -2975,3 +2975,11 @@ Restore the accumulated AI drawing quality in the teacher-facing `AI 시험 그�
 - 실제 OpenAI 이미지 호출은 실행하지 않았다.
 - 운영 배포는 실행하지 않았다.
 - 자동 원본-결과 시각 비교는 후속 범위다.
+
+### 완료 감사
+
+- 구현 커밋 `675e654`와 원격 `origin/codex/ai-fallback-recovery`가 일치하고 작업 폴더가 깨끗한 것을 확인했다.
+- 현재 커밋에서 진단 단위 테스트 6/6, 전체 테스트 390/390, `vercel-build`를 다시 통과했다.
+- Codex 내장 브라우저에서 게스트 화면 진입, 진단 API 4개 연결, 7단계 로그 저장, 새로고침 뒤 복원, JSON 내보내기와 민감정보 제거를 확인했다. 검증용 로그는 삭제했고 브라우저 경고·오류는 0건이었다.
+- Vercel CLI 인증은 `beomjinsouth`로 복구되어 있었고, Production에는 `OPENAI_API_KEY`, `MATHGRAPH_LOGIN_SECRET`, `MATHGRAPH_OWNER_PASSWORD`가 암호화 상태로 존재했다. 값은 조회하지 않았다.
+- 최신 Production 배포 `dpl_FEsexwtbvzkVxQwRkS3Rt4zeNYWU`는 Ready이고 운영 별칭에 연결되어 있지만 2026-08-05 13:00에 생성되어 15:54의 구현 커밋보다 앞선다. 따라서 진단 기능은 아직 운영 반영 전이며 이번 감사에서 배포하지 않았다.

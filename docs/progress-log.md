@@ -3163,4 +3163,12 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 
 - 실제 OpenAI 이미지 요청과 실제 문제 사진 재현은 이번 검증에서 실행하지 않았다.
 - 자동 원본-결과 시각 비교와 별도 진단 화면은 구현하지 않았다.
-- 운영 배포는 실행하지 않았다. 현재 지침의 Vercel 인증 및 필수 `MATHGRAPH_OWNER_PASSWORD` 확인 게이트를 유지한다.
+- 운영 배포는 실행하지 않았다.
+
+### 완료 감사
+
+- 구현 커밋 `675e654`와 `origin/codex/ai-fallback-recovery`가 일치하고 작업 폴더가 깨끗한 것을 확인했다.
+- 현재 커밋에서 `node --test tests/image-analysis-trace.test.js` 6/6, `npm.cmd test` 390/390, `npm.cmd run vercel-build` 390/390과 정적 빌드를 다시 통과했다.
+- Codex 내장 브라우저에서 진단 API 4개가 실제 `window.app`에 연결된 것을 확인했다. 7개 단계가 저장된 뒤 새로고침해도 같은 `traceId`로 복원됐고, 내보낸 JSON에는 검증용 API 키·인증 헤더·프롬프트가 없었다. 검증용 로그는 삭제했으며 브라우저 경고·오류는 0건이었다.
+- 2026-08-05 재확인 결과 Vercel CLI는 `beomjinsouth`로 인증되어 있고, Production에는 `OPENAI_API_KEY`, `MATHGRAPH_LOGIN_SECRET`, `MATHGRAPH_OWNER_PASSWORD`가 모두 암호화 상태로 존재한다. 값은 읽거나 출력하지 않았다.
+- 최신 Production 배포 `dpl_FEsexwtbvzkVxQwRkS3Rt4zeNYWU`는 Ready이고 `https://mathgraph-five.vercel.app`에 연결되어 있지만 13:00에 생성되어 15:54의 구현 커밋보다 앞선다. 따라서 이번 진단 기능은 아직 운영 반영 전이며 이 감사에서는 새 배포를 실행하지 않았다.
