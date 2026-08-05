@@ -860,6 +860,60 @@ test('AIService expands weak prism cross-section layouts before application', ()
     assert.ok(sectionHeight / outerHeight >= 0.4);
 });
 
+test('AIService straightens a wobbly prism rear face into one parallel projection', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -4, y: 3, label: 'A' },
+            { op: 'create', id: 'B', type: 'point', x: 2, y: 3, label: 'B' },
+            { op: 'create', id: 'F', type: 'point', x: 2, y: -3, label: 'F' },
+            { op: 'create', id: 'E', type: 'point', x: -4, y: -3, label: 'E' },
+            { op: 'create', id: 'D', type: 'point', x: -2, y: 5.2, label: 'D' },
+            { op: 'create', id: 'C', type: 'point', x: 5.1, y: 4.8, label: 'C' },
+            { op: 'create', id: 'G', type: 'point', x: 5, y: -1, label: 'G' },
+            { op: 'create', id: 'H', type: 'point', x: -2.1, y: -1.2, label: 'H' },
+            { op: 'create', id: 'box', type: 'prism', baseVertexIds: ['A', 'B', 'F', 'E'], topVertexIds: ['D', 'C', 'G', 'H'], showLabel: false }
+        ]
+    }, 'Recreate the image as GraphA geometry.');
+
+    const points = operationPointMap(enhanced.operations);
+    const shifts = [['A', 'D'], ['B', 'C'], ['F', 'G'], ['E', 'H']]
+        .map(([baseId, topId]) => ({
+            x: points.get(topId).x - points.get(baseId).x,
+            y: points.get(topId).y - points.get(baseId).y
+        }));
+
+    assert.ok(shifts.every(shift =>
+        Math.abs(shift.x - 2.5) < 1e-9 && Math.abs(shift.y - 1.95) < 1e-9
+    ));
+    assert.equal(points.get('A').x, -4);
+    assert.equal(points.get('A').y, 3);
+    assert.equal(points.get('F').x, 2);
+    assert.equal(points.get('F').y, -3);
+});
+
+test('AIService keeps an explicitly coordinated prism unchanged', () => {
+    const service = createAIService();
+    const enhanced = service.enhanceDiagramQuality({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: -4, y: 3 },
+            { op: 'create', id: 'B', type: 'point', x: 2, y: 3 },
+            { op: 'create', id: 'F', type: 'point', x: 2, y: -3 },
+            { op: 'create', id: 'E', type: 'point', x: -4, y: -3 },
+            { op: 'create', id: 'D', type: 'point', x: -2, y: 5.2 },
+            { op: 'create', id: 'C', type: 'point', x: 5.1, y: 4.8 },
+            { op: 'create', id: 'G', type: 'point', x: 5, y: -1 },
+            { op: 'create', id: 'H', type: 'point', x: -2.1, y: -1.2 },
+            { op: 'create', id: 'box', type: 'prism', baseVertexIds: ['A', 'B', 'F', 'E'], topVertexIds: ['D', 'C', 'G', 'H'], showLabel: false }
+        ]
+    }, 'Keep the explicitly provided A(-4, 3), B(2, 3), and D(-2, 5.2) coordinates.');
+
+    const points = operationPointMap(enhanced.operations);
+    assert.equal(points.get('C').x, 5.1);
+    assert.equal(points.get('C').y, 4.8);
+    assert.equal(points.get('H').x, -2.1);
+    assert.equal(points.get('H').y, -1.2);
+});
 test('AIService hides visible center dots in three-circle lens layouts', () => {
     const service = createAIService();
     const enhanced = service.enhanceDiagramQuality({

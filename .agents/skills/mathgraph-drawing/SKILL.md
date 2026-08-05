@@ -51,6 +51,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For parameterized graph problems with no fixed parameter value, choose a valid non-degenerate representative that keeps named points and construction lines distinct; avoid limit, boundary, or special values that collapse the diagram.
 - Use `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` for current solid support. Curved solids use editable textbook projections with optional dashed hidden curves; nets and revolution sweeps remain unsupported.
 - For `prism`, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds` so the runtime can keep front edges solid and hidden rear edges dashed.
+- For an oblique prism projection, every `topVertexIds[i]` must equal `baseVertexIds[i]` plus the same 2D depth vector. Do not preserve small perspective-like mismatches from a source image.
 - For `pyramid`, keep `apexId` out of `baseVertexIds` and place the apex far enough from the base centroid to read as a real apex.
 - For nested solid requests, keep inner vertices inside the outer projection and separate multiple inner solids in the screen projection so they do not visually overlap.
 - For `angleDimension`, choose helper points that are distinct from the vertex, far enough from the vertex, and non-collinear so the angle arc is visible.

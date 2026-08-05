@@ -2065,3 +2065,12 @@
   - Function intersection solving can produce unstable results around vertical or tangent cases if the numeric method is weak.
 - Open questions:
   - Whether `polygon` should join this AI/runtime parity pass or remain a later follow-up.
+
+---
+
+## 2026-08-05 Prism projection normalization
+
+- State: Done.
+- Problem: Image recreation could preserve tiny perspective-like coordinate differences between matching prism vertices, making parallel side edges visibly diverge.
+- Goal: Keep AI-generated and image-recreated prisms in one oblique projection while preserving explicit coordinate authoring and selected-object patches.
+- Result: The quality enhancer now replaces a wobbly rear face with one common translation of the near/front face. Focused tests, the full suite, static build, and local canvas application passed.

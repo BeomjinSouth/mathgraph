@@ -157,6 +157,7 @@ Current deterministic corrections:
 - add screen-space `labelOffset` values for crowded point labels, tangent labels such as `T1`/`T2`, and Euler-line labels such as `O`/`G`/`H`;
 - add a larger `angleDimension` aid with `arcRadius` at least `0.7` and `showValue:false` when a right-angle request would otherwise rely only on a small `rightAngleMarker`;
 - expand weak rectangular-prism cross-section layouts and make the section polygon span a substantial middle portion of the prism;
+- normalize every editable prism rear face to the same 2D translation of its front face so corresponding side edges remain parallel;
 - expand and recenter triangular-pyramid-inside-triangular-prism layouts so the inner solid has visible projection margins.
 - normalize three-circle pairwise-lens layouts by hiding center/radius helper dots and circle labels while keeping external `O/P/Q` label anchors;
 - normalize square-pyramid midsection layouts by hiding helper/auto labels, preserving only structural vertex labels, and rendering the height as dashed;
@@ -614,6 +615,8 @@ Optional fields are `showArrows`, `tickHeight`, `customMarks`, and the shared st
 ```
 
 For `prism`, treat `baseVertexIds` as the near/front face and `topVertexIds` as the shifted rear face. The runtime keeps front/base edges solid and dashes hidden rear/top edges.
+
+For AI-created and image-recreated prisms without several explicitly supplied coordinates, the app aligns every paired rear vertex to one shared 2D depth vector. Manual coordinate construction remains unchanged.
 
 ```json
 {

@@ -64,6 +64,7 @@
     "GraphA point x/y values are math coordinates, not screen pixels. For image reconstruction without explicit coordinate values, keep every point within +/-20 math units so the diagram remains visible in the default canvas view.",
     "For coordinate graph photos, use function objects for smooth visible graphs and preserve short equation labels; use vector objects for standalone direction arrows.",
     "For solid prompts, make the outer prism/pyramid projection large enough to read; cross-section polygons should span a substantial middle portion of the outer solid instead of becoming a tiny internal square.",
+    "For every prism, pair topVertexIds[i] with baseVertexIds[i] in the same order and use one common 2D depth shift; the app normalizes small source-image perspective mismatches unless the user supplies several explicit coordinates.",
     "For nested solids, use prism/pyramid objects, keep inner solid vertices inside the outer projection, leave visible margins from the outer edges, and keep projected centers visually separated instead of piling them on the same screen area.",
     "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
     "Hide construction helper points with visible:false when they are only used to shape regions or guide construction."
@@ -78,6 +79,7 @@
       "Create or strengthen a light polygon fill for a named triangle or quadrilateral only when its area value, maximum, or minimum is the actual question target.",
       "Add a larger hidden-label angleDimension aid for right-angle requests when a rightAngleMarker alone may be visually weak.",
       "Expand prism cross-section prompts so the outer projection is broad and the section polygon spans a substantial middle portion.",
+      "Normalize each prism rear face to a common translated copy of its near/front face so corresponding side edges remain parallel.",
       "Expand and recenter triangular-pyramid-inside-triangular-prism prompts so the inner solid has visible projection margins."
     ]
   },

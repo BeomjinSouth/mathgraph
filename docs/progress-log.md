@@ -3094,3 +3094,25 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - 최종 운영 배포: `dpl_pRy1APJZuPramNfoYDUVRwL1ytck`.
 - 직접 주소: `https://mathgraph-b2y2v6k9q-beomjinsouths-projects.vercel.app`.
 - 운영 별칭: `https://mathgraph-five.vercel.app`.
+
+## 2026-08-05 Prism projection normalization
+
+### Cause and implementation
+
+- Image recreation can return slightly different 2D depth offsets for corresponding prism vertices. The renderer connected those values as-is, so parallel side edges appeared visibly wobbly.
+- Added a deterministic `DiagramQualityEnhancer` pass that averages the matching front-to-rear offsets and places every rear vertex at that single translation of its front vertex.
+- The correction applies to editable point-based prisms in command and image-recreate output. It skips selected-object patches and requests with three or more explicit coordinates.
+- Added regression coverage for a wobbly rectangular-prism projection and for preserving explicitly supplied coordinates.
+
+### Verification
+
+- Focused AI flow: 79/79 passed.
+- Solid hidden-edge regression: 6/6 passed.
+- `npm.cmd test`: 381/381 passed.
+- `npm.cmd run vercel-build`: 381/381 passed and built `dist`.
+- `git diff --check`: passed (Windows reported only its LF-to-CRLF advisory for the test file).
+- Local Playwright browser: applied a deliberately wobbly prism successfully; rear vertices were normalized to D=(-1.5,4.95), C=(4.5,4.95), G=(4.5,-1.05), H=(-1.5,-1.05), with 0 browser console errors. Screenshot: `output/playwright/prism-projection-normalized-ui.png`.
+
+### Deployment
+
+- No production deployment was attempted in this task.

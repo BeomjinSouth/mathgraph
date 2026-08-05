@@ -37,6 +37,7 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     removeRedundantNamedLinePoints(ctx);
 
     normalizeParameterizedHorizontalFunctionLayout(ctx, payload?.sourceBindings);
+    normalizePrismParallelProjection(ctx, text);
     applyGeneralLabelDecluttering(ctx);
     applyPromptSpecificLabelOffsets(ctx, text);
     normalizeRequestedAreaShading(ctx, text);
@@ -50,6 +51,45 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     return { ...payload, operations };
 }
 
+function normalizePrismParallelProjection(ctx, text) {
+    // Explicit coordinates are an authoring instruction, not a layout hint.
+    if (hasExplicitCoordinateHeavyRequest(text)) return;
+
+    for (const prism of ctx.byType('prism')) {
+        const baseVertexIds = Array.isArray(prism.baseVertexIds) ? prism.baseVertexIds : [];
+        const topVertexIds = Array.isArray(prism.topVertexIds) ? prism.topVertexIds : [];
+        if (baseVertexIds.length < 3 || topVertexIds.length !== baseVertexIds.length) continue;
+
+        const pairs = baseVertexIds.map((baseId, index) => ({
+            base: ctx.byId.get(baseId),
+            top: ctx.byId.get(topVertexIds[index])
+        }));
+        if (pairs.some(({ base, top }) =>
+            base?.type !== 'point' || top?.type !== 'point' ||
+            !Number.isFinite(base.x) || !Number.isFinite(base.y) ||
+            !Number.isFinite(top.x) || !Number.isFinite(top.y)
+        )) {
+            continue;
+        }
+
+        const depthVector = averagePoint(pairs.map(({ base, top }) => ({
+            x: top.x - base.x,
+            y: top.y - base.y
+        })));
+        const largestDeviation = Math.max(...pairs.map(({ base, top }) =>
+            distance({ x: top.x - base.x, y: top.y - base.y }, depthVector)
+        ));
+
+        // Do not touch an already exact projection. Otherwise, a prism's rear
+        // face must be one translated copy of its near/front face.
+        if (largestDeviation < 0.03) continue;
+
+        for (const { base, top } of pairs) {
+            top.x = roundCoordinate(base.x + depthVector.x);
+            top.y = roundCoordinate(base.y + depthVector.y);
+        }
+    }
+}
 function rebuildSquarePyramidNamedSection(operations, options = {}) {
     if (options.mode !== 'problem_diagram') return;
     const nameSet = new Set(operations
