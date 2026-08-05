@@ -16,6 +16,7 @@ const COMMON_FIELDS = [
     'pointSize',
     'pointStyle',
     'fontSize',
+    'tickCount',
     'dashed',
     'fillColor',
     'fillOpacity',

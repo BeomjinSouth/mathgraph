@@ -346,6 +346,7 @@ const operationProperties = {
     arcRadius: NULLABLE_NUMBER,
     showValue: NULLABLE_BOOLEAN,
     markerCount: NULLABLE_NUMBER,
+    tickCount: NULLABLE_NUMBER,
     customText: NULLABLE_STRING,
     labelFontSize: NULLABLE_NUMBER,
     dashed: NULLABLE_BOOLEAN,
@@ -570,7 +571,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - function expression is the right-hand side only. Never include "y=".
 - vector: startPointId, endPointId. Use vector for standalone arrows and direction arrows.
 - rightAngleMarker: vertexId, line1Id, line2Id
-- equalLengthMarker: segment1Id, segment2Id
+- equalLengthMarker: segment1Id, segment2Id (optional tickCount; independent equality groups must use different tick counts)
 - angleDimension: vertexId, point1Id, point2Id (optional arcRadius, showValue, markerCount, customText, labelOffset)
 - lengthDimension: segmentId
 - polygon: vertexIds (array of at least 3 point IDs)

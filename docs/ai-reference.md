@@ -239,7 +239,7 @@ These object types are currently supported by the AI validator and runtime patch
 - `function`
 - `vector`
 - `rightAngleMarker`
-- `equalLengthMarker`
+- `equalLengthMarker` (`tickCount`로 독립적인 같은 길이 묶음의 표식 수를 구분)
 - `angleDimension`
 - `lengthDimension`
 - `arc`
@@ -537,9 +537,12 @@ Use `vector` for visible arrow annotations as well as mathematical vectors. Crea
   "op": "create",
   "type": "equalLengthMarker",
   "segment1Id": "S1",
-  "segment2Id": "S2"
+  "segment2Id": "S2",
+  "tickCount": 1
 }
 ```
+
+서로 연결된 같은 길이 관계에는 같은 `tickCount`를 사용하고, 독립적인 관계에는 다른 값을 사용한다. 예를 들어 `AB=AC`는 한 줄, `AD=BC`는 두 줄로 표시하여 네 선분이 모두 같다는 뜻으로 오해되지 않게 한다.
 
 ```json
 {

@@ -141,6 +141,8 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'Relations create reusable scene ids. A later line, segment, polygon, circle, or relation may reference a midpoint or intersection relation id directly; never create a coordinate-duplicate helper point merely to use that result downstream.',
     'Respect the Korean source distinction: 직선 means line and 선분 means segment. For a second intersection with a line or circle, use one intersection relation with the branch that selects the point other than the already named intersection.',
     'Every marker or dimension must reference real scene objects. For example, AD=BC requires segment nodes AD and BC before an equalLengthMarker, and a requested angle requires the segments or rays that visibly define it.',
+    'Treat equal-length statements as equivalence classes. Keep independent classes separate: AB=AC and AD=BC are two groups, not AB=AC=AD=BC.',
+    'For angle notation ∠XYZ, Y is the vertex and angleDimension refs must be [Y,X,Z]. Display an angle explicitly stated in the source at that same vertex; never replace it with a derived angle at another vertex.',
     'Unlabeled construction helpers must have label=null and visible=false. Shading polygons and outline polygons must have label=null unless the source explicitly prints a region name.',
     'Order is not important; MathGraph resolves dependencies locally.',
     'Use mustDraw as an audit list. Every required visual fact must name the scene nodeIds or relationIds that implement it.',
@@ -173,6 +175,8 @@ export function buildProblemScenePrompt(referencePrompt = '') {
         '- cylinder/cone/sphere: numbers=[x,y,width,height,ellipseRatio?]',
         '- textLabel: numbers=[x,y], text=short annotation',
         '- relations use refs in the order implied by intersection, midpoint, parallel, perpendicular, rightAngleMarker, equalLengthMarker, angleDimension, lengthDimension, tangentCircle, or tangentFunction.',
+        '- for ∠XYZ, angleDimension refs=[Y,X,Z]. Keep every explicitly stated angle at its stated vertex instead of substituting a derived angle.',
+        '- keep independent equal-length groups separate; MathGraph assigns different tick counts to different equivalence classes.',
         '- relation ids are valid refs for later items; for example midpoint M -> line BM -> intersection D -> polygon using D.',
         referencePrompt
     ].filter(Boolean).join('\n\n');
@@ -182,11 +186,56 @@ export function compileProblemScenePayload(payload) {
     const scene = payload?.scene || payload || {};
     const compiled = compileSceneGraph(scene, { compact: true });
     normalizeSharedDefinitionIntersectionBranches(compiled.operations);
+    normalizeEqualLengthMarkerTickCounts(compiled.operations);
     return {
         ...compiled,
         sourceBindings: Array.isArray(scene.sourceBindings) ? scene.sourceBindings : [],
         scene
     };
+}
+
+export function normalizeEqualLengthMarkerTickCounts(operations = []) {
+    const markers = operations.filter(operation => (
+        operation?.type === 'equalLengthMarker' &&
+        operation.segment1Id &&
+        operation.segment2Id
+    ));
+    if (markers.length === 0) return;
+
+    const parent = new Map();
+    const ensure = id => {
+        if (!parent.has(id)) parent.set(id, id);
+    };
+    const find = id => {
+        ensure(id);
+        let root = id;
+        while (parent.get(root) !== root) root = parent.get(root);
+        let current = id;
+        while (parent.get(current) !== current) {
+            const next = parent.get(current);
+            parent.set(current, root);
+            current = next;
+        }
+        return root;
+    };
+    const union = (left, right) => {
+        const leftRoot = find(left);
+        const rightRoot = find(right);
+        if (leftRoot !== rightRoot) parent.set(rightRoot, leftRoot);
+    };
+
+    for (const marker of markers) {
+        union(marker.segment1Id, marker.segment2Id);
+    }
+
+    const tickCountByRoot = new Map();
+    for (const marker of markers) {
+        const root = find(marker.segment1Id);
+        if (!tickCountByRoot.has(root)) {
+            tickCountByRoot.set(root, tickCountByRoot.size + 1);
+        }
+        marker.tickCount = tickCountByRoot.get(root);
+    }
 }
 
 export function normalizeSharedDefinitionIntersectionBranches(operations = []) {

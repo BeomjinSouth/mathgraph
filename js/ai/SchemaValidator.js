@@ -343,6 +343,11 @@ export class SchemaValidator {
             }
         }
 
+        if (op.type === 'equalLengthMarker' && op.tickCount != null &&
+            (!Number.isInteger(op.tickCount) || op.tickCount < 1)) {
+            errors.push(`${prefix}: equalLengthMarker tickCount must be a positive integer.`);
+        }
+
         return errors;
     }
 

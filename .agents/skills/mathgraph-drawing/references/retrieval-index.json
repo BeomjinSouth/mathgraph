@@ -1,7 +1,7 @@
 {
   "version": 5,
   "project": "MathGraph",
-  "updatedAt": "2026-08-04",
+  "updatedAt": "2026-08-05",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
   "referenceFiles": [
     {

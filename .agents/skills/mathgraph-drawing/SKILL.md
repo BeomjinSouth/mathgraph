@@ -42,6 +42,8 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For focus/directrix, tangent-from-point, feasible-region, or named construction-point prompts, provide exact coordinates for the intended visible points and exact support-line equations.
 - When a named point lies on a segment, create the segment first and use pointOnLine with lineId referencing that segment and t between 0 and 1.
 - For internal division AP:PB=m:n, use t=m/(m+n) from A toward B; verify collinearity, between-ness, and the requested ratio before returning JSON.
+- Treat same-length statements as equivalence classes. Connected equalities share one `tickCount`; independent groups use distinct positive `tickCount` values so `AB=AC` and `AD=BC` never look like all four segments are equal.
+- For `∠XYZ`, use `Y` as the `angleDimension.vertexId` and keep a source-stated angle at that vertex instead of substituting a derived angle elsewhere.
 - For concentric-circle or fixed-radius prompts, reuse the same center id and create radius points at the requested distance.
 - There is no first-class `annularSector` yet; when a prompt accepts approximation, use a normal sector plus an inner circle outline rather than claiming a true ring-sector cutout.
 - For function-bounded curved regions, use a polygon through explicit boundary/sample points and hide helper vertices with `visible:false`; exact curved fills need future primitives.

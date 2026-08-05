@@ -8,7 +8,9 @@ import {
     OPENAI_IMAGE_FAST_MODEL
 } from '../js/ai/AIService.js';
 import {
+    PROBLEM_SCENE_SYSTEM_PROMPT,
     PROBLEM_SCENE_RESPONSE_FORMAT,
+    buildProblemScenePrompt,
     compileProblemScenePayload,
     validateProblemSceneCoverage
 } from '../js/ai/ProblemScenePipeline.js';
@@ -350,6 +352,44 @@ test('scene compiler reuses an intersection in later area polygons without visib
     assert.ok(regions.every(operation => operation.showLabel === false));
     assert.equal(compiled.operations.find(operation => operation.id === 'helper').showLabel, false);
     assert.equal(compiled.operations.find(operation => operation.id === 'F').showLabel, true);
+});
+
+test('independent equal-length classes receive distinct tick counts while connected equalities share one', () => {
+    const payload = scenePayload({
+        nodes: [
+            node('A', 'point', { label: 'A', numbers: [0, 0] }),
+            node('B', 'point', { label: 'B', numbers: [4, 0] }),
+            node('C', 'point', { label: 'C', numbers: [1, 3] }),
+            node('D', 'point', { label: 'D', numbers: [2, 0] }),
+            node('E', 'point', { label: 'E', numbers: [-1, 3] }),
+            node('AB', 'segment', { refs: ['A', 'B'] }),
+            node('AC', 'segment', { refs: ['A', 'C'] }),
+            node('AD', 'segment', { refs: ['A', 'D'] }),
+            node('BC', 'segment', { refs: ['B', 'C'] }),
+            node('AE', 'segment', { refs: ['A', 'E'] })
+        ],
+        relations: [
+            node('equal_ab_ac', 'equalLengthMarker', { refs: ['AB', 'AC'] }),
+            node('equal_ad_bc', 'equalLengthMarker', { refs: ['AD', 'BC'] }),
+            node('equal_ac_ae', 'equalLengthMarker', { refs: ['AC', 'AE'] })
+        ],
+        mustDraw: []
+    });
+
+    const compiled = compileProblemScenePayload(payload);
+    const marker = id => compiled.operations.find(operation => operation.id === id);
+
+    assert.equal(marker('equal_ab_ac').tickCount, 1);
+    assert.equal(marker('equal_ac_ae').tickCount, 1);
+    assert.equal(marker('equal_ad_bc').tickCount, 2);
+});
+
+test('problem-scene prompts preserve source-stated angle vertices and separate equality classes', () => {
+    const prompt = `${PROBLEM_SCENE_SYSTEM_PROMPT}\n${buildProblemScenePrompt()}`;
+
+    assert.match(prompt, /∠XYZ/);
+    assert.match(prompt, /refs=\[Y,X,Z\]/);
+    assert.match(prompt, /independent equal-length groups separate/i);
 });
 
 test('image-only problem diagrams use one Luna scene call and local compilation on success', async () => {

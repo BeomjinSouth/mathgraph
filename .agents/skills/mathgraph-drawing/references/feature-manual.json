@@ -1,7 +1,7 @@
 {
   "manualVersion": 5,
   "project": "MathGraph",
-  "updatedAt": "2026-08-04",
+  "updatedAt": "2026-08-05",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
@@ -392,9 +392,9 @@
       "koreanName": "같은 길이 표시",
       "tags": ["marker"],
       "requiredFields": ["segment1Id", "segment2Id"],
-      "optionalFields": ["color", "lineWidth"],
-      "template": { "op": "create", "id": "eq_AB_CD", "type": "equalLengthMarker", "segment1Id": "AB", "segment2Id": "CD" },
-      "notes": ["Use for congruent sides or symmetric lengths."]
+      "optionalFields": ["color", "lineWidth", "tickCount"],
+      "template": { "op": "create", "id": "eq_AB_CD", "type": "equalLengthMarker", "segment1Id": "AB", "segment2Id": "CD", "tickCount": 1 },
+      "notes": ["Use for congruent sides or symmetric lengths.", "Use the same positive tickCount within one connected equality class and different tickCount values for independent classes."]
     },
     {
       "type": "angleDimension",

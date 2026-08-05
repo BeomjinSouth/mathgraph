@@ -3015,6 +3015,32 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - 직접 주소: `https://mathgraph-4foeijanm-beomjinsouths-projects.vercel.app`.
 - 운영 별칭: `https://mathgraph-five.vercel.app`.
 
+## 2026-08-05 독립적인 같은 길이 표식 묶음 수정
+
+### 원인과 구현
+
+- 원문은 `AB=AC`와 `AD=BC`라는 두 독립 조건이었지만, 사진 장면에서 생성된 두 `equalLengthMarker`가 모두 기본 한 줄 틱을 사용하여 `AB=AC=AD=BC`처럼 보였다.
+- 실제 좌표는 첫 묶음이 약 8, 두 번째 묶음이 약 2.8로 서로 달랐으므로 관계 계산이 아니라 표식 전달 경로의 오류였다.
+- 같은 길이 관계를 선분 동치 그래프로 묶어 연결된 관계에는 같은 틱 수를, 독립적인 묶음에는 1, 2, 3 순서의 서로 다른 틱 수를 자동 배정했다.
+- `tickCount`를 OpenAI 연산 스키마, 장면 컴파일러, 참조 검증, 패치 적용과 수정 경로가 보존하도록 연결했다.
+- `∠XYZ`는 `Y`를 꼭짓점으로 사용하고, 원문에 명시된 각을 다른 유도 각으로 대체하지 않도록 문제 사진 지침을 보강했다.
+
+### 검증
+
+- 집중 테스트: 95/95 통과.
+- `npm.cmd test`: 379/379 통과. 최초 샌드박스 실행은 자식 프로세스 `spawn EPERM`으로 전 파일이 시작되지 못했으며, 같은 명령을 실제 권한으로 재실행하여 통과했다.
+- `npm.cmd run vercel-build`: 379/379 통과 및 정적 `dist` 빌드 완료.
+- MathGraph 그림 기술서 JSON·JSONL 파싱과 `git diff --check`를 통과했다.
+- 최종 배포 확인에서 `target=production`, `status=Ready`, 운영 별칭 연결을 확인했고 기본 운영 주소는 HTTP 200을 반환했다.
+- 운영 사이트에 같은 원본 사진만 다시 올려 14개 객체 생성을 확인했다. 새 좌표는 `A=(0,0)`, `C=(10,0)`, `B=(9.37,3.58)`, `D=(3.64,0)`으로 `AB≈AC≈10`, `AD≈BC≈3.64`, `∠C≈80°`를 만족한다.
+- 객체 목록에서 `AB=AC`, `AD=BC`, `80°`가 별도 관계로 생성된 것을 확인했고 최종 실행의 브라우저 오류 로그는 0건이었다. 운영 브라우저의 전체 화면 캡처 명령은 시간 초과되어 객체 목록과 좌표로 검증했다.
+
+### 배포
+
+- 운영 배포: `dpl_FEsexwtbvzkVxQwRkS3Rt4zeNYWU`.
+- 직접 주소: `https://mathgraph-39cko7d11-beomjinsouths-projects.vercel.app`.
+- 운영 별칭: `https://mathgraph-five.vercel.app`.
+
 ## 2026-08-05 관계 결과 재사용과 두 번째 교점 선택 보완
 
 ### 원인과 구현

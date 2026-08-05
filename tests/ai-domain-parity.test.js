@@ -14,11 +14,33 @@ function historyStub() {
     };
 }
 
-test('strict AI schema exposes function ranges and intersection branch', () => {
+test('strict AI schema exposes function ranges, intersection branch, and length marker count', () => {
     const properties = GRAPH_OPERATIONS_JSON_SCHEMA.properties.operations.items.properties;
-    for (const field of ['xMin', 'xMax', 'yMin', 'yMax', 'branch']) {
+    for (const field of ['xMin', 'xMax', 'yMin', 'yMax', 'branch', 'tickCount']) {
         assert.ok(properties[field], `${field} missing from strict operation schema`);
     }
+});
+
+test('PatchApplier preserves equal-length tick counts', () => {
+    const manager = new ObjectManager();
+    const result = new PatchApplier(manager, historyStub()).apply({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0 },
+            { op: 'create', id: 'B', type: 'point', x: 4, y: 0 },
+            { op: 'create', id: 'C', type: 'point', x: 0, y: 3 },
+            { op: 'create', id: 'D', type: 'point', x: 4, y: 3 },
+            { op: 'create', id: 'AB', type: 'segment', point1Id: 'A', point2Id: 'B' },
+            { op: 'create', id: 'CD', type: 'segment', point1Id: 'C', point2Id: 'D' },
+            {
+                op: 'create', id: 'equal_ab_cd', type: 'equalLengthMarker',
+                segment1Id: 'AB', segment2Id: 'CD', tickCount: 2
+            }
+        ]
+    });
+
+    assert.equal(result.success, true, result.error);
+    const marker = manager.getAllObjects().find(object => object.type === 'equalLengthMarker');
+    assert.equal(marker.tickCount, 2);
 });
 
 test('PatchApplier preserves function ranges and a deterministic intersection branch', () => {
@@ -83,4 +105,16 @@ test('SchemaValidator rejects invalid range bounds and branch indexes', () => {
     });
     assert.equal(validation.valid, false);
     assert.match(validation.errors.join('\n'), /xMin|branch/);
+});
+
+test('SchemaValidator rejects non-positive equal-length tick counts', () => {
+    const validation = new SchemaValidator().validate({
+        operations: [{
+            op: 'create', type: 'equalLengthMarker',
+            segment1Id: 'AB', segment2Id: 'CD', tickCount: 0
+        }]
+    });
+
+    assert.equal(validation.valid, false);
+    assert.match(validation.errors.join('\n'), /tickCount/);
 });
