@@ -94,7 +94,8 @@
     "compiler": {
       "file": "js/ai/SceneGraphCompiler.js",
       "outputRoot": "{ \"operations\": [...] }",
-      "rule": "The compiler creates support points first, then base primitives, then relation/annotation objects.",
+      "rule": "The compiler resolves nodes and relations in one dependency schedule, so midpoint or intersection ids can feed later lines, polygons, circles, and relations without duplicate helper points.",
+      "labelRule": "Unlabeled point helpers and polygons default to hidden labels; only source-named points and explicitly printed region names should be visible.",
       "warningPolicy": "Unsupported scene nodes must become warnings, not guessed invalid GraphA operations.",
       "validation": ["SchemaValidator.validate", "SchemaValidator.validateReferences", "SemanticValidator where category metadata exists", "browser render smoke checks"]
     },

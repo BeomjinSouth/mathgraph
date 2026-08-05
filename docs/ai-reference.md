@@ -144,6 +144,8 @@ Preferred pipeline for recreate-mode image/PDF work:
 
 The first compiler foundation is `js/ai/SceneGraphCompiler.js`. It accepts scene nodes such as `point`, `segment`, `vector`, `circle`, `ellipse`, `hyperbola`, `parabola`, `arc`, `sector`, `lensRegion`, `polygon`, `function`, `numberLine`, `textLabel`, `prism`, `pyramid`, `cylinder`, `cone`, and `sphere`, plus relations such as `intersection`, `midpoint`, `parallel`, `perpendicular`, `rightAngle`, `equalLength`, `angleDimension`, and `lengthDimension`.
 
+Nodes and relations now share one dependency schedule. A midpoint or intersection id can feed a later line, segment, polygon, circle, or relation, so scenes such as `midpoint M -> line BM -> circle intersection D` and `intersection F -> area polygon BDF` compile without coordinate-duplicate helper points. Unlabeled point helpers and polygons default to hidden labels so runtime-generated names do not appear in an exam diagram.
+
 Unsupported scene nodes such as native statistical charts, tables, solid nets, annular sectors, and exact function-bounded curved fills are returned as warnings instead of invalid GraphA. Curved solids and independent text are now first-class GraphA objects.
 
 ## 1.2.3 Diagram Quality Enhancement

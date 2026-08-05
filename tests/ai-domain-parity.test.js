@@ -55,7 +55,9 @@ test('PatchApplier preserves function ranges and a deterministic intersection br
 test('SceneGraphCompiler forwards function ranges and intersection branch', () => {
     const compiled = compileSceneGraph({
         nodes: [
-            { id: 'f', kind: 'function', expression: 'x^2', xMin: -2, xMax: 2, yMin: 0, yMax: 4 }
+            { id: 'f', kind: 'function', expression: 'x^2', xMin: -2, xMax: 2, yMin: 0, yMax: 4 },
+            { id: 'a', kind: 'function', expression: 'x' },
+            { id: 'b', kind: 'function', expression: '-x' }
         ],
         relations: [
             { id: 'p', kind: 'intersection', object1Id: 'a', object2Id: 'b', branch: 1 }

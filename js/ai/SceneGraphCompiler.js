@@ -166,30 +166,35 @@ export class SceneGraphCompiler {
             this.addUnsupportedWarning(item, 'scene.unsupported');
         }
 
-        const pendingNodes = [...nodes];
+        const pendingItems = [
+            ...nodes.map(item => ({ source: 'node', item })),
+            ...relations.map(item => ({ source: 'relation', item }))
+        ];
         let previousPendingCount = Number.POSITIVE_INFINITY;
-        while (pendingNodes.length > 0 && pendingNodes.length < previousPendingCount) {
-            previousPendingCount = pendingNodes.length;
-            for (let index = 0; index < pendingNodes.length;) {
-                const node = pendingNodes[index];
-                const dependencies = this.nodeDependencies(node);
+        while (pendingItems.length > 0 && pendingItems.length < previousPendingCount) {
+            previousPendingCount = pendingItems.length;
+            for (let index = 0; index < pendingItems.length;) {
+                const pending = pendingItems[index];
+                const dependencies = pending.source === 'node'
+                    ? this.nodeDependencies(pending.item)
+                    : this.relationDependencies(pending.item);
                 if (dependencies.every(id => this.createdIds.has(id))) {
-                    this.addNode(node);
-                    pendingNodes.splice(index, 1);
+                    if (pending.source === 'node') this.addNode(pending.item);
+                    else this.addRelation(pending.item);
+                    pendingItems.splice(index, 1);
                 } else {
                     index += 1;
                 }
             }
         }
 
-        for (const node of pendingNodes) {
-            const missing = this.nodeDependencies(node).filter(id => !this.createdIds.has(id));
-            const id = ref(node?.id ?? node?.name) || 'unnamed';
-            this.warn(`Scene node "${id}" has unresolved dependencies: ${missing.join(', ') || 'unknown'}.`);
-        }
-
-        for (const relation of relations) {
-            this.addRelation(relation);
+        for (const pending of pendingItems) {
+            const dependencies = pending.source === 'node'
+                ? this.nodeDependencies(pending.item)
+                : this.relationDependencies(pending.item);
+            const missing = dependencies.filter(id => !this.createdIds.has(id));
+            const id = ref(pending.item?.id ?? pending.item?.name) || 'unnamed';
+            this.warn(`Scene ${pending.source} "${id}" has unresolved dependencies: ${missing.join(', ') || 'unknown'}.`);
         }
 
         return {
@@ -288,6 +293,12 @@ export class SceneGraphCompiler {
         if (kind === 'pyramid') return [...(groups[0] || []), ...refs.slice(0, 1)];
         if (refs.length > 0) return refs;
         return legacyNodeDependencies(node, kind);
+    }
+
+    relationDependencies(relation) {
+        const refs = refsFrom(relation?.refs);
+        if (refs.length > 0) return refs;
+        return legacyRelationDependencies(relation, normalizeRelationKind(relation?.kind ?? relation?.type));
     }
 
     addNode(node) {
@@ -498,7 +509,7 @@ export class SceneGraphCompiler {
             type: 'point',
             x,
             y,
-            ...commonFields(node),
+            ...pointCommonFields(node),
             ...forced.commonFields
         });
         this.pointPositions.set(id, { x, y });
@@ -516,7 +527,7 @@ export class SceneGraphCompiler {
             this.warn('pointOnLine skipped because lineId and t are required.');
             return;
         }
-        this.addOperation({ op: 'create', id, type: 'pointOnLine', lineId, t, ...commonFields(node) });
+        this.addOperation({ op: 'create', id, type: 'pointOnLine', lineId, t, ...pointCommonFields(node) });
         this.createdIds.add(id);
     }
 
@@ -530,7 +541,7 @@ export class SceneGraphCompiler {
             this.warn('pointOnCircle skipped because circleId and angle are required.');
             return;
         }
-        this.addOperation({ op: 'create', id, type: 'pointOnCircle', circleId, angle, ...commonFields(node) });
+        this.addOperation({ op: 'create', id, type: 'pointOnCircle', circleId, angle, ...pointCommonFields(node) });
         this.createdIds.add(id);
     }
 
@@ -702,7 +713,7 @@ export class SceneGraphCompiler {
             id,
             type: 'polygon',
             vertexIds,
-            ...commonFields(node)
+            ...polygonCommonFields(node)
         });
         this.createdIds.add(id);
     }
@@ -902,13 +913,16 @@ export class SceneGraphCompiler {
             }
         }
 
+        const displayFields = ['intersection', 'midpoint'].includes(type)
+            ? pointCommonFields(relation)
+            : commonFields(relation);
         this.addOperation({
             op: 'create',
             id,
             type,
             ...fields,
             ...dropUndefined(extraFields),
-            ...commonFields(relation)
+            ...displayFields
         });
         this.createdIds.add(id);
     }
@@ -981,6 +995,25 @@ function legacyNodeDependencies(node, kind) {
     return [...new Set(dependencies.filter(Boolean))];
 }
 
+function legacyRelationDependencies(relation, kind) {
+    const aliasesByKind = {
+        intersection: ['object1Id', 'object1', 'line1', 'curve1', 'object2Id', 'object2', 'line2', 'curve2'],
+        midpoint: ['segmentId', 'segment'],
+        parallel: ['baseLineId', 'baseLine', 'line', 'lineId', 'throughPointId', 'throughPoint', 'point', 'pointId'],
+        perpendicular: ['baseLineId', 'baseLine', 'line', 'lineId', 'throughPointId', 'throughPoint', 'point', 'pointId'],
+        perpendicularBisector: ['segmentId', 'segment'],
+        angleBisector: ['line1Id', 'line1', 'line2Id', 'line2'],
+        rightAngleMarker: ['vertexId', 'vertex', 'line1Id', 'line1', 'side1', 'line2Id', 'line2', 'side2'],
+        equalLengthMarker: ['segment1Id', 'segment1', 'side1', 'segment2Id', 'segment2', 'side2'],
+        angleDimension: ['vertexId', 'vertex', 'point1Id', 'point1', 'start', 'point2Id', 'point2', 'end'],
+        lengthDimension: ['segmentId', 'segment'],
+        tangentCircle: ['circleId', 'circle', 'tangentPointId', 'tangentPoint', 'point'],
+        tangentFunction: ['functionId', 'function']
+    };
+    const aliases = aliasesByKind[kind] || [];
+    return [...new Set(aliases.map(alias => ref(relation?.[alias])).filter(Boolean))];
+}
+
 function firstValue(object, aliases) {
     for (const alias of aliases) {
         if (object?.[alias] !== undefined && object?.[alias] !== null) {
@@ -1044,6 +1077,20 @@ function commonFields(source) {
             fields[field] = cloneValue(value);
         }
     }
+    return fields;
+}
+
+function pointCommonFields(source) {
+    const fields = commonFields(source);
+    if (fields.showLabel === undefined) {
+        fields.showLabel = typeof source?.label === 'string' && source.label.trim().length > 0;
+    }
+    return fields;
+}
+
+function polygonCommonFields(source) {
+    const fields = commonFields(source);
+    if (fields.showLabel === undefined) fields.showLabel = false;
     return fields;
 }
 

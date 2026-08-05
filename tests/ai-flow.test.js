@@ -1903,6 +1903,29 @@ test('AIService analyzeImage exposes the owner-proxy error instead of a generic 
     }
 });
 
+test('image intent validation rejects marker references to missing construction segments', () => {
+    const service = new AIService({
+        provider: 'openai',
+        model: DEFAULT_OPENAI_MODEL,
+        save() { }
+    });
+    const result = service.validateImageAnalysisIntent({
+        operations: [
+            { op: 'create', id: 'B', type: 'point', x: 0, y: 0, label: 'B' },
+            { op: 'create', id: 'C', type: 'point', x: 4, y: 0, label: 'C' },
+            { op: 'create', id: 'BC', type: 'segment', point1Id: 'B', point2Id: 'C' },
+            { op: 'create', id: 'equal_ad_bc', type: 'equalLengthMarker', segment1Id: 'AD', segment2Id: 'BC' }
+        ]
+    }, {
+        mode: AI_COMMAND_MODE.PROBLEM_DIAGRAM,
+        instruction: '',
+        context: { objects: [] }
+    });
+
+    assert.equal(result.valid, false);
+    assert.match(result.errors.join('\n'), /segment1Id="AD" does not exist/);
+});
+
 test('AIService retries image patch when semantic validation rejects the first response', async () => {
     const originalFetch = globalThis.fetch;
     const capturedBodies = [];

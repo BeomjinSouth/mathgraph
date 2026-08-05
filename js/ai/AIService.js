@@ -3022,6 +3022,16 @@ export class AIService {
             return schemaResult;
         }
 
+        const existingIds = new Set(
+            (Array.isArray(options?.context?.objects) ? options.context.objects : [])
+                .map(object => object?.id)
+                .filter(id => typeof id === 'string' && id.trim())
+        );
+        const referenceResult = this.schemaValidator.validateReferences(json, existingIds);
+        if (!referenceResult.valid) {
+            return referenceResult;
+        }
+
         const coordinateResult = this.semanticValidator.validateImageCoordinateRange(json, {
             maxAbsCoordinate: AI_IMAGE_MAX_ABS_COORDINATE
         });

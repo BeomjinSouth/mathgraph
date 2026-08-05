@@ -258,6 +258,100 @@ test('coverage rejects a named point duplicated as both a helper node and an int
     assert.match(compiled.warnings.join('\n'), /relation "P".*duplicated/);
 });
 
+test('scene compiler resolves midpoint to line to second circle intersection dependencies', () => {
+    const payload = scenePayload({
+        nodes: [
+            node('A', 'point', { label: 'A', numbers: [0, 0] }),
+            node('B', 'point', { label: 'B', numbers: [3, 0] }),
+            node('C', 'point', { label: 'C', numbers: [3.5, Math.sqrt(15) / 2] }),
+            node('AB', 'segment', { refs: ['A', 'B'] }),
+            node('BC', 'segment', { refs: ['B', 'C'] }),
+            node('AC', 'segment', { refs: ['A', 'C'] }),
+            node('circumcircle', 'circleThreePoints', { refs: ['A', 'B', 'C'] }),
+            node('BM', 'line', { refs: ['B', 'M'] })
+        ],
+        relations: [
+            node('M', 'midpoint', { label: 'M', refs: ['AC'] }),
+            node('D', 'intersection', {
+                label: 'D',
+                refs: ['circumcircle', 'BM'],
+                numbers: [1]
+            })
+        ],
+        mustDraw: [{
+            id: 'circumcircle-median-second-intersection',
+            description: 'Triangle ABC, midpoint M, line BM, and the second circle intersection D',
+            nodeIds: ['A', 'B', 'C', 'AB', 'BC', 'AC', 'circumcircle', 'BM'],
+            relationIds: ['M', 'D'],
+            required: true,
+            evidence: 'M is the midpoint of AC and D is the other intersection of the circumcircle and line BM.'
+        }]
+    });
+
+    const compiled = compileProblemScenePayload(payload);
+    const validation = validateProblemSceneCoverage(payload.scene, compiled);
+    const ids = compiled.operations.map(operation => operation.id);
+
+    assert.equal(validation.valid, true, validation.errors.join('\n'));
+    assert.ok(ids.indexOf('M') < ids.indexOf('BM'));
+    assert.ok(ids.indexOf('BM') < ids.indexOf('D'));
+    assert.equal(compiled.operations.find(operation => operation.id === 'BM').type, 'line');
+    assert.equal(compiled.operations.find(operation => operation.id === 'D').type, 'intersection');
+    assert.equal(compiled.operations.find(operation => operation.id === 'D').branch, 0);
+});
+
+test('scene compiler reuses an intersection in later area polygons without visible helper labels', () => {
+    const payload = scenePayload({
+        nodes: [
+            node('A', 'point', { label: 'A', numbers: [2.16, 6.66] }),
+            node('B', 'point', { label: 'B', numbers: [0, 0] }),
+            node('C', 'point', { label: 'C', numbers: [9, 0] }),
+            node('AB', 'segment', { refs: ['A', 'B'] }),
+            node('BC', 'segment', { refs: ['B', 'C'] }),
+            node('AC', 'segment', { refs: ['A', 'C'] }),
+            node('D', 'pointOnLine', { label: 'D', refs: ['BC'], numbers: [1 / 3] }),
+            node('E', 'pointOnLine', { label: 'E', refs: ['AC'], numbers: [1 / 2] }),
+            node('AD', 'segment', { refs: ['A', 'D'] }),
+            node('BE', 'segment', { refs: ['B', 'E'] }),
+            node('region_BDF', 'polygon', {
+                refs: ['B', 'D', 'F'],
+                style: { ...emptyStyle(), fillOpacity: 0.2 }
+            }),
+            node('region_FDCE', 'polygon', {
+                refs: ['F', 'D', 'C', 'E'],
+                style: { ...emptyStyle(), fillOpacity: 0.18 }
+            }),
+            node('helper', 'point', {
+                numbers: [-1, -1],
+                style: { ...emptyStyle(), visible: false }
+            })
+        ],
+        relations: [
+            node('F', 'intersection', { label: 'F', refs: ['AD', 'BE'], numbers: [0] })
+        ],
+        mustDraw: [{
+            id: 'area-ratio-regions',
+            description: 'The two requested area regions BDF and FDCE',
+            nodeIds: ['D', 'E', 'AD', 'BE', 'region_BDF', 'region_FDCE'],
+            relationIds: ['F'],
+            required: true,
+            evidence: 'F is the intersection of AD and BE.'
+        }]
+    });
+
+    const compiled = compileProblemScenePayload(payload);
+    const validation = validateProblemSceneCoverage(payload.scene, compiled);
+    const ids = compiled.operations.map(operation => operation.id);
+    const regions = compiled.operations.filter(operation => operation.type === 'polygon');
+
+    assert.equal(validation.valid, true, validation.errors.join('\n'));
+    assert.ok(ids.indexOf('F') < ids.indexOf('region_BDF'));
+    assert.ok(ids.indexOf('F') < ids.indexOf('region_FDCE'));
+    assert.ok(regions.every(operation => operation.showLabel === false));
+    assert.equal(compiled.operations.find(operation => operation.id === 'helper').showLabel, false);
+    assert.equal(compiled.operations.find(operation => operation.id === 'F').showLabel, true);
+});
+
 test('image-only problem diagrams use one Luna scene call and local compilation on success', async () => {
     const service = new AIService({
         provider: 'openai',

@@ -3015,6 +3015,33 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - 직접 주소: `https://mathgraph-4foeijanm-beomjinsouths-projects.vercel.app`.
 - 운영 별칭: `https://mathgraph-five.vercel.app`.
 
+## 2026-08-05 관계 결과 재사용과 두 번째 교점 선택 보완
+
+### 원인과 구현
+
+- 사진 해석 모델은 중점·교점 같은 관계 결과를 올바르게 계획해도, 기존 `SceneGraphCompiler`가 모든 노드를 먼저 만들고 모든 관계를 나중에 처리하여 `중점 → 직선 → 교점 → 다각형` 의존 순서를 풀지 못했다.
+- 노드와 관계를 하나의 위상 정렬 대상으로 바꾸고, 관계 결과를 후속 선·교점·다각형이 그대로 참조하도록 컴파일러와 Luna 지침을 보완했다.
+- 원과 직선이 이미 한 점을 공유하는 경우 새 교점 ID에는 자동으로 다른 교점 가지를 선택하도록 일반 규칙을 추가했다. 특정 문제의 점 이름이나 좌표에는 의존하지 않는다.
+- 이름 없는 보조점과 음영 다각형은 화면에 자동 이름을 표시하지 않도록 했고, 이미지 분석 결과의 누락 참조는 적용 전에 검증하도록 했다.
+
+### 검증
+
+- `npm.cmd test`: 374/374 통과.
+- `npm.cmd run vercel-build`: 375/375 통과 및 정적 `dist` 빌드 완료.
+- `git diff --check`: 통과. Windows 작업트리의 LF→CRLF 안내만 있었다.
+- `npx.cmd vercel inspect`에서 최종 배포의 `target=production`, `status=Ready`, 운영 별칭 연결을 확인했고 `https://mathgraph-five.vercel.app/`는 HTTP 200을 반환했다.
+- 운영 사이트에서 원본 사진 세 장을 텍스트 보정 없이 각각 다시 올렸다.
+  - 외접원·중선 문제: 14개 객체가 생성되었고 `M`은 `AC`의 중점, `D`는 `B`가 아닌 원과 `BM`의 다른 교점으로 확인했다.
+  - 72도·넓이비 문제: 18개 객체가 생성되었고 `D`, `E`, `F`의 내분·중점·교점 관계와 두 넓이 영역을 확인했다. 같은 좌표의 중복 보조점은 사라졌다.
+  - 이등변삼각형 문제: 12개 객체가 생성되었고 `AD` 선분과 `AB=AC`, `AD=BC`, `D∈AC`, `∠C≈80°`를 확인했다.
+- 브라우저 화면 캡처 명령은 시간 초과되었으나, 세 번 모두 실제 운영 화면의 성공 상태와 객체 목록·좌표를 DOM에서 직접 확인했다. 개발자 로그에 남은 참조 검증 오류 한 건은 수정 전 기준선 실행의 과거 기록이며 최종 세 실행에서 새 오류는 관찰되지 않았다.
+
+### 배포
+
+- 최종 운영 배포: `dpl_Hfj544KLZtiEhC2JPHoLSM3FYcYz`.
+- 직접 주소: `https://mathgraph-mzth93xjb-beomjinsouths-projects.vercel.app`.
+- 운영 별칭: `https://mathgraph-five.vercel.app`.
+
 ## 2026-08-05 문제 사진 관계 해석 파이프라인 운영 연결
 
 ### 원인과 구현

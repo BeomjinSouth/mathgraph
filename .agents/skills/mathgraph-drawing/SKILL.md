@@ -29,11 +29,13 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 ## Output Rules
 
 - Create referenced objects before the objects that refer to them.
+- Midpoint and intersection relations create reusable ids. Let later lines, segments, polygons, circles, and relations reference those ids directly instead of adding a coordinate-duplicate helper point.
 - Prefer stable temporary IDs such as `A`, `AB`, `poly_ABC`, or `prism_1`.
 - Use only supported create `type` values from the feature manual.
 - For selected-object patch requests, prefer `update`/`delete` operations on existing selected IDs. Do not create unrelated objects when the user says only this part/selected object should change.
 - For image recreation, stay within the current operation budget and ignore dense page text, decorative grids, and unsupported textbook furniture unless requested.
 - Use `polygon` for triangles, quadrilaterals, shaded regions, bars, and other filled plane regions.
+- Keep construction and shading polygon labels hidden unless the source explicitly prints a region name. Give helper points `label:null` and `showLabel:false` or `visible:false` so runtime-generated names do not leak into the exam diagram.
 - Use `lensRegion` for the exact filled overlap of two intersecting circles instead of approximating the lens with a polygon.
 - If a polygon is only a construction boundary or outline, set `fillOpacity:0`; use positive fill opacity only for requested shaded regions.
 - When the question directly asks for the value, maximum, or minimum of a named triangle or quadrilateral area, create that named polygon and use fillOpacity from 0.18 to 0.24. Do not shade when area is only a given condition, comparison, or ratio and another quantity is being asked.
