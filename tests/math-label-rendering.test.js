@@ -139,3 +139,32 @@ test('math label rendering draws a fraction bar instead of slash text', () => {
     assert.ok(renderedText.includes('8'));
     assert.ok(ctx.calls.some(call => call[0] === 'lineTo'));
 });
+
+function radicalBarY(ctx) {
+    // 라디칼 경로의 마지막 lineTo가 덮개(가로줄) 우측 끝이다.
+    const lineTos = ctx.calls.filter(call => call[0] === 'lineTo');
+    assert.ok(lineTos.length > 0);
+    return Math.min(...lineTos.map(call => call[2]));
+}
+
+test('radical vinculum keeps clearance above plain radicand glyphs', () => {
+    const canvas = createCanvasFacade();
+    const ctx = createRecordingContext();
+    const parts = canvas.parseMathExpression('sqrt(x-2)');
+
+    canvas.renderMathExpression(parts, ctx, 0, 0, 30, '#000000');
+
+    // bottom 기준선에서 숫자 윗면은 약 -0.88em이므로 가로줄은 그보다 위여야 한다.
+    assert.ok(radicalBarY(ctx) <= -30 * 1.0);
+});
+
+test('radical vinculum rises further for superscript radicands', () => {
+    const canvas = createCanvasFacade();
+    const plainCtx = createRecordingContext();
+    canvas.renderMathExpression(canvas.parseMathExpression('sqrt(x-2)'), plainCtx, 0, 0, 30, '#000000');
+
+    const superCtx = createRecordingContext();
+    canvas.renderMathExpression(canvas.parseMathExpression('sqrt(x^2)'), superCtx, 0, 0, 30, '#000000');
+
+    assert.ok(radicalBarY(superCtx) < radicalBarY(plainCtx));
+});

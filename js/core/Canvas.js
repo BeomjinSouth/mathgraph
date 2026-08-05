@@ -1465,6 +1465,24 @@ export class Canvas {
     }
 
     /**
+     * bottom 기준선 위로 올라가는 표현식 최대 높이(em 단위).
+     * 세리프 폰트에서 일반 글리프 윗면은 약 0.88em(descent 0.22 + cap 0.66)이다.
+     */
+    measureMathExpressionAscent(parts) {
+        let ascent = 0.88;
+        for (const part of parts || []) {
+            if (part.type === 'super') {
+                ascent = Math.max(ascent, 0.35 + 0.88 * 0.7);
+            } else if (part.type === 'fraction') {
+                ascent = Math.max(ascent, 0.32 + 0.1 + 0.88 * 0.72);
+            } else if (part.type === 'radical') {
+                ascent = Math.max(ascent, this.measureMathExpressionAscent(part.radicand) + 0.14);
+            }
+        }
+        return ascent;
+    }
+
+    /**
      * 수학 표현식 너비 측정
      */
     measureMathExpression(parts, ctx, fontSize) {
@@ -1561,7 +1579,8 @@ export class Canvas {
                 const padding = Math.max(2, fontSize * 0.08);
                 const radicandWidth = this.measureMathExpression(part.radicand, ctx, fontSize);
                 const radicandX = currentX + radicalWidth;
-                const topY = startY - fontSize * 0.88;
+                // 피개식 글리프 윗면(-ascent) 위에 여백을 더해 덮개가 붙지 않게 합니다.
+                const topY = startY - fontSize * (this.measureMathExpressionAscent(part.radicand) + 0.14);
 
                 ctx.strokeStyle = color;
                 ctx.lineWidth = Math.max(1, fontSize * 0.04);
