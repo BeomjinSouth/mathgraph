@@ -299,6 +299,7 @@ export class HistoryManager {
         this.redoStack.push(action);
 
         this.emit('historyChanged', {
+            restored: true,
             canUndo: this.canUndo(),
             canRedo: this.canRedo()
         });
@@ -314,6 +315,7 @@ export class HistoryManager {
         this.undoStack.push(action);
 
         this.emit('historyChanged', {
+            restored: true,
             canUndo: this.canUndo(),
             canRedo: this.canRedo()
         });

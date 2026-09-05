@@ -1,3 +1,5 @@
+import { normalizeProblemDocument } from './ProblemDocument.js';
+
 export const PROJECT_FORMAT = 'mathgraph-project';
 export const PROJECT_VERSION = 1;
 
@@ -36,6 +38,10 @@ export function validateProjectEnvelope(value) {
     if (!Array.isArray(value.objects)) {
         errors.push('프로젝트 객체 목록이 올바르지 않습니다.');
     }
+    if (value.problem !== undefined) {
+        try { normalizeProblemDocument(value.problem); }
+        catch (error) { errors.push(error.message); }
+    }
 
     return { valid: errors.length === 0, errors };
 }
@@ -44,7 +50,8 @@ export function createProjectEnvelope({
     name,
     savedAt = new Date().toISOString(),
     view,
-    objects
+    objects,
+    problem
 }) {
     const envelope = {
         format: PROJECT_FORMAT,
@@ -60,6 +67,7 @@ export function createProjectEnvelope({
         },
         objects: Array.isArray(objects) ? objects : []
     };
+    if (problem !== undefined) envelope.problem = normalizeProblemDocument(problem);
 
     const result = validateProjectEnvelope(envelope);
     if (!result.valid) {

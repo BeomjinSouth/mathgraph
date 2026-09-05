@@ -12,6 +12,7 @@
 
 import { cp, mkdir, rm, stat } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { packageHancom } from './package-hancom.mjs';
 
 export const STATIC_BUILD_TARGETS = ['index.html', 'favicon.svg', 'css', 'js', 'runtime'];
 
@@ -26,8 +27,9 @@ export async function buildStaticOutput() {
         const source = new URL(target, repoRoot);
         const sourceStat = await stat(source);
         const destination = new URL(sourceStat.isDirectory() ? `${target}/` : target, distRoot);
-        await cp(source, destination, { recursive: true });
+        await cp(source, destination, { recursive: true, filter: path => !/[\\/](__pycache__|\.venv)([\\/]|$)/.test(path) });
     }
+    await packageHancom(new URL('downloads/mathgraph-hancom.zip', distRoot));
 
     return distRoot;
 }

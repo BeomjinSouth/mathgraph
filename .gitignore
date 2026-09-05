@@ -1,4 +1,7 @@
 node_modules/
+downloads/
+__pycache__/
+.venv/
 .vercel/
 dist/
 coverage/

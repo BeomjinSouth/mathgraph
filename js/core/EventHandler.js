@@ -441,6 +441,7 @@ export class EventHandler {
         // event.key는 한글 상태에서 'Process' 등으로 나오거나 한글 문자가 나와서 매칭이 어렵습니다.
         // event.code는 키보드 위치 기반이므로 'KeyV' 등으로 일정하게 들어옵니다.
         const code = event.code;
+        if (!ctrl && ['KeyF', 'KeyN', 'KeyT'].includes(code)) event.preventDefault();
 
         switch (code) {
             case 'KeyZ':
