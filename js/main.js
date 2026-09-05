@@ -91,6 +91,7 @@ import {
 import { buildCurvedSolidInput } from './utils/CurvedSolidInput.js';
 import { TeacherWorkflow } from './ui/TeacherWorkflow.js';
 import { analyzeDrawingSupport } from './ai/SupportPreflight.js';
+import { ProblemComposer } from './ui/ProblemComposer.js';
 
 /**
  * 그래프A 애플리케이션
@@ -136,6 +137,7 @@ class GraphAApp {
         this.setupResponsiveLayout();
         this.setupTeacherWorkflow();
         this.setupEventListeners();
+        this.problemComposer = new ProblemComposer(this);
 
         // 초기 렌더링
         this.render();
@@ -672,7 +674,11 @@ class GraphAApp {
         // 채팅 패널 토글
         document.getElementById('toggleChat')?.addEventListener('click', (e) => {
             e.stopPropagation();
-            document.getElementById('chat-panel')?.classList.toggle('collapsed');
+            const collapsed = document.getElementById('chat-panel')?.classList.toggle('collapsed');
+            e.currentTarget.setAttribute('aria-expanded', String(!collapsed));
+            e.currentTarget.setAttribute('aria-label', collapsed ? '그림 요청 펼치기' : '그림 요청 접기');
+            setGeneratedIcon(e.currentTarget.querySelector('.material-symbols-outlined'), collapsed ? 'expand_less' : 'expand_more');
+            this.scheduleCanvasResize?.();
         });
 
         // Mk.2: 스냅 모드 변경
@@ -1184,6 +1190,10 @@ class GraphAApp {
 
             if (undoBtn) undoBtn.disabled = !data.canUndo;
             if (redoBtn) redoBtn.disabled = !data.canRedo;
+            if (data.restored) {
+                this.updateSidebar();
+                this.updatePropertyPanel();
+            }
         });
 
         // 윈도우 리사이즈
@@ -2590,21 +2600,20 @@ class GraphAApp {
         this.canvas.showYAxis = includeAxes;
         this.canvas.resetLabelLayout();
 
-        if (includeGrid) this.canvas.drawGrid();
-        if (includeAxes) this.canvas.drawAxes();
-
-        for (const obj of this.getRenderOrderedObjects()) {
-            if (obj.visible) {
-                obj.render(this.canvas);
+        try {
+            if (includeGrid) this.canvas.drawGrid();
+            if (includeAxes) this.canvas.drawAxes();
+            for (const obj of this.getRenderOrderedObjects()) {
+                if (obj.visible) obj.render(this.canvas);
             }
+        } finally {
+            this.canvas.ctx = originalCtx;
+            this.canvas.showGrid = oldShowGrid;
+            this.canvas.showXAxis = oldShowXAxis;
+            this.canvas.showYAxis = oldShowYAxis;
+            this.canvas.labelBounds = oldLabelBounds;
+            targetCtx.restore();
         }
-
-        this.canvas.ctx = originalCtx;
-        this.canvas.showGrid = oldShowGrid;
-        this.canvas.showXAxis = oldShowXAxis;
-        this.canvas.showYAxis = oldShowYAxis;
-        this.canvas.labelBounds = oldLabelBounds;
-        targetCtx.restore();
     }
 
     escapeSVG(value) {
@@ -4349,13 +4358,38 @@ class GraphAApp {
     }
 
     handleImageUpload(file, options = {}) {
+        if (this.imageUploadBusy || this.problemComposer?.busy) {
+            this.showToast('현재 사진의 인식이 끝난 뒤 다시 가져와 주세요.', 'warning');
+            return;
+        }
+        if (!file || !/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 15000000) {
+            this.showToast('15 MB 이하의 PNG, JPG, WebP 사진을 가져와 주세요.', 'warning');
+            return;
+        }
+        this.imageUploadBusy = true;
+        this.imageAbortController = new AbortController();
+        this.aiService.requestSignal = this.imageAbortController.signal;
+        document.getElementById('chat-panel')?.classList.remove('collapsed');
+        const chatToggle = document.getElementById('toggleChat');
+        chatToggle?.setAttribute('aria-expanded', 'true');
+        chatToggle?.setAttribute('aria-label', '그림 요청 접기');
+        if (chatToggle) setGeneratedIcon(chatToggle.querySelector('.material-symbols-outlined'), 'expand_more');
+        this.scheduleCanvasResize?.();
         const reader = new FileReader();
+        reader.onerror = () => {
+            this.imageUploadBusy = false;
+            this.aiService.requestSignal = null;
+            this.showToast('사진 파일을 읽지 못했습니다. 다시 가져와 주세요.', 'error');
+        };
 
         reader.onload = async (e) => {
             const imageDataUrl = e.target.result;
             const input = document.getElementById('chatInput');
-            const instruction = input?.value.trim() || '';
+            const instruction = this.imageUploadIntent === 'problem' ? '' : (input?.value.trim() || '');
+            this.imageUploadIntent = null;
             const mode = instruction ? 'patch' : 'problem_diagram';
+            const recognition = mode === 'problem_diagram' ? this.problemComposer?.startRecognition(imageDataUrl) : null;
+            let diagramApplied = false;
             const aiContext = this.buildAIContext();
             const trace = createImageAnalysisTrace({
                 source: options.source || 'upload',
@@ -4447,6 +4481,7 @@ class GraphAApp {
                     trace
                 });
 
+                if (this.imageAbortController.signal.aborted) throw new Error('사진 인식을 중단했습니다.');
                 if (result.success && result.json) {
                     this.addChatMessage(
                         mode === 'patch'
@@ -4462,6 +4497,7 @@ class GraphAApp {
                         modelMeta: this.getAIModelResultMeta(result),
                         trace
                     });
+                    diagramApplied = applied;
                     this.completeImageDebugTrace(trace, {
                         success: applied,
                         outcome: applied ? 'applied' : 'canvas_apply_failed'
@@ -4519,6 +4555,9 @@ class GraphAApp {
                     });
                 }
                 this.removeChatMessage(loadingMessage);
+                this.imageUploadBusy = false;
+                this.aiService.requestSignal = null;
+                if (recognition) await this.problemComposer.imageFinished(recognition, diagramApplied);
             }
         };
 
@@ -4558,7 +4597,8 @@ class GraphAApp {
                 offsetY: this.canvas.offset.y,
                 scale: this.canvas.scale
             },
-            objects: this.objectManager.toJSON()
+            objects: this.objectManager.toJSON(),
+            problem: this.problemComposer?.problem
         };
 
         localStorage.setItem('graphA_save', JSON.stringify(data));
@@ -4591,6 +4631,10 @@ class GraphAApp {
             if (data.objects) {
                 this.objectManager.fromJSON(data.objects);
             }
+            if (this.problemComposer) {
+                this.problemComposer.problem = data.problem || { number: '', blocks: [], warnings: [] };
+                this.problemComposer.renderProblem();
+            }
 
             // A freshly loaded document becomes the new baseline state.
             this.historyManager.clear();
@@ -4622,7 +4666,8 @@ class GraphAApp {
                 },
                 scale: this.canvas.scale
             },
-            objects: this.objectManager.toJSON()
+            objects: this.objectManager.toJSON().objects,
+            problem: this.problemComposer?.problem
         });
     }
 
@@ -4652,16 +4697,20 @@ class GraphAApp {
         try {
             const envelope = parseProjectFile(await file.text());
             const candidateManager = new ObjectManager();
-            candidateManager.fromJSON(envelope.objects);
-            if (candidateManager.toJSON().length !== envelope.objects.length) {
+            candidateManager.fromJSON({ objects: envelope.objects });
+            if (candidateManager.toJSON().objects.length !== envelope.objects.length) {
                 throw new Error('지원하지 않는 객체가 포함되어 있습니다.');
             }
 
-            this.objectManager.fromJSON(envelope.objects);
+            this.objectManager.fromJSON({ objects: envelope.objects });
             this.canvas.offset.x = envelope.view.offset.x;
             this.canvas.offset.y = envelope.view.offset.y;
             this.canvas.scale = envelope.view.scale;
             this.setProjectName(envelope.name);
+            if (this.problemComposer) {
+                this.problemComposer.problem = envelope.problem || { number: '', blocks: [], warnings: [] };
+                this.problemComposer.renderProblem();
+            }
             this.historyManager.clear();
             this.updateSidebar();
             this.updateZoomDisplay();

@@ -1540,6 +1540,10 @@ export class Canvas {
      * - 함수명(sin, cos, tan...), 숫자, 연산자, 괄호 → 정자체
      */
     renderMathExpression(parts, ctx, startX, startY, fontSize, color) {
+        if (this.exportTextSink) {
+            this.exportTextSink({ parts, x: startX, y: startY - fontSize, fontSize, width: this.measureMathExpression(parts, ctx, fontSize), color });
+            return;
+        }
         let currentX = startX;
         const italicFont = `italic ${fontSize}px "Times New Roman", "STIX Two Math", Georgia, serif`;
         const romanFont = `${fontSize}px "Times New Roman", "STIX Two Math", Georgia, serif`;

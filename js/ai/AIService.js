@@ -52,16 +52,21 @@ export async function fetchWithTimeout(url, init = {}, timeoutMs = 250000) {
         ? timeoutMs
         : 250000;
     const controller = new AbortController();
+    const cancel = () => controller.abort();
+    if (init.signal?.aborted) throw new Error('AI 요청을 중단했습니다.');
+    init.signal?.addEventListener('abort', cancel, { once: true });
     const timer = setTimeout(() => controller.abort(), normalizedTimeoutMs);
     try {
         return await fetch(url, { ...init, signal: controller.signal });
     } catch (error) {
         if (controller.signal.aborted || error?.name === 'AbortError') {
+            if (init.signal?.aborted) throw new Error('AI 요청을 중단했습니다.');
             throw new Error('AI 요청 시간이 초과되었습니다. 잠시 후 다시 시도하세요.');
         }
         throw error;
     } finally {
         clearTimeout(timer);
+        init.signal?.removeEventListener('abort', cancel);
     }
 }
 
@@ -1512,7 +1517,7 @@ export class AIService {
         const response = await fetchWithTimeout(transport.url, {
             method: 'POST',
             headers: transport.headers,
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody), signal: this.requestSignal
         });
 
         if (!response.ok) {
@@ -3274,7 +3279,7 @@ export class AIService {
         const response = await fetchWithTimeout(transport.url, {
             method: 'POST',
             headers: transport.headers,
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody), signal: this.requestSignal
         });
         if (!response.ok) {
             throw new Error(await this.extractApiErrorMessage(response, 'OpenAI 문제 사진 분석 오류'));
@@ -3495,7 +3500,7 @@ export class AIService {
         const response = await fetchWithTimeout(transport.url, {
             method: 'POST',
             headers: transport.headers,
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody), signal: this.requestSignal
         });
 
         if (!response.ok) {
@@ -3742,11 +3747,12 @@ export class AIService {
                 // Gemini Vision
                 const base64Data = imageDataUrl.split(',')[1];
                 const mimeType = this.getDataUrlMimeType(imageDataUrl);
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.config.apiKey}`,
+                const response = await fetchWithTimeout(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${this.config.geminiModel || this.config.model || 'gemini-2.5-flash'}:generateContent`,
                     {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.config.apiKey },
+                        signal: this.requestSignal,
                         body: JSON.stringify({
                             contents: [{
                                 parts: [
