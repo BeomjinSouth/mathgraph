@@ -70,7 +70,10 @@ export class ProblemComposer {
                 document.getElementById('imageInput')?.click();
             }
             else if (action === 'edit') this.toggleEdit();
-            else if (action === 'connect') await this.refreshDocuments();
+            else if (action === 'connect') {
+                await this.refreshDocuments();
+                this.status('한글에 연결했습니다. 문제와 입력할 문서를 확인해 주세요.');
+            }
             else if (action === 'pair') {
                 this.client.connect(this.el('#hwpPairToken').value.trim());
                 this.el('#hwpPairToken').value = '';
@@ -94,9 +97,23 @@ export class ProblemComposer {
         }
     }
     open() {
+        if (!this.app.authSession) {
+            this.pendingOpen = true;
+            this.app.setAuthMessage('로그인하거나 바로 그리기를 선택하면 한글 입력창이 열립니다.');
+            return;
+        }
+        this.pendingOpen = false;
         if (!this.dialog.open) this.dialog.showModal();
         this.updateFigure();
         if (this.client.token) this.refreshDocuments().catch(error => this.status(error.message, true));
+    }
+    onAuthChanged() {
+        if (!this.app.authSession) {
+            if (this.dialog.open) {
+                this.pendingOpen = true;
+                this.dialog.close();
+            }
+        } else if (this.pendingOpen) this.open();
     }
     async refreshDocuments() {
         const { documents } = await this.client.documents();

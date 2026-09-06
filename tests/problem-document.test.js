@@ -62,6 +62,28 @@ test('문서 없음, 하나, 여러 개, 닫힌 선택 및 새 문서 선택을 
     assert.equal(chooseHwpDocument([a],'new'), 'new');
 });
 const storage={getItem:()=> 'a'.repeat(40),setItem:()=>{}};
+test('문서 목록 조회 시간 초과는 입력 결과 미확인과 구분한다', async () => {
+    const client=new HwpBridgeClient({storage,fetchImpl:async()=>{throw new DOMException('Aborted','AbortError');}});
+    await assert.rejects(client.documents(),/로컬 연결 허용/);
+    assert.equal(client.pending,null);
+    await assert.rejects(client.insert({documentId:'new'}),/같은 요청/);
+    assert.ok(client.pending?.requestId);
+});
+
+test('빈 사진이나 지원하지 않는 파일 오류는 열린 한글 입력창 안에서도 보인다', async () => {
+    const oldDocument=globalThis.document, oldWindow=globalThis.window;
+    globalThis.document={addEventListener(){}}; globalThis.window={};
+    let GraphAApp;
+    try { ({default:GraphAApp}=await import('../js/main.js')); }
+    finally { globalThis.document=oldDocument; globalThis.window=oldWindow; }
+    let shown='', inline='';
+    const app={showToast(message){shown=message;},problemComposer:{dialog:{open:true},status(message){inline=message;}}};
+    GraphAApp.prototype.handleImageUpload.call(app,{type:'image/png',size:0});
+    assert.match(inline,/비어/); assert.equal(inline,shown);
+    GraphAApp.prototype.handleImageUpload.call(app,{type:'application/pdf',size:100});
+    assert.match(inline,/PNG/); assert.equal(inline,shown);
+    assert.equal(app.imageUploadBusy,undefined);
+});
 test('fetch 호출의 수신 객체와 네트워크 실패 재시도의 요청 번호를 보존한다', async () => {
     const ids=[]; let count=0;
     const client=new HwpBridgeClient({storage,fetchImpl:function(url,init) {

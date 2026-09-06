@@ -5,6 +5,30 @@ import { recognizeProblemDocument } from '../js/ai/ProblemRecognition.js';
 import { buildProblemParagraphs } from '../js/utils/ProblemDocument.js';
 import { ProblemComposer } from '../js/ui/ProblemComposer.js';
 
+test('연결 프로그램이 연 새 탭은 로그인 후 한글 입력창을 열고 로그아웃 시 닫는다', () => {
+    let opened=0, closed=0, authMessage='';
+    const composer={app:{authSession:null,setAuthMessage(value){authMessage=value;}},client:{token:''},
+        dialog:{open:false,showModal(){this.open=true;opened++;},close(){this.open=false;closed++;}},
+        updateFigure(){},open(){ProblemComposer.prototype.open.call(this);}};
+    composer.open();
+    assert.equal(opened,0);
+    assert.equal(composer.pendingOpen,true);
+    assert.match(authMessage,/로그인/);
+    composer.app.authSession={mode:'guest'};
+    ProblemComposer.prototype.onAuthChanged.call(composer);
+    assert.equal(opened,1);
+    assert.equal(composer.pendingOpen,false);
+    ProblemComposer.prototype.onAuthChanged.call(composer);
+    assert.equal(opened,1);
+    composer.app.authSession=null;
+    ProblemComposer.prototype.onAuthChanged.call(composer);
+    assert.equal(closed,1);
+    assert.equal(composer.dialog.open,false);
+    composer.app.authSession={mode:'owner'};
+    ProblemComposer.prototype.onAuthChanged.call(composer);
+    assert.equal(opened,2);
+});
+
 test('자동 입력은 문제와 그림 인식이 모두 성공하고 확인 사항이 없을 때만 실행한다', async () => {
     for (const [recognized, diagram, warnings, automatic, expected] of [
         [true,true,[],true,1], [true,false,[],true,0], [false,true,[],true,0],
