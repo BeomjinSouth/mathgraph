@@ -218,6 +218,7 @@ class GraphAApp {
         if (syncUi) {
             this.syncAuthModeUI();
             this.syncAISettingsControls();
+            this.problemComposer?.onAuthChanged();
         }
     }
 
@@ -4358,12 +4359,20 @@ class GraphAApp {
     }
 
     handleImageUpload(file, options = {}) {
+        const reportError = (message, type = 'warning') => {
+            this.showToast(message, type);
+            if (this.problemComposer?.dialog?.open) this.problemComposer.status(message, true);
+        };
         if (this.imageUploadBusy || this.problemComposer?.busy) {
-            this.showToast('현재 사진의 인식이 끝난 뒤 다시 가져와 주세요.', 'warning');
+            reportError('현재 사진의 인식이 끝난 뒤 다시 가져와 주세요.');
             return;
         }
         if (!file || !/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 15000000) {
-            this.showToast('15 MB 이하의 PNG, JPG, WebP 사진을 가져와 주세요.', 'warning');
+            reportError('15 MB 이하의 PNG, JPG, WebP 사진을 가져와 주세요.');
+            return;
+        }
+        if (file.size === 0) {
+            reportError('사진 파일의 내용이 비어 있습니다. 원본 사진을 다시 가져와 주세요.');
             return;
         }
         this.imageUploadBusy = true;
@@ -4379,7 +4388,7 @@ class GraphAApp {
         reader.onerror = () => {
             this.imageUploadBusy = false;
             this.aiService.requestSignal = null;
-            this.showToast('사진 파일을 읽지 못했습니다. 다시 가져와 주세요.', 'error');
+            reportError('사진 파일을 읽지 못했습니다. 다시 가져와 주세요.', 'error');
         };
 
         reader.onload = async (e) => {

@@ -30,7 +30,9 @@ export class HwpBridgeClient {
             }
             return result;
         } catch (error) {
-            if (error.name === 'AbortError') throw new Error('한글의 처리 결과를 확인하지 못했습니다. 문서를 확인한 뒤 같은 요청을 다시 확인해 주세요.');
+            if (error.name === 'AbortError') throw new Error(body
+                ? '한글의 처리 결과를 확인하지 못했습니다. 문서를 확인한 뒤 같은 요청을 다시 확인해 주세요.'
+                : '한글 연결을 확인하지 못했습니다. 연결 프로그램과 브라우저의 로컬 연결 허용 여부를 확인한 뒤 다시 연결해 주세요.');
             if (error instanceof TypeError) throw new Error('한글 연결 프로그램이 실행 중인지 확인해 주세요. 브라우저가 로컬 연결을 물으면 허용해야 합니다.');
             throw error;
         } finally { clearTimeout(timer); }
