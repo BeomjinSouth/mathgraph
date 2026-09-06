@@ -18,10 +18,23 @@ PAYLOAD = {'requestId':'regression-001','documentId':'new','number':'1','fontSiz
                          {'kind':'equation','value':r'y=\frac{1}{2}x^2'}]}], 'diagram':None}
 
 class ModelTest(unittest.TestCase):
+    def test_script_scope_preserves_following_terms(self):
+        self.assertEqual(to_hwp('y=-x^2+4'), 'y=-x^{2}+4')
+        self.assertEqual(to_hwp('a_n+1'), 'a_{n}+1')
+        self.assertEqual(to_hwp('x_{n+1}^2+3'), 'x_{n+1}^{2}+3')
+        self.assertEqual(to_hwp(r'x^\alpha+1'), 'x^{alpha}+1')
+        self.assertEqual(to_hwp('x^θ+1'), 'x^{theta} +1')
+        self.assertEqual(to_hwp('x²+4'), 'x^{2}+4')
+        self.assertEqual(to_hwp(r'\frac{1}{2}x^2+3'), '{{1} over {2}}x^{2}+3')
+        self.assertEqual(to_hwp(r'\frac{1}{\frac{2}{3}}+4'), '{{1} over {{{2} over {3}}}}+4')
+    def test_missing_or_ambiguous_script_argument_is_rejected(self):
+        for source in ('x^', 'x_', 'x^}', 'x^_2', 'x^-2'):
+            with self.subTest(source=source), self.assertRaises(ValueError):
+                to_hwp(source)
     def test_equations(self):
-        self.assertEqual(to_hwp(r'\frac{\sqrt{3}}{2}'), '{sqrt {3}} over {2}')
+        self.assertEqual(to_hwp(r'\frac{\sqrt{3}}{2}'), '{{sqrt {3}} over {2}}')
         self.assertEqual(to_hwp(r'3\,\mathrm{cm}'), '3~rm {cm}')
-        self.assertEqual(to_hwp('πr²'), 'pi r^2')
+        self.assertEqual(to_hwp('πr²'), 'pi r^{2}')
         self.assertEqual(prepare_insert(PAYLOAD)['equationCount'], 1)
     def test_unsupported_and_unbalanced(self):
         for value in (r'\unknown{x}', r'\frac{a}', r'\sqrt{x', 'x}'):

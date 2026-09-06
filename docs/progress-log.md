@@ -2,6 +2,17 @@
 
 ## 2026-09-06 — 그래프 편집과 한글 입력
 
+### 이어서 확인한 수식 범위 오류
+
+- 기존 시험 출력의 `y=-x^2+4`에서 `+4`까지 지수로 올라가는 것을 이미지로 재현했다. 기존 수식 개수·문서 구조 검증만으로는 수식의 표시 의미를 보장하지 못했다.
+- LaTeX의 한 토큰/중괄호 묶음 단위로 지수·첨자를 읽고, 한글 스크립트에서는 명시적인 중괄호로 범위를 고정한다. 분수 전체도 한 항으로 묶어 앞의 등호나 뒤의 곱셈·덧셈이 분수에 들어가지 않게 했다. 유니코드 그리스 문자를 명령 토큰으로 보존하며 빈 첨자와 중괄호 없는 음수 첨자는 입력 전에 알린다.
+- 먼저 실패하는 회귀 검증을 추가한 뒤 수정했다. Python 테스트 13개와 웹 테스트 413개 통과. 빌드된 ZIP의 무결성과 최신 `equations.py` 포함을 확인했다.
+- 새 검증 도구 `tools/verify-hancom-equations.py`는 이번 실행에서 만든 문서만 읽고 고유한 출력 폴더에 저장한다. 한글 2024에서 9가지 수식의 실제 렌더링을 확인했다. 지수 뒤 덧셈, 분수 뒤 곱셈·덧셈, 아래첨자, 중첩 분수, 그리스 문자, 삼차근, 합 기호의 위아래 첨자가 올바르다. 수식 검증 문서는 수식 개체 9개, 새 문제 사진은 수식 개체 7개이며 각각 한 쪽이다. HWPX strict/구조 검사도 통과했다.
+- 참조: 로컬 공식 `compact/actions/E.md`의 EquationCreate, `compact/parameters/EqEdit.md`의 String/BaseUnit, `compact/api-members/methods.md`의 CreatePageImage. 공식 [수식 도움말](https://help.hancom.com/hoffice/webhelp/9.0/ko_kr/hwp/insert/equation/equation.htm)과 [수식 도구 상자](https://help.hancom.com/hoffice/webhelp/9.0/ko_kr/hwp/insert/equation/equation(toolbar).htm)를 확인했고, 범위 변환의 정확성은 위 실제 렌더링으로 검증했다.
+- 실 AI 연속 검증은 인앱 MathGraph의 소유자 로그인 대기 중이다. Chrome이 연결되지 않아 인앱 브라우저로 전환했고, 올바른 수식으로 만든 완전한 문제 사진과 최신 한글 연결 프로그램을 준비했다.
+
+### 구현과 앞선 검증
+
 - 사용자 승인 방향에 따라 흰 작업판·먹색·청록으로 화면을 정리했다. 목표 이미지는 `docs/design-references/precision-workspace/target.png`, 기준은 `Design.md`, `Soul.md`, `docs/디자인-시트.md`에 남겼다.
 - Computer Use로 함수·점·선분·원 생성, 점 이동과 실행 취소, 좁은 화면의 도구 선택, 도크 접기, 저장·불러오기를 검사했다. 속성 갱신 누락, 가려진 서브메뉴, 도크의 빈 공간, 함수 단축키 문자 유입, 실제 객체가 빠진 프로젝트 파일과 잘못된 가져오기 인수를 수정했다.
 - 사진에서 문제 본문·수식·조건·선택지를 읽는 구조화 응답과 수동 수정, 확인 사항 표시, 조건부 자동 입력을 추가했다. 기존 AI 인증·전송·시간 제한을 사용한다.
