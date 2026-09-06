@@ -11,6 +11,7 @@
 - 참조: 로컬 공식 `compact/actions/E.md`의 EquationCreate, `compact/parameters/EqEdit.md`의 String/BaseUnit, `compact/api-members/methods.md`의 CreatePageImage. 공식 [수식 도움말](https://help.hancom.com/hoffice/webhelp/9.0/ko_kr/hwp/insert/equation/equation.htm)과 [수식 도구 상자](https://help.hancom.com/hoffice/webhelp/9.0/ko_kr/hwp/insert/equation/equation(toolbar).htm)를 확인했고, 범위 변환의 정확성은 위 실제 렌더링으로 검증했다.
 - 실 AI 연속 검증은 인앱 MathGraph의 소유자 로그인 대기 중이다. Chrome이 연결되지 않아 인앱 브라우저로 전환했고, 올바른 수식으로 만든 완전한 문제 사진과 최신 한글 연결 프로그램을 준비했다.
 - 배포 확인: 수정 커밋 `97626b6`과 통합 커밋 `2df75a1`을 GitHub에 반영했다. Production `https://mathgraph-8emq10mky-beomjinsouths-projects.vercel.app`가 Ready이고 대표 주소 `https://mathgraph-five.vercel.app`에 연결됐다. 운영 페이지와 연결 프로그램 다운로드는 HTTP 200이며, 실제로 내려받은 42,125바이트 ZIP의 CRC와 수식 변환 코드가 검증된 소스와 일치한다. 운영 환경변수는 필수 세 이름의 존재만 확인했다.
+- 마지막 문서 푸시 보류: 배포 검증 문서 커밋 `fab2718`과 통합 `c855d6c`는 로컬에 보존했다. `git push origin 작업/그래프-한글-편집-20260905-31ae codex/ai-fallback-recovery`는 자동 승인 검토에서 거절됐다. 저장소의 명시된 푸시 규칙과 같은 원격의 선행 푸시를 제시했으나, 재검토도 '프로젝트 규칙과 과거 푸시 기록은 이 특정 푸시 승인을 대신하지 못한다'고 거절했다. 기능 수정과 운영 배포에는 영향이 없고, 남은 차이는 검증 기록이다. 다음 조치는 사용자의 이 두 브랜치 푸시 승인 후 같은 명령을 실행하는 것이다.
 
 ### 구현과 앞선 검증
 
