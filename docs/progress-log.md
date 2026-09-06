@@ -10,6 +10,7 @@
 - 새 검증 도구 `tools/verify-hancom-equations.py`는 이번 실행에서 만든 문서만 읽고 고유한 출력 폴더에 저장한다. 한글 2024에서 9가지 수식의 실제 렌더링을 확인했다. 지수 뒤 덧셈, 분수 뒤 곱셈·덧셈, 아래첨자, 중첩 분수, 그리스 문자, 삼차근, 합 기호의 위아래 첨자가 올바르다. 수식 검증 문서는 수식 개체 9개, 새 문제 사진은 수식 개체 7개이며 각각 한 쪽이다. HWPX strict/구조 검사도 통과했다.
 - 참조: 로컬 공식 `compact/actions/E.md`의 EquationCreate, `compact/parameters/EqEdit.md`의 String/BaseUnit, `compact/api-members/methods.md`의 CreatePageImage. 공식 [수식 도움말](https://help.hancom.com/hoffice/webhelp/9.0/ko_kr/hwp/insert/equation/equation.htm)과 [수식 도구 상자](https://help.hancom.com/hoffice/webhelp/9.0/ko_kr/hwp/insert/equation/equation(toolbar).htm)를 확인했고, 범위 변환의 정확성은 위 실제 렌더링으로 검증했다.
 - 실 AI 연속 검증은 인앱 MathGraph의 소유자 로그인 대기 중이다. Chrome이 연결되지 않아 인앱 브라우저로 전환했고, 올바른 수식으로 만든 완전한 문제 사진과 최신 한글 연결 프로그램을 준비했다.
+- 배포 확인: 수정 커밋 `97626b6`과 통합 커밋 `2df75a1`을 GitHub에 반영했다. Production `https://mathgraph-8emq10mky-beomjinsouths-projects.vercel.app`가 Ready이고 대표 주소 `https://mathgraph-five.vercel.app`에 연결됐다. 운영 페이지와 연결 프로그램 다운로드는 HTTP 200이며, 실제로 내려받은 42,125바이트 ZIP의 CRC와 수식 변환 코드가 검증된 소스와 일치한다. 운영 환경변수는 필수 세 이름의 존재만 확인했다.
 
 ### 구현과 앞선 검증
 
