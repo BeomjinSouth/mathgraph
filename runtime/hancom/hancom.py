@@ -10,6 +10,12 @@ import time
 import uuid
 
 
+# HWPUNIT is 1/7200 inch.  Keeping a clear margin around a floating label
+# makes a one-letter point name selectable without altering its visible
+# location or turning it into image text.
+FLOATING_LABEL_HIT_MARGIN = 480
+
+
 class Hancom:
     def __init__(self):
         try:
@@ -110,6 +116,27 @@ class Hancom:
         if not hwp.HAction.Execute('InsertText', params.HSet):
             raise RuntimeError('한글 본문을 입력하지 못했습니다.')
 
+    @staticmethod
+    def _floating_equation_shape(x_mm, y_mm):
+        """Return movable shape properties for a diagram's native equation label."""
+        margin = FLOATING_LABEL_HIT_MARGIN
+        return {
+            'TreatAsChar': 0,
+            'HorzRelTo': 3, 'VertRelTo': 2, 'HorzAlign': 0, 'VertAlign': 0,
+            # The position refers to the outside edge of the control. Offset it
+            # by the transparent hit margin so the visible formula stays put.
+            'HorzOffset': round(x_mm * 7200 / 25.4) - margin,
+            'VertOffset': round(y_mm * 7200 / 25.4) - margin,
+            # A diagram label must sit above the picture and remain a movable,
+            # individually selectable ShapeObject in Hancom.
+            'TextWrap': 3, 'FlowWithText': 0, 'AllowOverlap': 1,
+            'Lock': 0, 'ProtectSize': 0,
+            # One-letter labels otherwise have only a 2–3 mm click target.
+            # These margins are transparent and are not included in the text.
+            'OutsideMarginLeft': margin, 'OutsideMarginRight': margin,
+            'OutsideMarginTop': margin, 'OutsideMarginBottom': margin,
+        }
+
     def _equation(self, hwp, script, font_size, floating=None):
         self._check_write_target(hwp)
         before_position = tuple(hwp.GetPos())
@@ -125,15 +152,7 @@ class Hancom:
             'OutsideMarginTop': 0, 'OutsideMarginBottom': 0,
         }
         if floating:
-            shape.update({
-                'HorzRelTo': 3, 'VertRelTo': 2, 'HorzAlign': 0, 'VertAlign': 0,
-                'HorzOffset': round(floating[0] * 7200 / 25.4),
-                'VertOffset': round(floating[1] * 7200 / 25.4),
-                # A diagram label must stay on top of the picture and remain
-                # a movable, individually selectable ShapeObject in Hancom.
-                'TextWrap': 3, 'FlowWithText': 0, 'AllowOverlap': 1,
-                'Lock': 0, 'ProtectSize': 0
-            })
+            shape.update(self._floating_equation_shape(*floating))
         for key, value in shape.items():
             params.HSet.SetItem(key, value)
         # Create inline so the caret reliably advances past the new control.

@@ -74,6 +74,21 @@ class ModelTest(unittest.TestCase):
         with self.assertRaises(ValueError): prepare_insert(bad)
 
 class NativeGuardTest(unittest.TestCase):
+    def test_floating_equation_has_a_larger_unlocked_hit_target(self):
+        shape = Hancom._floating_equation_shape(50, 25)
+        margin = 480
+        self.assertEqual(shape['TreatAsChar'], 0)
+        self.assertEqual(shape['TextWrap'], 3)
+        self.assertEqual(shape['Lock'], 0)
+        self.assertEqual(shape['ProtectSize'], 0)
+        self.assertTrue(shape['AllowOverlap'])
+        self.assertEqual(shape['OutsideMarginLeft'], margin)
+        self.assertEqual(shape['OutsideMarginRight'], margin)
+        self.assertEqual(shape['OutsideMarginTop'], margin)
+        self.assertEqual(shape['OutsideMarginBottom'], margin)
+        self.assertEqual(shape['HorzOffset'], round(50 * 7200 / 25.4) - margin)
+        self.assertEqual(shape['VertOffset'], round(25 * 7200 / 25.4) - margin)
+
     def make_adapter(self):
         adapter=Hancom.__new__(Hancom)
         adapter.scratch=None
