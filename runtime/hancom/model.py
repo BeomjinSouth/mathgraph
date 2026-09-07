@@ -48,8 +48,11 @@ def prepare_insert(value):
             if part['kind'] == 'equation':
                 text = to_hwp(text)
                 equation_count += 1
-            elif re.search(r'[A-Za-z0-9=+<>×÷±≤≥≠√π∠△°$\\\x00-\x08\x0b-\x1f]', text):
-                raise ValueError('본문의 숫자와 수학 표현은 수식으로 입력해야 합니다.')
+            else:
+                # Bracketed scores are document metadata, not mathematical values.
+                non_score_text = re.sub(r'\[[ \t]*[0-9]+(?:\.[0-9]+)?[ \t]*점[ \t]*\]|\([ \t]*[0-9]+(?:\.[0-9]+)?[ \t]*점[ \t]*\)', '', text)
+                if re.search(r'[A-Za-z0-9=+<>×÷±≤≥≠√π∠△°$\\\x00-\x08\x0b-\x1f]', non_score_text):
+                    raise ValueError('본문의 숫자와 수학 표현은 수식으로 입력해야 합니다.')
             output.append({'kind': part['kind'], 'value': text})
         result['paragraphs'].append({'kind': paragraph['kind'], 'segments': output})
     diagram = value.get('diagram')

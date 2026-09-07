@@ -49,6 +49,18 @@ test('일반 글자에 남은 수식과 짝이 없는 구분자를 입력 전에
     assert.throws(() => buildProblemParagraphs({blocks:[{kind:'body',text:'길이 3 cm'}]}), /수학 표현/);
     assert.throws(() => splitProblemMath('함수 $x^2'), /시작과 끝/);
 });
+
+test('배점 표기는 일반 글자로 보존하고 수학 숫자 검사는 유지한다', () => {
+    for (const score of ['[4점]', '(2.5점)']) {
+        const paragraphs = buildProblemParagraphs({blocks:[{kind:'body',text:`$x$의 값은? ${score}`}]});
+        assert.deepEqual(paragraphs[0].segments, [
+            {kind:'equation',value:'x'}, {kind:'text',value:`의 값은? ${score}`}
+        ]);
+    }
+    for (const text of ['점 4개 [4점]', '[4cm]', '$x$의 값은? [4점]+2']) {
+        assert.throws(() => buildProblemParagraphs({blocks:[{kind:'body',text}]}), /수학 표현/);
+    }
+});
 test('그림의 복합 라벨을 하나의 수식으로 보존한다', () => {
     assert.equal(mathPartsToLatex([{type:'fraction',numerator:[{type:'radical',radicand:[{type:'text',text:'3'}]}],denominator:[{type:'text',text:'2'}]}]), '\\frac{\\sqrt{3}}{2}');
 });

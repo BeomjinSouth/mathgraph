@@ -95,6 +95,21 @@ test('a line construction cannot use a non-line base or non-point through refere
     assert.match(validation.errors.join(' '), /baseLineId/);
 });
 
+test('source segment labels render while unlabeled or explicitly hidden segments stay quiet', () => {
+    const payload = lineRelationScene('parallel');
+    payload.scene.nodes[4].label = '8';
+    payload.scene.nodes[5].label = 'x';
+    payload.scene.nodes.push(item('AC', 'segment', { refs: ['A', 'C'] }));
+    payload.scene.nodes.push(item('BD', 'segment', { refs: ['B', 'D'], label: 'helper', showLabel: false }));
+    const compiled = compileProblemScenePayload(payload);
+    const manager = new ObjectManager();
+    assert.equal(new PatchApplier(manager, new HistoryManager(manager)).apply(compiled).success, true);
+    const labels = [];
+    const canvas = { drawSegment() {}, drawLabel(_position, label) { labels.push(label); } };
+    for (const object of manager.getAllObjects().filter(object => object.type === 'segment')) object.render(canvas);
+    assert.deepEqual(labels, ['8', 'x']);
+});
+
 function scenePayload(nodes, relations) {
     return {
         scene: {
