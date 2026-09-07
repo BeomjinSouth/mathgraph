@@ -1,6 +1,13 @@
 import { mathPartsToLatex } from './ProblemDocument.js';
 import { createInkMap, layoutDiagramLabels } from './DiagramExportLayout.js';
 
+// A point name is a geometric label, not an algebraic variable. Keep the
+// distinction in the payload so the native equation stays upright in Hancom.
+export function toHwpEquationLabel(value, { italic = false } = {}) {
+    const text = String(value ?? '');
+    return !italic && /^[A-Z]+(?:['′]+)?$/.test(text) ? `\\mathrm{${text}}` : text;
+}
+
 // The PNG contains geometry only; every label becomes an editable HWP equation.
 export function captureHwpDiagram(app, { widthMm = 80, includeAxes = true, includePreview = false } = {}) {
     if (!Number.isFinite(widthMm) || widthMm < 40 || widthMm > 160) throw new Error('그림 폭은 40~160 mm로 설정해 주세요.');
@@ -35,8 +42,7 @@ export function captureHwpDiagram(app, { widthMm = 80, includeAxes = true, inclu
         const italic = /\b(?:italic|oblique)\b/.test(this.font);
         // Preserve drawLabel's roman default and explicit italic setting.
         // Formula labels use exportTextSink, which retains math styling.
-        const roman = !italic && /^[A-Z]+(?:['′]+)?$/.test(value);
-        const equation = roman ? `\\mathrm{${value}}` : value;
+        const equation = toHwpEquationLabel(value, { italic });
         const font = !italic && /^[a-z]$/.test(value) ? `italic ${this.font}` : this.font;
         push({ text: equation, displayText: value, font, color: this.fillStyle, x: left, y: top, fontSize, width: textWidth });
     };

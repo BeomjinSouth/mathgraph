@@ -119,9 +119,9 @@ test('printed segment lengths become one dotted-arc dimension each, while segmen
     assert.equal(operation('length_AB').customText, '8');
     assert.equal(operation('given_BC').customText, 'x');
     assert.equal(operation('length_CD').customText, '\\frac{1}{2}');
-    assert.equal(operation('length_AB').curvature, 25, 'top side bows away from the figure');
-    assert.equal(operation('given_BC').curvature, 25, 'right side bows away from the figure');
-    assert.equal(operation('length_CD').curvature, 25, 'bottom side bows away from the figure');
+    assert.equal(operation('length_AB').curvature, 48, 'top side bows away from the figure');
+    assert.equal(operation('given_BC').curvature, 48, 'right side bows away from the figure');
+    assert.equal(operation('length_CD').curvature, 48, 'bottom side bows away from the figure');
     assert.deepEqual(validateProblemSceneCoverage(payload.scene, compiled), { valid: true, errors: [] });
 });
 

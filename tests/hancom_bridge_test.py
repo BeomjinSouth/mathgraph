@@ -38,6 +38,7 @@ class ModelTest(unittest.TestCase):
         self.assertEqual(prepare_insert(PAYLOAD)['equationCount'], 1)
     def test_roman_geometry_and_parallel_without_style_leak(self):
         self.assertEqual(to_hwp(r'\bar{BC}\parallel\bar{DE}'), 'bar {rm BC} it ~\U000f005a~ bar {rm DE} it')
+        self.assertEqual(to_hwp(r'\mathrm{A}'), '{rm A} it')
         self.assertEqual(to_hwp(r'\mathrm{AB}+x'), '{rm AB} it +x')
         self.assertEqual(to_hwp(r'\mathrm{A\mathit{x}B}+y'), '{rm A{it x} rm B} it +y')
         self.assertEqual(to_hwp(r'\bar{x}+x'), 'bar {x}+x')

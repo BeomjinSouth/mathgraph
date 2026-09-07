@@ -288,11 +288,11 @@ function segmentEndpointCentroid(operations, pointPositions) {
 function outwardDimensionCurvature(segment, pointPositions, centroid) {
     const point1 = pointPositions.get(segment.point1Id);
     const point2 = pointPositions.get(segment.point2Id);
-    if (!point1 || !point2 || !centroid) return 25;
+    if (!point1 || !point2 || !centroid) return 48;
     const direction = point2.sub(point1);
     const midpoint = point1.add(point2).div(2);
     const normal = new Vec2(-direction.y, direction.x);
-    return normal.dot(centroid.sub(midpoint)) > 0 ? -25 : 25;
+    return normal.dot(centroid.sub(midpoint)) > 0 ? -48 : 48;
 }
 
 // A relation between two existing sides is a geometric assertion, not a new

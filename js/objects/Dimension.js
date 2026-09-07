@@ -341,7 +341,7 @@ export class LengthDimension extends GeoObject {
         // 스타일
         this.offset = params.offset || 0.5; // 선분에서 떨어진 거리
         this.showValue = params.showValue !== false;
-        this.curvature = Number.isFinite(params.curvature) ? params.curvature : 25; // 곡선의 휨 정도 (픽셀)
+        this.curvature = Number.isFinite(params.curvature) ? params.curvature : 48; // 곡선의 휨 정도 (픽셀)
         this.labelFontSize = params.labelFontSize || 12; // 라벨 폰트 크기
         this.precision = (params.precision !== undefined) ? params.precision : 2;
 

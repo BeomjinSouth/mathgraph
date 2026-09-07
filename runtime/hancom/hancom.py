@@ -4,6 +4,7 @@ References: Hancom HwpAutomation (2025-04), Get/SetTextFile p24-25,
 InsertPicture p26, XHwpDocuments p46-51; EqEdit p56, ShapeObject p126-128.
 """
 from pathlib import Path
+import math
 import tempfile
 import time
 import uuid
@@ -128,7 +129,10 @@ class Hancom:
                 'HorzRelTo': 3, 'VertRelTo': 2, 'HorzAlign': 0, 'VertAlign': 0,
                 'HorzOffset': round(floating[0] * 7200 / 25.4),
                 'VertOffset': round(floating[1] * 7200 / 25.4),
-                'TextWrap': 3, 'FlowWithText': 0, 'AllowOverlap': 1
+                # A diagram label must stay on top of the picture and remain
+                # a movable, individually selectable ShapeObject in Hancom.
+                'TextWrap': 3, 'FlowWithText': 0, 'AllowOverlap': 1,
+                'Lock': 0, 'ProtectSize': 0
             })
         for key, value in shape.items():
             params.HSet.SetItem(key, value)
@@ -158,6 +162,15 @@ class Hancom:
         self._check_write_target(hwp)
         if not hwp.HAction.Run('BreakPara'):
             raise RuntimeError('한글 문단을 추가하지 못했습니다.')
+
+    def _reserve_diagram_space(self, hwp, diagram, font_size):
+        # A behind-text picture does not consume paragraph height by itself.
+        # Leave enough empty lines so the next problem starts after the figure
+        # while point labels remain individually selectable above the PNG.
+        height_mm = diagram['widthMm'] * diagram['aspect']
+        line_height_mm = max(2.5, font_size * 0.3528 * 1.6)
+        for _ in range(max(1, math.ceil(height_mm / line_height_mm))):
+            self._break(hwp)
 
     def _ensure_ready(self, hwp):
         for index in range(hwp.XHwpWindows.Count):
@@ -252,17 +265,35 @@ class Hancom:
                 picture = hwp.InsertPicture(str(path.resolve()), True, 1, False, False, 0, diagram['widthMm'], diagram['widthMm'] * diagram['aspect'])
                 if picture is None:
                     raise RuntimeError('그림을 넣지 못했습니다. 한글의 파일 접근 확인창이 열려 있는지 확인해 주세요.')
+                hwp.SetPos(*anchor)
+                if not hwp.HAction.Run('SelectCtrlFront'):
+                    raise RuntimeError('그림 개체를 선택하지 못했습니다.')
+                selected = hwp.CurSelectedCtrl
+                if selected is None or selected.CtrlID != picture.CtrlID:
+                    raise RuntimeError('그림 개체를 확인하지 못했습니다.')
                 properties = picture.Properties
-                for key, value in {'TreatAsChar': 1, 'OutsideMarginLeft': 0, 'OutsideMarginRight': 0, 'OutsideMarginTop': 0, 'OutsideMarginBottom': 0}.items():
+                # Keep the drawing as the layout-bearing background. Floating
+                # equation labels must sit above it so a click reaches a point
+                # name rather than selecting this PNG first.
+                for key, value in {
+                    'TreatAsChar': 0,
+                    'HorzRelTo': 3, 'VertRelTo': 2, 'HorzAlign': 0, 'VertAlign': 0,
+                    'HorzOffset': 0, 'VertOffset': 0,
+                    'TextWrap': 2, 'FlowWithText': 0, 'AllowOverlap': 1,
+                    'Lock': 0, 'ProtectSize': 0,
+                    'OutsideMarginLeft': 0, 'OutsideMarginRight': 0,
+                    'OutsideMarginTop': 0, 'OutsideMarginBottom': 0
+                }.items():
                     properties.SetItem(key, value)
                 picture.Properties = properties
+                hwp.HAction.Run('ShapeObjSendToBack')
                 hwp.HAction.Run('Cancel')
                 for label in diagram['labels']:
                     hwp.SetPos(*anchor)
                     size = max(5, min(24, label['fontSize'] * diagram['widthMm'] * 72 / 25.4))
                     self._equation(hwp, label['script'], size, (label['x'] * diagram['widthMm'], label['y'] * diagram['widthMm']))
                 hwp.HAction.Run('MoveParaEnd')
-                self._break(hwp)
+                self._reserve_diagram_space(hwp, diagram, font_size)
         self._break(hwp)
 
     def insert(self, prepared):
