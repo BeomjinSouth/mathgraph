@@ -123,7 +123,7 @@ test('source length labels become dotted-arc dimensions while names and hidden h
         toScreen(point) { return { x: point.x * 20, y: -point.y * 20 }; }
     });
     assert.deepEqual(dashes, [[4, 4], []]);
-    assert.equal(curves.length, 1);
+    assert.equal(curves.length, 2, 'the label gap separates the two halves of the arc');
     assert.deepEqual(text, [dimensions[0].customText]);
 });
 

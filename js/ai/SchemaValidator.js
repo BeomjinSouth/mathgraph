@@ -344,6 +344,9 @@ export class SchemaValidator {
         }
 
         if (op.type === 'lengthDimension') {
+            if (op.arcHeight !== undefined && !Number.isFinite(op.arcHeight)) {
+                errors.push(`${prefix}: lengthDimension arcHeight must be a finite number.`);
+            }
             if (op.curvature !== undefined && (!Number.isFinite(op.curvature))) {
                 errors.push(`${prefix}: lengthDimension curvature must be a finite number.`);
             }

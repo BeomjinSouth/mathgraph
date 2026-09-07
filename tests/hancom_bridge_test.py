@@ -33,11 +33,12 @@ class ModelTest(unittest.TestCase):
                 to_hwp(source)
     def test_equations(self):
         self.assertEqual(to_hwp(r'\frac{\sqrt{3}}{2}'), '{{sqrt {3}} over {2}}')
-        self.assertEqual(to_hwp(r'3\,\mathrm{cm}'), '3~{rm cm} it')
+        self.assertEqual(to_hwp(r'3\,\mathrm{cm}'), '3{rm cm} it')
+        self.assertEqual(to_hwp(r'3\quad\mathrm{cm}'), '3{rm cm} it')
         self.assertEqual(to_hwp('πr²'), 'pi r^{2}')
         self.assertEqual(prepare_insert(PAYLOAD)['equationCount'], 1)
     def test_roman_geometry_and_parallel_without_style_leak(self):
-        self.assertEqual(to_hwp(r'\bar{BC}\parallel\bar{DE}'), 'bar {rm BC} it ~\U000f005a~ bar {rm DE} it')
+        self.assertEqual(to_hwp(r'\bar{BC}\parallel\bar{DE}'), 'bar {rm BC} it\U000f005abar {rm DE} it')
         self.assertEqual(to_hwp(r'\mathrm{A}'), '{rm A} it')
         self.assertEqual(to_hwp(r'\mathrm{AB}+x'), '{rm AB} it +x')
         self.assertEqual(to_hwp(r'\mathrm{A\mathit{x}B}+y'), '{rm A{it x} rm B} it +y')
@@ -74,20 +75,19 @@ class ModelTest(unittest.TestCase):
         with self.assertRaises(ValueError): prepare_insert(bad)
 
 class NativeGuardTest(unittest.TestCase):
-    def test_floating_equation_has_a_larger_unlocked_hit_target(self):
-        shape = Hancom._floating_equation_shape(50, 25)
-        margin = 480
+    def test_diagram_label_box_is_exactly_ten_mm_and_unlocked(self):
+        shape = Hancom._diagram_label_box_shape(50, 25, 600, 900)
         self.assertEqual(shape['TreatAsChar'], 0)
         self.assertEqual(shape['TextWrap'], 3)
         self.assertEqual(shape['Lock'], 0)
         self.assertEqual(shape['ProtectSize'], 0)
         self.assertTrue(shape['AllowOverlap'])
-        self.assertEqual(shape['OutsideMarginLeft'], margin)
-        self.assertEqual(shape['OutsideMarginRight'], margin)
-        self.assertEqual(shape['OutsideMarginTop'], margin)
-        self.assertEqual(shape['OutsideMarginBottom'], margin)
-        self.assertEqual(shape['HorzOffset'], round(50 * 7200 / 25.4) - margin)
-        self.assertEqual(shape['VertOffset'], round(25 * 7200 / 25.4) - margin)
+        self.assertEqual(shape['WidthRelTo'], 4)
+        self.assertEqual(shape['HeightRelTo'], 2)
+        self.assertAlmostEqual(shape['Width'] * 25.4 / 7200, 10, delta=.01)
+        self.assertAlmostEqual(shape['Height'] * 25.4 / 7200, 10, delta=.01)
+        self.assertEqual(shape['HorzOffset'] + (shape['Width'] - 600) // 2, round(50 * 7200 / 25.4))
+        self.assertEqual(shape['VertOffset'] + (shape['Height'] - 900) // 2, round(25 * 7200 / 25.4))
 
     def make_adapter(self):
         adapter=Hancom.__new__(Hancom)

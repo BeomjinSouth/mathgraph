@@ -44,7 +44,8 @@ export function captureHwpDiagram(app, { widthMm = 80, includeAxes = true, inclu
         // Formula labels use exportTextSink, which retains math styling.
         const equation = toHwpEquationLabel(value, { italic });
         const font = !italic && /^[a-z]$/.test(value) ? `italic ${this.font}` : this.font;
-        push({ text: equation, displayText: value, font, color: this.fillStyle, x: left, y: top, fontSize, width: textWidth });
+        push({ text: equation, displayText: value, font, color: this.fillStyle, x: left, y: top, fontSize, width: textWidth,
+            fixed: app.canvas.exportLabelAnchor?.fixed === true });
     };
     app.canvas.exportTextSink = label => push({
         ...label, text: mathPartsToLatex(label.parts),

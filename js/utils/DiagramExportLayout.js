@@ -34,13 +34,15 @@ const overlaps = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b
 
 export function layoutDiagramLabels(ink, labels, { width, height }) {
     const placed = [];
-    for (const label of labels) {
+    // Dimension values belong inside their reserved arc gap. Place those first
+    // and move point names around them, never relocate a value off its gap.
+    for (const label of [...labels].sort((a, b) => Number(!!b.fixed) - Number(!!a.fixed))) {
         // Native equation controls exceed the canvas glyph metrics.
         const boxWidth = Math.max(label.width * 1.25, label.fontSize * .75);
         const boxHeight = Math.max(label.height || 0, label.fontSize * 1.35);
         const gap = Math.max(3, label.fontSize * .3);
         const candidates = [{ x: label.x, y: label.y }];
-        for (let ring = 1; ring <= 8; ring++) {
+        for (let ring = 1; !label.fixed && ring <= 8; ring++) {
             const radius = ring * label.fontSize * .5;
             for (let direction = 0; direction < 16; direction++) {
                 const angle = direction * Math.PI / 8;

@@ -354,6 +354,7 @@ const operationProperties = {
     fontSize: NULLABLE_NUMBER,
     arcRadius: NULLABLE_NUMBER,
     curvature: NULLABLE_NUMBER,
+    arcHeight: NULLABLE_NUMBER,
     showValue: NULLABLE_BOOLEAN,
     markerCount: NULLABLE_NUMBER,
     tickCount: NULLABLE_NUMBER,

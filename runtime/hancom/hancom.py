@@ -10,10 +10,9 @@ import time
 import uuid
 
 
-# HWPUNIT is 1/7200 inch.  Keeping a clear margin around a floating label
-# makes a one-letter point name selectable without altering its visible
-# location or turning it into image text.
-FLOATING_LABEL_HIT_MARGIN = 480
+# HWPUNIT is 1/7200 inch. The label itself remains a native equation; a
+# transparent text box supplies the teacher-friendly 10 mm grab area.
+DIAGRAM_LABEL_BOX_SIZE = round(10 * 7200 / 25.4)
 
 
 class Hancom:
@@ -117,24 +116,23 @@ class Hancom:
             raise RuntimeError('한글 본문을 입력하지 못했습니다.')
 
     @staticmethod
-    def _floating_equation_shape(x_mm, y_mm):
-        """Return movable shape properties for a diagram's native equation label."""
-        margin = FLOATING_LABEL_HIT_MARGIN
+    def _diagram_label_box_shape(x_mm, y_mm, equation_width, equation_height):
+        """Return a 10 mm movable text box centered on an equation label."""
+        horizontal = max(0, (DIAGRAM_LABEL_BOX_SIZE - equation_width) // 2)
+        vertical = max(0, (DIAGRAM_LABEL_BOX_SIZE - equation_height) // 2)
         return {
             'TreatAsChar': 0,
             'HorzRelTo': 3, 'VertRelTo': 2, 'HorzAlign': 0, 'VertAlign': 0,
-            # The position refers to the outside edge of the control. Offset it
-            # by the transparent hit margin so the visible formula stays put.
-            'HorzOffset': round(x_mm * 7200 / 25.4) - margin,
-            'VertOffset': round(y_mm * 7200 / 25.4) - margin,
-            # A diagram label must sit above the picture and remain a movable,
-            # individually selectable ShapeObject in Hancom.
+            'WidthRelTo': 4, 'HeightRelTo': 2,
+            'Width': DIAGRAM_LABEL_BOX_SIZE, 'Height': DIAGRAM_LABEL_BOX_SIZE,
+            # Offset the outer box so its centered native equation keeps the
+            # export layout's original visual position.
+            'HorzOffset': round(x_mm * 7200 / 25.4) - horizontal,
+            'VertOffset': round(y_mm * 7200 / 25.4) - vertical,
             'TextWrap': 3, 'FlowWithText': 0, 'AllowOverlap': 1,
             'Lock': 0, 'ProtectSize': 0,
-            # One-letter labels otherwise have only a 2–3 mm click target.
-            # These margins are transparent and are not included in the text.
-            'OutsideMarginLeft': margin, 'OutsideMarginRight': margin,
-            'OutsideMarginTop': margin, 'OutsideMarginBottom': margin,
+            'OutsideMarginLeft': 0, 'OutsideMarginRight': 0,
+            'OutsideMarginTop': 0, 'OutsideMarginBottom': 0,
         }
 
     def _equation(self, hwp, script, font_size, floating=None):
@@ -147,17 +145,12 @@ class Hancom:
         params.BaseUnit = int(font_size * 100)
         params.Version = 'Equation Version 60'
         shape = {
-            'TreatAsChar': 0 if floating else 1,
+            'TreatAsChar': 1,
             'OutsideMarginLeft': 0, 'OutsideMarginRight': 0,
             'OutsideMarginTop': 0, 'OutsideMarginBottom': 0,
         }
-        if floating:
-            shape.update(self._floating_equation_shape(*floating))
         for key, value in shape.items():
             params.HSet.SetItem(key, value)
-        # Create inline so the caret reliably advances past the new control.
-        # Floating placement is applied to that verified control afterwards.
-        params.HSet.SetItem('TreatAsChar', 1)
         if not hwp.HAction.Execute('EquationCreate', params.HSet):
             raise RuntimeError('한글 수식 개체를 만들지 못했습니다.')
         after_equation = tuple(hwp.GetPos())
@@ -176,6 +169,70 @@ class Hancom:
         ctrl.Properties = properties
         hwp.HAction.Run('Cancel')
         hwp.SetPos(*after_equation)
+        return ctrl
+
+    def _diagram_label(self, hwp, script, font_size, x_mm, y_mm):
+        """Put a native equation in a transparent, movable 10 mm text box."""
+        self._check_write_target(hwp)
+        anchor = tuple(hwp.GetPos())
+        params = hwp.HParameterSet.HShapeObject
+        hwp.HAction.GetDefault('DrawObjCreatorTextBox', params.HSet)
+        # DrawLayOut takes four fixed HWPUNIT points for the rectangular box.
+        for key, value in {
+            'TreatAsChar': 0, 'HorzRelTo': 3, 'VertRelTo': 2,
+            'HorzAlign': 0, 'VertAlign': 0, 'WidthRelTo': 4,
+            'HeightRelTo': 2, 'Width': DIAGRAM_LABEL_BOX_SIZE,
+            'Height': DIAGRAM_LABEL_BOX_SIZE, 'HorzOffset': round(x_mm * 7200 / 25.4),
+            'VertOffset': round(y_mm * 7200 / 25.4), 'TextWrap': 3,
+            'FlowWithText': 0, 'AllowOverlap': 1, 'Lock': 0,
+            'ProtectSize': 0, 'ShapeCreationMode': 0,
+        }.items():
+            params.HSet.SetItem(key, value)
+        params.ShapeDrawLayOut.CreateNumPt = 4
+        params.ShapeDrawLayOut.CreateItemArray('CreatePt', 8)
+        for index, value in enumerate((0, 0, DIAGRAM_LABEL_BOX_SIZE, 0,
+                                       DIAGRAM_LABEL_BOX_SIZE, DIAGRAM_LABEL_BOX_SIZE,
+                                       0, DIAGRAM_LABEL_BOX_SIZE)):
+            params.ShapeDrawLayOut.CreatePt.SetItem(index, value)
+        params.ShapeDrawLineAttr.HSet.SetItem('Style', 0)
+        params.ShapeDrawFillAttr.HSet.SetItem('Type', 0)
+        # Hancom's COM type library preserves the historic spelling.
+        list_properties = params.ShapeListProperites.HSet
+        list_properties.SetItem('VertAlign', 1)
+        for key in ('MarginLeft', 'MarginRight', 'MarginTop', 'MarginBottom'):
+            list_properties.SetItem(key, 0)
+        if not hwp.HAction.Execute('DrawObjCreatorTextBox', params.HSet):
+            raise RuntimeError('그림 라벨용 선택 상자를 만들지 못했습니다.')
+        box = hwp.CurSelectedCtrl
+        if box is None or box.CtrlID != 'gso':
+            raise RuntimeError('그림 라벨용 선택 상자를 확인하지 못했습니다.')
+        if not hwp.HAction.Run('ShapeObjTextBoxEdit'):
+            raise RuntimeError('그림 라벨용 선택 상자를 편집할 수 없습니다.')
+        para = hwp.HParameterSet.HParaShape
+        hwp.HAction.GetDefault('ParagraphShape', para.HSet)
+        # ParaShape's documented value 3 is horizontal center.  The list
+        # properties above center the line vertically inside the 10 mm box.
+        para.AlignType = 3
+        para.LineSpacingType = 0
+        para.LineSpacing = 100
+        para.LeftMargin = 0
+        para.RightMargin = 0
+        para.Indentation = 0
+        para.PrevSpacing = 0
+        para.NextSpacing = 0
+        para.HeadingType = 0
+        if not hwp.HAction.Execute('ParagraphShape', para.HSet):
+            raise RuntimeError('그림 라벨의 문단 모양을 설정하지 못했습니다.')
+        equation = self._equation(hwp, script, font_size)
+        equation_properties = equation.Properties
+        shape = self._diagram_label_box_shape(x_mm, y_mm,
+            int(equation_properties.Item('Width')), int(equation_properties.Item('Height')))
+        properties = box.Properties
+        for key, value in shape.items():
+            properties.SetItem(key, value)
+        box.Properties = properties
+        hwp.HAction.Run('Cancel')
+        hwp.SetPos(*anchor)
 
     def _break(self, hwp):
         self._check_write_target(hwp)
@@ -310,7 +367,8 @@ class Hancom:
                 for label in diagram['labels']:
                     hwp.SetPos(*anchor)
                     size = max(5, min(24, label['fontSize'] * diagram['widthMm'] * 72 / 25.4))
-                    self._equation(hwp, label['script'], size, (label['x'] * diagram['widthMm'], label['y'] * diagram['widthMm']))
+                    self._diagram_label(hwp, label['script'], size,
+                        label['x'] * diagram['widthMm'], label['y'] * diagram['widthMm'])
                 hwp.HAction.Run('MoveParaEnd')
                 self._reserve_diagram_space(hwp, diagram, font_size)
         self._break(hwp)

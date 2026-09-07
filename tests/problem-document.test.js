@@ -7,7 +7,7 @@ import { ObjectManager } from '../js/core/ObjectManager.js';
 
 test('미리보기의 선분 정체와 평행 기호를 맞추고 변수 및 명시적 글자 모양을 보존한다', () => {
     const source = '\\bar{BC}\\parallel\\bar{DE}+x';
-    assert.equal(problemEquationPreview(source), '\\bar{\\mathrm{BC}}\\mathrel{/\\mkern-3mu/}\\bar{\\mathrm{DE}}+x');
+    assert.equal(problemEquationPreview(source), '\\bar{\\mathrm{BC}}\\mathord{/\\mkern-3mu/}\\bar{\\mathrm{DE}}+x');
     assert.equal(problemEquationPreview('\\bar{x}+\\bar{\\mathit{AB}}'), '\\bar{x}+\\bar{\\mathit{AB}}');
     assert.equal(splitProblemMath('$' + source + '$')[0].value, source);
 });
