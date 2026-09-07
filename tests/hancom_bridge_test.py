@@ -33,9 +33,15 @@ class ModelTest(unittest.TestCase):
                 to_hwp(source)
     def test_equations(self):
         self.assertEqual(to_hwp(r'\frac{\sqrt{3}}{2}'), '{{sqrt {3}} over {2}}')
-        self.assertEqual(to_hwp(r'3\,\mathrm{cm}'), '3~rm {cm}')
+        self.assertEqual(to_hwp(r'3\,\mathrm{cm}'), '3~{rm cm} it')
         self.assertEqual(to_hwp('πr²'), 'pi r^{2}')
         self.assertEqual(prepare_insert(PAYLOAD)['equationCount'], 1)
+    def test_roman_geometry_and_parallel_without_style_leak(self):
+        self.assertEqual(to_hwp(r'\bar{BC}\parallel\bar{DE}'), 'bar {rm BC} it ~\U000f005a~ bar {rm DE} it')
+        self.assertEqual(to_hwp(r'\mathrm{AB}+x'), '{rm AB} it +x')
+        self.assertEqual(to_hwp(r'\mathrm{A\mathit{x}B}+y'), '{rm A{it x} rm B} it +y')
+        self.assertEqual(to_hwp(r'\bar{x}+x'), 'bar {x}+x')
+        self.assertEqual(to_hwp('BC+x'), 'BC+x')
     def test_unsupported_and_unbalanced(self):
         for value in (r'\unknown{x}', r'\frac{a}', r'\sqrt{x', 'x}'):
             with self.assertRaises(ValueError): to_hwp(value)

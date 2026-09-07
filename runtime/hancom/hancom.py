@@ -289,11 +289,9 @@ class Hancom:
             scratch_document = scratch.XHwpDocuments.Add(False)
         else:
             scratch = self._new_hwp()
-            existing = scratch.XHwpDocuments.Item(0)
-            if existing.FullName or scratch.IsModified:
-                scratch_document = scratch.XHwpDocuments.Add(False)
-            else:
-                scratch_document = existing
+            # COM may attach to an existing application, and an unnamed window
+            # is not proof of ownership. Always allocate our own document.
+            scratch_document = scratch.XHwpDocuments.Add(False)
         self.activate(scratch, scratch_document)
         scratch_id = int(scratch_document.DocumentID)
         self.scratch = (scratch, scratch_id)

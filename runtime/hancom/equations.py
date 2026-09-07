@@ -9,7 +9,9 @@ SYMBOLS = {
     'cup': 'CUP', 'cap': 'CAP', 'infty': 'inf', 'to': '->', 'rightarrow': '->',
     'leftarrow': '<-', 'Rightarrow': 'RARROW', 'Leftrightarrow': 'LRARROW',
     'angle': 'ANGLE', 'triangle': 'TRIANGLE', 'circ': 'circ', 'degree': 'DEG',
-    'perp': 'BOT', 'parallel': 'PARALLEL', 'cdots': 'cdots', 'ldots': 'ldots',
+    # Hancom's school-geometry slanted parallel sign, verified against the
+    # source HWP equation and a native rendering (PARALLEL renders upright ∥).
+    'perp': 'BOT', 'parallel': '~\U000f005a~', 'cdots': 'cdots', 'ldots': 'ldots',
     'dots': 'cdots', 'therefore': 'THEREFORE', 'because': 'BECAUSE',
     'sum': 'sum', 'prod': 'prod', 'int': 'int', 'lim': 'lim', 'log': 'log',
     'ln': 'ln', 'sin': 'sin', 'cos': 'cos', 'tan': 'tan', 'cot': 'cot',
@@ -29,6 +31,7 @@ def to_hwp(source):
         raise ValueError('수식에 사용할 수 없는 문자가 있습니다.')
     expr = ''.join(UNICODE.get(c, c) for c in source.strip())
     pos = 0
+    font_mode = 'it'
 
     def group():
         nonlocal pos
@@ -40,7 +43,7 @@ def to_hwp(source):
         return parse(True)
 
     def command():
-        nonlocal pos
+        nonlocal pos, font_mode
         match = re.match(r'[A-Za-z]+|.', expr[pos:])
         if not match:
             raise ValueError('수식의 마지막 명령을 확인해 주세요.')
@@ -61,9 +64,24 @@ def to_hwp(source):
                 pos = end + 1
             return ('root {' + index + '} of ' if index else 'sqrt ') + '{' + group() + '}'
         if name in ('mathrm', 'text', 'operatorname', 'mathbf', 'mathit'):
-            return ('bold' if name == 'mathbf' else 'it' if name == 'mathit' else 'rm') + ' {' + group() + '}'
+            if name == 'mathbf':
+                return 'bold {' + group() + '}'
+            previous = font_mode
+            font_mode = 'it' if name == 'mathit' else 'rm'
+            mode = font_mode
+            value = group()
+            font_mode = previous
+            # Hancom's rm/it survive closing braces. Restore explicitly so
+            # a point name or a unit never makes a following variable upright.
+            return '{' + mode + ' ' + value + '} ' + previous + ' '
         if name in ('overline', 'bar', 'vec', 'overrightarrow', 'hat'):
-            return {'overline': 'bar', 'overrightarrow': 'vec'}.get(name, name) + ' {' + group() + '}'
+            accent = {'overline': 'bar', 'overrightarrow': 'vec'}.get(name, name)
+            value = group()
+            # A bar over uppercase point names denotes a geometric segment.
+            # Keep means (bar x), variables and explicit font commands intact.
+            if accent == 'bar' and re.fullmatch(r'[A-Z]{2,}', value):
+                return 'bar {rm ' + value + '} ' + font_mode + ' '
+            return accent + ' {' + value + '}'
         if name == 'binom':
             first, second = group(), group()
             return '{{' + first + '} choose {' + second + '}}'

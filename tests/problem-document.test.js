@@ -1,9 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { splitProblemMath, buildProblemParagraphs, chooseHwpDocument, mathPartsToLatex } from '../js/utils/ProblemDocument.js';
+import { splitProblemMath, buildProblemParagraphs, chooseHwpDocument, mathPartsToLatex, problemEquationPreview } from '../js/utils/ProblemDocument.js';
 import { createProjectEnvelope, parseProjectFile } from '../js/utils/ProjectFile.js';
 import { HwpBridgeClient } from '../js/utils/HwpBridgeClient.js';
 import { ObjectManager } from '../js/core/ObjectManager.js';
+
+test('미리보기의 선분 정체와 평행 기호를 맞추고 변수 및 명시적 글자 모양을 보존한다', () => {
+    const source = '\\bar{BC}\\parallel\\bar{DE}+x';
+    assert.equal(problemEquationPreview(source), '\\bar{\\mathrm{BC}}\\mathrel{/\\mkern-3mu/}\\bar{\\mathrm{DE}}+x');
+    assert.equal(problemEquationPreview('\\bar{x}+\\bar{\\mathit{AB}}'), '\\bar{x}+\\bar{\\mathit{AB}}');
+    assert.equal(splitProblemMath('$' + source + '$')[0].value, source);
+});
 
 test('실제 편집기의 문제와 연결된 도형을 프로젝트 파일로 왕복한다', async () => {
     const oldDocument=globalThis.document, oldWindow=globalThis.window;

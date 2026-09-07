@@ -40,8 +40,12 @@ def create_fixture(stem, paragraphs, number='', font_size=14):
     if int(hwp.XHwpDocuments.Active_XHwpDocument.DocumentID) != identity:
         raise RuntimeError('시험 문서가 전환되었습니다.')
     xml = hwp.GetTextFile('HWPML2X', '')
-    scripts = [element.text for element in ET.fromstring(xml).iter('SCRIPT')]
+    root = ET.fromstring(xml)
+    scripts = [element.text for element in root.iter('SCRIPT')]
     assert len(scripts) == result['equationCount']
+    expected_text = (number + '. ' if number else '') + ''.join(
+        part['value'] for paragraph in paragraphs for part in paragraph['segments'] if part['kind'] == 'text')
+    assert ''.join(element.text or '' for element in root.iter('CHAR')) == expected_text
     assert hwp.SaveAs(str(output / (stem + '.hwpx')), 'HWPX', '')
     assert hwp.CreatePageImage(str(output / (stem + '.bmp')), 0, 160, 24, 'bmp')
     (output / (stem + '.xml')).write_text(xml, encoding='utf-8')
@@ -59,6 +63,10 @@ cases = [
     ('중첩 분수', r'\frac{1}{\frac{2}{3}}+4'),
     ('삼차근과 지수', r'\sqrt[3]{x^2+1}+2'),
     ('합의 위아래 첨자', r'\sum_{i=1}^n i^2+1'),
+    ('선분 정체와 평행', r'\bar{BC}\parallel\bar{DE}'),
+    ('점 정체 뒤 변수', r'\mathrm{AB}+x'),
+    ('단위 정체 뒤 변수', r'3\,\mathrm{cm}+x'),
+    ('중첩 글자 모양', r'\mathrm{A\mathit{x}B}+y'),
 ]
 scope = create_fixture('수식-범위-검증', [
     {'kind': 'body', 'segments': [text(label + '  '), equation(value)]}

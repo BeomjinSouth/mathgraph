@@ -1,5 +1,5 @@
 import { recognizeProblemDocument } from '../ai/ProblemRecognition.js';
-import { buildProblemParagraphs, normalizeProblemDocument, splitProblemMath, chooseHwpDocument } from '../utils/ProblemDocument.js';
+import { buildProblemParagraphs, normalizeProblemDocument, splitProblemMath, chooseHwpDocument, problemEquationPreview } from '../utils/ProblemDocument.js';
 import { HwpBridgeClient } from '../utils/HwpBridgeClient.js';
 import { captureHwpDiagram } from '../utils/HwpDiagram.js';
 
@@ -187,7 +187,7 @@ export class ProblemComposer {
             try {
                 for (const part of splitProblemMath(block.text)) {
                     const span = document.createElement('span');
-                    if (part.kind === 'equation' && globalThis.katex) globalThis.katex.render(part.value, span, { throwOnError: false, trust: false, strict: 'ignore' });
+                    if (part.kind === 'equation' && globalThis.katex) globalThis.katex.render(problemEquationPreview(part.value), span, { throwOnError: false, trust: false, strict: 'ignore' });
                     else span.textContent = part.value;
                     paragraph.append(span);
                 }
@@ -216,9 +216,15 @@ export class ProblemComposer {
         image.hidden = !hasObjects || !this.el('#hwpIncludeDiagram').checked;
         this.el('.problem-figure span').hidden = !image.hidden;
         if (image.hidden) return;
-        const canvas = document.createElement('canvas');
-        this.app.renderSceneToCanvas(canvas, { includeAxes: this.el('#hwpIncludeAxes').checked, includeGrid: false });
-        image.src = canvas.toDataURL('image/png');
+        try {
+            image.src = captureHwpDiagram(this.app, {
+                widthMm: Number(this.el('#hwpDiagramWidth').value),
+                includeAxes: this.el('#hwpIncludeAxes').checked, includePreview: true
+            }).preview;
+        } catch (error) {
+            image.hidden = true;
+            this.status(error.message, true);
+        }
     }
     setBusy(value) {
         this.busy = value;
