@@ -7,6 +7,7 @@
  */
 
 import { compileSceneGraph } from './SceneGraphCompiler.js';
+import { SchemaValidator } from './SchemaValidator.js';
 import Geometry, { Vec2 } from '../utils/Geometry.js';
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
@@ -177,6 +178,7 @@ export function buildProblemScenePrompt(referencePrompt = '') {
         '- cylinder/cone/sphere: numbers=[x,y,width,height,ellipseRatio?]',
         '- textLabel: numbers=[x,y], text=short annotation',
         '- relations use refs in the order implied by intersection, midpoint, parallel, perpendicular, rightAngleMarker, equalLengthMarker, angleDimension, lengthDimension, tangentCircle, or tangentFunction.',
+        '- parallel/perpendicular: refs=[baseLineId,throughPointId] constructs a new line through a point. refs=[firstLineId,secondLineId] states a condition between two existing segments/lines/rays; keep their coordinates consistent and do not add another visible line.',
         '- for ∠XYZ, angleDimension refs=[Y,X,Z]. Keep every explicitly stated angle at its stated vertex instead of substituting a derived angle.',
         '- keep independent equal-length groups separate; MathGraph assigns different tick counts to different equivalence classes.',
         '- relation ids are valid refs for later items; for example midpoint M -> line BM -> intersection D -> polygon using D.',
@@ -189,11 +191,28 @@ export function compileProblemScenePayload(payload) {
     const compiled = compileSceneGraph(scene, { compact: true });
     normalizeSharedDefinitionIntersectionBranches(compiled.operations);
     normalizeEqualLengthMarkerTickCounts(compiled.operations);
+    separateExistingLineRelations(compiled);
     return {
         ...compiled,
         sourceBindings: Array.isArray(scene.sourceBindings) ? scene.sourceBindings : [],
         scene
     };
+}
+
+// A relation between two existing sides is a geometric assertion, not a new
+// infinite line whose throughPointId happens to contain another line's id.
+function separateExistingLineRelations(compiled) {
+    const operationMap = new Map(compiled.operations.map(operation => [operation.id, operation]));
+    compiled.lineRelations = [];
+    compiled.operations = compiled.operations.filter(operation => {
+        if (!['parallel', 'perpendicular'].includes(operation.type) ||
+            !isLineOperation(operationMap.get(operation.baseLineId)) ||
+            !isLineOperation(operationMap.get(operation.throughPointId))) return true;
+        compiled.lineRelations.push({ id: operation.id, kind: operation.type,
+            firstLineId: operation.baseLineId, secondLineId: operation.throughPointId });
+        return false;
+    });
+    compiled.metadata.operationCount = compiled.operations.length;
 }
 
 export function normalizeEqualLengthMarkerTickCounts(operations = []) {
@@ -390,6 +409,9 @@ export function validateProblemSceneCoverage(scene, compiled) {
     const errors = [];
     const operations = Array.isArray(compiled?.operations) ? compiled.operations : [];
     const operationIds = new Set(operations.map(operation => operation?.id).filter(Boolean));
+    const lineConditions = validateExistingLineRelations(operations, compiled?.lineRelations || []);
+    errors.push(...lineConditions.errors);
+    const coveredIds = new Set([...operationIds, ...lineConditions.validIds]);
     const sceneItems = [
         ...(Array.isArray(scene?.nodes) ? scene.nodes : []),
         ...(Array.isArray(scene?.relations) ? scene.relations : [])
@@ -434,7 +456,7 @@ export function validateProblemSceneCoverage(scene, compiled) {
         for (const id of bindings) {
             if (!sceneIds.has(id)) {
                 errors.push(`required scene item "${item.id || item.description}" references unknown scene id "${id}".`);
-            } else if (!operationIds.has(id)) {
+            } else if (!coveredIds.has(id)) {
                 errors.push(`required scene id "${id}" was not compiled into GraphA operations.`);
             }
         }
@@ -462,8 +484,54 @@ export function validateProblemSceneCoverage(scene, compiled) {
     }
     errors.push(...validateResolvedEqualLengthMarkers(operations));
     errors.push(...validateRequiredAngleLegs(scene, operations));
+    errors.push(...validateLineConstructionReferences(operations));
+    errors.push(...new SchemaValidator().validateReferences({ operations }, new Set()).errors);
 
     return { valid: errors.length === 0, errors };
+}
+
+function validateExistingLineRelations(operations, relations) {
+    const operationMap = new Map(operations.map(operation => [operation.id, operation]));
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const errors = [];
+    const validIds = [];
+    for (const relation of relations) {
+        const first = resolveLineGeometry(operationMap.get(relation.firstLineId), pointPositions);
+        const second = resolveLineGeometry(operationMap.get(relation.secondLineId), pointPositions);
+        if (!first || !second) {
+            errors.push(`line relation "${relation.id}" has unresolved line coordinates.`);
+            continue;
+        }
+        const u = first.point2.sub(first.point1);
+        const v = second.point2.sub(second.point1);
+        const scale = Math.sqrt(u.dot(u) * v.dot(v));
+        const residual = relation.kind === 'parallel'
+            ? Math.abs(u.x * v.y - u.y * v.x) : Math.abs(u.dot(v));
+        if (!Number.isFinite(scale) || scale <= 1e-12 || residual / scale > 1e-3) {
+            errors.push(`line relation "${relation.id}" is not ${relation.kind} in the resolved coordinates.`);
+            continue;
+        }
+        validIds.push(relation.id);
+    }
+    return { validIds, errors };
+}
+
+function validateLineConstructionReferences(operations) {
+    const operationMap = new Map(operations.map(operation => [operation.id, operation]));
+    const pointTypes = new Set(['point', 'pointOnLine', 'pointOnCircle', 'circleCenterPoint', 'intersection', 'midpoint']);
+    const lineTypes = new Set(['segment', 'line', 'ray', 'parallel', 'perpendicular',
+        'perpendicularBisector', 'angleBisector', 'tangentCircle', 'tangentFunction']);
+    const errors = [];
+    for (const operation of operations) {
+        if (!['parallel', 'perpendicular'].includes(operation.type)) continue;
+        if (!lineTypes.has(operationMap.get(operation.baseLineId)?.type)) {
+            errors.push(`${operation.type} "${operation.id}" baseLineId must reference a line.`);
+        }
+        if (!pointTypes.has(operationMap.get(operation.throughPointId)?.type)) {
+            errors.push(`${operation.type} "${operation.id}" throughPointId must reference a point.`);
+        }
+    }
+    return errors;
 }
 
 function validateResolvedEqualLengthMarkers(operations) {
