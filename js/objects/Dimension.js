@@ -341,7 +341,7 @@ export class LengthDimension extends GeoObject {
         // 스타일
         this.offset = params.offset || 0.5; // 선분에서 떨어진 거리
         this.showValue = params.showValue !== false;
-        this.curvature = params.curvature || 25; // 곡선의 휨 정도 (픽셀)
+        this.curvature = Number.isFinite(params.curvature) ? params.curvature : 25; // 곡선의 휨 정도 (픽셀)
         this.labelFontSize = params.labelFontSize || 12; // 라벨 폰트 크기
         this.precision = (params.precision !== undefined) ? params.precision : 2;
 
@@ -350,7 +350,9 @@ export class LengthDimension extends GeoObject {
         this.labelOffset = params.labelOffset
             ? new Vec2(params.labelOffset.x, params.labelOffset.y)
             : new Vec2(0, 0);
-        this.customText = params.customText || null;
+        // AI/JSON uses label for the printed value. The property panel uses
+        // customText. Accept both without turning an omitted label into text.
+        this.customText = params.customText ?? params.label ?? null;
 
         // 계산된 값
         this.point1 = null;
@@ -425,15 +427,15 @@ export class LengthDimension extends GeoObject {
         // 값 표시 (곡선 중간)
         if (this.showValue) {
             // 베지어 곡선 중간점 계산 (t=0.5) + 라벨 오프셋
-            const labelOffsetScreen = canvas.toScreenLength(Math.sqrt(
-                this.labelOffset.x * this.labelOffset.x + this.labelOffset.y * this.labelOffset.y
-            ));
             const bezierMidX = 0.25 * s1.x + 0.5 * ctrlX + 0.25 * s2.x + this.labelOffset.x * canvas.scale;
             const bezierMidY = 0.25 * s1.y + 0.5 * ctrlY + 0.25 * s2.y - this.labelOffset.y * canvas.scale;
 
             // Mk.2: 사용자 정의 텍스트 또는 자동 계산값
-            const lengthStr = this.customText !== null ? this.customText : this.length.toFixed(this.precision);
-            ctx.font = `${this.labelFontSize}px "Noto Sans KR", sans-serif`;
+            const lengthStr = String(this.customText !== null ? this.customText : this.length.toFixed(this.precision));
+            const variable = /^[a-zα-ω]$/u.test(lengthStr.trim());
+            ctx.font = variable
+                ? `italic ${this.labelFontSize}px "Times New Roman", "STIX Two Math", serif`
+                : `${this.labelFontSize}px "Noto Sans KR", sans-serif`;
             const textWidth = ctx.measureText(lengthStr).width;
 
             // 배경 박스 (반투명 흰색)
@@ -557,7 +559,12 @@ export class LengthDimension extends GeoObject {
         if (this.segmentDir && this.segmentPerp) {
             // 선분에 수직 방향 이동량 → 곡률 조정
             const perpMove = moveVec.x * this.segmentPerp.x + moveVec.y * this.segmentPerp.y;
-            this.curvature = Math.max(5, Math.min(100, this.curvatureStart + perpMove * canvas.scale * 2));
+            const nextCurvature = this.curvatureStart + perpMove * canvas.scale * 2;
+            const minimumMagnitude = 5;
+            const signedMinimum = Math.abs(nextCurvature) < minimumMagnitude
+                ? Math.sign(nextCurvature || this.curvatureStart || 1) * minimumMagnitude
+                : nextCurvature;
+            this.curvature = Math.max(-100, Math.min(100, signedMinimum));
 
             // 선분에 평행 방향 이동량 → 라벨 위치 조정
             const paraMove = moveVec.x * this.segmentDir.x + moveVec.y * this.segmentDir.y;
@@ -598,6 +605,7 @@ export class LengthDimension extends GeoObject {
             showValue: this.showValue,
             labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y },
             customText: this.customText,
+            curvature: this.curvature,
             labelFontSize: this.labelFontSize,
             precision: this.precision
         };

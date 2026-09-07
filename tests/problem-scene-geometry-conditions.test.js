@@ -95,7 +95,7 @@ test('a line construction cannot use a non-line base or non-point through refere
     assert.match(validation.errors.join(' '), /baseLineId/);
 });
 
-test('source segment labels render while unlabeled or explicitly hidden segments stay quiet', () => {
+test('source length labels become dotted-arc dimensions while names and hidden helpers stay quiet', () => {
     const payload = lineRelationScene('parallel');
     payload.scene.nodes[4].label = '8';
     payload.scene.nodes[5].label = 'x';
@@ -104,10 +104,27 @@ test('source segment labels render while unlabeled or explicitly hidden segments
     const compiled = compileProblemScenePayload(payload);
     const manager = new ObjectManager();
     assert.equal(new PatchApplier(manager, new HistoryManager(manager)).apply(compiled).success, true);
-    const labels = [];
-    const canvas = { drawSegment() {}, drawLabel(_position, label) { labels.push(label); } };
-    for (const object of manager.getAllObjects().filter(object => object.type === 'segment')) object.render(canvas);
-    assert.deepEqual(labels, ['8', 'x']);
+    const segments = manager.getAllObjects().filter(object => object.type === 'segment');
+    const dimensions = manager.getAllObjects().filter(object => object.type === 'lengthDimension');
+    assert.equal(segments.filter(object => object.showLabel).length, 0);
+    assert.deepEqual(dimensions.map(object => object.customText).sort(), ['8', 'x']);
+
+    const dashes = [];
+    const curves = [];
+    const text = [];
+    const context = {
+        setLineDash(value) { dashes.push(value); }, beginPath() {}, moveTo() {},
+        quadraticCurveTo(...args) { curves.push(args); }, stroke() {},
+        measureText(value) { return { width: String(value).length * 8 }; },
+        fillRect() {}, fillText(value) { text.push(value); }
+    };
+    dimensions[0].render({
+        ctx: context, scale: 20,
+        toScreen(point) { return { x: point.x * 20, y: -point.y * 20 }; }
+    });
+    assert.deepEqual(dashes, [[4, 4], []]);
+    assert.equal(curves.length, 1);
+    assert.deepEqual(text, [dimensions[0].customText]);
 });
 
 function scenePayload(nodes, relations) {

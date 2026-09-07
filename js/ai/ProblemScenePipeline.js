@@ -152,6 +152,7 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'A printed shaded face or requested area region must be a polygon, sector, circularSegment, or lensRegion node with fillOpacity between 0.18 and 0.24.',
     'A semicircle must use an arc with mode minor or major, not a full circle alone.',
     'For compact items: refs contains referenced ids, groups contains grouped vertex ids, numbers contains numeric parameters, and text contains an expression or annotation.',
+    'For every printed numeric or algebraic length on a segment, make a lengthDimension relation for that segment and use its label for the exact printed value. Do not use a segment label for a length value.',
     'Do not copy long problem prose into the scene. Keep constructionSummary and evidence short and factual.'
 ].join('\n');
 
@@ -192,11 +193,106 @@ export function compileProblemScenePayload(payload) {
     normalizeSharedDefinitionIntersectionBranches(compiled.operations);
     normalizeEqualLengthMarkerTickCounts(compiled.operations);
     separateExistingLineRelations(compiled);
+    normalizeSegmentLengthLabels(compiled.operations);
     return {
         ...compiled,
         sourceBindings: Array.isArray(scene.sourceBindings) ? scene.sourceBindings : [],
         scene
     };
+}
+
+// Vision results from older prompts often put 8, x, or \frac{1}{2} directly
+// on a segment. Preserve named lines such as AB, but turn a likely length
+// value into the dedicated dotted-arc dimension object.
+export function normalizeSegmentLengthLabels(operations = []) {
+    const operationIds = new Set(operations.map(operation => operation?.id).filter(Boolean));
+    const dimensionsBySegment = new Map();
+    for (const operation of operations) {
+        if (operation?.type === 'lengthDimension' && operation.segmentId) {
+            dimensionsBySegment.set(operation.segmentId, operation);
+        }
+    }
+
+    const operationMap = new Map(operations.filter(operation => operation?.id).map(operation => [operation.id, operation]));
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const centroid = segmentEndpointCentroid(operations, pointPositions);
+    const additions = [];
+
+    for (const dimension of dimensionsBySegment.values()) {
+        const segment = operationMap.get(dimension.segmentId);
+        if (segment?.type !== 'segment') continue;
+        const segmentText = likelyLengthLabel(segment.label);
+        const dimensionText = likelyLengthLabel(dimension.label);
+        if (dimension.customText == null || dimension.customText === '') {
+            dimension.customText = segmentText || dimensionText || dimension.customText;
+        }
+        if (!Number.isFinite(dimension.curvature)) {
+            dimension.curvature = outwardDimensionCurvature(segment, pointPositions, centroid);
+        }
+        if (segmentText) segment.showLabel = false;
+    }
+
+    for (const segment of operations) {
+        const lengthText = likelyLengthLabel(segment?.label);
+        if (segment?.type !== 'segment' || segment.visible === false || segment.showLabel === false || !lengthText) continue;
+
+        segment.showLabel = false;
+        const existing = dimensionsBySegment.get(segment.id);
+        if (existing) {
+            if (existing.customText == null || existing.customText === '') existing.customText = lengthText;
+            continue;
+        }
+
+        const id = uniqueOperationId(`length_${segment.id}`, operationIds);
+        const curvature = outwardDimensionCurvature(segment, pointPositions, centroid);
+        additions.push({
+            op: 'create', id, type: 'lengthDimension', segmentId: segment.id,
+            customText: lengthText, showValue: true, curvature,
+            ...(segment.color ? { color: segment.color } : {})
+        });
+    }
+    operations.push(...additions);
+}
+
+function likelyLengthLabel(value) {
+    if (typeof value !== 'string') return '';
+    const text = value.trim();
+    const compact = text.replace(/\s+/g, '');
+    if (!compact || compact.length > 80) return '';
+    if (/^[+-]?\d+(?:[.,]\d+)?(?:[a-z]{0,4})?$/i.test(compact)) return text;
+    if (/^(?:\\(?:d?frac|sqrt)\b|√)/.test(compact)) return text;
+    if (/^[a-zα-ω](?:[_^](?:\{?[\da-zα-ω+\-]+\}?))?$/u.test(compact)) return text;
+    return '';
+}
+
+function uniqueOperationId(base, ids) {
+    let index = 1;
+    let id = base;
+    while (ids.has(id)) id = `${base}_${index++}`;
+    ids.add(id);
+    return id;
+}
+
+function segmentEndpointCentroid(operations, pointPositions) {
+    const endpointIds = new Set();
+    for (const operation of operations) {
+        if (operation?.type !== 'segment') continue;
+        endpointIds.add(operation.point1Id);
+        endpointIds.add(operation.point2Id);
+    }
+    const points = [...endpointIds].map(id => pointPositions.get(id)).filter(Boolean);
+    if (!points.length) return null;
+    return points.reduce((sum, point) => sum.add(point), new Vec2(0, 0)).div(points.length);
+}
+
+function outwardDimensionCurvature(segment, pointPositions, centroid) {
+    const point1 = pointPositions.get(segment.point1Id);
+    const point2 = pointPositions.get(segment.point2Id);
+    if (!point1 || !point2 || !centroid) return 25;
+    const direction = point2.sub(point1);
+    const midpoint = point1.add(point2).div(2);
+    const normal = new Vec2(-direction.y, direction.x);
+    return normal.dot(centroid.sub(midpoint)) > 0 ? -25 : 25;
 }
 
 // A relation between two existing sides is a geometric assertion, not a new

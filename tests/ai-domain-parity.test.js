@@ -16,9 +16,25 @@ function historyStub() {
 
 test('strict AI schema exposes function ranges, intersection branch, and length marker count', () => {
     const properties = GRAPH_OPERATIONS_JSON_SCHEMA.properties.operations.items.properties;
-    for (const field of ['xMin', 'xMax', 'yMin', 'yMax', 'branch', 'tickCount']) {
+    for (const field of ['xMin', 'xMax', 'yMin', 'yMax', 'branch', 'tickCount', 'curvature']) {
         assert.ok(properties[field], `${field} missing from strict operation schema`);
     }
+});
+
+test('PatchApplier preserves a printed length value and its dotted-arc side', () => {
+    const manager = new ObjectManager();
+    const result = new PatchApplier(manager, historyStub()).apply({
+        operations: [
+            { op: 'create', id: 'A', type: 'point', x: 0, y: 0 },
+            { op: 'create', id: 'B', type: 'point', x: 4, y: 0 },
+            { op: 'create', id: 'AB', type: 'segment', point1Id: 'A', point2Id: 'B' },
+            { op: 'create', id: 'length_AB', type: 'lengthDimension', segmentId: 'AB', customText: '8', curvature: -25 }
+        ]
+    });
+    assert.equal(result.success, true, result.error);
+    const dimension = manager.getAllObjects().find(object => object.type === 'lengthDimension');
+    assert.equal(dimension.customText, '8');
+    assert.equal(dimension.curvature, -25);
 });
 
 test('PatchApplier preserves equal-length tick counts', () => {

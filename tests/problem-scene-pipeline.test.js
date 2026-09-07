@@ -89,6 +89,42 @@ test('problem scenes resolve dependencies and preserve point-on-segment construc
     assert.deepEqual(validateProblemSceneCoverage(scenePayload().scene, compiled), { valid: true, errors: [] });
 });
 
+test('printed segment lengths become one dotted-arc dimension each, while segment names remain labels', () => {
+    const payload = scenePayload({
+        nodes: [
+            node('A', 'point', { numbers: [-4, 4] }),
+            node('B', 'point', { numbers: [4, 4] }),
+            node('C', 'point', { numbers: [4, -4] }),
+            node('D', 'point', { numbers: [-4, -4] }),
+            node('AB', 'segment', { refs: ['A', 'B'], label: '8' }),
+            node('BC', 'segment', { refs: ['B', 'C'], label: 'x' }),
+            node('CD', 'segment', { refs: ['C', 'D'], label: '\\frac{1}{2}' }),
+            node('DA', 'segment', { refs: ['D', 'A'], label: 'AB' })
+        ],
+        relations: [node('given_BC', 'lengthDimension', { refs: ['BC'], label: 'x' })],
+        mustDraw: [{
+            id: 'lengths', description: 'Printed lengths 8, x and one half',
+            nodeIds: ['AB', 'BC', 'CD', 'DA'], relationIds: ['given_BC'], required: true, evidence: 'source labels'
+        }]
+    });
+    const compiled = compileProblemScenePayload(payload);
+    const operation = id => compiled.operations.find(item => item.id === id);
+    const dimensions = compiled.operations.filter(item => item.type === 'lengthDimension');
+
+    assert.equal(operation('AB').showLabel, false);
+    assert.equal(operation('BC').showLabel, false);
+    assert.equal(operation('CD').showLabel, false);
+    assert.notEqual(operation('DA').showLabel, false);
+    assert.equal(dimensions.length, 3);
+    assert.equal(operation('length_AB').customText, '8');
+    assert.equal(operation('given_BC').customText, 'x');
+    assert.equal(operation('length_CD').customText, '\\frac{1}{2}');
+    assert.equal(operation('length_AB').curvature, 25, 'top side bows away from the figure');
+    assert.equal(operation('given_BC').curvature, 25, 'right side bows away from the figure');
+    assert.equal(operation('length_CD').curvature, 25, 'bottom side bows away from the figure');
+    assert.deepEqual(validateProblemSceneCoverage(payload.scene, compiled), { valid: true, errors: [] });
+});
+
 test('coverage rejects a required source item that was not compiled', () => {
     const payload = scenePayload({
         mustDraw: [{
@@ -390,6 +426,7 @@ test('problem-scene prompts preserve source-stated angle vertices and separate e
     assert.match(prompt, /∠XYZ/);
     assert.match(prompt, /refs=\[Y,X,Z\]/);
     assert.match(prompt, /independent equal-length groups separate/i);
+    assert.match(prompt, /lengthDimension relation/);
 });
 
 test('image-only problem diagrams use one Luna scene call and local compilation on success', async () => {
