@@ -431,3 +431,84 @@ body .problem-close {
         max-height: 52px;
     }
 }
+
+/*
+ * 2026-09-07 줄바꿈 보정
+ * 패널 폭은 유지하고, 한국어 문장은 어절 단위로 끊기게 한다.
+ */
+body {
+    word-break: keep-all;
+}
+
+.category-label,
+.prop-category-label {
+    white-space: nowrap;
+}
+
+.prop-categories {
+    flex-basis: 60px;
+    min-height: 60px;
+}
+
+.prop-category-btn {
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+    white-space: nowrap;
+}
+
+.tool-item {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 72px;
+    padding: 8px 0;
+    gap: 4px;
+    text-align: center;
+}
+
+.tool-item > span:last-child {
+    max-width: 100%;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    line-height: 1.25;
+    text-align: center;
+    letter-spacing: -0.02em;
+}
+
+.tool-shortcut {
+    white-space: nowrap;
+}
+
+.toolbar-text-btn,
+.file-menu-items button,
+.problem-dialog .btn,
+.tab-btn {
+    white-space: nowrap;
+}
+
+#toast-container {
+    width: min(420px, calc(100vw - 32px));
+    bottom: calc(var(--teacher-dock-height) + 16px);
+}
+
+#toast-container .toast {
+    width: 100%;
+    max-width: none;
+    justify-content: center;
+}
+
+.problem-settings,
+.problem-footer,
+.problem-preview,
+.problem-source,
+.problem-muted,
+.problem-check,
+.hwp-setup,
+.manual-body,
+.card-info,
+.shortcut-item,
+.tip-card {
+    word-break: keep-all;
+}
