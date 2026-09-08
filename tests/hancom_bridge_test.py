@@ -33,9 +33,17 @@ class ModelTest(unittest.TestCase):
                 to_hwp(source)
     def test_equations(self):
         self.assertEqual(to_hwp(r'\frac{\sqrt{3}}{2}'), '{{sqrt {3}} over {2}}')
-        self.assertEqual(to_hwp(r'3\,\mathrm{cm}'), '3~rm {cm}')
+        self.assertEqual(to_hwp(r'3\,\mathrm{cm}'), '3{rm cm} it')
+        self.assertEqual(to_hwp(r'3\quad\mathrm{cm}'), '3{rm cm} it')
         self.assertEqual(to_hwp('πr²'), 'pi r^{2}')
         self.assertEqual(prepare_insert(PAYLOAD)['equationCount'], 1)
+    def test_roman_geometry_and_parallel_without_style_leak(self):
+        self.assertEqual(to_hwp(r'\bar{BC}\parallel\bar{DE}'), 'bar {rm BC} it\U000f005abar {rm DE} it')
+        self.assertEqual(to_hwp(r'\mathrm{A}'), '{rm A} it')
+        self.assertEqual(to_hwp(r'\mathrm{AB}+x'), '{rm AB} it +x')
+        self.assertEqual(to_hwp(r'\mathrm{A\mathit{x}B}+y'), '{rm A{it x} rm B} it +y')
+        self.assertEqual(to_hwp(r'\bar{x}+x'), 'bar {x}+x')
+        self.assertEqual(to_hwp('BC+x'), 'BC+x')
     def test_unsupported_and_unbalanced(self):
         for value in (r'\unknown{x}', r'\frac{a}', r'\sqrt{x', 'x}'):
             with self.assertRaises(ValueError): to_hwp(value)
@@ -45,6 +53,18 @@ class ModelTest(unittest.TestCase):
         with self.assertRaises(ValueError): prepare_insert(bad)
         bad=copy.deepcopy(PAYLOAD); bad['path']='C:/untrusted.hwp'
         with self.assertRaises(ValueError): prepare_insert(bad)
+    def test_scores_remain_text_without_allowing_unwrapped_math(self):
+        for score in ('[4점]', '(2.5점)'):
+            payload = copy.deepcopy(PAYLOAD)
+            payload['paragraphs'][0]['segments'][0]['value'] = '값을 구하시오. ' + score
+            result = prepare_insert(payload)
+            self.assertEqual(result['paragraphs'][0]['segments'][0]['value'], '값을 구하시오. ' + score)
+            self.assertEqual(result['equationCount'], 1)
+        for text in ('점 4개 [4점]', '[4cm]', '[4점]+2', '[4\x0b점]'):
+            payload = copy.deepcopy(PAYLOAD)
+            payload['paragraphs'][0]['segments'][0]['value'] = text
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                prepare_insert(payload)
     def test_numeric_and_png_limits(self):
         inherited=copy.deepcopy(PAYLOAD); inherited['fontSize']=0
         self.assertEqual(prepare_insert(inherited)['fontSize'],0)
@@ -55,6 +75,20 @@ class ModelTest(unittest.TestCase):
         with self.assertRaises(ValueError): prepare_insert(bad)
 
 class NativeGuardTest(unittest.TestCase):
+    def test_diagram_label_box_is_exactly_ten_mm_and_unlocked(self):
+        shape = Hancom._diagram_label_box_shape(50, 25, 600, 900)
+        self.assertEqual(shape['TreatAsChar'], 0)
+        self.assertEqual(shape['TextWrap'], 3)
+        self.assertEqual(shape['Lock'], 0)
+        self.assertEqual(shape['ProtectSize'], 0)
+        self.assertTrue(shape['AllowOverlap'])
+        self.assertEqual(shape['WidthRelTo'], 4)
+        self.assertEqual(shape['HeightRelTo'], 2)
+        self.assertAlmostEqual(shape['Width'] * 25.4 / 7200, 10, delta=.01)
+        self.assertAlmostEqual(shape['Height'] * 25.4 / 7200, 10, delta=.01)
+        self.assertEqual(shape['HorzOffset'] + (shape['Width'] - 600) // 2, round(50 * 7200 / 25.4))
+        self.assertEqual(shape['VertOffset'] + (shape['Height'] - 900) // 2, round(25 * 7200 / 25.4))
+
     def make_adapter(self):
         adapter=Hancom.__new__(Hancom)
         adapter.scratch=None

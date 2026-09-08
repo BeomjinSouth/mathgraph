@@ -2575,14 +2575,16 @@ class GraphAApp {
         scale = 1,
         includeBackground = true,
         includeGrid = false,
-        includeAxes = true
+        includeAxes = true,
+        crop = null
     } = {}) {
         const targetCtx = targetCanvas.getContext('2d');
-        targetCanvas.width = this.canvas.width * scale;
-        targetCanvas.height = this.canvas.height * scale;
+        targetCanvas.width = Math.ceil((crop?.width ?? this.canvas.width) * scale);
+        targetCanvas.height = Math.ceil((crop?.height ?? this.canvas.height) * scale);
 
         targetCtx.save();
         targetCtx.scale(scale, scale);
+        if (crop) targetCtx.translate(-crop.x, -crop.y);
 
         if (includeBackground) {
             targetCtx.fillStyle = '#ffffff';

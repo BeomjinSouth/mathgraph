@@ -1,9 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { splitProblemMath, buildProblemParagraphs, chooseHwpDocument, mathPartsToLatex } from '../js/utils/ProblemDocument.js';
+import { splitProblemMath, buildProblemParagraphs, chooseHwpDocument, mathPartsToLatex, problemEquationPreview } from '../js/utils/ProblemDocument.js';
 import { createProjectEnvelope, parseProjectFile } from '../js/utils/ProjectFile.js';
 import { HwpBridgeClient } from '../js/utils/HwpBridgeClient.js';
 import { ObjectManager } from '../js/core/ObjectManager.js';
+
+test('미리보기의 선분 정체와 평행 기호를 맞추고 변수 및 명시적 글자 모양을 보존한다', () => {
+    const source = '\\bar{BC}\\parallel\\bar{DE}+x';
+    assert.equal(problemEquationPreview(source), '\\bar{\\mathrm{BC}}\\mathord{/\\mkern-3mu/}\\bar{\\mathrm{DE}}+x');
+    assert.equal(problemEquationPreview('\\bar{x}+\\bar{\\mathit{AB}}'), '\\bar{x}+\\bar{\\mathit{AB}}');
+    assert.equal(splitProblemMath('$' + source + '$')[0].value, source);
+});
 
 test('실제 편집기의 문제와 연결된 도형을 프로젝트 파일로 왕복한다', async () => {
     const oldDocument=globalThis.document, oldWindow=globalThis.window;
@@ -48,6 +55,18 @@ test('본문, 분수, 단위와 선택지 번호를 각각 올바른 개체로 �
 test('일반 글자에 남은 수식과 짝이 없는 구분자를 입력 전에 거부한다', () => {
     assert.throws(() => buildProblemParagraphs({blocks:[{kind:'body',text:'길이 3 cm'}]}), /수학 표현/);
     assert.throws(() => splitProblemMath('함수 $x^2'), /시작과 끝/);
+});
+
+test('배점 표기는 일반 글자로 보존하고 수학 숫자 검사는 유지한다', () => {
+    for (const score of ['[4점]', '(2.5점)']) {
+        const paragraphs = buildProblemParagraphs({blocks:[{kind:'body',text:`$x$의 값은? ${score}`}]});
+        assert.deepEqual(paragraphs[0].segments, [
+            {kind:'equation',value:'x'}, {kind:'text',value:`의 값은? ${score}`}
+        ]);
+    }
+    for (const text of ['점 4개 [4점]', '[4cm]', '$x$의 값은? [4점]+2']) {
+        assert.throws(() => buildProblemParagraphs({blocks:[{kind:'body',text}]}), /수학 표현/);
+    }
 });
 test('그림의 복합 라벨을 하나의 수식으로 보존한다', () => {
     assert.equal(mathPartsToLatex([{type:'fraction',numerator:[{type:'radical',radicand:[{type:'text',text:'3'}]}],denominator:[{type:'text',text:'2'}]}]), '\\frac{\\sqrt{3}}{2}');

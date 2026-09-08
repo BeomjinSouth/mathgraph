@@ -5,6 +5,7 @@
 
 import { GeoObject, ObjectType } from './GeoObject.js';
 import { Vec2 } from '../utils/Geometry.js';
+import { DEFAULT_LENGTH_ARC_HEIGHT, lengthArcGeometry, chooseLengthArcHeight, lengthArcPieces } from '../utils/LengthArc.js';
 
 // ObjectType 확장 (동적으로 추가)
 if (!ObjectType.ANGLE_DIMENSION) {
@@ -341,8 +342,10 @@ export class LengthDimension extends GeoObject {
         // 스타일
         this.offset = params.offset || 0.5; // 선분에서 떨어진 거리
         this.showValue = params.showValue !== false;
-        this.curvature = params.curvature || 25; // 곡선의 휨 정도 (픽셀)
-        this.labelFontSize = params.labelFontSize || 12; // 라벨 폰트 크기
+        // Keep the legacy control-point offset for old project files/UI drags.
+        this.curvature = Number.isFinite(params.arcHeight) ? params.arcHeight * 2
+            : Number.isFinite(params.curvature) ? params.curvature : DEFAULT_LENGTH_ARC_HEIGHT * 2;
+        this.labelFontSize = params.labelFontSize || 24; // 80 mm 출력에서 길이값을 읽을 수 있는 기본 크기
         this.precision = (params.precision !== undefined) ? params.precision : 2;
 
         // Mk.2: 라벨 드래그 오프셋 및 사용자 정의 텍스트
@@ -350,13 +353,18 @@ export class LengthDimension extends GeoObject {
         this.labelOffset = params.labelOffset
             ? new Vec2(params.labelOffset.x, params.labelOffset.y)
             : new Vec2(0, 0);
-        this.customText = params.customText || null;
+        // AI/JSON uses label for the printed value. The property panel uses
+        // customText. Accept both without turning an omitted label into text.
+        this.customText = params.customText ?? params.label ?? null;
 
         // 계산된 값
         this.point1 = null;
         this.point2 = null;
         this.length = 0;
     }
+
+    get arcHeight() { return this.curvature / 2; }
+    set arcHeight(value) { if (Number.isFinite(value)) this.curvature = value * 2; }
 
     update(objectManager) {
         const segment = objectManager.getObject(this.segmentId);
@@ -375,6 +383,9 @@ export class LengthDimension extends GeoObject {
         }
 
         this.length = this.point1.distanceTo(this.point2);
+        this._obstacles = objectManager.getAllObjects().filter(object => object.id !== this.segmentId && object.visible && object.valid
+            && typeof object.getPoint1 === 'function' && typeof object.getPoint2 === 'function')
+            .map(object => [object.getPoint1(), object.getPoint2()]).filter(pair => pair.every(Boolean));
         this.valid = true;
     }
 
@@ -394,16 +405,30 @@ export class LengthDimension extends GeoObject {
         const s1 = canvas.toScreen(this.point1);
         const s2 = canvas.toScreen(this.point2);
 
-        // 곡선 중간점 (베지어 제어점)
-        const midX = (s1.x + s2.x) / 2;
-        const midY = (s1.y + s2.y) / 2;
-
-        // 수직 방향으로 오프셋 (스크린 좌표) - curvature로 조절 가능
-        const screenOffset = this.curvature;
-        const perpX = -dy / len;
-        const perpY = dx / len;
-        const ctrlX = midX + perpX * screenOffset;
-        const ctrlY = midY - perpY * screenOffset;
+        const obstacles = (this._obstacles || []).map(pair => pair.map(point => canvas.toScreen(point)));
+        const lengthStr = String(this.customText !== null ? this.customText : this.length.toFixed(this.precision));
+        const variable = /^[a-zα-ω]$/u.test(lengthStr.trim());
+        ctx.font = `${variable ? 'italic ' : ''}${this.labelFontSize}px "Times New Roman", "STIX Two Math", serif`;
+        const textWidth = ctx.measureText(lengthStr).width;
+        const boxHeight = this.labelFontSize * 1.5;
+        const padding = Math.max(5, this.labelFontSize * .4);
+        const nx = Math.abs((s2.y - s1.y) / Math.hypot(s2.x - s1.x, s2.y - s1.y));
+        const ny = Math.abs((s2.x - s1.x) / Math.hypot(s2.x - s1.x, s2.y - s1.y));
+        // Keep the entire horizontal native-equation box off its own segment,
+        // including the extra descent and right bearing of that equation.
+        const minimumHeight = nx * (Math.max(textWidth * 1.25, this.labelFontSize) - textWidth / 2 + padding)
+            + ny * (boxHeight - this.labelFontSize / 2 + padding) + 2;
+        const preferred = Math.sign(this.curvature || 1) * Math.max(Math.abs(this.curvature / 2), minimumHeight);
+        const chosenHeight = chooseLengthArcHeight(s1, s2, preferred, obstacles);
+        const height = Math.sign(preferred) * Math.max(Math.abs(chosenHeight), minimumHeight);
+        const arc = lengthArcGeometry(s1, s2, height);
+        this._renderedArc = arc;
+        const labelX = arc.apex.x + this.labelOffset.x * canvas.scale;
+        const labelY = arc.apex.y - this.labelOffset.y * canvas.scale;
+        const labelBox = { x: labelX - textWidth / 2, y: labelY - this.labelFontSize / 2,
+            width: Math.max(textWidth * 1.25, this.labelFontSize), height: boxHeight };
+        const gapBox = { x: labelBox.x - padding, y: labelBox.y - padding,
+            width: labelBox.width + padding * 2, height: labelBox.height + padding * 2 };
 
         // 선택/하이라이트 스타일
         if (this.selected || this.highlighted) {
@@ -416,44 +441,30 @@ export class LengthDimension extends GeoObject {
 
         // 점선 곡선 그리기
         ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(s1.x, s1.y);
-        ctx.quadraticCurveTo(ctrlX, ctrlY, s2.x, s2.y);
-        ctx.stroke();
+        for (const [start, control, end] of lengthArcPieces(arc, this.showValue ? gapBox : null)) {
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.quadraticCurveTo(control.x, control.y, end.x, end.y);
+            ctx.stroke();
+        }
         ctx.setLineDash([]);
 
         // 값 표시 (곡선 중간)
         if (this.showValue) {
             // 베지어 곡선 중간점 계산 (t=0.5) + 라벨 오프셋
-            const labelOffsetScreen = canvas.toScreenLength(Math.sqrt(
-                this.labelOffset.x * this.labelOffset.x + this.labelOffset.y * this.labelOffset.y
-            ));
-            const bezierMidX = 0.25 * s1.x + 0.5 * ctrlX + 0.25 * s2.x + this.labelOffset.x * canvas.scale;
-            const bezierMidY = 0.25 * s1.y + 0.5 * ctrlY + 0.25 * s2.y - this.labelOffset.y * canvas.scale;
-
-            // Mk.2: 사용자 정의 텍스트 또는 자동 계산값
-            const lengthStr = this.customText !== null ? this.customText : this.length.toFixed(this.precision);
-            ctx.font = `${this.labelFontSize}px "Noto Sans KR", sans-serif`;
-            const textWidth = ctx.measureText(lengthStr).width;
-
-            // 배경 박스 (반투명 흰색)
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            const boxHeight = this.labelFontSize + 4;
-            ctx.fillRect(bezierMidX - textWidth / 2 - 4, bezierMidY - boxHeight / 2, textWidth + 8, boxHeight);
-
             // Mk2.1: 라벨 바운딩 박스 저장 (숫자 클릭 선택/편집)
             this._labelBox = {
-                x: bezierMidX - textWidth / 2 - 4,
-                y: bezierMidY - boxHeight / 2,
-                w: textWidth + 8,
-                h: boxHeight
+                x: gapBox.x, y: gapBox.y, w: gapBox.width, h: gapBox.height
             };
 
             // 텍스트
             ctx.fillStyle = this.color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(lengthStr, bezierMidX, bezierMidY);
+            const previousAnchor = canvas.exportLabelAnchor;
+            canvas.exportLabelAnchor = { fixed: true, gapBox };
+            try { ctx.fillText(lengthStr, labelX, labelY); }
+            finally { canvas.exportLabelAnchor = previousAnchor; }
         }
     }
 
@@ -557,7 +568,12 @@ export class LengthDimension extends GeoObject {
         if (this.segmentDir && this.segmentPerp) {
             // 선분에 수직 방향 이동량 → 곡률 조정
             const perpMove = moveVec.x * this.segmentPerp.x + moveVec.y * this.segmentPerp.y;
-            this.curvature = Math.max(5, Math.min(100, this.curvatureStart + perpMove * canvas.scale * 2));
+            const nextCurvature = this.curvatureStart + perpMove * canvas.scale * 2;
+            const minimumMagnitude = 5;
+            const signedMinimum = Math.abs(nextCurvature) < minimumMagnitude
+                ? Math.sign(nextCurvature || this.curvatureStart || 1) * minimumMagnitude
+                : nextCurvature;
+            this.curvature = Math.max(-100, Math.min(100, signedMinimum));
 
             // 선분에 평행 방향 이동량 → 라벨 위치 조정
             const paraMove = moveVec.x * this.segmentDir.x + moveVec.y * this.segmentDir.y;
@@ -598,6 +614,8 @@ export class LengthDimension extends GeoObject {
             showValue: this.showValue,
             labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y },
             customText: this.customText,
+            curvature: this.curvature,
+            arcHeight: this.curvature / 2,
             labelFontSize: this.labelFontSize,
             precision: this.precision
         };

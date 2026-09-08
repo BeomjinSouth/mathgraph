@@ -9,7 +9,9 @@ SYMBOLS = {
     'cup': 'CUP', 'cap': 'CAP', 'infty': 'inf', 'to': '->', 'rightarrow': '->',
     'leftarrow': '<-', 'Rightarrow': 'RARROW', 'Leftrightarrow': 'LRARROW',
     'angle': 'ANGLE', 'triangle': 'TRIANGLE', 'circ': 'circ', 'degree': 'DEG',
-    'perp': 'BOT', 'parallel': 'PARALLEL', 'cdots': 'cdots', 'ldots': 'ldots',
+    # Hancom's school-geometry slanted parallel sign, verified against the
+    # source HWP equation and a native rendering (PARALLEL renders upright ∥).
+    'perp': 'BOT', 'parallel': '\U000f005a', 'cdots': 'cdots', 'ldots': 'ldots',
     'dots': 'cdots', 'therefore': 'THEREFORE', 'because': 'BECAUSE',
     'sum': 'sum', 'prod': 'prod', 'int': 'int', 'lim': 'lim', 'log': 'log',
     'ln': 'ln', 'sin': 'sin', 'cos': 'cos', 'tan': 'tan', 'cot': 'cot',
@@ -27,8 +29,12 @@ def to_hwp(source):
         raise ValueError('수식이 비어 있거나 너무 깁니다.')
     if re.search(r'[\x00-\x08\x0b-\x1f]', source):
         raise ValueError('수식에 사용할 수 없는 문자가 있습니다.')
-    expr = ''.join(UNICODE.get(c, c) for c in source.strip())
+    # Exam typography: no explicit spacing before cm, or around parallel.
+    compact = re.sub(r'(?:\s|~|\\[,;: ]|\\(?:quad|qquad)\b)+(?=\\(?:mathrm|text)\{cm\})', '', source.strip())
+    compact = re.sub(r'(?:\s|~|\\[,;: ]|\\(?:quad|qquad)\b)*(\\parallel)\b(?:\s|~|\\[,;: ]|\\(?:quad|qquad)\b)*', r'\1', compact)
+    expr = ''.join(UNICODE.get(c, c) for c in compact)
     pos = 0
+    font_mode = 'it'
 
     def group():
         nonlocal pos
@@ -40,7 +46,7 @@ def to_hwp(source):
         return parse(True)
 
     def command():
-        nonlocal pos
+        nonlocal pos, font_mode
         match = re.match(r'[A-Za-z]+|.', expr[pos:])
         if not match:
             raise ValueError('수식의 마지막 명령을 확인해 주세요.')
@@ -61,9 +67,24 @@ def to_hwp(source):
                 pos = end + 1
             return ('root {' + index + '} of ' if index else 'sqrt ') + '{' + group() + '}'
         if name in ('mathrm', 'text', 'operatorname', 'mathbf', 'mathit'):
-            return ('bold' if name == 'mathbf' else 'it' if name == 'mathit' else 'rm') + ' {' + group() + '}'
+            if name == 'mathbf':
+                return 'bold {' + group() + '}'
+            previous = font_mode
+            font_mode = 'it' if name == 'mathit' else 'rm'
+            mode = font_mode
+            value = group()
+            font_mode = previous
+            # Hancom's rm/it survive closing braces. Restore explicitly so
+            # a point name or a unit never makes a following variable upright.
+            return '{' + mode + ' ' + value + '} ' + previous + ' '
         if name in ('overline', 'bar', 'vec', 'overrightarrow', 'hat'):
-            return {'overline': 'bar', 'overrightarrow': 'vec'}.get(name, name) + ' {' + group() + '}'
+            accent = {'overline': 'bar', 'overrightarrow': 'vec'}.get(name, name)
+            value = group()
+            # A bar over uppercase point names denotes a geometric segment.
+            # Keep means (bar x), variables and explicit font commands intact.
+            if accent == 'bar' and re.fullmatch(r'[A-Z]{2,}', value):
+                return 'bar {rm ' + value + '} ' + font_mode + ' '
+            return accent + ' {' + value + '}'
         if name == 'binom':
             first, second = group(), group()
             return '{{' + first + '} choose {' + second + '}}'
@@ -75,6 +96,8 @@ def to_hwp(source):
             return '~'
         if name in ('vert', 'mid'):
             return '|'
+        if name == 'parallel':
+            return SYMBOLS[name]
         if name in SYMBOLS:
             return ' ' + SYMBOLS[name] + ' '
         raise ValueError('아직 지원하지 않는 수식 명령입니다: \\' + name)
@@ -120,4 +143,9 @@ def to_hwp(source):
         if nested:
             raise ValueError('수식의 중괄호 짝이 맞지 않습니다.')
         return ''.join(out)
-    return re.sub(r'\s+', ' ', parse()).strip()
+    rendered = re.sub(r'\s+', ' ', parse()).strip()
+    # Font restoration after a preceding \mathrm or \bar may introduce a
+    # separator after parsing. The native slanted parallel glyph must touch
+    # its two segment names in the exam format.
+    parallel = SYMBOLS['parallel']
+    return re.sub(r'\s*' + re.escape(parallel) + r'\s*', parallel, rendered)

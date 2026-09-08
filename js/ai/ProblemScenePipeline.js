@@ -7,6 +7,7 @@
  */
 
 import { compileSceneGraph } from './SceneGraphCompiler.js';
+import { SchemaValidator } from './SchemaValidator.js';
 import Geometry, { Vec2 } from '../utils/Geometry.js';
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
@@ -151,6 +152,7 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'A printed shaded face or requested area region must be a polygon, sector, circularSegment, or lensRegion node with fillOpacity between 0.18 and 0.24.',
     'A semicircle must use an arc with mode minor or major, not a full circle alone.',
     'For compact items: refs contains referenced ids, groups contains grouped vertex ids, numbers contains numeric parameters, and text contains an expression or annotation.',
+    'For every printed numeric or algebraic length on a segment, make a lengthDimension relation for that segment and use its label for the exact printed value. Do not use a segment label for a length value.',
     'Do not copy long problem prose into the scene. Keep constructionSummary and evidence short and factual.'
 ].join('\n');
 
@@ -177,6 +179,7 @@ export function buildProblemScenePrompt(referencePrompt = '') {
         '- cylinder/cone/sphere: numbers=[x,y,width,height,ellipseRatio?]',
         '- textLabel: numbers=[x,y], text=short annotation',
         '- relations use refs in the order implied by intersection, midpoint, parallel, perpendicular, rightAngleMarker, equalLengthMarker, angleDimension, lengthDimension, tangentCircle, or tangentFunction.',
+        '- parallel/perpendicular: refs=[baseLineId,throughPointId] constructs a new line through a point. refs=[firstLineId,secondLineId] states a condition between two existing segments/lines/rays; keep their coordinates consistent and do not add another visible line.',
         '- for ∠XYZ, angleDimension refs=[Y,X,Z]. Keep every explicitly stated angle at its stated vertex instead of substituting a derived angle.',
         '- keep independent equal-length groups separate; MathGraph assigns different tick counts to different equivalence classes.',
         '- relation ids are valid refs for later items; for example midpoint M -> line BM -> intersection D -> polygon using D.',
@@ -189,11 +192,123 @@ export function compileProblemScenePayload(payload) {
     const compiled = compileSceneGraph(scene, { compact: true });
     normalizeSharedDefinitionIntersectionBranches(compiled.operations);
     normalizeEqualLengthMarkerTickCounts(compiled.operations);
+    separateExistingLineRelations(compiled);
+    normalizeSegmentLengthLabels(compiled.operations);
     return {
         ...compiled,
         sourceBindings: Array.isArray(scene.sourceBindings) ? scene.sourceBindings : [],
         scene
     };
+}
+
+// Vision results from older prompts often put 8, x, or \frac{1}{2} directly
+// on a segment. Preserve named lines such as AB, but turn a likely length
+// value into the dedicated dotted-arc dimension object.
+export function normalizeSegmentLengthLabels(operations = []) {
+    const operationIds = new Set(operations.map(operation => operation?.id).filter(Boolean));
+    const dimensionsBySegment = new Map();
+    for (const operation of operations) {
+        if (operation?.type === 'lengthDimension' && operation.segmentId) {
+            dimensionsBySegment.set(operation.segmentId, operation);
+        }
+    }
+
+    const operationMap = new Map(operations.filter(operation => operation?.id).map(operation => [operation.id, operation]));
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const centroid = segmentEndpointCentroid(operations, pointPositions);
+    const additions = [];
+
+    for (const dimension of dimensionsBySegment.values()) {
+        const segment = operationMap.get(dimension.segmentId);
+        if (segment?.type !== 'segment') continue;
+        const segmentText = likelyLengthLabel(segment.label);
+        const dimensionText = likelyLengthLabel(dimension.label);
+        if (dimension.customText == null || dimension.customText === '') {
+            dimension.customText = segmentText || dimensionText || dimension.customText;
+        }
+        if (!Number.isFinite(dimension.curvature)) {
+            dimension.curvature = outwardDimensionCurvature(segment, pointPositions, centroid);
+        }
+        if (segmentText) segment.showLabel = false;
+    }
+
+    for (const segment of operations) {
+        const lengthText = likelyLengthLabel(segment?.label);
+        if (segment?.type !== 'segment' || segment.visible === false || segment.showLabel === false || !lengthText) continue;
+
+        segment.showLabel = false;
+        const existing = dimensionsBySegment.get(segment.id);
+        if (existing) {
+            if (existing.customText == null || existing.customText === '') existing.customText = lengthText;
+            continue;
+        }
+
+        const id = uniqueOperationId(`length_${segment.id}`, operationIds);
+        const curvature = outwardDimensionCurvature(segment, pointPositions, centroid);
+        additions.push({
+            op: 'create', id, type: 'lengthDimension', segmentId: segment.id,
+            customText: lengthText, showValue: true, curvature,
+            ...(segment.color ? { color: segment.color } : {})
+        });
+    }
+    operations.push(...additions);
+}
+
+function likelyLengthLabel(value) {
+    if (typeof value !== 'string') return '';
+    const text = value.trim();
+    const compact = text.replace(/\s+/g, '');
+    if (!compact || compact.length > 80) return '';
+    if (/^[+-]?\d+(?:[.,]\d+)?(?:[a-z]{0,4})?$/i.test(compact)) return text;
+    if (/^(?:\\(?:d?frac|sqrt)\b|√)/.test(compact)) return text;
+    if (/^[a-zα-ω](?:[_^](?:\{?[\da-zα-ω+\-]+\}?))?$/u.test(compact)) return text;
+    return '';
+}
+
+function uniqueOperationId(base, ids) {
+    let index = 1;
+    let id = base;
+    while (ids.has(id)) id = `${base}_${index++}`;
+    ids.add(id);
+    return id;
+}
+
+function segmentEndpointCentroid(operations, pointPositions) {
+    const endpointIds = new Set();
+    for (const operation of operations) {
+        if (operation?.type !== 'segment') continue;
+        endpointIds.add(operation.point1Id);
+        endpointIds.add(operation.point2Id);
+    }
+    const points = [...endpointIds].map(id => pointPositions.get(id)).filter(Boolean);
+    if (!points.length) return null;
+    return points.reduce((sum, point) => sum.add(point), new Vec2(0, 0)).div(points.length);
+}
+
+function outwardDimensionCurvature(segment, pointPositions, centroid) {
+    const point1 = pointPositions.get(segment.point1Id);
+    const point2 = pointPositions.get(segment.point2Id);
+    if (!point1 || !point2 || !centroid) return 48;
+    const direction = point2.sub(point1);
+    const midpoint = point1.add(point2).div(2);
+    const normal = new Vec2(-direction.y, direction.x);
+    return normal.dot(centroid.sub(midpoint)) > 0 ? -48 : 48;
+}
+
+// A relation between two existing sides is a geometric assertion, not a new
+// infinite line whose throughPointId happens to contain another line's id.
+function separateExistingLineRelations(compiled) {
+    const operationMap = new Map(compiled.operations.map(operation => [operation.id, operation]));
+    compiled.lineRelations = [];
+    compiled.operations = compiled.operations.filter(operation => {
+        if (!['parallel', 'perpendicular'].includes(operation.type) ||
+            !isLineOperation(operationMap.get(operation.baseLineId)) ||
+            !isLineOperation(operationMap.get(operation.throughPointId))) return true;
+        compiled.lineRelations.push({ id: operation.id, kind: operation.type,
+            firstLineId: operation.baseLineId, secondLineId: operation.throughPointId });
+        return false;
+    });
+    compiled.metadata.operationCount = compiled.operations.length;
 }
 
 export function normalizeEqualLengthMarkerTickCounts(operations = []) {
@@ -390,6 +505,9 @@ export function validateProblemSceneCoverage(scene, compiled) {
     const errors = [];
     const operations = Array.isArray(compiled?.operations) ? compiled.operations : [];
     const operationIds = new Set(operations.map(operation => operation?.id).filter(Boolean));
+    const lineConditions = validateExistingLineRelations(operations, compiled?.lineRelations || []);
+    errors.push(...lineConditions.errors);
+    const coveredIds = new Set([...operationIds, ...lineConditions.validIds]);
     const sceneItems = [
         ...(Array.isArray(scene?.nodes) ? scene.nodes : []),
         ...(Array.isArray(scene?.relations) ? scene.relations : [])
@@ -434,7 +552,7 @@ export function validateProblemSceneCoverage(scene, compiled) {
         for (const id of bindings) {
             if (!sceneIds.has(id)) {
                 errors.push(`required scene item "${item.id || item.description}" references unknown scene id "${id}".`);
-            } else if (!operationIds.has(id)) {
+            } else if (!coveredIds.has(id)) {
                 errors.push(`required scene id "${id}" was not compiled into GraphA operations.`);
             }
         }
@@ -462,8 +580,54 @@ export function validateProblemSceneCoverage(scene, compiled) {
     }
     errors.push(...validateResolvedEqualLengthMarkers(operations));
     errors.push(...validateRequiredAngleLegs(scene, operations));
+    errors.push(...validateLineConstructionReferences(operations));
+    errors.push(...new SchemaValidator().validateReferences({ operations }, new Set()).errors);
 
     return { valid: errors.length === 0, errors };
+}
+
+function validateExistingLineRelations(operations, relations) {
+    const operationMap = new Map(operations.map(operation => [operation.id, operation]));
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const errors = [];
+    const validIds = [];
+    for (const relation of relations) {
+        const first = resolveLineGeometry(operationMap.get(relation.firstLineId), pointPositions);
+        const second = resolveLineGeometry(operationMap.get(relation.secondLineId), pointPositions);
+        if (!first || !second) {
+            errors.push(`line relation "${relation.id}" has unresolved line coordinates.`);
+            continue;
+        }
+        const u = first.point2.sub(first.point1);
+        const v = second.point2.sub(second.point1);
+        const scale = Math.sqrt(u.dot(u) * v.dot(v));
+        const residual = relation.kind === 'parallel'
+            ? Math.abs(u.x * v.y - u.y * v.x) : Math.abs(u.dot(v));
+        if (!Number.isFinite(scale) || scale <= 1e-12 || residual / scale > 1e-3) {
+            errors.push(`line relation "${relation.id}" is not ${relation.kind} in the resolved coordinates.`);
+            continue;
+        }
+        validIds.push(relation.id);
+    }
+    return { validIds, errors };
+}
+
+function validateLineConstructionReferences(operations) {
+    const operationMap = new Map(operations.map(operation => [operation.id, operation]));
+    const pointTypes = new Set(['point', 'pointOnLine', 'pointOnCircle', 'circleCenterPoint', 'intersection', 'midpoint']);
+    const lineTypes = new Set(['segment', 'line', 'ray', 'parallel', 'perpendicular',
+        'perpendicularBisector', 'angleBisector', 'tangentCircle', 'tangentFunction']);
+    const errors = [];
+    for (const operation of operations) {
+        if (!['parallel', 'perpendicular'].includes(operation.type)) continue;
+        if (!lineTypes.has(operationMap.get(operation.baseLineId)?.type)) {
+            errors.push(`${operation.type} "${operation.id}" baseLineId must reference a line.`);
+        }
+        if (!pointTypes.has(operationMap.get(operation.throughPointId)?.type)) {
+            errors.push(`${operation.type} "${operation.id}" throughPointId must reference a point.`);
+        }
+    }
+    return errors;
 }
 
 function validateResolvedEqualLengthMarkers(operations) {
