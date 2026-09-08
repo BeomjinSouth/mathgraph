@@ -125,6 +125,55 @@ test('printed segment lengths become one dotted-arc dimension each, while segmen
     assert.deepEqual(validateProblemSceneCoverage(payload.scene, compiled), { valid: true, errors: [] });
 });
 
+test('a text-only question keeps an editable target-distance relation without exporting a generic distance label', () => {
+    const payload = scenePayload({
+        diagramType: 'function_graph',
+        nodes: [
+            node('C', 'point', { label: 'C', numbers: [-2, 0] }),
+            node('D', 'point', { label: 'D', numbers: [2, 0] }),
+            node('CD', 'segment', { refs: ['C', 'D'] })
+        ],
+        relations: [node('target_distance', 'lengthDimension', { refs: ['CD'], label: '두 점 사이의 거리' })],
+        mustDraw: [{
+            id: 'intercept-distance', description: '두 x절편 사이의 거리',
+            nodeIds: ['C', 'D', 'CD'], relationIds: ['target_distance'], required: true,
+            evidence: '거리의 수치는 문제 그림에 인쇄되어 있지 않다.'
+        }]
+    });
+
+    const compiled = compileProblemScenePayload(payload);
+    const target = compiled.operations.find(operation => operation.id === 'target_distance');
+
+    assert.equal(target.type, 'lengthDimension');
+    assert.equal(target.showValue, false);
+    assert.equal(target.customText, null);
+    assert.equal(target.label, null);
+    assert.deepEqual(validateProblemSceneCoverage(payload.scene, compiled), { valid: true, errors: [] });
+});
+
+test('a text-only problem preserves a stated algebraic length value', () => {
+    const payload = scenePayload({
+        nodes: [
+            node('A', 'point', { numbers: [0, 0] }),
+            node('B', 'point', { numbers: [4, 0] }),
+            node('AB', 'segment', { refs: ['A', 'B'] })
+        ],
+        relations: [node('given_length', 'lengthDimension', { refs: ['AB'], label: 'x' })],
+        mustDraw: [{
+            id: 'given-length', description: '선분 AB의 길이는 x',
+            nodeIds: ['A', 'B', 'AB'], relationIds: ['given_length'], required: true,
+            evidence: '문제 본문에 주어진 길이 x'
+        }]
+    });
+
+    const compiled = compileProblemScenePayload(payload);
+    const given = compiled.operations.find(operation => operation.id === 'given_length');
+
+    assert.equal(given.showValue, undefined);
+    assert.equal(given.label, 'x');
+    assert.deepEqual(validateProblemSceneCoverage(payload.scene, compiled), { valid: true, errors: [] });
+});
+
 test('coverage rejects a required source item that was not compiled', () => {
     const payload = scenePayload({
         mustDraw: [{
