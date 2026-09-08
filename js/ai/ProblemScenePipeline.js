@@ -153,6 +153,7 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'A semicircle must use an arc with mode minor or major, not a full circle alone.',
     'For compact items: refs contains referenced ids, groups contains grouped vertex ids, numbers contains numeric parameters, and text contains an expression or annotation.',
     'For every printed numeric or algebraic length on a segment, make a lengthDimension relation for that segment and use its label for the exact printed value. Do not use a segment label for a length value.',
+    'For a source containing only text, do not add a length or angle value merely to name the quantity the student must find. Keep any needed construction, but reserve displayed dimensions for values actually stated in the source.',
     'Do not copy long problem prose into the scene. Keep constructionSummary and evidence short and factual.'
 ].join('\n');
 
@@ -183,6 +184,8 @@ export function buildProblemScenePrompt(referencePrompt = '') {
         '- for ∠XYZ, angleDimension refs=[Y,X,Z]. Keep every explicitly stated angle at its stated vertex instead of substituting a derived angle.',
         '- keep independent equal-length groups separate; MathGraph assigns different tick counts to different equivalence classes.',
         '- relation ids are valid refs for later items; for example midpoint M -> line BM -> intersection D -> polygon using D.',
+        '- in a text-only source, do not put a generic requested quantity such as 거리, 길이, or 각도 onto a dimension; keep only values printed in the source.',
+        '- the graph canvas already supplies coordinate axes, so do not create a separately labelled x축 or y축 line for a function graph.',
         referencePrompt
     ].filter(Boolean).join('\n\n');
 }
@@ -194,11 +197,34 @@ export function compileProblemScenePayload(payload) {
     normalizeEqualLengthMarkerTickCounts(compiled.operations);
     separateExistingLineRelations(compiled);
     normalizeSegmentLengthLabels(compiled.operations);
+    suppressUnprintedRequestedMeasureLabels(scene, compiled.operations);
     return {
         ...compiled,
         sourceBindings: Array.isArray(scene.sourceBindings) ? scene.sourceBindings : [],
         scene
     };
+}
+
+// A text-only question may ask students to find a distance or an angle. That
+// phrase is an instruction, not a value printed on a diagram. Keep the
+// relation so its geometry remains editable, but do not export a made-up
+// label that can collide with real diagram labels in Hancom.
+export function suppressUnprintedRequestedMeasureLabels(scene, operations = []) {
+    if (scene?.sourceHasPrintedFigure !== false) return;
+
+    for (const operation of operations) {
+        if (!['lengthDimension', 'angleDimension'].includes(operation?.type)) continue;
+        const value = operation.customText ?? operation.label;
+        if (!isRequestedMeasureLabel(value)) continue;
+        operation.showValue = false;
+        operation.customText = null;
+        operation.label = null;
+    }
+}
+
+function isRequestedMeasureLabel(value) {
+    const label = String(value ?? '').replace(/\s+/g, '');
+    return /^(?:(?:두점사이의|선분의|호의)?(?:거리|길이|넓이|둘레|각도|각|크기|값)|구(?:할|하는)?(?:거리|길이|넓이|둘레|각도|각|크기|값))$/u.test(label);
 }
 
 // Vision results from older prompts often put 8, x, or \frac{1}{2} directly
