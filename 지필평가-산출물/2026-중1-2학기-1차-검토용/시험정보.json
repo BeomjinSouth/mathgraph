@@ -1,0 +1,12 @@
+{
+  "year": 2026,
+  "semester": 2,
+  "round": 1,
+  "grade": 1,
+  "pages": 3,
+  "sheets": 2,
+  "exam_title": "2026학년도 2학기 1차 지필평가 (검토용)",
+  "footer_kind": "지필평가",
+  "mc_points": [8, 8, 8, 8, 8, 8, 8, 8],
+  "essay_points": [16, 20]
+}
