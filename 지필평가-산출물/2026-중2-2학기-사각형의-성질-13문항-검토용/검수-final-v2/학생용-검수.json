@@ -1,0 +1,137 @@
+{
+  "schema": 2,
+  "source_sha256": "b78b0b692462c5f4f33e2079e1997dc7ca546aa5ff3eb981a6ad5cbaffff2160",
+  "pdf_sha256": "a67037ff8f4925453b112c06275e4c6a014eafb48c905b5e06cf59a63d19eee8",
+  "expected_pages": 3,
+  "student_file": "..\\학생용-중2-2학기-사각형의-성질-지필평가-ver6.hwpx",
+  "teacher_file": "..\\교사용-중2-2학기-사각형의-성질-정답해설-ver7.hwpx",
+  "student_pdf": "..\\학생용-중2-2학기-사각형의-성질-지필평가-ver6.pdf",
+  "teacher_pdf": "..\\교사용-중2-2학기-사각형의-성질-정답해설-ver7.pdf",
+  "metadata_file": "..\\시험정보.json",
+  "math_review": "문항별-검산.json",
+  "independent_review": "독립검토-결과.json",
+  "pages": [
+    {
+      "page": 1,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "표지의 학년·문항 수·총점·쪽수가 실제 3쪽과 일치하며 잘림과 겹침이 없다."
+    },
+    {
+      "page": 2,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "선택형 1~7번의 문항·보기·배점이 같은 쪽과 단에 있고 수식이 선명하다."
+    },
+    {
+      "page": 3,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "선택형 8~11번과 서술형 1~2번의 배점·풀이 공간·수식에 잘림과 겹침이 없다."
+    }
+  ],
+  "content": {
+    "solved": true,
+    "unique_answers": true,
+    "scope_checked": true,
+    "scores_checked": true,
+    "roman_italic_checked": true,
+    "student_teacher_agree": true,
+    "notes": "독립 검토와 최종 PDF 렌더를 대조했다. 점 이름·선분 이름·단위는 정체, 변수는 기울임으로 출력되었다."
+  },
+  "questions": [
+    {
+      "id": "MC1",
+      "text": "1.평행사변형",
+      "page": 2,
+      "column": "left",
+      "end_text": "1.평행사변형ABCD에서∠A∘일때,∠B는?[2점]①∘②∘③∘④∘⑤"
+    },
+    {
+      "id": "MC2",
+      "text": "2.평행사변형",
+      "page": 2,
+      "column": "left",
+      "end_text": "2.평행사변형ABCD에서AB,CD일때,의값은?[2점]①②③④⑤"
+    },
+    {
+      "id": "MC3",
+      "text": "3.평행사변형",
+      "page": 2,
+      "column": "left",
+      "end_text": "3.평행사변형ABCD의두대각선의교점을O라하자.AO,OC일때,AC의길이는?[2점]①②③④⑤"
+    },
+    {
+      "id": "MC4",
+      "text": "4.평행사변형",
+      "page": 2,
+      "column": "left",
+      "end_text": "4.평행사변형ABCD에서항상성립하지않는것은?[2점]①ABCD②∠A∠C③ACBD④두대각선은서로를이등분한다.⑤"
+    },
+    {
+      "id": "MC5",
+      "text": "5.사각형",
+      "page": 2,
+      "column": "right",
+      "end_text": "5.사각형이평행사변형이되는조건으로옳은것은?[2점]①두대각선의길이가같다.②한쌍의대변이평행하고길이가같다.③두쌍의이웃한변의길이가각각같다.④한쌍의대각의크기가같다.⑤"
+    },
+    {
+      "id": "MC6",
+      "text": "6.평행사변형",
+      "page": 2,
+      "column": "right",
+      "end_text": "6.평행사변형이직사각형이되는조건으로옳은것은?[2점]①두대각선이서로수직이다.②모든변의길이가같다.③두쌍의대변의길이가각각같다.④한쌍의이웃한변의길이가같다.⑤"
+    },
+    {
+      "id": "MC7",
+      "text": "7.평행사변형",
+      "page": 2,
+      "column": "right",
+      "end_text": "7.평행사변형이마름모가되는조건으로옳은것은?[2점]①두대각선의길이가같다.②한각이직각이다.③두대각선이서로수직이다.④이웃한두각의크기가같다.⑤"
+    },
+    {
+      "id": "MC8",
+      "text": "8.직사각형",
+      "page": 3,
+      "column": "left",
+      "end_text": "8.직사각형ABCD에서ACcm일때,BD는?[2점]①cm②cm③cm④cm⑤"
+    },
+    {
+      "id": "MC9",
+      "text": "9.마름모",
+      "page": 3,
+      "column": "left",
+      "end_text": "9.마름모ABCD에서∠BAC∘일때,∠D는?[2점]①∘②∘③∘④∘⑤"
+    },
+    {
+      "id": "MC10",
+      "text": "10.정사각형",
+      "page": 3,
+      "column": "left",
+      "end_text": "10.정사각형의성질로옳지않은것은?[2점]①마름모이지만직사각형은아니다.②네변의길이가모두같다.③네각의크기가모두같다.④두대각선의길이가같다.⑤"
+    },
+    {
+      "id": "MC11",
+      "text": "11.두대각선",
+      "page": 3,
+      "column": "left",
+      "end_text": "11.두대각선의길이가같고서로수직인평행사변형을가장좁게분류한것은?[2점]①직사각형②마름모③사다리꼴④정사각형⑤"
+    },
+    {
+      "id": "E1",
+      "text": "【논술형1】",
+      "page": 3,
+      "column": "right"
+    },
+    {
+      "id": "E2",
+      "text": "【논술형2】",
+      "page": 3,
+      "column": "right"
+    }
+  ],
+  "diagrams": []
+}

@@ -1,0 +1,89 @@
+{
+  "schema": 2,
+  "status": "PASS",
+  "author_task": "/root",
+  "reviewer_task": "/root/independent_exam_review",
+  "student_sha256": "b78b0b692462c5f4f33e2079e1997dc7ca546aa5ff3eb981a6ad5cbaffff2160",
+  "teacher_sha256": "1c0f60cdfb7836fc6727dd19a57c2cff0be6cbe854d594daef9fd10b2bcf57e8",
+  "student_pdf_sha256": "a67037ff8f4925453b112c06275e4c6a014eafb48c905b5e06cf59a63d19eee8",
+  "teacher_pdf_sha256": "21a13d194269e841623cd40f64502a557194c8f0639cdd5baead4381ce52158e",
+  "student_pages_reviewed": [
+    1,
+    2,
+    3
+  ],
+  "teacher_pages_reviewed": [
+    1,
+    2
+  ],
+  "blocking_findings": [],
+  "visual_findings": "학생용 3쪽과 교사용 2쪽에서 문항·수식·배점·선택지의 누락, 잘림, 겹침이 없음을 확인했다.",
+  "limitations": "서술형 2번의 피타고라스 정리 포함 여부는 실제 학교의 확정 출제 범위에 맞춰 교사가 최종 확인한다.",
+  "items": [
+    {
+      "id": "MC1",
+      "verdict": "PASS",
+      "reason": "이웃한 두 각의 합으로 108도를 확인함."
+    },
+    {
+      "id": "MC2",
+      "verdict": "PASS",
+      "reason": "대변의 길이 식에서 x=5를 확인함."
+    },
+    {
+      "id": "MC3",
+      "verdict": "PASS",
+      "reason": "대각선 이등분 성질로 AC=22를 확인함."
+    },
+    {
+      "id": "MC4",
+      "verdict": "PASS",
+      "reason": "대각선 길이가 항상 같지 않음을 확인함."
+    },
+    {
+      "id": "MC5",
+      "verdict": "PASS",
+      "reason": "한 쌍의 대변의 평행·합동 조건을 확인함."
+    },
+    {
+      "id": "MC6",
+      "verdict": "PASS",
+      "reason": "대각선 길이 조건으로 직사각형을 확인함."
+    },
+    {
+      "id": "MC7",
+      "verdict": "PASS",
+      "reason": "대각선 수직 조건으로 마름모를 확인함."
+    },
+    {
+      "id": "MC8",
+      "verdict": "PASS",
+      "reason": "직사각형 대각선 길이가 같음을 확인함."
+    },
+    {
+      "id": "MC9",
+      "verdict": "PASS",
+      "reason": "대각선의 각 이등분과 이웃한 각의 합을 확인함."
+    },
+    {
+      "id": "MC10",
+      "verdict": "PASS",
+      "reason": "정사각형이 직사각형이기도 함을 확인함."
+    },
+    {
+      "id": "MC11",
+      "verdict": "PASS",
+      "reason": "가장 좁은 분류가 정사각형임을 확인함."
+    },
+    {
+      "id": "E1",
+      "verdict": "PASS",
+      "reason": "x=33과 각 D=87도, 부분점수 기준을 확인함."
+    },
+    {
+      "id": "E2",
+      "verdict": "PASS",
+      "reason": "한 변 17cm와 둘레 68cm, 부분점수 기준을 확인함."
+    }
+  ]
+}
