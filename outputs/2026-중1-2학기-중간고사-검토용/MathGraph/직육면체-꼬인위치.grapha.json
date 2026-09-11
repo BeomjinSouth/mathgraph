@@ -1,0 +1,13 @@
+{
+  "operations": [
+    {"op":"create","id":"A","type":"point","x":-3,"y":-2,"label":"A"},
+    {"op":"create","id":"B","type":"point","x":3,"y":-2,"label":"B"},
+    {"op":"create","id":"C","type":"point","x":3,"y":1,"label":"C"},
+    {"op":"create","id":"D","type":"point","x":-3,"y":1,"label":"D"},
+    {"op":"create","id":"E","type":"point","x":-1.5,"y":0,"label":"E"},
+    {"op":"create","id":"F","type":"point","x":4.5,"y":0,"label":"F"},
+    {"op":"create","id":"G","type":"point","x":4.5,"y":3,"label":"G"},
+    {"op":"create","id":"H","type":"point","x":-1.5,"y":3,"label":"H"},
+    {"op":"create","id":"prismABCD_EFGH","type":"prism","baseVertexIds":["A","B","C","D"],"topVertexIds":["E","F","G","H"],"lineWidth":2}
+  ]
+}

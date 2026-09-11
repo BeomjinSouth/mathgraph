@@ -1,0 +1,1182 @@
+{
+  "schema": 2,
+  "student_sha256": "c3470e877faf533c2da312d58d7aee365c6c80bf58d5ac9e9225a851814bde35",
+  "teacher_sha256": "bbee599f43255adc94a696bc65cca64ad2a661a2d7712a9cc32f4b573e6fcd80",
+  "items": [
+    {
+      "id": "MC1",
+      "stem_excerpt": "다음 설명 중 옳은 것은? [3점]① 서로 다른 두 점",
+      "source_scripts": [],
+      "derivation": "한 직선 위에 있지 않은 세 점은 하나의 평면을 정한다.",
+      "answer": "②",
+      "teacher_agreement": "교사용 1번에서 세 점이 정하는 평면과 각 오답의 반례를 설명한 결론과 일치한다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "서로 다른 두 점을 지나는 직선은 하나이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": true,
+          "reason": "한 직선 위에 있지 않은 세 점을 지나는 평면은 하나이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "서로 평행한 두 평면은 만나지 않으므로 항상 한 직선에서 만나지 않는다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "한 평면 위에 있지 않은 네 점은 한 평면 위에 모두 놓일 수 없다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "서로 다른 두 직선은 평행하거나 꼬인 위치일 수 있다."
+        }
+      ]
+    },
+    {
+      "id": "MC2",
+      "stem_excerpt": "한 직선 위에 네 점 가 이 순서로 놓여 있다. 다음 ",
+      "source_scripts": [
+        "{rm A} it ,{rm B} it ,{rm C} it ,{rm D} it",
+        "vec {{rm AB} it }",
+        "vec {{rm BA} it }",
+        "vec {{rm BC} it }",
+        "vec {{rm CB} it }",
+        "vec {{rm CA} it }",
+        "vec {{rm CD} it }",
+        "vec {{rm AB} it }",
+        "vec {{rm AC} it }",
+        "vec {{rm DA} it }",
+        "vec {{rm BD} it }"
+      ],
+      "derivation": "A, B, C, D 순서에서 AB와 AC는 모두 A에서 시작하여 오른쪽으로 뻗는다.",
+      "answer": "④",
+      "teacher_agreement": "교사용 2번의 시작점과 방향 판정과 일치한다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "AB와 BA는 시작점과 방향이 모두 다르다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "BC와 CB는 시작점이 다르고 방향도 반대이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "CA와 CD는 같은 C에서 시작하지만 방향이 반대이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": true,
+          "reason": "AB와 AC는 시작점 A와 방향이 같다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "DA와 BD는 시작점이 서로 다르므로 같은 반직선이 아니다."
+        }
+      ]
+    },
+    {
+      "id": "MC3",
+      "stem_excerpt": "평면  위에 점 가 있고, 점 는 평면  위에 있지 않",
+      "source_scripts": [
+        "alpha",
+        "{rm P} it",
+        "{rm Q} it",
+        "alpha",
+        "{rm PQ} it",
+        "alpha",
+        "{rm PQ} it",
+        "alpha",
+        "{rm PQ} it",
+        "alpha",
+        "{rm PQ} it",
+        "alpha",
+        "{rm P} it",
+        "{rm PQ} it",
+        "alpha"
+      ],
+      "derivation": "P는 평면 α 위, Q는 평면 α 밖이므로 PQ는 P에서만 α와 만난다.",
+      "answer": "③",
+      "teacher_agreement": "교사용 3번의 P∈α, Q∉α 근거와 일치한다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "Q가 α 위에 있지 않아 PQ 전체가 α 위에 있지 않다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "P라는 공통점이 있으므로 평행하지 않다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": true,
+          "reason": "P만 평면 α 위에 있으므로 P에서만 만난다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "P가 공통점이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "P와 Q의 위치로 관계가 충분히 정해진다."
+        }
+      ]
+    },
+    {
+      "id": "MC4",
+      "stem_excerpt": "그림과 같이 직선 과 직선 은 평행하고 직선 은 두 직",
+      "source_scripts": [
+        "l",
+        "m",
+        "n",
+        "112^{ circ }",
+        "x^{ circ }",
+        "56^{ circ }",
+        "112^{ circ }",
+        "124^{ circ }",
+        "292^{ circ }",
+        "68^{ circ }"
+      ],
+      "derivation": "평행선의 같은 쪽 안쪽 각의 합은 180°이므로 x=68이다.",
+      "answer": "⑤",
+      "teacher_agreement": "교사용 4번의 112°+x°=180°와 x=68 결론과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "112+x",
+          "right": "180",
+          "bindings": {
+            "x": "68"
+          },
+          "relation": "=",
+          "reason": "같은 쪽 안쪽 두 각의 합에 x=68을 대입한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "112와 56의 합은 168이라서 같은 쪽 안쪽 각의 합이 아니다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "112와 112의 합은 224이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "112와 124의 합은 236이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "각의 크기는 0°와 180° 사이여야 하며 292는 불가능하다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": true,
+          "reason": "112+68=180이다."
+        }
+      ]
+    },
+    {
+      "id": "MC5",
+      "stem_excerpt": "다음 중 주어진 세 선분을 세 변으로 하는 삼각형을 작",
+      "source_scripts": [
+        "3{rm cm} it ,~4{rm cm} it ,~5{rm cm} it",
+        "2{rm cm} it ,~3{rm cm} it ,~5{rm cm} it",
+        "2{rm cm} it ,~3{rm cm} it ,~6{rm cm} it",
+        "1{rm cm} it ,~2{rm cm} it ,~3{rm cm} it",
+        "1{rm cm} it ,~2{rm cm} it ,~4{rm cm} it"
+      ],
+      "derivation": "세 변으로 삼각형을 만들려면 가장 긴 변보다 나머지 두 변의 합이 커야 한다.",
+      "answer": "①",
+      "teacher_agreement": "교사용 5번의 삼각형 부등식 판정과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "3+4",
+          "right": "5",
+          "relation": ">",
+          "reason": "①의 두 짧은 변의 합이 가장 긴 변보다 크다."
+        },
+        {
+          "left": "2+3",
+          "right": "5",
+          "relation": "=",
+          "reason": "②는 삼각형 부등식을 만족하지 않는다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": true,
+          "reason": "3+4>5이므로 작도할 수 있다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "2+3=5이므로 세 점이 일직선이 된다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "2+3<6이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "1+2=3이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "1+2<4이다."
+        }
+      ]
+    },
+    {
+      "id": "MC6",
+      "stem_excerpt": "두 삼각형의 합동을 보장하는 조건은? [4점]① 대응하",
+      "source_scripts": [],
+      "derivation": "두 변의 길이와 그 끼인각의 크기가 각각 같으면 SAS 합동이다.",
+      "answer": "④",
+      "teacher_agreement": "교사용 6번의 SAS 합동 조건 설명과 일치한다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "세 각만 같으면 크기가 다른 닮은 삼각형이 가능하다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "두 변만으로는 끼인각을 바꿀 수 있다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "한 변과 한 각만으로는 삼각형이 정해지지 않는다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": true,
+          "reason": "두 변과 그 끼인각이 각각 같으면 SAS 합동이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "세 변 중 두 변만 같아도 남은 변 또는 각을 바꿀 수 있다."
+        }
+      ]
+    },
+    {
+      "id": "MC7",
+      "stem_excerpt": "각형의 한 꼭짓점에서 그을 수 있는 대각선의 수는? [",
+      "source_scripts": [
+        "8",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "derivation": "한 꼭짓점에서 자기 자신과 양옆 두 꼭짓점을 제외하면 5개가 남는다.",
+      "answer": "②",
+      "teacher_agreement": "교사용 7번의 8−3 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "8-3",
+          "right": "5",
+          "relation": "=",
+          "reason": "팔각형 한 꼭짓점에서 대각선을 그을 수 있는 꼭짓점 수이다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "자기 자신과 양옆을 모두 제외하지 않은 값이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": true,
+          "reason": "8−3=5이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "양옆 꼭짓점 하나를 잘못 포함한 값이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "자기 자신만 제외한 값에 가깝다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "대각선 수가 꼭짓점 수와 같을 수 없다."
+        }
+      ]
+    },
+    {
+      "id": "MC8",
+      "stem_excerpt": "한 정다각형의 한 외각의 크기가 일 때, 이 정다각형의",
+      "source_scripts": [
+        "24^{ circ }",
+        "12",
+        "14",
+        "16",
+        "18",
+        "15"
+      ],
+      "derivation": "정다각형의 외각의 합 360°를 한 외각 24°로 나눈다.",
+      "answer": "⑤",
+      "teacher_agreement": "교사용 8번의 360÷24=15와 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "360/24",
+          "right": "15",
+          "relation": "=",
+          "reason": "외각의 합으로 변의 수를 구한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "12각형의 한 외각은 30°이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "14각형의 한 외각은 360/14°이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "16각형의 한 외각은 22.5°이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "18각형의 한 외각은 20°이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": true,
+          "reason": "15각형의 한 외각은 24°이다."
+        }
+      ]
+    },
+    {
+      "id": "MC9",
+      "stem_excerpt": "각형의 내각의 크기의 합은? [4점]① ② ③ ④ ⑤ ",
+      "source_scripts": [
+        "12",
+        "1440^{ circ }",
+        "1620^{ circ }",
+        "1800^{ circ }",
+        "1980^{ circ }",
+        "2160^{ circ }"
+      ],
+      "derivation": "12각형의 내각의 합은 (12−2)×180°이다.",
+      "answer": "③",
+      "teacher_agreement": "교사용 9번의 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "(12-2)*180",
+          "right": "1800",
+          "relation": "=",
+          "reason": "다각형 내각의 합 공식에 n=12를 대입한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "1440°는 십각형의 내각의 합이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "1620°는 11각형의 내각의 합이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": true,
+          "reason": "(12−2)×180°=1800°이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "1980°는 13각형의 내각의 합이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "2160°는 14각형의 내각의 합이다."
+        }
+      ]
+    },
+    {
+      "id": "MC10",
+      "stem_excerpt": "반지름의 길이가 이고 중심각의 크기가 인 부채꼴의 호의",
+      "source_scripts": [
+        "9{rm cm} it",
+        "80^{ circ }",
+        "4 pi {rm cm} it",
+        "2 pi {rm cm} it",
+        "6 pi {rm cm} it",
+        "8 pi {rm cm} it",
+        "12 pi {rm cm} it"
+      ],
+      "derivation": "호의 길이는 원둘레의 80/360배이다.",
+      "answer": "①",
+      "teacher_agreement": "교사용 10번의 4πcm 결론과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "2*9*80/360",
+          "right": "4",
+          "relation": "=",
+          "reason": "π를 제외한 호의 길이 계수를 계산한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": true,
+          "reason": "2π×9×80/360=4πcm이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "반지름 또는 중심각의 비를 절반으로 잘못 적용한 값이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "80/360의 비를 잘못 계산한 값이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "중심각의 비를 잘못 적용한 값이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "원의 전체 둘레보다 큰 값이다."
+        }
+      ]
+    },
+    {
+      "id": "MC11",
+      "stem_excerpt": "반지름의 길이가 이고 중심각의 크기가 인 부채꼴의 넓이",
+      "source_scripts": [
+        "6{rm cm} it",
+        "150^{ circ }",
+        "10 pi {rm cm} it ^{2}",
+        "12 pi {rm cm} it ^{2}",
+        "18 pi {rm cm} it ^{2}",
+        "15 pi {rm cm} it ^{2}",
+        "24 pi {rm cm} it ^{2}"
+      ],
+      "derivation": "부채꼴의 넓이는 원의 넓이의 150/360배이다.",
+      "answer": "④",
+      "teacher_agreement": "교사용 11번의 15πcm² 결론과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "6**2*150/360",
+          "right": "15",
+          "relation": "=",
+          "reason": "π를 제외한 부채꼴 넓이 계수를 계산한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "중심각의 비를 잘못 적용한 값이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "반지름 제곱 또는 중심각의 비를 잘못 적용한 값이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "150/360의 비를 반올림해 잘못 계산한 값이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": true,
+          "reason": "π×6²×150/360=15πcm²이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "원의 넓이 36π보다 큰 비율을 적용한 값이다."
+        }
+      ]
+    },
+    {
+      "id": "MC12",
+      "stem_excerpt": "각기둥의 꼭짓점, 모서리, 면의 수를 차례로 바르게 나",
+      "source_scripts": [
+        "5",
+        "5,~10,~7",
+        "10,~15,~7",
+        "10,~15,~5",
+        "10,~20,~7",
+        "12,~15,~7"
+      ],
+      "derivation": "오각기둥은 꼭짓점 10개, 모서리 15개, 면 7개이다.",
+      "answer": "②",
+      "teacher_agreement": "교사용 12번의 꼭짓점·모서리·면 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "5*3",
+          "right": "15",
+          "relation": "=",
+          "reason": "밑면 모서리 5개씩 두 묶음과 옆모서리 5개의 합이다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "꼭짓점 수를 한 밑면만 세었다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": true,
+          "reason": "꼭짓점 10개, 모서리 15개, 면 7개이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "면 수가 밑면 두 개를 반영하지 못했다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "모서리 수를 과다하게 셌다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "꼭짓점 수가 맞지 않는다."
+        }
+      ]
+    },
+    {
+      "id": "MC13",
+      "stem_excerpt": "그림과 같은 직육면체에서 모서리 와 꼬인 위치에 있는 ",
+      "source_scripts": [
+        "bar {{rm AB} it }",
+        "{rm A} it",
+        "{rm B} it",
+        "{rm C} it",
+        "{rm D} it",
+        "{rm E} it",
+        "{rm F} it",
+        "{rm G} it",
+        "{rm H} it",
+        "bar {{rm CD} it }",
+        "bar {{rm AE} it }",
+        "bar {{rm EF} it }",
+        "bar {{rm BF} it }",
+        "bar {{rm CG} it }"
+      ],
+      "derivation": "CG는 AB와 만나지 않고 평행하지도 않으므로 꼬인 위치이다.",
+      "answer": "⑤",
+      "teacher_agreement": "교사용 13번의 모서리 위치 관계 설명과 일치한다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "CD는 AB와 평행하다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "AE는 A에서 AB와 만난다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "EF는 AB와 평행하다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "BF는 B에서 AB와 만난다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": true,
+          "reason": "CG는 AB와 만나지 않고 평행하지 않다."
+        }
+      ]
+    },
+    {
+      "id": "MC14",
+      "stem_excerpt": "가로, 세로, 높이가 각각 인 직육면체의 겉넓이는? [",
+      "source_scripts": [
+        "3{rm cm} it ,~4{rm cm} it ,~5{rm cm} it",
+        "74{rm cm} it ^{2}",
+        "84{rm cm} it ^{2}",
+        "94{rm cm} it ^{2}",
+        "104{rm cm} it ^{2}",
+        "114{rm cm} it ^{2}"
+      ],
+      "derivation": "직육면체의 세 쌍의 합동인 면 넓이를 모두 더한다.",
+      "answer": "③",
+      "teacher_agreement": "교사용 14번의 94cm² 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "2*(3*4+4*5+5*3)",
+          "right": "94",
+          "relation": "=",
+          "reason": "가로·세로, 세로·높이, 높이·가로 면을 각각 두 장씩 더한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "한 쌍의 면을 누락한 값이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "세 면 넓이의 합을 잘못 더한 값이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": true,
+          "reason": "2(3×4+4×5+5×3)=94cm²이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "계산 결과가 94와 다르다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "계산 결과가 94와 다르다."
+        }
+      ]
+    },
+    {
+      "id": "MC15",
+      "stem_excerpt": "밑면이 가로 , 세로 인 직사각형이고 높이가 인 각기둥",
+      "source_scripts": [
+        "5{rm cm} it",
+        "4{rm cm} it",
+        "7{rm cm} it",
+        "140{rm cm} it ^{3}",
+        "120{rm cm} it ^{3}",
+        "110{rm cm} it ^{3}",
+        "100{rm cm} it ^{3}",
+        "280{rm cm} it ^{3}"
+      ],
+      "derivation": "각기둥의 부피는 밑넓이와 높이의 곱이다.",
+      "answer": "①",
+      "teacher_agreement": "교사용 15번의 140cm³ 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "5*4*7",
+          "right": "140",
+          "relation": "=",
+          "reason": "직사각형 밑넓이 20과 높이 7을 곱한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": true,
+          "reason": "5×4×7=140cm³이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "밑넓이 또는 높이를 잘못 곱한 값이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "밑넓이 또는 높이를 잘못 곱한 값이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "밑넓이 또는 높이를 잘못 곱한 값이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "두 배를 잘못 적용한 값이다."
+        }
+      ]
+    },
+    {
+      "id": "MC16",
+      "stem_excerpt": "밑면의 반지름의 길이가 이고 높이가 인 원뿔의 부피는?",
+      "source_scripts": [
+        "3{rm cm} it",
+        "8{rm cm} it",
+        "12 pi {rm cm} it ^{3}",
+        "18 pi {rm cm} it ^{3}",
+        "36 pi {rm cm} it ^{3}",
+        "24 pi {rm cm} it ^{3}",
+        "72 pi {rm cm} it ^{3}"
+      ],
+      "derivation": "원뿔의 부피는 같은 밑넓이와 높이인 원기둥 부피의 1/3이다.",
+      "answer": "④",
+      "teacher_agreement": "교사용 16번의 24πcm³ 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "(1/3)*3**2*8",
+          "right": "24",
+          "relation": "=",
+          "reason": "π를 제외한 원뿔 부피 계수를 계산한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "1/3 또는 반지름 제곱을 잘못 적용한 값이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "계산 결과가 24π와 다르다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "1/3을 빼고 계산한 값과도 다르다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": true,
+          "reason": "(1/3)π×3²×8=24πcm³이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "원기둥 부피 72π를 그대로 쓴 값이다."
+        }
+      ]
+    },
+    {
+      "id": "MC17",
+      "stem_excerpt": "반지름의 길이가 인 구의 겉넓이는? [5점]① ② ③ ",
+      "source_scripts": [
+        "4{rm cm} it",
+        "16 pi {rm cm} it ^{2}",
+        "64 pi {rm cm} it ^{2}",
+        "32 pi {rm cm} it ^{2}",
+        "128 pi {rm cm} it ^{2}",
+        "256 pi {rm cm} it ^{2}"
+      ],
+      "derivation": "구의 겉넓이는 4πr²이다.",
+      "answer": "②",
+      "teacher_agreement": "교사용 17번의 64πcm² 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "4*4**2",
+          "right": "64",
+          "relation": "=",
+          "reason": "π를 제외한 구의 겉넓이 계수를 계산한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "4πr²의 계수 또는 제곱을 빠뜨린 값이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": true,
+          "reason": "4π×4²=64πcm²이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "계수 4를 2로 잘못 적용한 값이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "계수 또는 반지름 제곱을 과다 적용한 값이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "반지름을 한 번 더 제곱한 값에 가깝다."
+        }
+      ]
+    },
+    {
+      "id": "MC18",
+      "stem_excerpt": "다음 자료의 평균은?  [5점]① ② ③ ④ ⑤ ",
+      "source_scripts": [
+        "4,~6,~8,~10,~12",
+        "6",
+        "7",
+        "9",
+        "10",
+        "8"
+      ],
+      "derivation": "다섯 자료의 합을 자료 수 5로 나눈다.",
+      "answer": "⑤",
+      "teacher_agreement": "교사용 18번의 평균 8 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "(4+6+8+10+12)/5",
+          "right": "8",
+          "relation": "=",
+          "reason": "주어진 다섯 자료의 평균을 계산한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "자료의 평균은 6이 아니다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "자료의 평균은 7이 아니다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "자료의 평균은 9가 아니다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "자료의 평균은 10이 아니다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": true,
+          "reason": "(4+6+8+10+12)/5=8이다."
+        }
+      ]
+    },
+    {
+      "id": "MC19",
+      "stem_excerpt": "다음 자료의 중앙값은?  [5점]① ② ③ ④ ⑤ ",
+      "source_scripts": [
+        "2,~4,~4,~5,~7,~9",
+        "4",
+        "{{17} over {4}}",
+        "{{9} over {2}}",
+        "5",
+        "6"
+      ],
+      "derivation": "자료 수가 6개이므로 세 번째와 네 번째 자료의 평균이 중앙값이다.",
+      "answer": "③",
+      "teacher_agreement": "교사용 19번의 9/2 결론과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "(4+5)/2",
+          "right": "9/2",
+          "relation": "=",
+          "reason": "정렬된 자료의 가운데 두 수를 평균낸다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "4는 세 번째 자료일 뿐 중앙값이 아니다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "17/4은 가운데 두 자료의 평균이 아니다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": true,
+          "reason": "(4+5)/2=9/2이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "5는 네 번째 자료일 뿐 중앙값이 아니다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "6은 가운데 두 자료의 평균이 아니다."
+        }
+      ]
+    },
+    {
+      "id": "MC20",
+      "stem_excerpt": "다음 줄기와 잎 그림에서  이상인 자료의 수는? [5점",
+      "source_scripts": [
+        "20",
+        "1",
+        "2,~6,~9",
+        "2",
+        "0,~0,~4,~7",
+        "3",
+        "1,~5",
+        "1|2=12",
+        "6",
+        "5",
+        "4",
+        "7",
+        "8"
+      ],
+      "derivation": "20 이상인 자료는 20, 20, 24, 27, 31, 35로 여섯 개이다.",
+      "answer": "①",
+      "teacher_agreement": "교사용 20번의 해당 자료 열거와 여섯 개 결론과 일치한다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": true,
+          "reason": "20 이상 자료가 여섯 개이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "20이 두 번 나타난 것을 하나로 세면 안 된다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "24, 27, 31, 35를 일부 누락한 수이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "20 이상 자료는 일곱 개가 아니다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "20 이상 자료는 여덟 개가 아니다."
+        }
+      ]
+    },
+    {
+      "id": "MC21",
+      "stem_excerpt": "도수분포표의 계급이 일 때, 자료값 이 속하는 계급은?",
+      "source_scripts": [
+        "10 LEQ x<20,~20 LEQ x<30,~30 LEQ x<40,~40 LEQ x<50",
+        "30",
+        "10 LEQ x<20",
+        "20 LEQ x<30",
+        "40 LEQ x<50",
+        "30 LEQ x<40",
+        "10 LEQ x<30"
+      ],
+      "derivation": "30은 30 이상이고 40 미만이므로 30≤x<40 계급에 속한다.",
+      "answer": "④",
+      "teacher_agreement": "교사용 21번의 30≤30<40 판정과 일치한다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "30은 10≤x<20 범위에 없다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "20≤x<30은 오른쪽 끝값 30을 포함하지 않는다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "30은 40≤x<50 범위에 없다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": true,
+          "reason": "30≤30<40이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "두 계급을 합친 범위는 한 계급이 아니다."
+        }
+      ]
+    },
+    {
+      "id": "MC22",
+      "stem_excerpt": "다음 도수분포표를 히스토그램으로 나타낼 때, 가장 높은",
+      "source_scripts": [
+        "0 LEQ x<10",
+        "2",
+        "10 LEQ x<20",
+        "5",
+        "20 LEQ x<30",
+        "8",
+        "30 LEQ x<40",
+        "5",
+        "0 LEQ x<10",
+        "10 LEQ x<20",
+        "20 LEQ x<30",
+        "30 LEQ x<40"
+      ],
+      "derivation": "계급 너비가 모두 같으므로 히스토그램 직사각형의 높이는 도수에 비례하고, 최대 도수는 8이다.",
+      "answer": "③",
+      "teacher_agreement": "교사용 22번의 계급 너비와 최대 도수 설명과 일치한다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "도수 2는 최대 도수가 아니다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "도수 5는 최대 도수가 아니다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": true,
+          "reason": "20≤x<30의 도수 8이 가장 크다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "도수 5는 최대 도수가 아니다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "도수분포표에 각 계급의 도수가 제시되어 있다."
+        }
+      ]
+    },
+    {
+      "id": "MC23",
+      "stem_excerpt": "전체 자료의 수가 인 다음 도수분포표에서 의 값과 인 ",
+      "source_scripts": [
+        "30",
+        "a",
+        "10 LEQ x<30",
+        "0 LEQ x<10",
+        "4",
+        "10 LEQ x<20",
+        "9",
+        "20 LEQ x<30",
+        "a",
+        "30 LEQ x<40",
+        "5",
+        "10,~20",
+        "12,~18",
+        "12,~20",
+        "13,~21",
+        "12,~21"
+      ],
+      "derivation": "네 계급 도수의 합이 30이므로 a=12이고, 10≤x<30의 도수는 9+12=21이다.",
+      "answer": "⑤",
+      "teacher_agreement": "교사용 23번의 a=12와 21개 결론 및 계산과 일치한다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "4+9+a+5",
+          "right": "30",
+          "bindings": {
+            "a": "12"
+          },
+          "relation": "=",
+          "reason": "전체 도수 30에 a=12를 대입한다."
+        },
+        {
+          "left": "9+12",
+          "right": "21",
+          "relation": "=",
+          "reason": "10≤x<20과 20≤x<30의 도수를 더한다."
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "a=10이면 전체 도수가 28이 된다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "a=12는 맞지만 10≤x<30의 도수는 21이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "a=12는 맞지만 10≤x<30의 도수는 21이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "a=13이면 전체 도수가 31이 된다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": true,
+          "reason": "a=12이고 9+12=21이다."
+        }
+      ]
+    }
+  ]
+}

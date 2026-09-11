@@ -1,0 +1,132 @@
+{
+  "schema": 2,
+  "status": "PENDING",
+  "author_task": "",
+  "reviewer_task": "",
+  "student_sha256": "7d76d9f7ac9671b147d44aa0e809d1a1b917d900a299fcdfe31c098ab841f08d",
+  "teacher_sha256": "d678a95b6519ba556f1e6e1af704cc57edbf53f431dabb9f8ac46ff48e8ea3f5",
+  "student_pdf_sha256": "8617b3b610b6fdb88f8ad6b295f148e65be1e0c05eabe4f178a7f6bb9838c814",
+  "teacher_pdf_sha256": "aeb2315336a8a9daa8f05f603ee765826257be43314b081bd1844243b756ddb0",
+  "student_pages_reviewed": [],
+  "teacher_pages_reviewed": [],
+  "blocking_findings": null,
+  "visual_findings": "",
+  "limitations": "",
+  "items": [
+    {
+      "id": "MC1",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC2",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC3",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC4",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC5",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC6",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC7",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC8",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC9",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC10",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC11",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC12",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC13",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC14",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC15",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC16",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC17",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC18",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC19",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC20",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC21",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC22",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC23",
+      "verdict": "PENDING",
+      "reason": ""
+    }
+  ]
+}

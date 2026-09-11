@@ -1,0 +1,227 @@
+{
+  "schema": 2,
+  "source_sha256": "c3470e877faf533c2da312d58d7aee365c6c80bf58d5ac9e9225a851814bde35",
+  "pdf_sha256": "1046aec5dfe56bd7377ad7b497b211a1e4c50970488628775e390aff96ba852a",
+  "expected_pages": 4,
+  "student_file": "..\\학생용-중간고사-검토용.hwpx",
+  "teacher_file": "..\\교사용-정답및해설.hwpx",
+  "student_pdf": "..\\학생용-중간고사-검토용.pdf",
+  "teacher_pdf": "..\\교사용-정답및해설.pdf",
+  "metadata_file": "..\\시험정보.json",
+  "math_review": "문항별-검산.json",
+  "independent_review": "독립검토-결과.json",
+  "pages": [
+    {
+      "page": 1,
+      "no_clipping": false,
+      "no_overlap": false,
+      "layout_matches": false,
+      "observations": ""
+    },
+    {
+      "page": 2,
+      "no_clipping": false,
+      "no_overlap": false,
+      "layout_matches": false,
+      "observations": ""
+    },
+    {
+      "page": 3,
+      "no_clipping": false,
+      "no_overlap": false,
+      "layout_matches": false,
+      "observations": ""
+    },
+    {
+      "page": 4,
+      "no_clipping": false,
+      "no_overlap": false,
+      "layout_matches": false,
+      "observations": ""
+    }
+  ],
+  "content": {
+    "solved": false,
+    "unique_answers": false,
+    "scope_checked": false,
+    "scores_checked": false,
+    "roman_italic_checked": false,
+    "student_teacher_agree": false,
+    "notes": ""
+  },
+  "questions": [
+    {
+      "id": "MC1",
+      "text": "1.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC2",
+      "text": "2.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC3",
+      "text": "3.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC4",
+      "text": "4.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC5",
+      "text": "5.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC6",
+      "text": "6.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC7",
+      "text": "7.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC8",
+      "text": "8.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC9",
+      "text": "9.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC10",
+      "text": "10.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC11",
+      "text": "11.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC12",
+      "text": "12.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC13",
+      "text": "13.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC14",
+      "text": "14.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC15",
+      "text": "15.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC16",
+      "text": "16.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC17",
+      "text": "17.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC18",
+      "text": "18.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC19",
+      "text": "19.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC20",
+      "text": "20.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC21",
+      "text": "21.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC22",
+      "text": "22.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    },
+    {
+      "id": "MC23",
+      "text": "23.",
+      "page": null,
+      "column": null,
+      "end_text": ""
+    }
+  ],
+  "diagrams": [
+    {
+      "paragraph": "Contents/section0.xml:32",
+      "export": "",
+      "export_sha256": ""
+    },
+    {
+      "paragraph": "Contents/section0.xml:73",
+      "export": "",
+      "export_sha256": ""
+    }
+  ]
+}

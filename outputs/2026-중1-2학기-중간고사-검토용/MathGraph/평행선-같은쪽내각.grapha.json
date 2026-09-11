@@ -1,0 +1,17 @@
+{
+  "operations": [
+    {"op":"create","id":"topLeft","type":"point","x":-4,"y":1,"visible":false},
+    {"op":"create","id":"topRight","type":"point","x":4,"y":1,"visible":false},
+    {"op":"create","id":"bottomLeft","type":"point","x":-4,"y":-1,"visible":false},
+    {"op":"create","id":"bottomRight","type":"point","x":4,"y":-1,"visible":false},
+    {"op":"create","id":"upper","type":"point","x":-0.404026,"y":1,"visible":false},
+    {"op":"create","id":"lower","type":"point","x":0.404026,"y":-1,"visible":false},
+    {"op":"create","id":"transversalTop","type":"point","x":-1.616104,"y":4,"visible":false},
+    {"op":"create","id":"transversalBottom","type":"point","x":1.616104,"y":-4,"visible":false},
+    {"op":"create","id":"l","type":"segment","point1Id":"topLeft","point2Id":"topRight"},
+    {"op":"create","id":"m","type":"segment","point1Id":"bottomLeft","point2Id":"bottomRight"},
+    {"op":"create","id":"n","type":"segment","point1Id":"transversalTop","point2Id":"transversalBottom"},
+    {"op":"create","id":"upperInterior","type":"angleDimension","vertexId":"upper","point1Id":"topLeft","point2Id":"transversalBottom","showValue":false,"arcRadius":0.56},
+    {"op":"create","id":"lowerInterior","type":"angleDimension","vertexId":"lower","point1Id":"bottomLeft","point2Id":"transversalTop","showValue":false,"arcRadius":0.56}
+  ]
+}

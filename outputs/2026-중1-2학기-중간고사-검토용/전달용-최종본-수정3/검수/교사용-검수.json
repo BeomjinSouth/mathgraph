@@ -1,0 +1,52 @@
+{
+  "schema": 2,
+  "source_sha256": "bbee599f43255adc94a696bc65cca64ad2a661a2d7712a9cc32f4b573e6fcd80",
+  "pdf_sha256": "0100fa5ba7013169fa90dee12995f38501c2aa8abcece8c3ac75afecc8b6e1e8",
+  "expected_pages": 4,
+  "student_file": "..\\학생용-중간고사-검토용.hwpx",
+  "teacher_file": "..\\교사용-정답및해설.hwpx",
+  "student_pdf": "..\\학생용-중간고사-검토용.pdf",
+  "teacher_pdf": "..\\교사용-정답및해설.pdf",
+  "metadata_file": "..\\시험정보.json",
+  "math_review": "문항별-검산.json",
+  "independent_review": "독립검토-결과.json",
+  "pages": [
+    {
+      "page": 1,
+      "no_clipping": false,
+      "no_overlap": false,
+      "layout_matches": false,
+      "observations": ""
+    },
+    {
+      "page": 2,
+      "no_clipping": false,
+      "no_overlap": false,
+      "layout_matches": false,
+      "observations": ""
+    },
+    {
+      "page": 3,
+      "no_clipping": false,
+      "no_overlap": false,
+      "layout_matches": false,
+      "observations": ""
+    },
+    {
+      "page": 4,
+      "no_clipping": false,
+      "no_overlap": false,
+      "layout_matches": false,
+      "observations": ""
+    }
+  ],
+  "content": {
+    "solved": false,
+    "unique_answers": false,
+    "scope_checked": false,
+    "scores_checked": false,
+    "roman_italic_checked": false,
+    "student_teacher_agree": false,
+    "notes": ""
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "schema": 2,
+  "source_sha256": "da98fcd452557b9d00178927310e31050b9f99d9b4a6343236ec8986e6dc9ac1",
+  "pdf_sha256": "f197f89dd7cd0280d7caa7f59580b738d00792785b7ef88dc33caa4ee9e2dfc6",
+  "expected_pages": 4,
+  "student_file": "..\\학생용-중간고사-검토용.hwpx",
+  "teacher_file": "..\\교사용-정답및해설.hwpx",
+  "student_pdf": "..\\학생용-중간고사-검토용-표지검증.pdf",
+  "teacher_pdf": "..\\교사용-정답및해설-최종.pdf",
+  "metadata_file": "..\\시험정보.json",
+  "math_review": "문항별-검산.json",
+  "independent_review": "독립검토-결과.json",
+  "pages": [
+    {
+      "page": 1,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "제목과 1~6번 해설을 직접 확인했다. 수식과 본문이 겹치거나 잘린 곳이 없다."
+    },
+    {
+      "page": 2,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "7~13번 해설을 직접 확인했다. 7번 제목과 정답·해설이 같은 쪽에 있고, 분수·각·선분 표기와 답 번호가 모두 읽힌다."
+    },
+    {
+      "page": 3,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "14~20번 해설을 직접 확인했다. 문항 제목과 풀이가 분리되지 않고, 수식과 본문이 겹치거나 잘린 곳이 없다."
+    },
+    {
+      "page": 4,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "21~23번 해설을 직접 확인했다. 22번의 마지막 문장과 23번의 정답·수식·결론이 완전하며, 잘림이나 겹침이 없다."
+    }
+  ],
+  "content": {
+    "solved": true,
+    "unique_answers": true,
+    "scope_checked": true,
+    "scores_checked": true,
+    "roman_italic_checked": true,
+    "student_teacher_agree": true,
+    "notes": "학생용 23문항과 교사용 정답·해설을 문항별-검산.json으로 대조했다. Q2는 ④ 하나만, Q22는 ③ 하나만 정답이며, 학생용 배점 합계는 100점이다."
+  }
+}

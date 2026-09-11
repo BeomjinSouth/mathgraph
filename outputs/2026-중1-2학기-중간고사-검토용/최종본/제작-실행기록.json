@@ -1,0 +1,25 @@
+{
+  "status": "HWPX_CREATED_NATIVE_VERIFICATION_PENDING",
+  "student": "학생용-중간고사-검토용.hwpx",
+  "student_sha256": "1624995b8790dc5fe2ef0340adad061a4764e6173472e4e6a1b66f3349538970",
+  "teacher": "교사용-정답및해설.hwpx",
+  "teacher_sha256": "bf631a10deb612918e71e5d9f916a789f0c67a06a608dcf0689af0c2e414af2d",
+  "metadata": "시험정보.json",
+  "student_author_shutdown": {
+    "documents_closed": true,
+    "windows_closed": true,
+    "quit_returned": true,
+    "ok": true,
+    "new_processes_exited": true,
+    "new_process_count": 1
+  },
+  "teacher_author_shutdown": {
+    "documents_closed": true,
+    "windows_closed": true,
+    "quit_returned": true,
+    "ok": true,
+    "new_processes_exited": true,
+    "new_process_count": 1
+  },
+  "next": "strict 검사, native_verify.py PDF 출력, 전체 쪽·수학 검토, 독립 검토, delivery_check.py를 새 증거 파일로 실행해야 합니다."
+}
