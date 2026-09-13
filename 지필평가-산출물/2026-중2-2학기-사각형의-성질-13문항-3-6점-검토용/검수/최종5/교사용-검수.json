@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "source_sha256": "f90e3f887ae866f79c4bacbaf64a71ffa807876c1973148570beb0599e7fbb2d",
+  "pdf_sha256": "a1223ba3fe55a2827cd911c068dfea51e0069768dfce4a5253d76af47c99041b",
+  "expected_pages": 3,
+  "student_file": "..\\..\\학생용-중2-2학기-사각형의-성질-13문항-최종5.hwpx",
+  "teacher_file": "..\\..\\교사용-중2-2학기-사각형의-성질-정답해설-최종5.hwpx",
+  "student_pdf": "..\\..\\학생용-중2-2학기-사각형의-성질-13문항-최종5.pdf",
+  "teacher_pdf": "..\\..\\교사용-중2-2학기-사각형의-성질-정답해설-최종5.pdf",
+  "metadata_file": "..\\..\\시험정보.json",
+  "math_review": "문항별-검산-완성.json",
+  "independent_review": "독립검토-결과.json",
+  "pages": [
+    {
+      "page": 1,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "선택형 1~9번의 정답·해설과 수식이 잘리지 않고 표시된다."
+    },
+    {
+      "page": 2,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "서술형 1~3번의 모범 답안·채점 기준과 수식이 잘리지 않고 표시된다."
+    },
+    {
+      "page": 3,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "서술형 4번의 채점 기준이 3쪽 상단에 이어지며 잘림·겹침이 없다."
+    }
+  ],
+  "content": {
+    "solved": true,
+    "unique_answers": true,
+    "scope_checked": true,
+    "scores_checked": true,
+    "roman_italic_checked": true,
+    "student_teacher_agree": true,
+    "notes": "학생용 문항과 교사용 정답·해설을 문항별로 대조했다. 3·4·5·6점 배점과 총 60점을 확인했으며, 독립 검토자의 별도 선풀이는 아직 연결되지 않았다."
+  }
+}

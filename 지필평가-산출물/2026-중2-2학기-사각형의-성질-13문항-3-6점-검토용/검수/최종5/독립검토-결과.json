@@ -1,0 +1,92 @@
+{
+  "schema": 2,
+  "status": "PENDING",
+  "author_task": "현재 제작 작업",
+  "reviewer_task": "",
+  "student_sha256": "9207a7b223fb8a31afb3e8f38c7b29d2dc07a87516f0e060aa1745e4de19233a",
+  "teacher_sha256": "f90e3f887ae866f79c4bacbaf64a71ffa807876c1973148570beb0599e7fbb2d",
+  "student_pdf_sha256": "d8c214522347b55600eae977b0d032b8b413555f27b287464d5ba7082be17eef",
+  "teacher_pdf_sha256": "a1223ba3fe55a2827cd911c068dfea51e0069768dfce4a5253d76af47c99041b",
+  "student_pages_reviewed": [
+    1,
+    2,
+    3
+  ],
+  "teacher_pages_reviewed": [
+    1,
+    2,
+    3
+  ],
+  "blocking_findings": [
+    "독립 검토자의 학생용 선풀이와 교사용 대조가 아직 별도 작업으로 수행되지 않음"
+  ],
+  "visual_findings": "제작자가 학생용 3쪽과 교사용 3쪽을 직접 확인했다. 학생용의 표지·보기 상자·문항·서술형 공간에 잘림과 겹침은 없었고, 교사용 3쪽의 마지막 채점 기준도 잘리지 않았다.",
+  "limitations": "독립 검토자 식별자와 별도 선풀이가 없으므로 독립 검토 PASS로 올리지 않았다.",
+  "items": [
+    {
+      "id": "MC1",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "MC2",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "MC3",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "MC4",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "MC5",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "MC6",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "MC7",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "MC8",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "MC9",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "E1",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "E2",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "E3",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    },
+    {
+      "id": "E4",
+      "verdict": "PENDING",
+      "reason": "별도 검토자의 학생용 선풀이가 필요함"
+    }
+  ]
+}

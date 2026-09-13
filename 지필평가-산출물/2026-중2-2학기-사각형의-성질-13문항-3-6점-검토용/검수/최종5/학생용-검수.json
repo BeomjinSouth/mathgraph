@@ -1,0 +1,135 @@
+{
+  "schema": 2,
+  "source_sha256": "9207a7b223fb8a31afb3e8f38c7b29d2dc07a87516f0e060aa1745e4de19233a",
+  "pdf_sha256": "d8c214522347b55600eae977b0d032b8b413555f27b287464d5ba7082be17eef",
+  "expected_pages": 3,
+  "student_file": "..\\..\\학생용-중2-2학기-사각형의-성질-13문항-최종5.hwpx",
+  "teacher_file": "..\\..\\교사용-중2-2학기-사각형의-성질-정답해설-최종5.hwpx",
+  "student_pdf": "..\\..\\학생용-중2-2학기-사각형의-성질-13문항-최종5.pdf",
+  "teacher_pdf": "..\\..\\교사용-중2-2학기-사각형의-성질-정답해설-최종5.pdf",
+  "metadata_file": "..\\..\\시험정보.json",
+  "math_review": "문항별-검산-완성.json",
+  "independent_review": "독립검토-결과.json",
+  "pages": [
+    {
+      "page": 1,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "표지의 3쪽·60점·문항 수 표기와 양식 표를 확인했으며 잘림·겹침이 없다."
+    },
+    {
+      "page": 2,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "1~7번과 보기 상자가 같은 쪽·단에 배치되었고 선택지 ⑤까지 잘림·겹침이 없다."
+    },
+    {
+      "page": 3,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "8~9번과 서술형 1~4번이 같은 쪽·단에 배치되었고 배점이 줄 중간에서 끊기지 않는다."
+    }
+  ],
+  "content": {
+    "solved": true,
+    "unique_answers": true,
+    "scope_checked": true,
+    "scores_checked": true,
+    "roman_italic_checked": true,
+    "student_teacher_agree": true,
+    "notes": "13문항을 직접 풀어 정답·보기별 판정을 확인하고 교사용 해설과 대조했다. 수식의 점 이름·변수 기울임과 전체 인쇄 쪽을 확인했으며, 별도 독립 검토는 아직 남아 있다."
+  },
+  "questions": [
+    {
+      "id": "MC1",
+      "text": "1.",
+      "page": 2,
+      "column": "left",
+      "end_text": "⑤\ue035\ue03c\ue035∘"
+    },
+    {
+      "id": "MC2",
+      "text": "2.",
+      "page": 2,
+      "column": "left",
+      "end_text": "⑤\ue03b"
+    },
+    {
+      "id": "MC3",
+      "text": "3.",
+      "page": 2,
+      "column": "left",
+      "end_text": "⑤\ue03a"
+    },
+    {
+      "id": "MC4",
+      "text": "4.",
+      "page": 2,
+      "column": "left",
+      "end_text": "⑤한쌍의대변이평행하고그길이가같다."
+    },
+    {
+      "id": "MC5",
+      "text": "5.",
+      "page": 2,
+      "column": "right",
+      "end_text": "⑤두대각선이서로를이등분한다."
+    },
+    {
+      "id": "MC6",
+      "text": "6.",
+      "page": 2,
+      "column": "right",
+      "end_text": "⑤∠AOB\ue047\ue03c\ue03d∘"
+    },
+    {
+      "id": "MC7",
+      "text": "7.",
+      "page": 2,
+      "column": "right",
+      "end_text": "⑤ㄱ,ㄴ,ㄷ"
+    },
+    {
+      "id": "MC8",
+      "text": "8.",
+      "page": 3,
+      "column": "left",
+      "end_text": "⑤\ue039"
+    },
+    {
+      "id": "MC9",
+      "text": "9.",
+      "page": 3,
+      "column": "left",
+      "end_text": "⑤\ue034\ue037\ue03b∘"
+    },
+    {
+      "id": "E1",
+      "text": "【논술형 1】",
+      "page": 3,
+      "column": "left"
+    },
+    {
+      "id": "E2",
+      "text": "【논술형 2】",
+      "page": 3,
+      "column": "right"
+    },
+    {
+      "id": "E3",
+      "text": "【논술형 3】",
+      "page": 3,
+      "column": "right"
+    },
+    {
+      "id": "E4",
+      "text": "【논술형 4】",
+      "page": 3,
+      "column": "right"
+    }
+  ],
+  "diagrams": []
+}

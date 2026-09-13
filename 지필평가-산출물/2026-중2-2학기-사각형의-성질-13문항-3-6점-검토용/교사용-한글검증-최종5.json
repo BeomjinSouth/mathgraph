@@ -1,0 +1,651 @@
+{
+  "schema": 2,
+  "ok": true,
+  "errors": [],
+  "source": "교사용-중2-2학기-사각형의-성질-정답해설-최종5.hwpx",
+  "source_sha256": "f90e3f887ae866f79c4bacbaf64a71ffa807876c1973148570beb0599e7fbb2d",
+  "pdf": "교사용-중2-2학기-사각형의-성질-정답해설-최종5.pdf",
+  "pdf_sha256": "a1223ba3fe55a2827cd911c068dfea51e0069768dfce4a5253d76af47c99041b",
+  "engine": "Hancom HWPFrame.HwpObject SaveAs PDF",
+  "native_pages": 3,
+  "pdf_pages": 3,
+  "page_sizes_pt": [
+    [
+      595.0,
+      841.0
+    ],
+    [
+      595.0,
+      841.0
+    ],
+    [
+      595.0,
+      841.0
+    ]
+  ],
+  "equation_edit": true,
+  "inline_flow": true,
+  "equations": [
+    {
+      "index": 0,
+      "script": "ANGLE {rm C} it = ANGLE {rm A} it =68^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 7512,
+      "height": 1313,
+      "native": {
+        "width": 7512,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 1,
+      "script": "3x+2=5x-10",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 7378,
+      "height": 1125,
+      "native": {
+        "width": 7378,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 2,
+      "script": "x=6",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2412,
+      "height": 1125,
+      "native": {
+        "width": 2412,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 3,
+      "script": "bar {{rm AO} it }=bar {{rm OC} it }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 4266,
+      "height": 1350,
+      "native": {
+        "width": 4266,
+        "height": 1350
+      },
+      "ok": true
+    },
+    {
+      "index": 4,
+      "script": "7=x+2",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 4070,
+      "height": 1125,
+      "native": {
+        "width": 4070,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 5,
+      "script": "x=5",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2412,
+      "height": 1125,
+      "native": {
+        "width": 2412,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 6,
+      "script": "2((3x+1)+(x+3))=40",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 11517,
+      "height": 1125,
+      "native": {
+        "width": 11517,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 7,
+      "script": "8x+8=40",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 5120,
+      "height": 1125,
+      "native": {
+        "width": 5120,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 8,
+      "script": "x=4",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2412,
+      "height": 1125,
+      "native": {
+        "width": 2412,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 9,
+      "script": "bar {{rm AC} it }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 1605,
+      "height": 1350,
+      "native": {
+        "width": 1605,
+        "height": 1350
+      },
+      "ok": true
+    },
+    {
+      "index": 10,
+      "script": "ANGLE {rm A} it",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 1875,
+      "height": 1125,
+      "native": {
+        "width": 1875,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 11,
+      "script": "ANGLE {rm A} it =64^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 4731,
+      "height": 1313,
+      "native": {
+        "width": 4731,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 12,
+      "script": "180^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2325,
+      "height": 1313,
+      "native": {
+        "width": 2325,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 13,
+      "script": "ANGLE {rm D} it =180^{ circ }-64^{ circ }=116^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 11891,
+      "height": 1313,
+      "native": {
+        "width": 11891,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 14,
+      "script": "180^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2325,
+      "height": 1313,
+      "native": {
+        "width": 2325,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 15,
+      "script": "(3x+10)+(5x-30)=180",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 12265,
+      "height": 1125,
+      "native": {
+        "width": 12265,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 16,
+      "script": "8x-20=180",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 6170,
+      "height": 1125,
+      "native": {
+        "width": 6170,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 17,
+      "script": "x=25",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2937,
+      "height": 1125,
+      "native": {
+        "width": 2937,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 18,
+      "script": "ANGLE {rm A} it = ANGLE {rm C} it =(3 times 25+10)^{ circ }=85^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 15366,
+      "height": 1313,
+      "native": {
+        "width": 15366,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 19,
+      "script": "ANGLE {rm B} it = ANGLE {rm D} it =(5 times 25-30)^{ circ }=95^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 15366,
+      "height": 1313,
+      "native": {
+        "width": 15366,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 20,
+      "script": "(3x+10)+(5x-30)=180",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 12265,
+      "height": 1125,
+      "native": {
+        "width": 12265,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 21,
+      "script": "x=25",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2937,
+      "height": 1125,
+      "native": {
+        "width": 2937,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 22,
+      "script": "x=25",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2937,
+      "height": 1125,
+      "native": {
+        "width": 2937,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 23,
+      "script": "2(bar {{rm AB} it }+bar {{rm BC} it })",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 5541,
+      "height": 1350,
+      "native": {
+        "width": 5541,
+        "height": 1350
+      },
+      "ok": true
+    },
+    {
+      "index": 24,
+      "script": "2((3x+1)+(x+3))=40",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 11517,
+      "height": 1125,
+      "native": {
+        "width": 11517,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 25,
+      "script": "8x+8=40",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 5120,
+      "height": 1125,
+      "native": {
+        "width": 5120,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 26,
+      "script": "x=4",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2412,
+      "height": 1125,
+      "native": {
+        "width": 2412,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 27,
+      "script": "bar {{rm AB} it }=13{rm cm} it",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 5211,
+      "height": 1350,
+      "native": {
+        "width": 5211,
+        "height": 1350
+      },
+      "ok": true
+    },
+    {
+      "index": 28,
+      "script": "bar {{rm BC} it }=7{rm cm} it",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 4536,
+      "height": 1350,
+      "native": {
+        "width": 4536,
+        "height": 1350
+      },
+      "ok": true
+    },
+    {
+      "index": 29,
+      "script": "13 times 7=91{rm cm} it ^{2}",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 6920,
+      "height": 1313,
+      "native": {
+        "width": 6920,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 30,
+      "script": "x=4",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2412,
+      "height": 1125,
+      "native": {
+        "width": 2412,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 31,
+      "script": "91{rm cm} it ^{2}",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2925,
+      "height": 1313,
+      "native": {
+        "width": 2925,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 32,
+      "script": "x=4",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2412,
+      "height": 1125,
+      "native": {
+        "width": 2412,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 33,
+      "script": "{rm ABC} it",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2250,
+      "height": 1125,
+      "native": {
+        "width": 2250,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 34,
+      "script": "bar {{rm AB} it }=bar {{rm BC} it }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 4266,
+      "height": 1350,
+      "native": {
+        "width": 4266,
+        "height": 1350
+      },
+      "ok": true
+    },
+    {
+      "index": 35,
+      "script": "ANGLE {rm BAC} it = ANGLE {rm ACB} it = (2x+5)^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 13072,
+      "height": 1313,
+      "native": {
+        "width": 13072,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 36,
+      "script": "bar {{rm AC} it }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 1605,
+      "height": 1350,
+      "native": {
+        "width": 1605,
+        "height": 1350
+      },
+      "ok": true
+    },
+    {
+      "index": 37,
+      "script": "ANGLE {rm A} it",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 1875,
+      "height": 1125,
+      "native": {
+        "width": 1875,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 38,
+      "script": "{rm ABC} it",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2250,
+      "height": 1125,
+      "native": {
+        "width": 2250,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 39,
+      "script": "2(2x+5)+(4x+10)=180",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 12342,
+      "height": 1125,
+      "native": {
+        "width": 12342,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 40,
+      "script": "8x+20=180",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 6170,
+      "height": 1125,
+      "native": {
+        "width": 6170,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 41,
+      "script": "x=20",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2937,
+      "height": 1125,
+      "native": {
+        "width": 2937,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 42,
+      "script": "ANGLE {rm A} it =90^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 4731,
+      "height": 1313,
+      "native": {
+        "width": 4731,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 43,
+      "script": "90^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 1800,
+      "height": 1313,
+      "native": {
+        "width": 1800,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 44,
+      "script": "x=20",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2937,
+      "height": 1125,
+      "native": {
+        "width": 2937,
+        "height": 1125
+      },
+      "ok": true
+    },
+    {
+      "index": 45,
+      "script": "90^{ circ }",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 1800,
+      "height": 1313,
+      "native": {
+        "width": 1800,
+        "height": 1313
+      },
+      "ok": true
+    },
+    {
+      "index": 46,
+      "script": "x=20",
+      "base": 1100,
+      "font": "HancomEQN",
+      "width": 2937,
+      "height": 1125,
+      "native": {
+        "width": 2937,
+        "height": 1125
+      },
+      "ok": true
+    }
+  ],
+  "shutdown": {
+    "documents_closed": true,
+    "windows_closed": true,
+    "quit_returned": true,
+    "ok": true,
+    "new_processes_exited": true,
+    "new_process_count": 1
+  },
+  "visual_review": "PENDING",
+  "content_review": "PENDING"
+}
