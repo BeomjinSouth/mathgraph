@@ -1,0 +1,414 @@
+[
+  {
+    "schema": 1,
+    "width_mm": 68.2,
+    "labels": [
+      {
+        "x": 0.20349708846535156,
+        "y": 0.32935715387392955,
+        "width_units": 4885,
+        "height_units": 1313,
+        "font_pt": 11,
+        "script": "(3x+15)^{circ}",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.530794510248891,
+        "y": 0.33114281434950343,
+        "width_units": 4885,
+        "height_units": 1313,
+        "font_pt": 11,
+        "script": "(5x-11)^{circ}",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.03051574038094066,
+        "y": 0.5407834991145685,
+        "width_units": 1125,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm A} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.8844341251988537,
+        "y": 0.5265514706381808,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm B} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.907576894084893,
+        "y": 0.02992235856292118,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm C} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.1252077480793833,
+        "y": 0.02992235856292118,
+        "width_units": 975,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm D} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      }
+    ],
+    "collision_check": "native-measurement-against-geometry"
+  },
+  {
+    "schema": 1,
+    "width_mm": 68.2,
+    "labels": [
+      {
+        "x": 0.3946509919959128,
+        "y": 0.7163443311926566,
+        "width_units": 2783,
+        "height_units": 1125,
+        "font_pt": 11,
+        "script": "3x-2",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.5171563670810627,
+        "y": 0.030249674256934485,
+        "width_units": 2258,
+        "height_units": 1125,
+        "font_pt": 11,
+        "script": "x+8",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.03209162482587904,
+        "y": 0.5996310514567676,
+        "width_units": 1125,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm A} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.8290190735694822,
+        "y": 0.5855541404569619,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm B} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.9066757493188011,
+        "y": 0.05749763066020424,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm C} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.146533041719612,
+        "y": 0.07157454166001004,
+        "width_units": 975,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm D} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      }
+    ],
+    "collision_check": "native-measurement-against-geometry"
+  },
+  {
+    "schema": 1,
+    "width_mm": 68.2,
+    "labels": [
+      {
+        "x": 0.2811549696657913,
+        "y": 0.532999482782329,
+        "width_units": 2783,
+        "height_units": 1125,
+        "font_pt": 11,
+        "script": "2x+1",
+        "clearance_mm": 0.9,
+        "shift_mm": 2.25
+      },
+      {
+        "x": 0.6489946957185531,
+        "y": 0.3646034816247582,
+        "width_units": 2258,
+        "height_units": 1125,
+        "font_pt": 11,
+        "script": "x+7",
+        "clearance_mm": 0.9,
+        "shift_mm": 1.7500000000000002
+      },
+      {
+        "x": 0.017113082227154634,
+        "y": 0.4561825708638054,
+        "width_units": 1125,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm A} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.5
+      },
+      {
+        "x": 0.5126613956402677,
+        "y": 0.79796120221667,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm B} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.9342359767891683,
+        "y": 0.3597678916827853,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm C} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.4864603481624758,
+        "y": 0.021276595744680847,
+        "width_units": 975,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm D} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.5602802811367792,
+        "y": 0.48721372293154636,
+        "width_units": 975,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm O} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      }
+    ],
+    "collision_check": "native-measurement-against-geometry"
+  },
+  {
+    "schema": 1,
+    "width_mm": 96.0,
+    "labels": [
+      {
+        "x": 0.25007138478480173,
+        "y": 0.4510473525634953,
+        "width_units": 4360,
+        "height_units": 1313,
+        "font_pt": 11,
+        "script": "(x+12)^{circ}",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.3300786904809676,
+        "y": 0.512611750634509,
+        "width_units": 4360,
+        "height_units": 1313,
+        "font_pt": 11,
+        "script": "(2x+6)^{circ}",
+        "clearance_mm": 0.9,
+        "shift_mm": 2.0
+      },
+      {
+        "x": 0.02229714953790645,
+        "y": 0.40844531206369195,
+        "width_units": 1125,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm A} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.5465105252340782,
+        "y": 0.7120307010196212,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm B} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.9342359767891683,
+        "y": 0.31721470019342357,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm C} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.45261121856866543,
+        "y": 0.022100713963006263,
+        "width_units": 975,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm D} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      }
+    ],
+    "collision_check": "native-measurement-against-geometry"
+  },
+  {
+    "schema": 1,
+    "width_mm": 86.0,
+    "labels": [
+      {
+        "x": 0.2708681595621999,
+        "y": 0.4847378372997309,
+        "width_units": 4360,
+        "height_units": 1313,
+        "font_pt": 11,
+        "script": "(x+10)^{circ}",
+        "clearance_mm": 0.9000000000000001,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.44022443170012543,
+        "y": 0.5633848773044694,
+        "width_units": 4885,
+        "height_units": 1313,
+        "font_pt": 11,
+        "script": "(3x+20)^{circ}",
+        "clearance_mm": 0.9000000000000001,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.02229714953790645,
+        "y": 0.42972190780837277,
+        "width_units": 1125,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm A} it",
+        "clearance_mm": 0.9000000000000001,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.5465105252340782,
+        "y": 0.7555433715907719,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm B} it",
+        "clearance_mm": 0.9000000000000001,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.9342359767891683,
+        "y": 0.33849129593810445,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm C} it",
+        "clearance_mm": 0.9000000000000001,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.4526112185686654,
+        "y": 0.021141234881217292,
+        "width_units": 975,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm D} it",
+        "clearance_mm": 0.9000000000000001,
+        "shift_mm": 0.0
+      }
+    ],
+    "collision_check": "native-measurement-against-geometry"
+  },
+  {
+    "schema": 1,
+    "width_mm": 68.2,
+    "labels": [
+      {
+        "x": 0.43662917773970306,
+        "y": 0.5503698160944435,
+        "width_units": 4885,
+        "height_units": 1313,
+        "font_pt": 11,
+        "script": "(4x+20)^{circ}",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.25
+      },
+      {
+        "x": 0.845487779683291,
+        "y": 0.5466012938060519,
+        "width_units": 1875,
+        "height_units": 1313,
+        "font_pt": 11,
+        "script": "2x^{circ}",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.017113082227154634,
+        "y": 0.46005104281738374,
+        "width_units": 1125,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm A} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.5
+      },
+      {
+        "x": 0.5465105252340782,
+        "y": 0.8041718841262036,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm B} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.9342359767891683,
+        "y": 0.3636363636363637,
+        "width_units": 900,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm C} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      },
+      {
+        "x": 0.4526112185686654,
+        "y": 0.022802857742304082,
+        "width_units": 975,
+        "height_units": 1300,
+        "font_pt": 13,
+        "script": "{rm D} it",
+        "clearance_mm": 0.9,
+        "shift_mm": 0.0
+      }
+    ],
+    "collision_check": "native-measurement-against-geometry"
+  }
+]

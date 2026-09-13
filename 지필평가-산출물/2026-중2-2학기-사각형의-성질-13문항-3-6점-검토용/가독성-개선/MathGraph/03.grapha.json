@@ -1,0 +1,137 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -6,
+      "y": 0,
+      "label": "A",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": -0.5,
+      "y": -5,
+      "label": "B",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": 6,
+      "y": 0,
+      "label": "C",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "D",
+      "type": "point",
+      "x": 0.5,
+      "y": 5,
+      "label": "D",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "outline",
+      "type": "polygon",
+      "vertexIds": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fillOpacity": 0,
+      "showLabel": false
+    },
+    {
+      "op": "create",
+      "id": "AC",
+      "type": "segment",
+      "point1Id": "A",
+      "point2Id": "C",
+      "dashed": false
+    },
+    {
+      "op": "create",
+      "id": "BD",
+      "type": "segment",
+      "point1Id": "B",
+      "point2Id": "D",
+      "dashed": false
+    },
+    {
+      "op": "create",
+      "id": "O",
+      "type": "intersection",
+      "object1Id": "AC",
+      "object2Id": "BD",
+      "label": "O",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -8,
+        "y": -35
+      }
+    },
+    {
+      "op": "create",
+      "id": "AO",
+      "type": "segment",
+      "point1Id": "A",
+      "point2Id": "O",
+      "visible": false
+    },
+    {
+      "op": "create",
+      "id": "len_AO",
+      "type": "lengthDimension",
+      "segmentId": "AO",
+      "customText": "2x+1",
+      "labelFontSize": 22,
+      "curvature": -75
+    },
+    {
+      "op": "create",
+      "id": "OC",
+      "type": "segment",
+      "point1Id": "O",
+      "point2Id": "C",
+      "visible": false
+    },
+    {
+      "op": "create",
+      "id": "len_OC",
+      "type": "lengthDimension",
+      "segmentId": "OC",
+      "customText": "x+7",
+      "labelFontSize": 22,
+      "curvature": 75
+    }
+  ]
+}

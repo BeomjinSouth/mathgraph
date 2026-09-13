@@ -1,0 +1,148 @@
+{
+  "ok": true,
+  "delivery_ready": true,
+  "status": "REVIEWED_WITH_INDEPENDENT_EVIDENCE",
+  "errors": [],
+  "structure": null,
+  "math_review": {
+    "ok": true,
+    "errors": [],
+    "calculations": [
+      {
+        "id": "MC1",
+        "ok": true,
+        "left": "180",
+        "right": "180",
+        "relation": "="
+      },
+      {
+        "id": "MC2",
+        "ok": true,
+        "left": "13",
+        "right": "13",
+        "relation": "="
+      },
+      {
+        "id": "MC2",
+        "ok": true,
+        "left": "44",
+        "right": "44",
+        "relation": "="
+      },
+      {
+        "id": "MC3",
+        "ok": true,
+        "left": "13",
+        "right": "13",
+        "relation": "="
+      },
+      {
+        "id": "MC3",
+        "ok": true,
+        "left": "26",
+        "right": "26",
+        "relation": "="
+      },
+      {
+        "id": "MC5",
+        "ok": true,
+        "left": "90",
+        "right": "90",
+        "relation": "="
+      },
+      {
+        "id": "MC6",
+        "ok": true,
+        "left": "180",
+        "right": "180",
+        "relation": "="
+      },
+      {
+        "id": "MC6",
+        "ok": true,
+        "left": "120",
+        "right": "120",
+        "relation": "="
+      },
+      {
+        "id": "MC8",
+        "ok": true,
+        "left": "5",
+        "right": "5",
+        "relation": "="
+      },
+      {
+        "id": "MC8",
+        "ok": true,
+        "left": "28",
+        "right": "28",
+        "relation": "="
+      },
+      {
+        "id": "MC8",
+        "ok": true,
+        "left": "100",
+        "right": "100",
+        "relation": "="
+      },
+      {
+        "id": "MC9",
+        "ok": true,
+        "left": "180",
+        "right": "180",
+        "relation": "="
+      },
+      {
+        "id": "MC9",
+        "ok": true,
+        "left": "108",
+        "right": "108",
+        "relation": "="
+      },
+      {
+        "id": "E2",
+        "ok": true,
+        "left": "180",
+        "right": "180",
+        "relation": "="
+      },
+      {
+        "id": "E3",
+        "ok": true,
+        "left": "60",
+        "right": "60",
+        "relation": "="
+      },
+      {
+        "id": "E3",
+        "ok": true,
+        "left": "209",
+        "right": "209",
+        "relation": "="
+      },
+      {
+        "id": "E4",
+        "ok": true,
+        "left": "180",
+        "right": "180",
+        "relation": "="
+      },
+      {
+        "id": "E4",
+        "ok": true,
+        "left": "80",
+        "right": "80",
+        "relation": "="
+      },
+      {
+        "id": "E4",
+        "ok": true,
+        "left": "100",
+        "right": "100",
+        "relation": "="
+      }
+    ],
+    "limitation": "검산식의 산술과 검토 범위를 확인합니다. 검산식이 문항을 정확히 모델링하는지와 기하학적 논증은 독립 검토가 필요합니다."
+  },
+  "limitation": "독립 검토 파일과 최종 산출물 연결, 산술 검산, 실제 실행·배치를 확인합니다. 검산 모델과 사람의 기하학적 논증 자체를 자동 증명하지는 않습니다."
+}

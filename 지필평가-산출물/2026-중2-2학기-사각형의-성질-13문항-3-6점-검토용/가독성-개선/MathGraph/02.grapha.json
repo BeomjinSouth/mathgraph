@@ -1,0 +1,107 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -3.25,
+      "y": 0,
+      "label": "A",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 3.25,
+      "y": 0,
+      "label": "B",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": 4.45,
+      "y": 4.337049688440288,
+      "label": "C",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "D",
+      "type": "point",
+      "x": -2.05,
+      "y": 4.337049688440288,
+      "label": "D",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "outline",
+      "type": "polygon",
+      "vertexIds": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fillOpacity": 0,
+      "showLabel": false
+    },
+    {
+      "op": "create",
+      "id": "AB",
+      "type": "segment",
+      "point1Id": "A",
+      "point2Id": "B",
+      "visible": false
+    },
+    {
+      "op": "create",
+      "id": "len_AB",
+      "type": "lengthDimension",
+      "segmentId": "AB",
+      "customText": "3x-2",
+      "labelFontSize": 22,
+      "curvature": -100
+    },
+    {
+      "op": "create",
+      "id": "CD",
+      "type": "segment",
+      "point1Id": "C",
+      "point2Id": "D",
+      "visible": false
+    },
+    {
+      "op": "create",
+      "id": "len_CD",
+      "type": "lengthDimension",
+      "segmentId": "CD",
+      "customText": "x+8",
+      "labelFontSize": 22,
+      "curvature": -100
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -3.5,
+      "y": 0,
+      "label": "A",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 3.5,
+      "y": 0,
+      "label": "B",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": 4.125737860160924,
+      "y": 3.950753362380551,
+      "label": "C",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "D",
+      "type": "point",
+      "x": -2.874262139839076,
+      "y": 3.950753362380551,
+      "label": "D",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "outline",
+      "type": "polygon",
+      "vertexIds": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fillOpacity": 0,
+      "showLabel": false
+    },
+    {
+      "op": "create",
+      "id": "angle_DAB",
+      "type": "angleDimension",
+      "vertexId": "A",
+      "point1Id": "D",
+      "point2Id": "B",
+      "arcRadius": 1.1,
+      "customText": "(3x+15)°",
+      "labelFontSize": 22,
+      "labelOffset": {
+        "x": 0.12546698432400505,
+        "y": 0.10715892797448001
+      }
+    },
+    {
+      "op": "create",
+      "id": "angle_ABC",
+      "type": "angleDimension",
+      "vertexId": "B",
+      "point1Id": "A",
+      "point2Id": "C",
+      "arcRadius": 1.1,
+      "customText": "(5x-11)°",
+      "labelFontSize": 22,
+      "labelOffset": {
+        "x": -0.10715892797448001,
+        "y": 0.12546698432400505
+      }
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -6,
+      "y": 0,
+      "label": "A",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 0,
+      "y": -4.687713759040305,
+      "label": "B",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": 6,
+      "y": 0,
+      "label": "C",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "D",
+      "type": "point",
+      "x": 0,
+      "y": 4.687713759040305,
+      "label": "D",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "outline",
+      "type": "polygon",
+      "vertexIds": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fillOpacity": 0,
+      "showLabel": false
+    },
+    {
+      "op": "create",
+      "id": "AC",
+      "type": "segment",
+      "point1Id": "A",
+      "point2Id": "C",
+      "dashed": false
+    },
+    {
+      "op": "create",
+      "id": "angle_BAC",
+      "type": "angleDimension",
+      "vertexId": "A",
+      "point1Id": "B",
+      "point2Id": "C",
+      "arcRadius": 1.2,
+      "customText": "(x+10)°",
+      "labelFontSize": 22,
+      "labelOffset": {
+        "x": 0.17019334360787708,
+        "y": -0.058602267802288166
+      }
+    },
+    {
+      "op": "create",
+      "id": "angle_ABC",
+      "type": "angleDimension",
+      "vertexId": "B",
+      "point1Id": "A",
+      "point2Id": "C",
+      "arcRadius": 1.2,
+      "customText": "(3x+20)°",
+      "labelFontSize": 22,
+      "labelOffset": {
+        "x": 1.1021821192326167e-17,
+        "y": 0.4799999999999999
+      }
+    }
+  ]
+}

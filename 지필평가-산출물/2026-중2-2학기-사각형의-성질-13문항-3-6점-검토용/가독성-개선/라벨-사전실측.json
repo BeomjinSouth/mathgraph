@@ -1,0 +1,927 @@
+[
+  {
+    "diagram": "01",
+    "label": {
+      "text": "(3x+15)°",
+      "x": 0.20349708846535158,
+      "y": 0.3293571538739295,
+      "fontSize": 0.06060606060606061,
+      "width": 0.2851513003514818,
+      "is_point": false,
+      "script": "(3x+15)^{circ}",
+      "font_pt": 11
+    },
+    "width": 4885,
+    "height": 1313,
+    "placement": {
+      "x": 0.20349708846535156,
+      "y": 0.32935715387392955,
+      "width_units": 4885,
+      "height_units": 1313,
+      "font_pt": 11,
+      "script": "(3x+15)^{circ}",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "01",
+    "label": {
+      "text": "(5x-11)°",
+      "x": 0.530794510248891,
+      "y": 0.33114281434950343,
+      "fontSize": 0.06060606060606061,
+      "width": 0.2694694792271974,
+      "is_point": false,
+      "script": "(5x-11)^{circ}",
+      "font_pt": 11
+    },
+    "width": 4885,
+    "height": 1313,
+    "placement": {
+      "x": 0.530794510248891,
+      "y": 0.33114281434950343,
+      "width_units": 4885,
+      "height_units": 1313,
+      "font_pt": 11,
+      "script": "(5x-11)^{circ}",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "01",
+    "label": {
+      "text": "\\mathrm{A}",
+      "x": 0.03051574038094066,
+      "y": 0.5407834991145685,
+      "fontSize": 0.0743801652892562,
+      "width": 0.06714371610278926,
+      "is_point": true,
+      "script": "{rm A} it",
+      "font_pt": 13
+    },
+    "width": 1125,
+    "height": 1300,
+    "placement": {
+      "x": 0.03051574038094066,
+      "y": 0.5407834991145685,
+      "width_units": 1125,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm A} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "01",
+    "label": {
+      "text": "\\mathrm{B}",
+      "x": 0.8844341251988536,
+      "y": 0.5265514706381808,
+      "fontSize": 0.0743801652892562,
+      "width": 0.0620137364411157,
+      "is_point": true,
+      "script": "{rm B} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.8844341251988537,
+      "y": 0.5265514706381808,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm B} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "01",
+    "label": {
+      "text": "\\mathrm{C}",
+      "x": 0.907576894084893,
+      "y": 0.02992235856292118,
+      "fontSize": 0.0743801652892562,
+      "width": 0.0620137364411157,
+      "is_point": true,
+      "script": "{rm C} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.907576894084893,
+      "y": 0.02992235856292118,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm C} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "01",
+    "label": {
+      "text": "\\mathrm{D}",
+      "x": 0.1252077480793833,
+      "y": 0.02992235856292118,
+      "fontSize": 0.0743801652892562,
+      "width": 0.06714371610278926,
+      "is_point": true,
+      "script": "{rm D} it",
+      "font_pt": 13
+    },
+    "width": 975,
+    "height": 1300,
+    "placement": {
+      "x": 0.1252077480793833,
+      "y": 0.02992235856292118,
+      "width_units": 975,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm D} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "02",
+    "label": {
+      "text": "3x-2",
+      "x": 0.3946509919959128,
+      "y": 0.7163443311926566,
+      "fontSize": 0.05994550408719346,
+      "width": 0.13735072164509537,
+      "is_point": false,
+      "script": "3x-2",
+      "font_pt": 11
+    },
+    "width": 2783,
+    "height": 1125,
+    "placement": {
+      "x": 0.3946509919959128,
+      "y": 0.7163443311926566,
+      "width_units": 2783,
+      "height_units": 1125,
+      "font_pt": 11,
+      "script": "3x-2",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "02",
+    "label": {
+      "text": "x+8",
+      "x": 0.5171563670810627,
+      "y": 0.030249674256934485,
+      "fontSize": 0.05994550408719346,
+      "width": 0.11719082616655313,
+      "is_point": false,
+      "script": "x+8",
+      "font_pt": 11
+    },
+    "width": 2258,
+    "height": 1125,
+    "placement": {
+      "x": 0.5171563670810627,
+      "y": 0.030249674256934485,
+      "width_units": 2258,
+      "height_units": 1125,
+      "font_pt": 11,
+      "script": "x+8",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "02",
+    "label": {
+      "text": "\\mathrm{A}",
+      "x": 0.03209162482587904,
+      "y": 0.5996310514567676,
+      "fontSize": 0.07356948228882834,
+      "width": 0.06641190448314033,
+      "is_point": true,
+      "script": "{rm A} it",
+      "font_pt": 13
+    },
+    "width": 1125,
+    "height": 1300,
+    "placement": {
+      "x": 0.03209162482587904,
+      "y": 0.5996310514567676,
+      "width_units": 1125,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm A} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "02",
+    "label": {
+      "text": "\\mathrm{B}",
+      "x": 0.8290190735694822,
+      "y": 0.5855541404569619,
+      "fontSize": 0.07356948228882834,
+      "width": 0.06133783740633515,
+      "is_point": true,
+      "script": "{rm B} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.8290190735694822,
+      "y": 0.5855541404569619,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm B} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "02",
+    "label": {
+      "text": "\\mathrm{C}",
+      "x": 0.9066757493188011,
+      "y": 0.05749763066020424,
+      "fontSize": 0.07356948228882834,
+      "width": 0.06133783740633515,
+      "is_point": true,
+      "script": "{rm C} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.9066757493188011,
+      "y": 0.05749763066020424,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm C} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "02",
+    "label": {
+      "text": "\\mathrm{D}",
+      "x": 0.146533041719612,
+      "y": 0.07157454166001004,
+      "fontSize": 0.07356948228882834,
+      "width": 0.06641190448314033,
+      "is_point": true,
+      "script": "{rm D} it",
+      "font_pt": 13
+    },
+    "width": 975,
+    "height": 1300,
+    "placement": {
+      "x": 0.146533041719612,
+      "y": 0.07157454166001004,
+      "width_units": 975,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm D} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "03",
+    "label": {
+      "text": "2x+1",
+      "x": 0.2578266667674081,
+      "y": 0.5096711798839458,
+      "fontSize": 0.0425531914893617,
+      "width": 0.10978536402925532,
+      "is_point": false,
+      "script": "2x+1",
+      "font_pt": 11
+    },
+    "width": 2783,
+    "height": 1125,
+    "placement": {
+      "x": 0.2811549696657913,
+      "y": 0.532999482782329,
+      "width_units": 2783,
+      "height_units": 1125,
+      "font_pt": 11,
+      "script": "2x+1",
+      "clearance_mm": 0.9,
+      "shift_mm": 2.25
+    }
+  },
+  {
+    "diagram": "03",
+    "label": {
+      "text": "x+7",
+      "x": 0.6746545197654739,
+      "y": 0.3646034816247582,
+      "fontSize": 0.0425531914893617,
+      "width": 0.08318961934840426,
+      "is_point": false,
+      "script": "x+7",
+      "font_pt": 11
+    },
+    "width": 2258,
+    "height": 1125,
+    "placement": {
+      "x": 0.6489946957185531,
+      "y": 0.3646034816247582,
+      "width_units": 2258,
+      "height_units": 1125,
+      "font_pt": 11,
+      "script": "x+7",
+      "clearance_mm": 0.9,
+      "shift_mm": 1.7500000000000002
+    }
+  },
+  {
+    "diagram": "03",
+    "label": {
+      "text": "\\mathrm{A}",
+      "x": 0.02229714953790645,
+      "y": 0.45099850355305365,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm A} it",
+      "font_pt": 13
+    },
+    "width": 1125,
+    "height": 1300,
+    "placement": {
+      "x": 0.017113082227154634,
+      "y": 0.4561825708638054,
+      "width_units": 1125,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm A} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.5
+    }
+  },
+  {
+    "diagram": "03",
+    "label": {
+      "text": "\\mathrm{B}",
+      "x": 0.5126613956402677,
+      "y": 0.79796120221667,
+      "fontSize": 0.05222437137330754,
+      "width": 0.04354155962886847,
+      "is_point": true,
+      "script": "{rm B} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.5126613956402677,
+      "y": 0.79796120221667,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm B} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "03",
+    "label": {
+      "text": "\\mathrm{C}",
+      "x": 0.9342359767891683,
+      "y": 0.3597678916827853,
+      "fontSize": 0.05222437137330754,
+      "width": 0.04354155962886847,
+      "is_point": true,
+      "script": "{rm C} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.9342359767891683,
+      "y": 0.3597678916827853,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm C} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "03",
+    "label": {
+      "text": "\\mathrm{D}",
+      "x": 0.4864603481624758,
+      "y": 0.02127659574468085,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm D} it",
+      "font_pt": 13
+    },
+    "width": 975,
+    "height": 1300,
+    "placement": {
+      "x": 0.4864603481624758,
+      "y": 0.021276595744680847,
+      "width_units": 975,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm D} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "03",
+    "label": {
+      "text": "\\mathrm{O}",
+      "x": 0.5602802811367792,
+      "y": 0.48721372293154636,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm O} it",
+      "font_pt": 13
+    },
+    "width": 975,
+    "height": 1300,
+    "placement": {
+      "x": 0.5602802811367792,
+      "y": 0.48721372293154636,
+      "width_units": 975,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm O} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "09",
+    "label": {
+      "text": "(x+12)°",
+      "x": 0.25007138478480173,
+      "y": 0.4510473525634953,
+      "fontSize": 0.03481624758220503,
+      "width": 0.1396565464986362,
+      "is_point": false,
+      "script": "(x+12)^{circ}",
+      "font_pt": 11
+    },
+    "width": 4360,
+    "height": 1313,
+    "placement": {
+      "x": 0.25007138478480173,
+      "y": 0.4510473525634953,
+      "width_units": 4360,
+      "height_units": 1313,
+      "font_pt": 11,
+      "script": "(x+12)^{circ}",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "09",
+    "label": {
+      "text": "(2x+6)°",
+      "x": 0.3493261807416194,
+      "y": 0.5205843221421151,
+      "fontSize": 0.03481624758220503,
+      "width": 0.1396565464986362,
+      "is_point": false,
+      "script": "(2x+6)^{circ}",
+      "font_pt": 11
+    },
+    "width": 4360,
+    "height": 1313,
+    "placement": {
+      "x": 0.3300786904809676,
+      "y": 0.512611750634509,
+      "width_units": 4360,
+      "height_units": 1313,
+      "font_pt": 11,
+      "script": "(2x+6)^{circ}",
+      "clearance_mm": 0.9,
+      "shift_mm": 2.0
+    }
+  },
+  {
+    "diagram": "09",
+    "label": {
+      "text": "\\mathrm{A}",
+      "x": 0.02229714953790645,
+      "y": 0.40844531206369195,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm A} it",
+      "font_pt": 13
+    },
+    "width": 1125,
+    "height": 1300,
+    "placement": {
+      "x": 0.02229714953790645,
+      "y": 0.40844531206369195,
+      "width_units": 1125,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm A} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "09",
+    "label": {
+      "text": "\\mathrm{B}",
+      "x": 0.5465105252340782,
+      "y": 0.7120307010196212,
+      "fontSize": 0.05222437137330754,
+      "width": 0.04354155962886847,
+      "is_point": true,
+      "script": "{rm B} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.5465105252340782,
+      "y": 0.7120307010196212,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm B} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "09",
+    "label": {
+      "text": "\\mathrm{C}",
+      "x": 0.9342359767891683,
+      "y": 0.31721470019342357,
+      "fontSize": 0.05222437137330754,
+      "width": 0.04354155962886847,
+      "is_point": true,
+      "script": "{rm C} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.9342359767891683,
+      "y": 0.31721470019342357,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm C} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "09",
+    "label": {
+      "text": "\\mathrm{D}",
+      "x": 0.4526112185686654,
+      "y": 0.022100713963006263,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm D} it",
+      "font_pt": 13
+    },
+    "width": 975,
+    "height": 1300,
+    "placement": {
+      "x": 0.45261121856866543,
+      "y": 0.022100713963006263,
+      "width_units": 975,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm D} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E2",
+    "label": {
+      "text": "(x+10)°",
+      "x": 0.2708681595621999,
+      "y": 0.4847378372997309,
+      "fontSize": 0.0425531914893617,
+      "width": 0.17069135920452658,
+      "is_point": false,
+      "script": "(x+10)^{circ}",
+      "font_pt": 11
+    },
+    "width": 4360,
+    "height": 1313,
+    "placement": {
+      "x": 0.2708681595621999,
+      "y": 0.4847378372997309,
+      "width_units": 4360,
+      "height_units": 1313,
+      "font_pt": 11,
+      "script": "(x+10)^{circ}",
+      "clearance_mm": 0.9000000000000001,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E2",
+    "label": {
+      "text": "(3x+20)°",
+      "x": 0.44022443170012543,
+      "y": 0.5633848773044694,
+      "fontSize": 0.0425531914893617,
+      "width": 0.20021261514040212,
+      "is_point": false,
+      "script": "(3x+20)^{circ}",
+      "font_pt": 11
+    },
+    "width": 4885,
+    "height": 1313,
+    "placement": {
+      "x": 0.44022443170012543,
+      "y": 0.5633848773044694,
+      "width_units": 4885,
+      "height_units": 1313,
+      "font_pt": 11,
+      "script": "(3x+20)^{circ}",
+      "clearance_mm": 0.9000000000000001,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E2",
+    "label": {
+      "text": "\\mathrm{A}",
+      "x": 0.02229714953790645,
+      "y": 0.42972190780837277,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm A} it",
+      "font_pt": 13
+    },
+    "width": 1125,
+    "height": 1300,
+    "placement": {
+      "x": 0.02229714953790645,
+      "y": 0.42972190780837277,
+      "width_units": 1125,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm A} it",
+      "clearance_mm": 0.9000000000000001,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E2",
+    "label": {
+      "text": "\\mathrm{B}",
+      "x": 0.5465105252340782,
+      "y": 0.7555433715907719,
+      "fontSize": 0.05222437137330754,
+      "width": 0.04354155962886847,
+      "is_point": true,
+      "script": "{rm B} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.5465105252340782,
+      "y": 0.7555433715907719,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm B} it",
+      "clearance_mm": 0.9000000000000001,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E2",
+    "label": {
+      "text": "\\mathrm{C}",
+      "x": 0.9342359767891683,
+      "y": 0.33849129593810445,
+      "fontSize": 0.05222437137330754,
+      "width": 0.04354155962886847,
+      "is_point": true,
+      "script": "{rm C} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.9342359767891683,
+      "y": 0.33849129593810445,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm C} it",
+      "clearance_mm": 0.9000000000000001,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E2",
+    "label": {
+      "text": "\\mathrm{D}",
+      "x": 0.4526112185686654,
+      "y": 0.021141234881217292,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm D} it",
+      "font_pt": 13
+    },
+    "width": 975,
+    "height": 1300,
+    "placement": {
+      "x": 0.4526112185686654,
+      "y": 0.021141234881217292,
+      "width_units": 975,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm D} it",
+      "clearance_mm": 0.9000000000000001,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E4",
+    "label": {
+      "text": "(4x+20)°",
+      "x": 0.44022443170012543,
+      "y": 0.5510849565710422,
+      "fontSize": 0.0425531914893617,
+      "width": 0.20021261514040212,
+      "is_point": false,
+      "script": "(4x+20)^{circ}",
+      "font_pt": 11
+    },
+    "width": 4885,
+    "height": 1313,
+    "placement": {
+      "x": 0.43662917773970306,
+      "y": 0.5503698160944435,
+      "width_units": 4885,
+      "height_units": 1313,
+      "font_pt": 11,
+      "script": "(4x+20)^{circ}",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.25
+    }
+  },
+  {
+    "diagram": "E4",
+    "label": {
+      "text": "2x°",
+      "x": 0.845487779683291,
+      "y": 0.5466012938060519,
+      "fontSize": 0.0425531914893617,
+      "width": 0.0756914518787967,
+      "is_point": false,
+      "script": "2x^{circ}",
+      "font_pt": 11
+    },
+    "width": 1875,
+    "height": 1313,
+    "placement": {
+      "x": 0.845487779683291,
+      "y": 0.5466012938060519,
+      "width_units": 1875,
+      "height_units": 1313,
+      "font_pt": 11,
+      "script": "2x^{circ}",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E4",
+    "label": {
+      "text": "\\mathrm{A}",
+      "x": 0.02229714953790645,
+      "y": 0.45486697550663197,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm A} it",
+      "font_pt": 13
+    },
+    "width": 1125,
+    "height": 1300,
+    "placement": {
+      "x": 0.017113082227154634,
+      "y": 0.46005104281738374,
+      "width_units": 1125,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm A} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.5
+    }
+  },
+  {
+    "diagram": "E4",
+    "label": {
+      "text": "\\mathrm{B}",
+      "x": 0.5465105252340782,
+      "y": 0.8041718841262036,
+      "fontSize": 0.05222437137330754,
+      "width": 0.04354155962886847,
+      "is_point": true,
+      "script": "{rm B} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.5465105252340782,
+      "y": 0.8041718841262036,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm B} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E4",
+    "label": {
+      "text": "\\mathrm{C}",
+      "x": 0.9342359767891683,
+      "y": 0.36363636363636365,
+      "fontSize": 0.05222437137330754,
+      "width": 0.04354155962886847,
+      "is_point": true,
+      "script": "{rm C} it",
+      "font_pt": 13
+    },
+    "width": 900,
+    "height": 1300,
+    "placement": {
+      "x": 0.9342359767891683,
+      "y": 0.3636363636363637,
+      "width_units": 900,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm C} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  },
+  {
+    "diagram": "E4",
+    "label": {
+      "text": "\\mathrm{D}",
+      "x": 0.4526112185686654,
+      "y": 0.022802857742304082,
+      "fontSize": 0.05222437137330754,
+      "width": 0.047143460242383944,
+      "is_point": true,
+      "script": "{rm D} it",
+      "font_pt": 13
+    },
+    "width": 975,
+    "height": 1300,
+    "placement": {
+      "x": 0.4526112185686654,
+      "y": 0.022802857742304082,
+      "width_units": 975,
+      "height_units": 1300,
+      "font_pt": 13,
+      "script": "{rm D} it",
+      "clearance_mm": 0.9,
+      "shift_mm": 0.0
+    }
+  }
+]

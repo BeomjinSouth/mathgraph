@@ -1,0 +1,403 @@
+{
+  "regressions": {
+    "old_file_rejected_for_small_fonts_and_collisions": true,
+    "new_saved_labels_clear": true,
+    "all_37_native_labels_checked": true,
+    "native_textbox_has_padding": true,
+    "rectangle_all_lengths_consistent": true
+  },
+  "geometry": [
+    {
+      "id": "01",
+      "export": "C:\\Users\\pbj95\\Desktop\\mathGraph\\지필평가-산출물\\2026-중2-2학기-사각형의-성질-13문항-3-6점-검토용\\가독성-개선\\MathGraph\\01-내보내기-v4.json",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "D",
+            "A",
+            "B"
+          ],
+          "reason": "원래 조건에서 x=22, DAB=81도",
+          "expected": 81,
+          "given": true,
+          "display": "(3x+15)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "이웃각 99도",
+          "expected": 99,
+          "given": true,
+          "display": "(5x-11)°"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "C"
+          ],
+          "reason": "평행사변형의 대변"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "D",
+            "B",
+            "C"
+          ],
+          "reason": "평행사변형의 대변"
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "02",
+      "export": "C:\\Users\\pbj95\\Desktop\\mathGraph\\지필평가-산출물\\2026-중2-2학기-사각형의-성질-13문항-3-6점-검토용\\가독성-개선\\MathGraph\\02-내보내기-v4.json",
+      "conditions": [
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "A",
+            "D"
+          ],
+          "reason": "x=5에서 AB=13, AD=9",
+          "expected": 1.4444444444444444
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "A",
+            "B"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "3x-2"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "C",
+            "D"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "x+8"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "C"
+          ],
+          "reason": "평행사변형"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "D",
+            "B",
+            "C"
+          ],
+          "reason": "평행사변형"
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "03",
+      "export": "C:\\Users\\pbj95\\Desktop\\mathGraph\\지필평가-산출물\\2026-중2-2학기-사각형의-성질-13문항-3-6점-검토용\\가독성-개선\\MathGraph\\03-내보내기-v4.json",
+      "conditions": [
+        {
+          "kind": "midpoint",
+          "points": [
+            "A",
+            "O",
+            "C"
+          ],
+          "reason": "대각선의 중점"
+        },
+        {
+          "kind": "midpoint",
+          "points": [
+            "B",
+            "O",
+            "D"
+          ],
+          "reason": "대각선의 중점"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "A",
+            "O"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "2x+1"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "O",
+            "C"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "x+7"
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "09",
+      "export": "C:\\Users\\pbj95\\Desktop\\mathGraph\\지필평가-산출물\\2026-중2-2학기-사각형의-성질-13문항-3-6점-검토용\\가독성-개선\\MathGraph\\09-내보내기-v6.json",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "B",
+            "A",
+            "C"
+          ],
+          "reason": "x=24에서 주어진 반각",
+          "expected": 36,
+          "given": true,
+          "display": "(x+12)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "D"
+          ],
+          "reason": "x=24에서 주어진 반각",
+          "expected": 54,
+          "given": true,
+          "display": "(2x+6)°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "E2",
+      "export": "C:\\Users\\pbj95\\Desktop\\mathGraph\\지필평가-산출물\\2026-중2-2학기-사각형의-성질-13문항-3-6점-검토용\\가독성-개선\\MathGraph\\E2-내보내기-v5.json",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "B",
+            "A",
+            "C"
+          ],
+          "reason": "x=28에서 주어진 반각",
+          "expected": 38,
+          "given": true,
+          "display": "(x+10)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "x=28에서 주어진 꼭짓각",
+          "expected": 104,
+          "given": true,
+          "display": "(3x+20)°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "E4",
+      "export": "C:\\Users\\pbj95\\Desktop\\mathGraph\\지필평가-산출물\\2026-중2-2학기-사각형의-성질-13문항-3-6점-검토용\\가독성-개선\\MathGraph\\E4-내보내기-v4.json",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "x=20에서 주어진 꼭짓각",
+          "expected": 100,
+          "given": true,
+          "display": "(4x+20)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "C",
+            "B"
+          ],
+          "reason": "x=20에서 주어진 반각",
+          "expected": 40,
+          "given": true,
+          "display": "2x°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        }
+      ],
+      "ok": true
+    }
+  ],
+  "old_errors": [
+    "1: SAVED_LABEL_COLLISION: 3x+15^{circ}",
+    "1: PRINT_FONT: 3x+15^{circ}",
+    "1: SAVED_LABEL_COLLISION: 5x-11^{circ}",
+    "1: PRINT_FONT: 5x-11^{circ}",
+    "1: SAVED_LABEL_COLLISION: {rm A} it",
+    "1: SAVED_LABEL_COLLISION: {rm C} it",
+    "1: SAVED_LABEL_COLLISION: {rm D} it",
+    "2: SAVED_LABEL_COLLISION: 3x-2",
+    "2: PRINT_FONT: 3x-2",
+    "2: SAVED_LABEL_COLLISION: x+8",
+    "2: PRINT_FONT: x+8",
+    "2: SAVED_LABEL_COLLISION: {rm A} it",
+    "2: SAVED_LABEL_COLLISION: {rm B} it",
+    "2: SAVED_LABEL_COLLISION: {rm C} it",
+    "2: SAVED_LABEL_COLLISION: {rm D} it",
+    "3: SAVED_LABEL_COLLISION: 2x+1",
+    "3: PRINT_FONT: 2x+1",
+    "3: SAVED_LABEL_COLLISION: x+7",
+    "3: PRINT_FONT: x+7",
+    "3: SAVED_LABEL_COLLISION: {rm A} it",
+    "3: SAVED_LABEL_COLLISION: {rm B} it",
+    "3: SAVED_LABEL_COLLISION: {rm C} it",
+    "3: SAVED_LABEL_COLLISION: {rm D} it",
+    "3: SAVED_LABEL_COLLISION: {rm O} it",
+    "4: SAVED_LABEL_COLLISION: x+12^{circ}",
+    "4: PRINT_FONT: x+12^{circ}",
+    "4: SAVED_LABEL_COLLISION: 2x+6^{circ}",
+    "4: PRINT_FONT: 2x+6^{circ}",
+    "4: SAVED_LABEL_COLLISION: {rm A} it",
+    "4: SAVED_LABEL_COLLISION: {rm B} it",
+    "4: SAVED_LABEL_COLLISION: {rm C} it",
+    "4: SAVED_LABEL_COLLISION: {rm D} it",
+    "5: SAVED_LABEL_COLLISION: x+10^{circ}",
+    "5: PRINT_FONT: x+10^{circ}",
+    "5: PRINT_FONT: 3x+20^{circ}",
+    "5: SAVED_LABEL_COLLISION: {rm A} it",
+    "5: SAVED_LABEL_COLLISION: {rm B} it",
+    "5: SAVED_LABEL_COLLISION: {rm C} it",
+    "5: SAVED_LABEL_COLLISION: {rm D} it",
+    "6: PRINT_FONT: 4x+10^{circ}",
+    "6: SAVED_LABEL_COLLISION: {rm A} it",
+    "6: SAVED_LABEL_COLLISION: {rm B} it",
+    "6: SAVED_LABEL_COLLISION: {rm C} it",
+    "6: SAVED_LABEL_COLLISION: {rm D} it"
+  ]
+}
