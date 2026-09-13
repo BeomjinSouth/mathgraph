@@ -1,0 +1,14 @@
+{
+  "adjacent_to_question": true,
+  "leading_one_space": true,
+  "statement_count": 4,
+  "next_question_preserved": true,
+  "shutdown": {
+    "documents_closed": true,
+    "windows_closed": true,
+    "quit_returned": true,
+    "ok": true,
+    "new_processes_exited": true,
+    "new_process_count": 1
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "body_bottom_reference_mm": 330.0,
+  "mc_blocks": [
+    {
+      "id": "MC1",
+      "page": 2,
+      "column": "left",
+      "start_mm": 53.34000430636936,
+      "end_mm": 128.1125289916992
+    },
+    {
+      "id": "MC2",
+      "page": 2,
+      "column": "left",
+      "start_mm": 136.82132127549914,
+      "end_mm": 221.0341827392578
+    },
+    {
+      "id": "MC3",
+      "page": 2,
+      "column": "left",
+      "start_mm": 229.53132773505317,
+      "end_mm": 318.019848759969
+    },
+    {
+      "id": "MC4",
+      "page": 2,
+      "column": "right",
+      "start_mm": 53.212987942165796,
+      "end_mm": 101.73885887993706
+    },
+    {
+      "id": "MC5",
+      "page": 2,
+      "column": "right",
+      "start_mm": 116.67065633138021,
+      "end_mm": 161.4847383287218
+    },
+    {
+      "id": "MC6",
+      "page": 2,
+      "column": "right",
+      "start_mm": 155.9983376397027,
+      "end_mm": 181.91818101671004
+    },
+    {
+      "id": "MC7",
+      "page": 2,
+      "column": "right",
+      "start_mm": 196.59599956936304,
+      "end_mm": 259.48656217787
+    },
+    {
+      "id": "MC8",
+      "page": 2,
+      "column": "right",
+      "start_mm": 273.9389907413058,
+      "end_mm": 306.50517692565916
+    },
+    {
+      "id": "MC9",
+      "page": 3,
+      "column": "left",
+      "start_mm": 26.331316969129773,
+      "end_mm": 132.55752037896048
+    }
+  ],
+  "column_bottoms": [
+    {
+      "page": 2,
+      "column": "left",
+      "last_item": "MC3",
+      "bottom_gap_mm": 12.0
+    },
+    {
+      "page": 2,
+      "column": "right",
+      "last_item": "MC8",
+      "bottom_gap_mm": 23.5
+    }
+  ],
+  "essay_workspaces_mm": {
+    "E1": 33.7,
+    "E2": 50.5,
+    "E3": 83.3,
+    "E4": 73.1
+  },
+  "notes": "문항 간 공백은 텍스트의 실제 끝과 다음 시작 사이 거리다. 논술형 마지막 문항은 그림 아래부터 본문 하단 또는 확인사항 전까지의 풀이 공간이다. 바닥을 채우기 위한 장식은 추가하지 않았다."
+}

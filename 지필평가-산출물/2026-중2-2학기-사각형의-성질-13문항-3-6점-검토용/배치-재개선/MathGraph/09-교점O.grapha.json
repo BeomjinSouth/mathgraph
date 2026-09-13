@@ -1,0 +1,133 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -6,
+      "y": 0,
+      "label": "A",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 0,
+      "y": -4.359255168032165,
+      "label": "B",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": 6,
+      "y": 0,
+      "label": "C",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "D",
+      "type": "point",
+      "x": 0,
+      "y": 4.359255168032165,
+      "label": "D",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": -27,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "outline",
+      "type": "polygon",
+      "vertexIds": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fillOpacity": 0,
+      "showLabel": false
+    },
+    {
+      "op": "create",
+      "id": "AC",
+      "type": "segment",
+      "point1Id": "A",
+      "point2Id": "C",
+      "dashed": false
+    },
+    {
+      "op": "create",
+      "id": "BD",
+      "type": "segment",
+      "point1Id": "B",
+      "point2Id": "D",
+      "dashed": false
+    },
+    {
+      "op": "create",
+      "id": "O",
+      "type": "intersection",
+      "object1Id": "AC",
+      "object2Id": "BD",
+      "label": "O",
+      "fontSize": 27,
+      "pointSize": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": 18
+      }
+    },
+    {
+      "op": "create",
+      "id": "angle_BAC",
+      "type": "angleDimension",
+      "vertexId": "A",
+      "point1Id": "B",
+      "point2Id": "O",
+      "arcRadius": 1.2,
+      "customText": "(x+12)°",
+      "labelFontSize": 18,
+      "labelOffset": {
+        "x": 0.17119017293312755,
+        "y": -0.05562305898749054
+      }
+    },
+    {
+      "op": "create",
+      "id": "angle_ABD",
+      "type": "angleDimension",
+      "vertexId": "B",
+      "point1Id": "A",
+      "point2Id": "O",
+      "arcRadius": 1.2,
+      "customText": "(2x+6)°",
+      "labelFontSize": 18,
+      "labelOffset": {
+        "x": -0.9817182899531184,
+        "y": 0.9603811743539064
+      }
+    }
+  ]
+}

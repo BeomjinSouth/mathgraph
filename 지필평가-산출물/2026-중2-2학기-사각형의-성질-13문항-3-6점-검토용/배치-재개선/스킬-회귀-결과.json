@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "checks": {
+    "default_geometry_matches_verified_render": true,
+    "default_arcs_are_3mm": true,
+    "source_geometry_matches_verified_render": true,
+    "final_preservation_passes": true,
+    "unauthorized_label_move_is_rejected": true
+  }
+}

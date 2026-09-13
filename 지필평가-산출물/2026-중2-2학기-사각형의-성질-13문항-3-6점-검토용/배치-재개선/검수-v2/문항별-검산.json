@@ -1,0 +1,758 @@
+{
+  "schema": 2,
+  "student_sha256": "0d7e17f9c8144e29d74c5a31a6c50c50ec6ea718a6bd6e032b6227c2620accf1",
+  "teacher_sha256": "bcb9cfca667f9d75089e60b7d5cd18738fa64944198df3e4b6fa2f11e64c8d8e",
+  "items": [
+    {
+      "id": "MC1",
+      "stem_excerpt": "평행사변형 에서 , 일 때, 의 크기는? [3점]① ②",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "ANGLE {rm DAB} it =(3x+15)^{ circ }",
+        "ANGLE {rm ABC} it =(5x-11)^{ circ }",
+        "ANGLE {rm D} it",
+        "(3x+15)^{circ}",
+        "(5x-11)^{circ}",
+        "{rm A} it",
+        "{rm B} it",
+        "{rm C} it",
+        "{rm D} it",
+        "81^{ circ }",
+        "90^{ circ }",
+        "95^{ circ }",
+        "99^{ circ }",
+        "108^{ circ }"
+      ],
+      "derivation": "이웃한 두 각의 합을 이용해 x=22, 각 D=99도로 구한다.",
+      "answer": "④",
+      "teacher_agreement": "교사용 1번의 x=22와 각 D=99도 해설과 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "3*x+15+5*x-11",
+          "right": "180",
+          "bindings": {
+            "x": "22"
+          },
+          "reason": "이웃한 두 각의 합"
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "81도는 각 A의 크기이고, 질문한 각 D는 99도이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 99도이므로 90도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 99도이므로 95도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": true,
+          "reason": "원래 조건에서 구한 값은 99도이므로 99도와 일치한다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 99도이므로 108도는 조건을 만족하지 않는다."
+        }
+      ]
+    },
+    {
+      "id": "MC2",
+      "stem_excerpt": "평행사변형 에서 , , 둘레가 일 때, 의 길이는? [",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "bar {{rm AB} it }=3x-2",
+        "bar {{rm CD} it }=x+8",
+        "44{rm cm} it",
+        "bar {{rm AD} it }",
+        "3x-2",
+        "x+8",
+        "{rm A} it",
+        "{rm B} it",
+        "{rm C} it",
+        "{rm D} it",
+        "8{rm cm} it",
+        "9{rm cm} it",
+        "10{rm cm} it",
+        "11{rm cm} it",
+        "12{rm cm} it"
+      ],
+      "derivation": "대변 길이의 등식으로 x=5를 구하고 둘레에서 AD=9cm를 구한다.",
+      "answer": "②",
+      "teacher_agreement": "교사용 2번의 대변 등식과 AD=9cm를 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "3*x-2",
+          "right": "x+8",
+          "bindings": {
+            "x": "5"
+          },
+          "reason": "마주 보는 변의 길이"
+        },
+        {
+          "left": "2*(13+9)",
+          "right": "44",
+          "reason": "평행사변형의 둘레"
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "둘레가 42cm가 된다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": true,
+          "reason": "대변과 둘레 조건을 모두 만족한다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "둘레가 46cm가 된다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "둘레가 48cm가 된다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "둘레가 50cm가 된다."
+        }
+      ]
+    },
+    {
+      "id": "MC3",
+      "stem_excerpt": "평행사변형 의 두 대각선의 교점을 라 하자. , 일 때",
+      "source_scripts": [
+        "{rm D} it",
+        "{rm ABCD} it",
+        "{rm O} it",
+        "bar {{rm AO} it }=2x+1",
+        "bar {{rm OC} it }=x+7",
+        "bar {{rm AC} it }",
+        "2x+1",
+        "x+7",
+        "{rm A} it",
+        "{rm B} it",
+        "{rm C} it",
+        "{rm O} it",
+        "22",
+        "24",
+        "26",
+        "28",
+        "30"
+      ],
+      "derivation": "대각선이 서로를 이등분하므로 x=6이고 AC=26이다.",
+      "answer": "③",
+      "teacher_agreement": "교사용 3번의 AO=OC와 AC=26 해설을 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "2*x+1",
+          "right": "x+7",
+          "bindings": {
+            "x": "6"
+          },
+          "reason": "대각선 이등분"
+        },
+        {
+          "left": "2*(2*6+1)",
+          "right": "26",
+          "reason": "AC는 AO의 두 배"
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 26이므로 22는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 26이므로 24는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": true,
+          "reason": "원래 조건에서 구한 값은 26이므로 26와 일치한다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 26이므로 28는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 26이므로 30는 조건을 만족하지 않는다."
+        }
+      ]
+    },
+    {
+      "id": "MC4",
+      "stem_excerpt": "사각형 의 두 대각선의 교점을 라 하자. 이 사각형이 ",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "{rm O} it",
+        "bar {{rm AO} it }=bar {{rm OC} it }",
+        "bar {{rm BO} it }=bar {{rm OD} it }",
+        "bar {{rm AO} it }=bar {{rm OC} it }",
+        "bar {{rm BO} it }=bar {{rm OD} it }",
+        "bar {{rm AC} it }=bar {{rm BD} it }",
+        "bar {{rm AC} it } BOT bar {{rm BD} it }"
+      ],
+      "derivation": "두 대각선이 모두 서로를 이등분하는 것이 평행사변형의 충분조건이다.",
+      "answer": "①",
+      "teacher_agreement": "교사용 4번의 충분조건 판정과 대조했다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": true,
+          "reason": "두 대각선이 서로를 이등분한다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "A(-1,0), B(0,2), C(1,0), D(0,-1)에서는 AO=OC이지만 BO≠OD이므로 평행사변형이 아니다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "A(-2,0), B(0,1), C(1,0), D(0,-1)에서는 BO=OD이지만 AO≠OC이므로 평행사변형이 아니다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "A(-2,0), B(2,0), C(1,2), D(-1,2)는 대각선 길이가 모두 √13인 등변사다리꼴이지만 평행사변형이 아니다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "A(-1,0), B(0,2), C(1,0), D(0,-1)은 대각선이 수직인 연꼴이지만 평행사변형이 아니다."
+        }
+      ]
+    },
+    {
+      "id": "MC5",
+      "stem_excerpt": "평행사변형 에서 , 일 때, 의 값은? [4점]① ② ",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "bar {{rm AC} it }=bar {{rm BD} it }",
+        "ANGLE {rm DAB} it =(4x+6)^{ circ }",
+        "x",
+        "19",
+        "20",
+        "22",
+        "23",
+        "21"
+      ],
+      "derivation": "대각선 길이가 같은 평행사변형은 직사각형이므로 4x+6=90이다.",
+      "answer": "⑤",
+      "teacher_agreement": "교사용 5번의 직사각형 판정과 x=21을 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "4*x+6",
+          "right": "90",
+          "bindings": {
+            "x": "21"
+          },
+          "reason": "직사각형의 한 각"
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "각이 82도이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "각이 86도이다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "각이 94도이다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "각이 98도이다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": true,
+          "reason": "한 각을 90도로 만든다."
+        }
+      ]
+    },
+    {
+      "id": "MC6",
+      "stem_excerpt": "마름모 에서 , 일 때, 의 크기는? [4점]① ② ③",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "ANGLE {rm BAC} it =(x+5)^{ circ }",
+        "ANGLE {rm ABD} it =(2x+10)^{ circ }",
+        "ANGLE {rm D} it",
+        "100^{ circ }",
+        "120^{ circ }",
+        "110^{ circ }",
+        "130^{ circ }",
+        "140^{ circ }"
+      ],
+      "derivation": "두 대각선의 각 이등분 성질과 이웃각의 합으로 x=25, 각 D=120도를 구한다.",
+      "answer": "②",
+      "teacher_agreement": "교사용 6번의 각 이등분 식과 각 D=120도를 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "2*(x+5)+2*(2*x+10)",
+          "right": "180",
+          "bindings": {
+            "x": "25"
+          },
+          "reason": "이웃한 두 꼭짓각의 합"
+        },
+        {
+          "left": "2*(2*25+10)",
+          "right": "120",
+          "reason": "B의 두 반각"
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 120도이므로 100도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": true,
+          "reason": "원래 조건에서 구한 값은 120도이므로 120도와 일치한다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 120도이므로 110도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 120도이므로 130도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 120도이므로 140도는 조건을 만족하지 않는다."
+        }
+      ]
+    },
+    {
+      "id": "MC7",
+      "stem_excerpt": "다음 중 항상 옳은 것을 모두 고른 것은? [5점]① ",
+      "source_scripts": [],
+      "derivation": "ㄱ은 이웃각의 합과 대각의 성질로 참, ㄴ은 60도·120도 마름모가 반례여서 거짓, ㄷ은 직사각형 판정으로 참, ㄹ은 직사각형이면서 마름모이므로 정사각형이 되어 참이다.",
+      "answer": "①",
+      "teacher_agreement": "교사용 7번의 네 명제 판정과 대조했다.",
+      "calculation_required": false,
+      "calculations": [],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": true,
+          "reason": "ㄱ·ㄷ·ㄹ만 참이다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "ㄹ을 빠뜨렸다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "ㄴ은 마름모 반례가 있다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "ㄷ을 빠뜨렸다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "ㄴ은 거짓이다."
+        }
+      ]
+    },
+    {
+      "id": "MC8",
+      "stem_excerpt": "직사각형 의 두 대각선의 교점을 라 하자. 길이의 단위",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "{rm O} it",
+        "{rm cm} it",
+        "bar {{rm AO} it }=x+1",
+        "bar {{rm BO} it }=2x-3",
+        "bar {{rm AB} it }=2x",
+        "bar {{rm BC} it }=x+2",
+        "26{rm cm} it",
+        "28{rm cm} it",
+        "30{rm cm} it",
+        "32{rm cm} it",
+        "34{rm cm} it"
+      ],
+      "derivation": "AO=BO에서 x+1=2x-3이므로 x=4. AO=BO=5, AB=8, BC=6. 대각선 10과 두 변은 8²+6²=10²까지 만족한다. 둘레는 28cm이다.",
+      "answer": "②",
+      "teacher_agreement": "교사용 8번의 x=4와 2(8+6)=28cm를 대조했고, 원래 네 길이 조건의 동시 실현 가능성도 확인했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "x+1",
+          "right": "2*x-3",
+          "bindings": {
+            "x": "4"
+          },
+          "reason": "대각선 반길이"
+        },
+        {
+          "left": "2*(2*x+x+2)",
+          "right": "28",
+          "bindings": {
+            "x": "4"
+          },
+          "reason": "두 변의 길이로 둘레 검산"
+        },
+        {
+          "left": "(2*x)**2+(x+2)**2",
+          "right": "(2*(x+1))**2",
+          "bindings": {
+            "x": "4"
+          },
+          "reason": "직사각형이 실제 존재하는지 네 길이 동시 확인"
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 28cm이므로 26cm는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": true,
+          "reason": "원래 조건에서 구한 값은 28cm이므로 28cm와 일치한다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 28cm이므로 30cm는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 28cm이므로 32cm는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 28cm이므로 34cm는 조건을 만족하지 않는다."
+        }
+      ]
+    },
+    {
+      "id": "MC9",
+      "stem_excerpt": "마름모 의 두 대각선의 교점을 라 하자.  , 일 때 ",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "{rm O} it",
+        "ANGLE {rm BAO} it =(x+12)^{ circ }",
+        "ANGLE {rm ABO} it =(2x+6)^{ circ }",
+        "ANGLE {rm D} it",
+        "(x+12)^{circ}",
+        "(2x+6)^{circ}",
+        "{rm A} it",
+        "{rm B} it",
+        "{rm C} it",
+        "{rm D} it",
+        "{rm O} it",
+        "100^{ circ }",
+        "102^{ circ }",
+        "104^{ circ }",
+        "106^{ circ }",
+        "108^{ circ }"
+      ],
+      "derivation": "O는 두 대각선의 교점이며 AOB=90도이다. BAO+ABO=90에서 (x+12)+(2x+6)=90, x=24. D=B=2ABO=108도이다.",
+      "answer": "⑤",
+      "teacher_agreement": "새 교사용 9번의 직각삼각형 ABO 두 예각의 합과 D=2ABO=108도를 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "(x+12)+(2*x+6)",
+          "right": "90",
+          "bindings": {
+            "x": "24"
+          },
+          "reason": "직각삼각형 ABO의 두 예각"
+        },
+        {
+          "left": "2*(2*x+6)",
+          "right": "108",
+          "bindings": {
+            "x": "24"
+          },
+          "reason": "대각선의 각 이등분과 마주보는 각"
+        }
+      ],
+      "options": [
+        {
+          "label": "①",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 108도이므로 100도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "②",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 108도이므로 102도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "③",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 108도이므로 104도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "④",
+          "satisfies_prompt": false,
+          "reason": "원래 조건에서 구한 값은 108도이므로 106도는 조건을 만족하지 않는다."
+        },
+        {
+          "label": "⑤",
+          "satisfies_prompt": true,
+          "reason": "원래 조건에서 구한 값은 108도이므로 108도와 일치한다."
+        }
+      ]
+    },
+    {
+      "id": "E1",
+      "stem_excerpt": "두 대각선의 길이가 같고 서로 수직인 평행사변형이 정사",
+      "source_scripts": [],
+      "derivation": "평행사변형이 직사각형과 마름모의 조건을 모두 만족함을 연결한다.",
+      "answer": "정사각형",
+      "teacher_agreement": "교사용 서술형 1번의 세 단계 채점 기준과 대조했다.",
+      "calculation_required": false,
+      "calculations": [],
+      "rubric": [
+        {
+          "criterion": "대각선 길이가 같아 직사각형임을 설명",
+          "points": 2,
+          "evidence": "직사각형 판정"
+        },
+        {
+          "criterion": "대각선이 수직이라 마름모임을 설명",
+          "points": 2,
+          "evidence": "마름모 판정"
+        },
+        {
+          "criterion": "두 성질로 정사각형 결론",
+          "points": 2,
+          "evidence": "최종 결론"
+        }
+      ],
+      "answer_only": {
+        "points": 2,
+        "rule": "정사각형이라는 결론만 쓴 경우"
+      }
+    },
+    {
+      "id": "E2",
+      "stem_excerpt": "마름모 에서 , 이다. 미지수 의 값과 네 각의 크기를",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "ANGLE {rm BAC} it =(x+10)^{ circ }",
+        "ANGLE {rm ABC} it =(3x+20)^{ circ }",
+        "x",
+        "(x+10)^{circ}",
+        "(3x+20)^{circ}",
+        "{rm A} it",
+        "{rm B} it",
+        "{rm C} it",
+        "{rm D} it"
+      ],
+      "derivation": "삼각형 ABC의 이등변 성질로 두 밑각을 같게 두어 x=28과 네 각을 구한다.",
+      "answer": "x=28, A=C=76도, B=D=104도",
+      "teacher_agreement": "교사용 서술형 2번의 식과 네 각을 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "2*(x+10)+(3*x+20)",
+          "right": "180",
+          "bindings": {
+            "x": "28"
+          },
+          "reason": "삼각형 ABC의 세 각의 합"
+        }
+      ],
+      "rubric": [
+        {
+          "criterion": "이등변삼각형의 밑각 관계",
+          "points": 1,
+          "evidence": "AB=BC"
+        },
+        {
+          "criterion": "각의 합 방정식",
+          "points": 1,
+          "evidence": "2(x+10)+(3x+20)=180"
+        },
+        {
+          "criterion": "x=28",
+          "points": 2,
+          "evidence": "방정식 풀이"
+        },
+        {
+          "criterion": "네 각의 크기",
+          "points": 2,
+          "evidence": "76도와 104도"
+        }
+      ],
+      "answer_only": {
+        "points": 3,
+        "rule": "미지수와 네 각 전체가 모두 정답이면3점, 미지수만 정답이거나 네 각 전체만 정답이면2점. 네 각 일부 정답에는 가점하지 않으며 나머지는0점. 오류 전파의 후속 각 계산 인정은 풀이 제시 경우에만 적용한다."
+      }
+    },
+    {
+      "id": "E3",
+      "stem_excerpt": "평행사변형 에서 , , , 둘레가 이다. 이 사각형의 ",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "bar {{rm AC} it }=bar {{rm BD} it }",
+        "bar {{rm AB} it }=3x+1",
+        "bar {{rm BC} it }=x+5",
+        "60{rm cm} it",
+        "x"
+      ],
+      "derivation": "대각선 길이가 같은 평행사변형을 직사각형으로 판정하고 x=6, 넓이 209제곱센티미터를 구한다.",
+      "answer": "직사각형, x=6, 넓이 209cm²",
+      "teacher_agreement": "교사용 서술형 3번의 직사각형 판정·둘레·넓이를 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "2*((3*x+1)+(x+5))",
+          "right": "60",
+          "bindings": {
+            "x": "6"
+          },
+          "reason": "직사각형의 둘레"
+        },
+        {
+          "left": "19*11",
+          "right": "209",
+          "reason": "두 변의 곱"
+        }
+      ],
+      "rubric": [
+        {
+          "criterion": "직사각형 판정",
+          "points": 1,
+          "evidence": "대각선 길이 같음"
+        },
+        {
+          "criterion": "둘레 방정식",
+          "points": 1,
+          "evidence": "2((3x+1)+(x+5))=60"
+        },
+        {
+          "criterion": "x=6",
+          "points": 2,
+          "evidence": "방정식 풀이"
+        },
+        {
+          "criterion": "넓이 209cm²",
+          "points": 2,
+          "evidence": "19×11"
+        }
+      ],
+      "answer_only": {
+        "points": 3,
+        "rule": "직사각형 판정·x=6·넓이209cm²의 정답마다 1점을 합산하여 최대3점. 모두 오답이면0점. 풀이의 오류 전파 후속 넓이 계산은 인정한다."
+      }
+    },
+    {
+      "id": "E4",
+      "stem_excerpt": "마름모 에서 , 이다. 미지수 의 값과 네 각의 크기를",
+      "source_scripts": [
+        "{rm ABCD} it",
+        "ANGLE {rm ABC} it =(4x+20)^{ circ }",
+        "ANGLE {rm ACB} it =(2x)^{ circ }",
+        "x",
+        "(4x+20)^{circ}",
+        "2x^{circ}",
+        "{rm A} it",
+        "{rm B} it",
+        "{rm C} it",
+        "{rm D} it"
+      ],
+      "derivation": "AB=BC이므로 BAC=ACB=2x도. 2(2x)+(4x+20)=180에서 x=20. A=C=80도, B=D=100도이다.",
+      "answer": "x=20, A=C=80도, B=D=100도",
+      "teacher_agreement": "교사용 4번의 8x+20=180, x=20 및 80도·100도를 최종 학생용 조건과 대조했다.",
+      "calculation_required": true,
+      "calculations": [
+        {
+          "left": "2*(2*x)+(4*x+20)",
+          "right": "180",
+          "bindings": {
+            "x": "20"
+          },
+          "reason": "삼각형 세 각의 합"
+        },
+        {
+          "left": "2*(2*20)",
+          "right": "80",
+          "reason": "A,C는 반각의 두 배"
+        },
+        {
+          "left": "4*20+20",
+          "right": "100",
+          "reason": "B,D의 꼭짓각"
+        }
+      ],
+      "rubric": [
+        {
+          "criterion": "이등변삼각형과 대각선 성질",
+          "points": 2,
+          "evidence": "BAC=ACB"
+        },
+        {
+          "criterion": "x=20",
+          "points": 2,
+          "evidence": "각의 합 방정식"
+        },
+        {
+          "criterion": "네 각의 크기",
+          "points": 2,
+          "evidence": "A=C=80도, B=D=100도"
+        }
+      ],
+      "answer_only": {
+        "points": 3,
+        "rule": "미지수와 네 각 전체가 모두 정답이면3점, 미지수만 정답이거나 네 각 전체만 정답이면2점. 네 각 일부 정답에는 가점하지 않으며 나머지는0점."
+      }
+    }
+  ]
+}

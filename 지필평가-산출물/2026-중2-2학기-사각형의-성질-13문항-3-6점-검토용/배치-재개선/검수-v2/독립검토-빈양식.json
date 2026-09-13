@@ -1,0 +1,82 @@
+{
+  "schema": 2,
+  "status": "PENDING",
+  "author_task": "",
+  "reviewer_task": "",
+  "student_sha256": "0d7e17f9c8144e29d74c5a31a6c50c50ec6ea718a6bd6e032b6227c2620accf1",
+  "teacher_sha256": "bcb9cfca667f9d75089e60b7d5cd18738fa64944198df3e4b6fa2f11e64c8d8e",
+  "student_pdf_sha256": "20e2d27bb8b772e671185602ade77c11ec4070d08687ac4e31d65eb11ba8e608",
+  "teacher_pdf_sha256": "fb2dccbe68517f11ee363a012db0ced3093428f57e21c0b416107836f10ac1f1",
+  "student_pages_reviewed": [],
+  "teacher_pages_reviewed": [],
+  "blocking_findings": null,
+  "visual_findings": "",
+  "limitations": "",
+  "items": [
+    {
+      "id": "MC1",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC2",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC3",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC4",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC5",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC6",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC7",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC8",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "MC9",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "E1",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "E2",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "E3",
+      "verdict": "PENDING",
+      "reason": ""
+    },
+    {
+      "id": "E4",
+      "verdict": "PENDING",
+      "reason": ""
+    }
+  ]
+}

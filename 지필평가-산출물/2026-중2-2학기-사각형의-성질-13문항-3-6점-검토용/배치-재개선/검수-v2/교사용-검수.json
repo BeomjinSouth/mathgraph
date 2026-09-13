@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "source_sha256": "bcb9cfca667f9d75089e60b7d5cd18738fa64944198df3e4b6fa2f11e64c8d8e",
+  "pdf_sha256": "fb2dccbe68517f11ee363a012db0ced3093428f57e21c0b416107836f10ac1f1",
+  "expected_pages": 3,
+  "student_file": "..\\학생용-배치조정-v2.hwpx",
+  "teacher_file": "..\\교사용-배치조정-v2.hwpx",
+  "student_pdf": "..\\학생용-배치조정-v2.pdf",
+  "teacher_pdf": "..\\교사용-배치조정-v2.pdf",
+  "metadata_file": "..\\시험정보.json",
+  "math_review": "문항별-검산.json",
+  "independent_review": "독립검토-결과.json",
+  "pages": [
+    {
+      "page": 1,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "선택형1~9번과수정한직각삼각형ABO해설이1쪽안에들어간다.수식의정체/기울임과줄바꿈을확인했다."
+    },
+    {
+      "page": 2,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "논술1~3번의풀이·부분점수·답만쓴경우기준이잘리지않는다.앞선검토에서확정한채점기준이유지된다."
+    },
+    {
+      "page": 3,
+      "no_clipping": true,
+      "no_overlap": true,
+      "layout_matches": true,
+      "observations": "논술4번제목·풀이·채점기준이같은쪽에있다.본문수식과점수문구가온전히보인다."
+    }
+  ],
+  "content": {
+    "solved": true,
+    "unique_answers": true,
+    "scope_checked": true,
+    "scores_checked": true,
+    "roman_italic_checked": true,
+    "student_teacher_agree": true,
+    "notes": "학생용·교사용실제PDF각3쪽을직접확인했고변경문항9번을교점O기준으로검산했다.기존문항의수학적내용은그대로이며수정본의수식원문과대조했다.사용자가조정한37개라벨의위치·크기·앵커역할보존을실제파일로검사했다."
+  }
+}

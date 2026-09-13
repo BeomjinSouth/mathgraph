@@ -1,0 +1,220 @@
+{
+  "ok": true,
+  "errors": [],
+  "source_sha256": "00011819f2186e28c7cd256dcdc499c64cf34ea10c924a93ccad6fc60544386c",
+  "target_sha256": "0d7e17f9c8144e29d74c5a31a6c50c50ec6ea718a6bd6e032b6227c2620accf1",
+  "pdf_sha256": "20e2d27bb8b772e671185602ade77c11ec4070d08687ac4e31d65eb11ba8e608",
+  "user_labels_preserved": 37,
+  "angle_arcs": [
+    {
+      "id": "MC1",
+      "radius_mm": 2.999956011730205
+    },
+    {
+      "id": "MC1",
+      "radius_mm": 2.999956011730205
+    },
+    {
+      "id": "MC9",
+      "radius_mm": 3.000044270833333
+    },
+    {
+      "id": "MC9",
+      "radius_mm": 3.000044270833333
+    },
+    {
+      "id": "E2",
+      "radius_mm": 3.0000058139534875
+    },
+    {
+      "id": "E2",
+      "radius_mm": 3.0000058139534875
+    },
+    {
+      "id": "E4",
+      "radius_mm": 2.9999560117302053
+    },
+    {
+      "id": "E4",
+      "radius_mm": 2.9999560117302053
+    }
+  ],
+  "statement_prefixes": [
+    " ㄱ. 평행사변형에서 한 각이 직각이면 직사각형이다.",
+    " ㄴ. 평행사변형에서 네 변의 길이가 같으면 정사각형이다.",
+    " ㄷ. 평행사변형에서 두 대각선의 길이가 같으면 직사각형이다.",
+    " ㄹ. 마름모에서 두 대각선의 길이가 같으면 정사각형이다."
+  ],
+  "questions": [
+    {
+      "id": "MC1",
+      "text": "1.",
+      "expected_page": 2,
+      "expected_column": "left",
+      "actual": [
+        {
+          "page": 2,
+          "column": "left",
+          "y_mm": 53.34000430636936
+        }
+      ]
+    },
+    {
+      "id": "MC2",
+      "text": "2.",
+      "expected_page": 2,
+      "expected_column": "left",
+      "actual": [
+        {
+          "page": 2,
+          "column": "left",
+          "y_mm": 136.82132127549914
+        }
+      ]
+    },
+    {
+      "id": "MC3",
+      "text": "3.",
+      "expected_page": 2,
+      "expected_column": "left",
+      "actual": [
+        {
+          "page": 2,
+          "column": "left",
+          "y_mm": 229.53132773505317
+        }
+      ]
+    },
+    {
+      "id": "MC4",
+      "text": "4.",
+      "expected_page": 2,
+      "expected_column": "right",
+      "actual": [
+        {
+          "page": 2,
+          "column": "right",
+          "y_mm": 53.212987942165796
+        }
+      ]
+    },
+    {
+      "id": "MC5",
+      "text": "5.",
+      "expected_page": 2,
+      "expected_column": "right",
+      "actual": [
+        {
+          "page": 2,
+          "column": "right",
+          "y_mm": 116.67065633138021
+        }
+      ]
+    },
+    {
+      "id": "MC6",
+      "text": "6.",
+      "expected_page": 2,
+      "expected_column": "right",
+      "actual": [
+        {
+          "page": 2,
+          "column": "right",
+          "y_mm": 155.9983376397027
+        }
+      ]
+    },
+    {
+      "id": "MC7",
+      "text": "7.",
+      "expected_page": 2,
+      "expected_column": "right",
+      "actual": [
+        {
+          "page": 2,
+          "column": "right",
+          "y_mm": 196.59599956936304
+        }
+      ]
+    },
+    {
+      "id": "MC8",
+      "text": "8.",
+      "expected_page": 2,
+      "expected_column": "right",
+      "actual": [
+        {
+          "page": 2,
+          "column": "right",
+          "y_mm": 273.9389907413058
+        }
+      ]
+    },
+    {
+      "id": "MC9",
+      "text": "9.",
+      "expected_page": 3,
+      "expected_column": "left",
+      "actual": [
+        {
+          "page": 3,
+          "column": "left",
+          "y_mm": 26.331316969129773
+        }
+      ]
+    },
+    {
+      "id": "E1",
+      "text": "【논술형1】",
+      "expected_page": 3,
+      "expected_column": "left",
+      "actual": [
+        {
+          "page": 3,
+          "column": "left",
+          "y_mm": 141.9736338297526
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "text": "【논술형2】",
+      "expected_page": 3,
+      "expected_column": "left",
+      "actual": [
+        {
+          "page": 3,
+          "column": "left",
+          "y_mm": 186.67762349446613
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "text": "【논술형3】",
+      "expected_page": 3,
+      "expected_column": "right",
+      "actual": [
+        {
+          "page": 3,
+          "column": "right",
+          "y_mm": 27.504307386610243
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "text": "【논술형4】",
+      "expected_page": 3,
+      "expected_column": "right",
+      "actual": [
+        {
+          "page": 3,
+          "column": "right",
+          "y_mm": 135.20029619004993
+        }
+      ]
+    }
+  ],
+  "limitations": "라벨 원좌표 보존과 배치·호 크기를 확인한다. 실제 글자/선 겹침, 문항 끝·풀이 공간은 최종 PDF 직접 검토와 별도 전달 검사로 확인해야 한다."
+}

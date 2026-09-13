@@ -1,0 +1,38 @@
+{
+  "schema": 2,
+  "ok": false,
+  "errors": [
+    "EQUATION_EDIT_FAILED",
+    "INLINE_FLOW_FAILED"
+  ],
+  "source": "보기-회귀.hwpx",
+  "source_sha256": "6072a825371506b78d0194c0f7f3171fac0e5d970b79be15d30caf6cdb4b9af3",
+  "pdf": "보기-회귀.pdf",
+  "pdf_sha256": "6932882002e3be6e5677e585a4c757b5b7bf4c8aba765e023818d3619d5a7b0c",
+  "engine": "Hancom HWPFrame.HwpObject SaveAs PDF",
+  "native_pages": 2,
+  "pdf_pages": 2,
+  "page_sizes_pt": [
+    [
+      728.0,
+      1031.0
+    ],
+    [
+      728.0,
+      1031.0
+    ]
+  ],
+  "equation_edit": false,
+  "inline_flow": false,
+  "equations": [],
+  "shutdown": {
+    "documents_closed": true,
+    "windows_closed": true,
+    "quit_returned": true,
+    "ok": true,
+    "new_processes_exited": true,
+    "new_process_count": 1
+  },
+  "visual_review": "PENDING",
+  "content_review": "PENDING"
+}

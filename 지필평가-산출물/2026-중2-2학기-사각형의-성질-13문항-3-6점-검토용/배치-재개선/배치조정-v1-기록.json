@@ -1,0 +1,53 @@
+{
+  "source": "C:\\Users\\pbj95\\Desktop\\mathGraph\\지필평가-산출물\\2026-중2-2학기-사각형의-성질-13문항-3-6점-검토용\\가독성-개선\\학생용-사각형의-성질-가독성-개선-완성-내가수정한거.hwpx",
+  "source_sha256": "00011819f2186e28c7cd256dcdc499c64cf34ea10c924a93ccad6fc60544386c",
+  "target": "C:\\Users\\pbj95\\Desktop\\mathGraph\\지필평가-산출물\\2026-중2-2학기-사각형의-성질-13문항-3-6점-검토용\\배치-재개선\\학생용-배치조정-v1.hwpx",
+  "target_sha256": "9e8a03a39e8028d96041b0a0211a5f647a8468ecc435479c4220c6dde41164df",
+  "question_paragraphs": [
+    13,
+    20,
+    27,
+    31,
+    39,
+    44,
+    49,
+    55,
+    58,
+    63,
+    69,
+    78,
+    92
+  ],
+  "diagram_paragraphs": {
+    "01": 14,
+    "02": 21,
+    "03": 28,
+    "09": 59,
+    "E2": 70,
+    "E4": 93
+  },
+  "space_lines": [
+    3,
+    3,
+    0,
+    2,
+    2,
+    2,
+    2,
+    0,
+    1,
+    5,
+    7,
+    13,
+    11
+  ],
+  "user_shapes_before_native_save": 37,
+  "shutdown": {
+    "documents_closed": true,
+    "windows_closed": true,
+    "quit_returned": true,
+    "ok": true,
+    "new_processes_exited": true,
+    "new_process_count": 1
+  }
+}
