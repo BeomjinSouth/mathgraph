@@ -1,0 +1,16 @@
+{
+  "operations": [
+    {"op":"create","id":"A","type":"point","x":-4,"y":-2,"label":"A","showLabel":true,"fontSize":20,"labelOffset":{"x":-18,"y":16}},
+    {"op":"create","id":"B","type":"point","x":3,"y":-2,"label":"B","showLabel":true,"fontSize":20,"labelOffset":{"x":10,"y":16}},
+    {"op":"create","id":"C","type":"point","x":4.2,"y":2.2,"label":"C","showLabel":true,"fontSize":20,"labelOffset":{"x":10,"y":-10}},
+    {"op":"create","id":"D","type":"point","x":-2.8,"y":2.2,"label":"D","showLabel":true,"fontSize":20,"labelOffset":{"x":-20,"y":-10}},
+    {"op":"create","id":"ABCD","type":"polygon","vertexIds":["A","B","C","D"],"fillOpacity":0,"showLabel":false},
+    {"op":"create","id":"AC","type":"segment","point1Id":"A","point2Id":"C","dashed":true},
+    {"op":"create","id":"BD","type":"segment","point1Id":"B","point2Id":"D","dashed":true},
+    {"op":"create","id":"O","type":"intersection","object1Id":"AC","object2Id":"BD","label":"O","showLabel":true,"fontSize":20,"labelOffset":{"x":10,"y":-8}},
+    {"op":"create","id":"AO","type":"segment","point1Id":"A","point2Id":"O","dashed":true,"visible":false},
+    {"op":"create","id":"OC","type":"segment","point1Id":"O","point2Id":"C","dashed":true,"visible":false},
+    {"op":"create","id":"len_AO","type":"lengthDimension","segmentId":"AO","customText":"2x+1","curvature":38,"labelFontSize":10},
+    {"op":"create","id":"len_OC","type":"lengthDimension","segmentId":"OC","customText":"x+7","curvature":-38,"labelFontSize":10}
+  ]
+}

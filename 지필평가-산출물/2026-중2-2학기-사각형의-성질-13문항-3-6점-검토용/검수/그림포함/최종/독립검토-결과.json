@@ -1,0 +1,21 @@
+{
+  "schema": 2,
+  "status": "PENDING",
+  "author_task": "mathGraph / 사각형의 성질 13문항에 MathGraph 도형 추가",
+  "reviewer_task": "",
+  "student_sha256": "ea3fb4b054d9760ac8b592cf806d55e337d7dfcb773f6aa7ad0576730ac9b8f1",
+  "teacher_sha256": "dac0b9c5b4be12b94502f29df192493c1aea9c7b75f11d441b4cce98136ef454",
+  "student_pdf_sha256": "b14e78de67221693341796c71b954ffac2151f24b3a08095374122748e79e512",
+  "teacher_pdf_sha256": "3754b1c89bee5c13b52bb5a4573953019f0ad7664178e14bde64a151d4d7db3e",
+  "student_pages_reviewed": [],
+  "teacher_pages_reviewed": [],
+  "blocking_findings": null,
+  "visual_findings": "",
+  "limitations": "별도 검토자가 학생용 시험지를 먼저 풀어 본 뒤 교사용 해설과 대조해야 한다.",
+  "items": [
+    {"id":"MC1","verdict":"PENDING","reason":""},{"id":"MC2","verdict":"PENDING","reason":""},{"id":"MC3","verdict":"PENDING","reason":""},
+    {"id":"MC4","verdict":"PENDING","reason":""},{"id":"MC5","verdict":"PENDING","reason":""},{"id":"MC6","verdict":"PENDING","reason":""},
+    {"id":"MC7","verdict":"PENDING","reason":""},{"id":"MC8","verdict":"PENDING","reason":""},{"id":"MC9","verdict":"PENDING","reason":""},
+    {"id":"E1","verdict":"PENDING","reason":""},{"id":"E2","verdict":"PENDING","reason":""},{"id":"E3","verdict":"PENDING","reason":""},{"id":"E4","verdict":"PENDING","reason":""}
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "diagrams": [
+    {
+      "id": "MC1",
+      "export": "MathGraph/01-평행사변형-이웃각-내보내기.json",
+      "conditions": [
+        {"kind":"parallel","points":["A","B","D","C"],"reason":"평행사변형의 마주 보는 변"},
+        {"kind":"angle","points":["D","A","B"],"expected":74.0546,"given":true,"display":"3x+15°","reason":"문제에 주어진 각 DAB"},
+        {"kind":"angle","points":["A","B","C"],"expected":105.9454,"given":true,"display":"5x-11°","reason":"문제에 주어진 각 ABC"}
+      ]
+    },
+    {
+      "id": "MC2",
+      "export": "MathGraph/02-평행사변형-변의길이-내보내기.json",
+      "conditions": [
+        {"kind":"parallel","points":["A","B","D","C"],"reason":"평행사변형의 마주 보는 변"},
+        {"kind":"segment_label","points":["A","B"],"given":true,"display":"3x-2","reason":"문제에 주어진 선분 AB"},
+        {"kind":"segment_label","points":["C","D"],"given":true,"display":"x+8","reason":"문제에 주어진 선분 CD"}
+      ]
+    },
+    {
+      "id": "MC3",
+      "export": "MathGraph/03-평행사변형-대각선길이-내보내기-v2.json",
+      "conditions": [
+        {"kind":"midpoint","points":["A","O","C"],"reason":"대각선 AC의 교점 O"},
+        {"kind":"midpoint","points":["B","O","D"],"reason":"대각선 BD의 교점 O"},
+        {"kind":"segment_label","points":["A","O"],"given":true,"display":"2x+1","reason":"문제에 주어진 선분 AO"},
+        {"kind":"segment_label","points":["O","C"],"given":true,"display":"x+7","reason":"문제에 주어진 선분 OC"}
+      ]
+    },
+    {
+      "id": "MC9",
+      "export": "MathGraph/09-마름모-두대각선-내보내기.json",
+      "conditions": [
+        {"kind":"angle","points":["B","A","C"],"expected":34.992,"given":true,"display":"x+12°","reason":"문제에 주어진 각 BAC"},
+        {"kind":"angle","points":["A","B","D"],"expected":55,"given":true,"display":"2x+6°","reason":"문제에 주어진 각 ABD"}
+      ]
+    },
+    {
+      "id": "E2",
+      "export": "MathGraph/서술02-마름모-각-내보내기.json",
+      "conditions": [
+        {"kind":"angle","points":["B","A","C"],"expected":34.992,"given":true,"display":"x+10°","reason":"문제에 주어진 각 BAC"},
+        {"kind":"angle","points":["A","B","C"],"expected":110.016,"given":true,"display":"3x+20°","reason":"문제에 주어진 각 ABC"}
+      ]
+    },
+    {
+      "id": "E4",
+      "export": "MathGraph/서술04-마름모-각-내보내기.json",
+      "conditions": [
+        {"kind":"angle","points":["A","B","C"],"expected":110.016,"given":true,"display":"4x+10°","reason":"문제에 주어진 각 ABC"},
+        {"kind":"angle","points":["A","C","B"],"expected":34.992,"given":true,"display":"2x+5°","reason":"문제에 주어진 각 ACB"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "operations": [
+    {"op":"create","id":"A","type":"point","x":-4,"y":-2,"label":"A","showLabel":true,"labelOffset":{"x":-18,"y":16}},
+    {"op":"create","id":"B","type":"point","x":3,"y":-2,"label":"B","showLabel":true,"labelOffset":{"x":10,"y":16}},
+    {"op":"create","id":"C","type":"point","x":4.2,"y":2.2,"label":"C","showLabel":true,"labelOffset":{"x":10,"y":-10}},
+    {"op":"create","id":"D","type":"point","x":-2.8,"y":2.2,"label":"D","showLabel":true,"labelOffset":{"x":-20,"y":-10}},
+    {"op":"create","id":"ABCD","type":"polygon","vertexIds":["A","B","C","D"],"fillOpacity":0,"showLabel":false},
+    {"op":"create","id":"angle_DAB","type":"angleDimension","vertexId":"A","point1Id":"D","point2Id":"B","arcRadius":0.8,"customText":"3x+15°","labelOffset":{"x":0,"y":-0.1}},
+    {"op":"create","id":"angle_ABC","type":"angleDimension","vertexId":"B","point1Id":"A","point2Id":"C","arcRadius":0.8,"customText":"5x-11°","labelOffset":{"x":0,"y":-0.1}}
+  ]
+}

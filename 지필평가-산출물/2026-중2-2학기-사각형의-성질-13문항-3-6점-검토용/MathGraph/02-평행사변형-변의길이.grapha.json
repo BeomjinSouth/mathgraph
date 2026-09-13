@@ -1,0 +1,14 @@
+{
+  "operations": [
+    {"op":"create","id":"A","type":"point","x":-3,"y":-3,"label":"A","showLabel":true,"fontSize":20,"labelOffset":{"x":-18,"y":16}},
+    {"op":"create","id":"B","type":"point","x":3,"y":-3,"label":"B","showLabel":true,"fontSize":20,"labelOffset":{"x":10,"y":16}},
+    {"op":"create","id":"C","type":"point","x":4,"y":3,"label":"C","showLabel":true,"fontSize":20,"labelOffset":{"x":10,"y":-10}},
+    {"op":"create","id":"D","type":"point","x":-2,"y":3,"label":"D","showLabel":true,"fontSize":20,"labelOffset":{"x":-20,"y":-10}},
+    {"op":"create","id":"AB","type":"segment","point1Id":"A","point2Id":"B"},
+    {"op":"create","id":"BC","type":"segment","point1Id":"B","point2Id":"C"},
+    {"op":"create","id":"CD","type":"segment","point1Id":"C","point2Id":"D"},
+    {"op":"create","id":"DA","type":"segment","point1Id":"D","point2Id":"A"},
+    {"op":"create","id":"len_AB","type":"lengthDimension","segmentId":"AB","customText":"3x-2","curvature":-34,"labelFontSize":12,"labelOffset":{"x":0,"y":-0.2}},
+    {"op":"create","id":"len_CD","type":"lengthDimension","segmentId":"CD","customText":"x+8","curvature":-34,"labelFontSize":12,"labelOffset":{"x":0,"y":0.2}}
+  ]
+}
