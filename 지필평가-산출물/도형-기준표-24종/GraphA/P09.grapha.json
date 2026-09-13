@@ -1,0 +1,108 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -5,
+      "y": -3,
+      "label": "A",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 0,
+      "y": 0,
+      "label": "B",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": 5,
+      "y": -3,
+      "label": "C",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "D",
+      "type": "point",
+      "x": 4,
+      "y": 4,
+      "label": "D",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "BA",
+      "type": "segment",
+      "point1Id": "B",
+      "point2Id": "A",
+      "lineWidth": 3
+    },
+    {
+      "op": "create",
+      "id": "BC",
+      "type": "segment",
+      "point1Id": "B",
+      "point2Id": "C",
+      "lineWidth": 3
+    },
+    {
+      "op": "create",
+      "id": "BD",
+      "type": "segment",
+      "point1Id": "B",
+      "point2Id": "D",
+      "lineWidth": 3
+    },
+    {
+      "op": "create",
+      "id": "small",
+      "type": "angleDimension",
+      "vertexId": "B",
+      "point1Id": "C",
+      "point2Id": "D",
+      "arcRadius": 1.0,
+      "customText": "α",
+      "labelFontSize": 22,
+      "lineWidth": 3
+    },
+    {
+      "op": "create",
+      "id": "large",
+      "type": "angleDimension",
+      "vertexId": "B",
+      "point1Id": "A",
+      "point2Id": "D",
+      "arcRadius": 1.7,
+      "customText": "β",
+      "labelFontSize": 22,
+      "lineWidth": 3
+    }
+  ]
+}

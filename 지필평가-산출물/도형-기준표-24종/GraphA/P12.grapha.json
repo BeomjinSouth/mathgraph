@@ -1,0 +1,71 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -5,
+      "y": -3,
+      "label": "A",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 5,
+      "y": -3,
+      "label": "B",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": 4.5,
+      "y": 3,
+      "label": "C",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "ABC",
+      "type": "polygon",
+      "vertexIds": [
+        "A",
+        "B",
+        "C"
+      ],
+      "fillOpacity": 0,
+      "showLabel": false,
+      "lineWidth": 3
+    },
+    {
+      "op": "create",
+      "id": "angB",
+      "type": "angleDimension",
+      "vertexId": "B",
+      "point1Id": "C",
+      "point2Id": "A",
+      "arcRadius": 1.2,
+      "customText": "(x+5)°",
+      "labelFontSize": 22,
+      "lineWidth": 3
+    }
+  ]
+}

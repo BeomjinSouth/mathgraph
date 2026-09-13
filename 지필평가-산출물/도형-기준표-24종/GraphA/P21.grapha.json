@@ -1,0 +1,106 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -5,
+      "y": -3,
+      "label": "A",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 0,
+      "y": -1,
+      "label": "B",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": -8,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": -4,
+      "y": 3,
+      "label": "C",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": -26,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "D",
+      "type": "point",
+      "x": 2,
+      "y": 0,
+      "label": "D",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "l1",
+      "type": "line",
+      "point1Id": "A",
+      "point2Id": "B",
+      "visible": false
+    },
+    {
+      "op": "create",
+      "id": "l2",
+      "type": "line",
+      "point1Id": "C",
+      "point2Id": "D",
+      "visible": false
+    },
+    {
+      "op": "create",
+      "id": "P",
+      "type": "intersection",
+      "object1Id": "l1",
+      "object2Id": "l2",
+      "label": "P",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": -22
+      }
+    },
+    {
+      "op": "create",
+      "id": "AP",
+      "type": "segment",
+      "point1Id": "A",
+      "point2Id": "P",
+      "lineWidth": 3
+    },
+    {
+      "op": "create",
+      "id": "CP",
+      "type": "segment",
+      "point1Id": "C",
+      "point2Id": "P",
+      "lineWidth": 3
+    }
+  ]
+}

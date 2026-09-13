@@ -1,0 +1,194 @@
+[
+  {
+    "id": "P01",
+    "title": "예각삼각형의 점 이름",
+    "group": "점 이름",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P02",
+    "title": "둔각삼각형의 점 이름",
+    "group": "점 이름",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P03",
+    "title": "직각삼각형의 점 이름",
+    "group": "점 이름",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P04",
+    "title": "평행사변형의 점 이름",
+    "group": "점 이름",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P05",
+    "title": "사다리꼴의 점 이름",
+    "group": "점 이름",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P06",
+    "title": "교점 O의 이름 위치",
+    "group": "점 이름",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P07",
+    "title": "예각의 호와 각도식",
+    "group": "각도 호",
+    "angle_mm": 3,
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P08",
+    "title": "둔각의 호와 값",
+    "group": "각도 호",
+    "angle_mm": 4,
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P09",
+    "title": "한 꼭짓점의 두 겹 호",
+    "group": "각도 호",
+    "angle_mm": 3,
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P10",
+    "title": "서로 다른 꼭짓점의 두 각",
+    "group": "각도 호",
+    "angle_mm": 4,
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P11",
+    "title": "마름모 대각선의 반각",
+    "group": "각도 호",
+    "angle_mm": 4,
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P12",
+    "title": "직각에 가까운 큰 각",
+    "group": "각도 호",
+    "angle_mm": 5,
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P13",
+    "title": "수평선분 위 길이 호",
+    "group": "길이 호",
+    "angle_mm": "source",
+    "length_mm": 4,
+    "width_mm": 68.2
+  },
+  {
+    "id": "P14",
+    "title": "수평선분 아래 길이 호",
+    "group": "길이 호",
+    "angle_mm": "source",
+    "length_mm": 5,
+    "width_mm": 68.2
+  },
+  {
+    "id": "P15",
+    "title": "기울어진 변의 길이 호",
+    "group": "길이 호",
+    "angle_mm": "source",
+    "length_mm": 5,
+    "width_mm": 68.2
+  },
+  {
+    "id": "P16",
+    "title": "마주 보는 두 변의 길이",
+    "group": "길이 호",
+    "angle_mm": "source",
+    "length_mm": 5,
+    "width_mm": 68.2
+  },
+  {
+    "id": "P17",
+    "title": "대각선 두 부분의 길이",
+    "group": "길이 호",
+    "angle_mm": "source",
+    "length_mm": 7,
+    "width_mm": 68.2
+  },
+  {
+    "id": "P18",
+    "title": "좁은 삼각형의 두 길이",
+    "group": "길이 호",
+    "angle_mm": "source",
+    "length_mm": 6,
+    "width_mm": 68.2
+  },
+  {
+    "id": "P19",
+    "title": "평행사변형 대각선 교점",
+    "group": "교점·복합",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P20",
+    "title": "삼각형 내부 두 선의 교점",
+    "group": "교점·복합",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P21",
+    "title": "연장선 바깥 교점",
+    "group": "교점·복합",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P22",
+    "title": "원 안 두 현의 교점",
+    "group": "교점·복합",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 80
+  },
+  {
+    "id": "P23",
+    "title": "수선의 발과 직각 표시",
+    "group": "교점·복합",
+    "angle_mm": "source",
+    "length_mm": "source",
+    "width_mm": 68.2
+  },
+  {
+    "id": "P24",
+    "title": "복합 라벨과 평행 표시",
+    "group": "교점·복합",
+    "angle_mm": 4,
+    "length_mm": 5,
+    "width_mm": 68.2
+  }
+]

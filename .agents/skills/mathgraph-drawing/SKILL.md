@@ -58,6 +58,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - When a right-angle mark would be small at a crowded vertex, add a larger `angleDimension` with `arcRadius` at least `0.7` and `showValue:false` instead of relying only on the default small `rightAngleMarker`.
 - Use `labelOffset` on required labels near tangency points, angle markers, collinear construction points, or crowded intersections so the label does not sit on top of the marker or line.
 - Set helper-only points to `visible:false` when they should not appear as extra dots.
+- For monochrome exam diagrams, named vertices, intersections, and midpoints normally keep their labels but use `pointSize:0`; do not add filled circular markers merely because a point object exists. Preserve a visible marker only when open/closed point status or another point symbol is itself mathematical information.
 - For prism cross-sections, make the outer solid projection broad enough to read and make the section polygon span a substantial middle portion of the prism, not a tiny internal square.
 - For nested solids, leave visible projection margin between the inner solid and the outer prism/pyramid boundary; containment alone is not enough when the result looks cramped.
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.

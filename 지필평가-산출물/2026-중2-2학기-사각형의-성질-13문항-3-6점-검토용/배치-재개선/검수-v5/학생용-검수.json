@@ -1,0 +1,366 @@
+{
+  "schema": 1,
+  "diagrams": [
+    {
+      "paragraph": "Contents/section0.xml:14",
+      "export": "..\\MathGraph\\01-점없음-v2.json",
+      "export_sha256": "627f9bafb14a50e3bda6bd325e5d0ae609563414a27fc6529355ae32e7766f03",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "D",
+            "A",
+            "B"
+          ],
+          "reason": "원래 조건에서 x=22, DAB=81도",
+          "expected": 81,
+          "given": true,
+          "display": "(3x+15)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "이웃각 99도",
+          "expected": 99,
+          "given": true,
+          "display": "(5x-11)°"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "C"
+          ],
+          "reason": "평행사변형의 대변"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "D",
+            "B",
+            "C"
+          ],
+          "reason": "평행사변형의 대변"
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:19",
+      "export": "..\\MathGraph\\02-점없음-v2.json",
+      "export_sha256": "52c0e9be8a0bca522438032588eac5821c85b7a486242875780215dd24395c63",
+      "conditions": [
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "A",
+            "D"
+          ],
+          "reason": "x=5에서 AB=13, AD=9",
+          "expected": 1.4444444444444444
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "A",
+            "B"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "3x-2"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "C",
+            "D"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "x+8"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "C"
+          ],
+          "reason": "평행사변형"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "D",
+            "B",
+            "C"
+          ],
+          "reason": "평행사변형"
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:24",
+      "export": "..\\MathGraph\\03-점없음-v2.json",
+      "export_sha256": "e18b10ef075e6948ad2f5d1f9001cb9866aa1fcd3ec57d1b65b369fb25ae4d51",
+      "conditions": [
+        {
+          "kind": "midpoint",
+          "points": [
+            "A",
+            "O",
+            "C"
+          ],
+          "reason": "대각선의 중점"
+        },
+        {
+          "kind": "midpoint",
+          "points": [
+            "B",
+            "O",
+            "D"
+          ],
+          "reason": "대각선의 중점"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "A",
+            "O"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "2x+1"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "O",
+            "C"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "x+7"
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:55",
+      "export": "..\\MathGraph\\09-점없음-v2.json",
+      "export_sha256": "18a2ac13546e3c016a358cccb9a9c696384cf725c2aa0ac3bcffc5d742a46a37",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "B",
+            "A",
+            "O"
+          ],
+          "reason": "x=24에서 주어진 반각",
+          "expected": 36,
+          "given": true,
+          "display": "(x+12)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "O"
+          ],
+          "reason": "x=24에서 주어진 반각",
+          "expected": 54,
+          "given": true,
+          "display": "(2x+6)°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "O",
+            "B"
+          ],
+          "expected": 90,
+          "reason": "대각선의 교점에서 이루는 직각"
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:66",
+      "export": "..\\MathGraph\\E2-점없음-v2.json",
+      "export_sha256": "62caf83e5a7ddd14319aa29c76a6213e519eaca36f0223827ecf4411fb1def95",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "B",
+            "A",
+            "C"
+          ],
+          "reason": "x=28에서 주어진 반각",
+          "expected": 38,
+          "given": true,
+          "display": "(x+10)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "x=28에서 주어진 꼭짓각",
+          "expected": 104,
+          "given": true,
+          "display": "(3x+20)°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:89",
+      "export": "..\\MathGraph\\E4-점없음-v2.json",
+      "export_sha256": "570578aeef1b88ea2c15f8b85b641348c9c0c17e0561e8c645262b218d53cd92",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "x=20에서 주어진 꼭짓각",
+          "expected": 100,
+          "given": true,
+          "display": "(4x+20)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "C",
+            "B"
+          ],
+          "reason": "x=20에서 주어진 반각",
+          "expected": 40,
+          "given": true,
+          "display": "2x°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        }
+      ]
+    }
+  ],
+  "user_layout_preservation": {
+    "source": "..\\학생용-배치조정-v4.hwpx",
+    "source_sha256": "ced1edc64a2e09eccf27c4697c743208e6960d7388a0a8b9b3849bac8a376034",
+    "allowed_label_changes": []
+  }
+}

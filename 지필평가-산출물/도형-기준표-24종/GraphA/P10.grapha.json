@@ -1,0 +1,98 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -5,
+      "y": -3,
+      "label": "A",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 5,
+      "y": -3,
+      "label": "B",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "C",
+      "type": "point",
+      "x": 4,
+      "y": 3,
+      "label": "C",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "D",
+      "type": "point",
+      "x": -3,
+      "y": 3,
+      "label": "D",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": -26,
+        "y": -24
+      }
+    },
+    {
+      "op": "create",
+      "id": "ABCD",
+      "type": "polygon",
+      "vertexIds": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fillOpacity": 0,
+      "showLabel": false,
+      "lineWidth": 3
+    },
+    {
+      "op": "create",
+      "id": "angA",
+      "type": "angleDimension",
+      "vertexId": "A",
+      "point1Id": "B",
+      "point2Id": "D",
+      "arcRadius": 1.2,
+      "customText": "(x+10)°",
+      "labelFontSize": 22,
+      "lineWidth": 3
+    },
+    {
+      "op": "create",
+      "id": "angB",
+      "type": "angleDimension",
+      "vertexId": "B",
+      "point1Id": "C",
+      "point2Id": "A",
+      "arcRadius": 1.2,
+      "customText": "(2x+20)°",
+      "labelFontSize": 22,
+      "lineWidth": 3
+    }
+  ]
+}

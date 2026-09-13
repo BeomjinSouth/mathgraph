@@ -1,0 +1,51 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "id": "A",
+      "type": "point",
+      "x": -5,
+      "y": 0,
+      "label": "A",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "B",
+      "type": "point",
+      "x": 5,
+      "y": 0,
+      "label": "B",
+      "pointSize": 0,
+      "fontSize": 27,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "op": "create",
+      "id": "AB",
+      "type": "segment",
+      "point1Id": "A",
+      "point2Id": "B",
+      "lineWidth": 3,
+      "visible": false
+    },
+    {
+      "op": "create",
+      "id": "len",
+      "type": "lengthDimension",
+      "segmentId": "AB",
+      "customText": "x+4",
+      "labelFontSize": 22,
+      "curvature": 100,
+      "lineWidth": 3
+    }
+  ]
+}
