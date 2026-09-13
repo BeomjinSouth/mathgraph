@@ -9,7 +9,7 @@ const DEFAULT_WIDTH_MM=68.2,DEFAULT_LINE_WIDTH=3;
 const STROKE_TYPES=new Set(['point','pointOnLine','pointOnCircle','circleCenterPoint','segment','line','ray','circle','circleThreePoints','ellipse','hyperbola','parabola','intersection','midpoint','parallel','perpendicular','perpendicularBisector','angleBisector','tangentCircle','tangentFunction','function','vector','rightAngleMarker','equalLengthMarker','angleDimension','lengthDimension','arc','polygon','prism','pyramid','numberLine','cylinder','cone','sphere']);
 const args=process.argv.slice(2), options={};
 for(let i=0;i<args.length;i+=2){
-  if(!['--input','--output','--project','--width-mm','--width-reason','--scale','--angle-radius-mm'].includes(args[i]) || !args[i+1])throw Error('사용법: --input 도형.json --output 내보내기.json [--width-mm 68.2] [--width-reason 조정이유] [--project MathGraph경로] [--scale 50] [--angle-radius-mm 2.2]');
+  if(!['--input','--output','--project','--width-mm','--width-reason','--scale','--angle-radius-mm','--length-arc-height-mm'].includes(args[i]) || !args[i+1])throw Error('사용법: --input 도형.json --output 내보내기.json [--width-mm 68.2] [--width-reason 조정이유] [--project MathGraph경로] [--scale 50] [--angle-radius-mm 3] [--length-arc-height-mm 5]');
   options[args[i].slice(2)]=args[i+1];
 }
 if(!options.input || !options.output)throw Error('입력과 새 출력 경로가 필요합니다.');
@@ -17,7 +17,9 @@ const input=path.resolve(options.input), output=path.resolve(options.output);
 const project=path.resolve(options.project || 'C:/Users/pbj95/Desktop/mathGraph');
 const widthMm=Number(options['width-mm'] || DEFAULT_WIDTH_MM), widthReason=options['width-reason']||'', scale=options.scale===undefined?null:Number(options.scale);
 const angleRadiusMm=options['angle-radius-mm']==='source'?null:Number(options['angle-radius-mm']??3);
+const lengthArcHeightMm=options['length-arc-height-mm']==='source'||options['length-arc-height-mm']===undefined?null:Number(options['length-arc-height-mm']);
 if(angleRadiusMm!==null&&(!Number.isFinite(angleRadiusMm)||angleRadiusMm<1||angleRadiusMm>5))throw Error('각도 호 반지름은 인쇄 크기 1~5mm 범위로 지정하세요.');
+if(lengthArcHeightMm!==null&&(!Number.isFinite(lengthArcHeightMm)||lengthArcHeightMm<3||lengthArcHeightMm>8))throw Error('길이 호 높이는 인쇄 크기 3~8mm 범위로 지정하세요.');
 if(!Number.isFinite(widthMm)||widthMm<40||widthMm>160 || (scale!==null && (!Number.isFinite(scale)||scale<=0||scale>1000)))throw Error('그림 폭 또는 화면 배율을 확인하세요.');
 if(Math.abs(widthMm-DEFAULT_WIDTH_MM)>1e-9 && !widthReason.trim())throw Error('기본 68.2mm와 다른 폭은 --width-reason으로 조정 이유를 기록하세요.');
 const outputs=[output,output.replace(/\.json$/i,'')+'.preview.png',output.replace(/\.json$/i,'')+'.geometry.png'];
@@ -63,7 +65,7 @@ try{
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.waitForFunction(()=>window.app?.canvas?.width>0);
-  const result=await page.evaluate(async({payload,widthMm,scale,angleRadiusMm})=>{
+  const result=await page.evaluate(async({payload,widthMm,scale,angleRadiusMm,lengthArcHeightMm})=>{
     const app=window.app;app.objectManager.clear();
     const validation=app.schemaValidator.parseAndValidate(JSON.stringify(payload));
     if(!validation.valid)throw Error(JSON.stringify(validation.errors));
@@ -105,6 +107,14 @@ try{
       };
     }
     const baseline=captureHwpDiagram(app,{widthMm,includeAxes:false,includePreview:true});
+    const lengthArcs=[];
+    if(lengthArcHeightMm!==null){
+      for(const object of objects.filter(o=>o.type==='lengthDimension')){
+        const previous=object.curvature;
+        object.curvature=Math.sign(previous||1)*2*lengthArcHeightMm*baseline.captureLayout.crop.width/widthMm;
+        lengthArcs.push({id:object.id,previousCurvature:previous,curvature:object.curvature,heightMm:lengthArcHeightMm});
+      }
+    }
     const angleArcs=[];
     if(angleRadiusMm!==null){
       const minByVertex=new Map();
@@ -116,7 +126,7 @@ try{
         angleArcs.push({id:object.id,previousRadius:previous,radius:object.arcRadius,radiusMm:mm});
       }
     }
-    const diagram=angleArcs.length?captureHwpDiagram(app,{widthMm,includeAxes:false,includePreview:true,layoutOverride:baseline.captureLayout}):baseline;
+    const diagram=(angleArcs.length||lengthArcs.length)?captureHwpDiagram(app,{widthMm,includeAxes:false,includePreview:true,layoutOverride:baseline.captureLayout}):baseline;
     const captureFrame={crop:diagram.captureLayout.crop,scale:app.canvas.scale,offset:{...app.canvas.offset},canvas:{width:app.canvas.width,height:app.canvas.height}};
     delete diagram.captureLayout;
     const norm=s=>String(s).replace(/\\mathrm|[{}\\^\s]/g,'').replace(/circ/g,'°');
@@ -126,8 +136,8 @@ try{
       if(i<0)throw Error('주어진 조건 라벨이 실제 내보내기에서 누락되었습니다: '+object.customText);
       remaining.splice(i,1);
     }
-    return {diagram,project:objects.map(object=>object.toJSON()),captureFrame,printProfile:{dimensionStroke:'matches-object-lineWidth',angleWrap:'normalized-before-render',allConditionLabelsExported:true,angleArcs}};
-  },{payload,widthMm,scale,angleRadiusMm}).catch(async error=>{
+    return {diagram,project:objects.map(object=>object.toJSON()),captureFrame,printProfile:{dimensionStroke:'matches-object-lineWidth',angleWrap:'normalized-before-render',allConditionLabelsExported:true,angleArcs,lengthArcs}};
+  },{payload,widthMm,scale,angleRadiusMm,lengthArcHeightMm}).catch(async error=>{
     const debug=await page.evaluate(()=>{const c=document.createElement('canvas');window.app.renderSceneToCanvas(c,{scale:1,includeGrid:false,includeAxes:false,includeBackground:true});return c.toDataURL();});
     await fs.mkdir(path.dirname(output),{recursive:true});
     await fs.writeFile(output.replace(/\.json$/i,'')+'.failed.png',Buffer.from(debug.split(',')[1],'base64'));

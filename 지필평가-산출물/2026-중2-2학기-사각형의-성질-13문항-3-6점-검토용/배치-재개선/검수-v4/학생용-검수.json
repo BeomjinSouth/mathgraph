@@ -1,0 +1,403 @@
+{
+  "schema": 1,
+  "diagrams": [
+    {
+      "paragraph": "Contents/section0.xml:14",
+      "export": "..\\MathGraph\\01-작은호-v2.json",
+      "export_sha256": "0775cd33c6a96d8386d7a19a8d186416b91dc027a1398dcae62199984f8f97ef",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "D",
+            "A",
+            "B"
+          ],
+          "reason": "원래 조건에서 x=22, DAB=81도",
+          "expected": 81,
+          "given": true,
+          "display": "(3x+15)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "이웃각 99도",
+          "expected": 99,
+          "given": true,
+          "display": "(5x-11)°"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "C"
+          ],
+          "reason": "평행사변형의 대변"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "D",
+            "B",
+            "C"
+          ],
+          "reason": "평행사변형의 대변"
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:19",
+      "export": "..\\MathGraph\\02-길이호-5mm.json",
+      "export_sha256": "754ec884513d14669ea99cb79d12b6fb87bacbad3828a5a644e98f8b2a294e7a",
+      "conditions": [
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "A",
+            "D"
+          ],
+          "reason": "x=5에서 AB=13, AD=9",
+          "expected": 1.4444444444444444
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "A",
+            "B"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "3x-2"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "C",
+            "D"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "x+8"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "C"
+          ],
+          "reason": "평행사변형"
+        },
+        {
+          "kind": "parallel",
+          "points": [
+            "A",
+            "D",
+            "B",
+            "C"
+          ],
+          "reason": "평행사변형"
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:24",
+      "export": "..\\..\\가독성-개선\\MathGraph\\03-내보내기-v4.json",
+      "export_sha256": "e18e81c485eeffab0451863c57f09d9efae93e57efe8bc93d532aeaf28a0a486",
+      "conditions": [
+        {
+          "kind": "midpoint",
+          "points": [
+            "A",
+            "O",
+            "C"
+          ],
+          "reason": "대각선의 중점"
+        },
+        {
+          "kind": "midpoint",
+          "points": [
+            "B",
+            "O",
+            "D"
+          ],
+          "reason": "대각선의 중점"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "A",
+            "O"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "2x+1"
+        },
+        {
+          "kind": "segment_label",
+          "points": [
+            "O",
+            "C"
+          ],
+          "reason": "주어진 길이",
+          "given": true,
+          "display": "x+7"
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:55",
+      "export": "..\\MathGraph\\09-각도호-5mm.json",
+      "export_sha256": "b89b39fa70db37c5b2904b49018dff88f41827c94bedec361c05f99ef56fc25e",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "B",
+            "A",
+            "O"
+          ],
+          "reason": "x=24에서 주어진 반각",
+          "expected": 36,
+          "given": true,
+          "display": "(x+12)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "O"
+          ],
+          "reason": "x=24에서 주어진 반각",
+          "expected": 54,
+          "given": true,
+          "display": "(2x+6)°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "O",
+            "B"
+          ],
+          "expected": 90,
+          "reason": "대각선의 교점에서 이루는 직각"
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:66",
+      "export": "..\\MathGraph\\E2-각도호-5mm.json",
+      "export_sha256": "ef3ca792c3c3fea0aa1abdadaadbfcd46f2361daf582be64e62509d489075f85",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "B",
+            "A",
+            "C"
+          ],
+          "reason": "x=28에서 주어진 반각",
+          "expected": 38,
+          "given": true,
+          "display": "(x+10)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "x=28에서 주어진 꼭짓각",
+          "expected": 104,
+          "given": true,
+          "display": "(3x+20)°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "paragraph": "Contents/section0.xml:89",
+      "export": "..\\MathGraph\\E4-작은호-v2.json",
+      "export_sha256": "dc04ff2b3484ebc57da90b914b8c11a1b58beedca529815a629660c977f7530f",
+      "conditions": [
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reason": "x=20에서 주어진 꼭짓각",
+          "expected": 100,
+          "given": true,
+          "display": "(4x+20)°"
+        },
+        {
+          "kind": "angle",
+          "points": [
+            "A",
+            "C",
+            "B"
+          ],
+          "reason": "x=20에서 주어진 반각",
+          "expected": 40,
+          "given": true,
+          "display": "2x°"
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "B",
+            "C"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        },
+        {
+          "kind": "length_ratio",
+          "points": [
+            "A",
+            "B",
+            "D",
+            "A"
+          ],
+          "reason": "마름모의 네 변은 모두 같음",
+          "expected": 1
+        }
+      ]
+    }
+  ],
+  "user_layout_preservation": {
+    "source": "..\\학생용-배치조정-v2.hwpx",
+    "source_sha256": "0d7e17f9c8144e29d74c5a31a6c50c50ec6ea718a6bd6e032b6227c2620accf1",
+    "allowed_label_changes": [
+      {
+        "question": "E2",
+        "script": "(x+10)^{circ}",
+        "after_pos": {
+          "treatAsChar": "0",
+          "affectLSpacing": "0",
+          "flowWithText": "1",
+          "allowOverlap": "1",
+          "holdAnchorAndSO": "0",
+          "vertRelTo": "PARA",
+          "horzRelTo": "PARA",
+          "vertAlign": "TOP",
+          "horzAlign": "LEFT",
+          "vertOffset": "10488",
+          "horzOffset": "8787"
+        },
+        "reason": "사용자가 지적한 각도식의 소속을 분명히 하도록 해당 각의 내부 이등분선 부근으로 이동"
+      },
+      {
+        "question": "E2",
+        "script": "(3x+20)^{circ}",
+        "after_pos": {
+          "treatAsChar": "0",
+          "affectLSpacing": "0",
+          "flowWithText": "1",
+          "allowOverlap": "1",
+          "holdAnchorAndSO": "0",
+          "vertRelTo": "PARA",
+          "horzRelTo": "PARA",
+          "vertAlign": "TOP",
+          "horzAlign": "LEFT",
+          "vertOffset": "12983",
+          "horzOffset": "12728"
+        },
+        "reason": "사용자가 지적한 각도식의 소속을 분명히 하도록 해당 각의 내부 이등분선 부근으로 이동"
+      }
+    ]
+  }
+}
