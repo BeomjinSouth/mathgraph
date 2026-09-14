@@ -177,7 +177,7 @@
       { "name": "fillOpacity", "type": "number 0..1", "scope": "create/update", "note": "Area opacity." },
       { "name": "showLabel", "type": "boolean", "scope": "create/update", "note": "Label visibility." },
       { "name": "locked", "type": "boolean", "scope": "create/update", "note": "Prevents direct dragging when supported." },
-      { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels." }
+      { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels. Point labels use a bottom text baseline: with a 27px font, upper labels usually start near y=-4..7 and lower labels near y=30..38. Very large offsets should trigger a geometry-spacing review." }
     ],
     "updateOnlyOrObjectSpecific": ["x", "y", "width", "height", "radiusX", "radiusY", "a", "b", "p", "orientation", "rotation", "ellipseRatio", "showHiddenLines", "text", "align", "expression", "xMin", "xMax", "yMin", "yMax", "branch", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
   },

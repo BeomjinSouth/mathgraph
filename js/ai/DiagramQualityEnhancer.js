@@ -687,6 +687,9 @@ function applyGeneralLabelDecluttering(ctx) {
         .filter(operation => operation.visible !== false && operation.showLabel !== false)
         .map(operation => ({ operation, point: resolvePoint(ctx, operation.id) }))
         .filter(item => item.point);
+    const diagramCenter = labeled.length > 0
+        ? averagePoint(labeled.map(item => item.point))
+        : { x: 0, y: 0 };
 
     for (let i = 0; i < labeled.length; i += 1) {
         const close = [];
@@ -697,12 +700,35 @@ function applyGeneralLabelDecluttering(ctx) {
             }
         }
 
-        if (close.length === 0 || hasUsableLabelOffset(labeled[i].operation)) continue;
-        const cluster = [labeled[i], ...close].map(item => item.point);
-        const center = averagePoint(cluster);
+        if (hasUsableLabelOffset(labeled[i].operation)) continue;
+        const center = close.length > 0
+            ? averagePoint([labeled[i], ...close].map(item => item.point))
+            : diagramCenter;
         const direction = normalize(subtract(labeled[i].point, center)) || fallbackDirection(i);
-        setLabelOffset(labeled[i].operation, direction.x * 16, -direction.y * 16);
+        const offset = baselineAwarePointLabelOffset(
+            direction,
+            Number(labeled[i].operation.fontSize) || 27
+        );
+        setLabelOffset(labeled[i].operation, offset.x, offset.y);
     }
+}
+
+function baselineAwarePointLabelOffset(mathDirection, fontSize) {
+    const screenDirection = { x: mathDirection.x, y: -mathDirection.y };
+    const horizontalGap = 8;
+    const estimatedTextWidth = fontSize * 0.7;
+    let x = -estimatedTextWidth / 2;
+    let y = fontSize * 0.55;
+
+    if (screenDirection.x > 0.25) x = horizontalGap;
+    if (screenDirection.x < -0.25) x = -estimatedTextWidth - horizontalGap;
+
+    // Canvas의 point label은 textBaseline='bottom'이다. 위쪽은 baseline을 점 근처에 두고,
+    // 아래쪽은 글자 높이만큼 내려야 실제 글자 상자가 점을 침범하지 않는다.
+    if (screenDirection.y < -0.25) y = 2;
+    if (screenDirection.y > 0.25) y = fontSize + 5;
+
+    return { x, y };
 }
 
 function applyPromptSpecificLabelOffsets(ctx, text) {
@@ -1237,6 +1263,36 @@ function resolvePoint(ctx, id) {
         const p1 = resolvePoint(ctx, segment?.point1Id);
         const p2 = resolvePoint(ctx, segment?.point2Id);
         return p1 && p2 ? { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 } : null;
+    }
+    if (operation.type === 'pointOnLine') {
+        const line = ctx.byId.get(operation.lineId);
+        const p1 = resolvePoint(ctx, line?.point1Id);
+        const p2 = resolvePoint(ctx, line?.point2Id);
+        const t = Number(operation.t);
+        return p1 && p2 && Number.isFinite(t)
+            ? { x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t }
+            : null;
+    }
+    if (operation.type === 'circleCenterPoint') {
+        const circle = ctx.byId.get(operation.circleId);
+        return resolvePoint(ctx, circle?.centerId);
+    }
+    if (operation.type === 'intersection') {
+        const first = ctx.byId.get(operation.object1Id);
+        const second = ctx.byId.get(operation.object2Id);
+        const a = resolvePoint(ctx, first?.point1Id);
+        const b = resolvePoint(ctx, first?.point2Id);
+        const c = resolvePoint(ctx, second?.point1Id);
+        const d = resolvePoint(ctx, second?.point2Id);
+        if (!a || !b || !c || !d) return null;
+        const denominator = (a.x - b.x) * (c.y - d.y) - (a.y - b.y) * (c.x - d.x);
+        if (Math.abs(denominator) < 1e-9) return null;
+        const firstCross = a.x * b.y - a.y * b.x;
+        const secondCross = c.x * d.y - c.y * d.x;
+        return {
+            x: (firstCross * (c.x - d.x) - (a.x - b.x) * secondCross) / denominator,
+            y: (firstCross * (c.y - d.y) - (a.y - b.y) * secondCross) / denominator
+        };
     }
     return null;
 }
