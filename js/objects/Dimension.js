@@ -5,6 +5,7 @@
 
 import { GeoObject, ObjectType } from './GeoObject.js';
 import { Vec2 } from '../utils/Geometry.js';
+import { MathUtils } from '../utils/MathUtils.js';
 
 // ObjectType 확장 (동적으로 추가)
 if (!ObjectType.ANGLE_DIMENSION) {
@@ -341,7 +342,7 @@ export class LengthDimension extends GeoObject {
         // 스타일
         this.offset = params.offset || 0.5; // 선분에서 떨어진 거리
         this.showValue = params.showValue !== false;
-        this.curvature = params.curvature || 25; // 곡선의 휨 정도 (픽셀)
+        this.curvature = params.curvature !== undefined ? Number(params.curvature) : 25; // 곡선의 휨 정도 (픽셀)
         this.labelFontSize = params.labelFontSize || 12; // 라벨 폰트 크기
         this.precision = (params.precision !== undefined) ? params.precision : 2;
 
@@ -408,10 +409,10 @@ export class LengthDimension extends GeoObject {
         // 선택/하이라이트 스타일
         if (this.selected || this.highlighted) {
             ctx.strokeStyle = this.selected ? '#f97316' : '#fbbf24';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = Math.max(2, this.lineWidth);
         } else {
             ctx.strokeStyle = this.color;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = this.lineWidth;
         }
 
         // 점선 곡선 그리기
@@ -491,22 +492,35 @@ export class LengthDimension extends GeoObject {
             }
         }
 
-        // 오프셋된 치수선에서의 거리
+        // 실제 화면에 그린 베지어 곡선에서의 거리
         const dx = this.point2.x - this.point1.x;
         const dy = this.point2.y - this.point1.y;
         const len = Math.sqrt(dx * dx + dy * dy);
 
         if (len === 0) return false;
 
-        const perpX = -dy / len * this.offset;
-        const perpY = dx / len * this.offset;
-
-        const p1 = new Vec2(this.point1.x + perpX, this.point1.y + perpY);
-        const p2 = new Vec2(this.point2.x + perpX, this.point2.y + perpY);
-
-        // 선분까지의 거리 계산
-        const dist = this.pointToSegmentDist(point, p1, p2);
-        const ok = dist < canvas.toMathLength(threshold);
+        const s1 = canvas.toScreen(this.point1);
+        const s2 = canvas.toScreen(this.point2);
+        const midX = (s1.x + s2.x) / 2;
+        const midY = (s1.y + s2.y) / 2;
+        const ctrl = new Vec2(
+            midX + (-dy / len) * this.curvature,
+            midY - (dx / len) * this.curvature
+        );
+        const screenPoint = canvas.toScreen(point);
+        let dist = Number.POSITIVE_INFINITY;
+        let previous = s1;
+        for (let step = 1; step <= 40; step += 1) {
+            const t = step / 40;
+            const oneMinusT = 1 - t;
+            const current = new Vec2(
+                oneMinusT * oneMinusT * s1.x + 2 * oneMinusT * t * ctrl.x + t * t * s2.x,
+                oneMinusT * oneMinusT * s1.y + 2 * oneMinusT * t * ctrl.y + t * t * s2.y
+            );
+            dist = Math.min(dist, this.pointToSegmentDist(screenPoint, previous, current));
+            previous = current;
+        }
+        const ok = dist < threshold;
         this._hitPart = ok ? 'shape' : null;
         return ok;
     }
@@ -535,6 +549,7 @@ export class LengthDimension extends GeoObject {
         this.dragStart = point.clone();
         this.labelOffsetStart = this.labelOffset.clone();
         this.curvatureStart = this.curvature;
+        this.dragMode = this._hitPart === 'label' ? 'label' : 'curve';
 
         // 선분 방향 벡터 계산
         if (this.point1 && this.point2) {
@@ -554,23 +569,20 @@ export class LengthDimension extends GeoObject {
             point.y - this.dragStart.y
         );
 
-        if (this.segmentDir && this.segmentPerp) {
-            // 선분에 수직 방향 이동량 → 곡률 조정
-            const perpMove = moveVec.x * this.segmentPerp.x + moveVec.y * this.segmentPerp.y;
-            this.curvature = Math.max(5, Math.min(100, this.curvatureStart + perpMove * canvas.scale * 2));
-
-            // 선분에 평행 방향 이동량 → 라벨 위치 조정
-            const paraMove = moveVec.x * this.segmentDir.x + moveVec.y * this.segmentDir.y;
-            this.labelOffset = new Vec2(
-                this.labelOffsetStart.x + paraMove * this.segmentDir.x,
-                this.labelOffsetStart.y + paraMove * this.segmentDir.y
-            );
-        } else {
-            // 방향 정보가 없으면 기존 방식
+        if (this.dragMode === 'label') {
             this.labelOffset = new Vec2(
                 this.labelOffsetStart.x + moveVec.x,
                 this.labelOffsetStart.y + moveVec.y
             );
+            return;
+        }
+
+        if (this.segmentDir && this.segmentPerp) {
+            // 선분에 수직 방향 이동량 → 곡률 조정
+            const perpMove = moveVec.x * this.segmentPerp.x + moveVec.y * this.segmentPerp.y;
+            this.curvature = MathUtils.clamp(this.curvatureStart + perpMove * canvas.scale * 2, -300, 300);
+        } else {
+            this.curvature = this.curvatureStart;
         }
     }
 
@@ -580,6 +592,8 @@ export class LengthDimension extends GeoObject {
         delete this.curvatureStart;
         delete this.segmentDir;
         delete this.segmentPerp;
+        delete this.dragMode;
+        delete this._hitPart;
     }
 
     getIconClass() {
@@ -598,6 +612,7 @@ export class LengthDimension extends GeoObject {
             showValue: this.showValue,
             labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y },
             customText: this.customText,
+            curvature: this.curvature,
             labelFontSize: this.labelFontSize,
             precision: this.precision
         };

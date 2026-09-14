@@ -130,6 +130,59 @@ test('dimension label drag records labelOffset and round-trips through undo/redo
     assert.equal(typeof dimension.labelOffset.clone, 'function');
 });
 
+test('length-dimension curve drag records signed curvature through undo and redo', () => {
+    const { historyManager: history } = createStack();
+    const dimension = {
+        id: 'dim-curve',
+        type: 'lengthDimension',
+        labelOffset: new Vec2(0, 0),
+        curvature: -122.5,
+        dragMode: 'curve'
+    };
+    const objects = new Map([[dimension.id, dimension]]);
+    history.objectManager = {
+        getObject: id => objects.get(id) || null,
+        updateAll() {}
+    };
+
+    history.startDrag([dimension]);
+    dimension.curvature = -90;
+    delete dimension.dragMode;
+    history.endDrag([dimension]);
+
+    history.undo();
+    assert.equal(dimension.curvature, -122.5);
+    history.redo();
+    assert.equal(dimension.curvature, -90);
+});
+
+test('dependent-point label drag records labelOffset instead of derived position', () => {
+    const { historyManager: history } = createStack();
+    const point = {
+        id: 'intersection-label',
+        type: 'intersection',
+        position: new Vec2(3, 4),
+        labelOffset: new Vec2(10, -10),
+        _draggingLabel: true
+    };
+    const objects = new Map([[point.id, point]]);
+    history.objectManager = {
+        getObject: id => objects.get(id) || null,
+        updateAll() {}
+    };
+
+    history.startDrag([point]);
+    point.labelOffset = new Vec2(24, 8);
+    delete point._draggingLabel;
+    history.endDrag([point]);
+
+    history.undo();
+    assert.deepEqual(point.labelOffset, new Vec2(10, -10));
+    assert.deepEqual(point.position, new Vec2(3, 4));
+    history.redo();
+    assert.deepEqual(point.labelOffset, new Vec2(24, 8));
+});
+
 test('function label drag records the label position and round-trips through undo/redo', () => {
     const { objectManager: om, historyManager: history } = createStack();
     const fn = om.createFunction('y = x^2');

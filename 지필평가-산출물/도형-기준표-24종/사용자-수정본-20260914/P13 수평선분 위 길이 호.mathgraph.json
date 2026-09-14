@@ -1,62 +1,62 @@
 {
   "format": "mathgraph-project",
   "version": 1,
-  "name": "P15 기울어진 변의 길이 호",
-  "savedAt": "2026-09-14T06:34:50.828Z",
+  "name": "P13 수평선분 위 길이 호",
+  "savedAt": "2026-09-14T06:34:18.023Z",
   "view": {
     "offset": {
       "x": 0,
       "y": 0
     },
-    "scale": 42
+    "scale": 38.7072
   },
   "objects": [
     {
-      "id": "obj_1789312463009_1",
+      "id": "obj_1789312458263_1",
       "type": "point",
       "label": "A",
       "showLabel": true,
       "color": "#000000",
       "lineWidth": 3,
-      "pointSize": 0,
+      "pointSize": 4,
       "pointStyle": "closed",
       "fontSize": 27,
       "dashed": false,
       "visible": true,
       "locked": false,
       "dependencies": [],
-      "createdAt": 1789367682401,
-      "x": -4,
-      "y": -3,
+      "createdAt": 1789367621277,
+      "x": -5,
+      "y": 0,
       "labelOffset": {
-        "x": -26,
-        "y": 20
+        "x": -22,
+        "y": 34
       }
     },
     {
-      "id": "obj_1789312463010_2",
+      "id": "obj_1789312458263_2",
       "type": "point",
       "label": "B",
       "showLabel": true,
       "color": "#000000",
       "lineWidth": 3,
-      "pointSize": 0,
+      "pointSize": 4,
       "pointStyle": "closed",
       "fontSize": 27,
       "dashed": false,
       "visible": true,
       "locked": false,
       "dependencies": [],
-      "createdAt": 1789367682401,
-      "x": 4,
-      "y": 3,
+      "createdAt": 1789367621277,
+      "x": 5,
+      "y": 0,
       "labelOffset": {
-        "x": 12,
-        "y": -24
+        "x": -7,
+        "y": 38
       }
     },
     {
-      "id": "obj_1789312463010_3",
+      "id": "obj_1789312458264_3",
       "type": "segment",
       "label": "a",
       "showLabel": false,
@@ -69,15 +69,15 @@
       "visible": false,
       "locked": false,
       "dependencies": [
-        "obj_1789312463009_1",
-        "obj_1789312463010_2"
+        "obj_1789312458263_1",
+        "obj_1789312458263_2"
       ],
-      "createdAt": 1789367682401,
-      "point1Id": "obj_1789312463009_1",
-      "point2Id": "obj_1789312463010_2"
+      "createdAt": 1789367621277,
+      "point1Id": "obj_1789312458263_1",
+      "point2Id": "obj_1789312458263_2"
     },
     {
-      "id": "obj_1789312463011_4",
+      "id": "obj_1789312458264_4",
       "type": "lengthDimension",
       "label": "",
       "showLabel": true,
@@ -90,18 +90,17 @@
       "visible": true,
       "locked": false,
       "dependencies": [
-        "obj_1789312463010_3"
+        "obj_1789312458264_3"
       ],
-      "createdAt": 1789367682401,
-      "segmentId": "obj_1789312463010_3",
+      "createdAt": 1789367621277,
+      "segmentId": "obj_1789312458264_3",
       "offset": 0.5,
       "showValue": true,
       "labelOffset": {
-        "x": -0.17142857142857143,
-        "y": -0.12857142857142853
+        "x": 8.326672684688674e-17,
+        "y": 0
       },
-      "customText": "7cm",
-      "curvature": 62.9032258064516,
+      "customText": "x+4",
       "labelFontSize": 22,
       "precision": 2
     }

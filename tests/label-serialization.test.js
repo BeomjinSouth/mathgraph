@@ -40,12 +40,36 @@ test('angle dimension label offset survives load as a Vec2 (drag does not crash)
 });
 
 test('length dimension label offset survives load as a Vec2 (drag does not crash)', () => {
-    const dim = new LengthDimension('seg', { labelOffset: new Vec2(-3, 8) });
+    const dim = new LengthDimension('seg', { labelOffset: new Vec2(-3, 8), curvature: -122.5 });
     const json = JSON.parse(JSON.stringify(dim.toJSON()));
     const restored = new LengthDimension(json.segmentId, json);
 
     assert.equal(typeof restored.labelOffset.clone, 'function', 'labelOffset must be a Vec2 after load');
     assert.equal(restored.labelOffset.x, -3);
     assert.equal(restored.labelOffset.y, 8);
+    assert.equal(restored.curvature, -122.5);
     assert.doesNotThrow(() => restored.labelOffset.clone());
+});
+
+test('length dimension click without movement preserves signed large curvature', () => {
+    const dim = new LengthDimension('seg', { curvature: -122.5 });
+    dim.point1 = new Vec2(0, 0);
+    dim.point2 = new Vec2(10, 0);
+    dim._hitPart = 'shape';
+
+    dim.startDrag(new Vec2(2, 0), { scale: 42 });
+    dim.drag(new Vec2(2, 0), new Vec2(0, 0), { scale: 42 });
+
+    assert.equal(dim.curvature, -122.5);
+});
+
+test('length dimension hit test follows the rendered quadratic curve', () => {
+    const dim = new LengthDimension('seg', { curvature: 40 });
+    dim.valid = true;
+    dim.point1 = new Vec2(0, 0);
+    dim.point2 = new Vec2(100, 0);
+    const canvas = { toScreen: point => point };
+
+    assert.equal(dim.hitTest(new Vec2(50, -20), 3, canvas), true);
+    assert.equal(dim._hitPart, 'shape');
 });

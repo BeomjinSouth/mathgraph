@@ -1,8 +1,8 @@
 {
   "format": "mathgraph-project",
   "version": 1,
-  "name": "P21 연장선 바깥 교점",
-  "savedAt": "2026-09-14T00:00:00.000Z",
+  "name": "P21 두 선분의 연장선이 만나는 점",
+  "savedAt": "2026-09-14T07:00:00.000Z",
   "view": {
     "offset": {
       "x": -1.3888888888888888,
@@ -163,7 +163,11 @@
       "object2Id": "obj_1789312732036_6",
       "branch": null,
       "anchorX": 2.2222222222222223,
-      "anchorY": -0.11111111111111116
+      "anchorY": -0.11111111111111116,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
     },
     {
       "id": "obj_1789312732038_8",
@@ -180,11 +184,11 @@
       "locked": false,
       "dependencies": [
         "obj_1789312732034_1",
-        "obj_1789312732037_7"
+        "obj_1789312732034_2"
       ],
       "createdAt": 1789312732038,
       "point1Id": "obj_1789312732034_1",
-      "point2Id": "obj_1789312732037_7"
+      "point2Id": "obj_1789312732034_2"
     },
     {
       "id": "obj_1789312732039_9",
@@ -201,10 +205,52 @@
       "locked": false,
       "dependencies": [
         "obj_1789312732035_3",
-        "obj_1789312732037_7"
+        "obj_1789312732035_4"
       ],
       "createdAt": 1789312732039,
       "point1Id": "obj_1789312732035_3",
+      "point2Id": "obj_1789312732035_4"
+    },
+    {
+      "id": "P21_extension_BP",
+      "type": "segment",
+      "label": "BP",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": true,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312732034_2",
+        "obj_1789312732037_7"
+      ],
+      "createdAt": 1789312732040,
+      "point1Id": "obj_1789312732034_2",
+      "point2Id": "obj_1789312732037_7"
+    },
+    {
+      "id": "P21_extension_DP",
+      "type": "segment",
+      "label": "DP",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": true,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312732035_4",
+        "obj_1789312732037_7"
+      ],
+      "createdAt": 1789312732041,
+      "point1Id": "obj_1789312732035_4",
       "point2Id": "obj_1789312732037_7"
     }
   ]

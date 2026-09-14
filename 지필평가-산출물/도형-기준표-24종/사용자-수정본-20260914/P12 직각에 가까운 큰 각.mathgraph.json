@@ -1,18 +1,18 @@
 {
   "format": "mathgraph-project",
   "version": 1,
-  "name": "P03 직각삼각형의 점 이름",
-  "savedAt": "2026-09-14T06:29:22.255Z",
+  "name": "P12 직각에 가까운 큰 각",
+  "savedAt": "2026-09-14T06:33:34.134Z",
   "view": {
     "offset": {
-      "x": -1.6428571428571417,
-      "y": -1.0952380952380962
+      "x": 0.5238095238095235,
+      "y": 2.1190476190476186
     },
     "scale": 42
   },
   "objects": [
     {
-      "id": "obj_1789312434757_1",
+      "id": "obj_1789312455954_1",
       "type": "point",
       "label": "A",
       "showLabel": true,
@@ -25,16 +25,16 @@
       "visible": true,
       "locked": false,
       "dependencies": [],
-      "createdAt": 1789367329765,
+      "createdAt": 1789367608125,
       "x": -5,
       "y": -3,
       "labelOffset": {
-        "x": -22.99999999999997,
-        "y": 23
+        "x": -26,
+        "y": 20
       }
     },
     {
-      "id": "obj_1789312434758_2",
+      "id": "obj_1789312455955_2",
       "type": "point",
       "label": "B",
       "showLabel": true,
@@ -47,7 +47,7 @@
       "visible": true,
       "locked": false,
       "dependencies": [],
-      "createdAt": 1789367329765,
+      "createdAt": 1789367608125,
       "x": 5,
       "y": -3,
       "labelOffset": {
@@ -56,7 +56,7 @@
       }
     },
     {
-      "id": "obj_1789312434758_3",
+      "id": "obj_1789312455955_3",
       "type": "point",
       "label": "C",
       "showLabel": true,
@@ -69,16 +69,16 @@
       "visible": true,
       "locked": false,
       "dependencies": [],
-      "createdAt": 1789367329765,
-      "x": -5,
-      "y": 4,
+      "createdAt": 1789367608125,
+      "x": 4.5,
+      "y": 3,
       "labelOffset": {
-        "x": -16.99999999999997,
-        "y": -3.999999999999986
+        "x": -4,
+        "y": -5
       }
     },
     {
-      "id": "obj_1789312434759_4",
+      "id": "obj_1789312455956_4",
       "type": "polygon",
       "label": "c1",
       "showLabel": false,
@@ -91,18 +91,51 @@
       "visible": true,
       "locked": false,
       "dependencies": [
-        "obj_1789312434757_1",
-        "obj_1789312434758_2",
-        "obj_1789312434758_3"
+        "obj_1789312455954_1",
+        "obj_1789312455955_2",
+        "obj_1789312455955_3"
       ],
-      "createdAt": 1789367329765,
+      "createdAt": 1789367608125,
       "vertexIds": [
-        "obj_1789312434757_1",
-        "obj_1789312434758_2",
-        "obj_1789312434758_3"
+        "obj_1789312455954_1",
+        "obj_1789312455955_2",
+        "obj_1789312455955_3"
       ],
       "fillColor": "#000000",
       "fillOpacity": 0
+    },
+    {
+      "id": "obj_1789312455956_5",
+      "type": "angleDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312455955_2",
+        "obj_1789312455955_3",
+        "obj_1789312455954_1"
+      ],
+      "createdAt": 1789367608125,
+      "vertexId": "obj_1789312455955_2",
+      "point1Id": "obj_1789312455955_3",
+      "point2Id": "obj_1789312455954_1",
+      "arcRadius": 0.9024577572964668,
+      "showValue": true,
+      "markerCount": 0,
+      "labelOffset": {
+        "x": -0.49999999999999956,
+        "y": -0.2142857142857142
+      },
+      "customText": "(x+5)°",
+      "precision": 1,
+      "labelFontSize": 22
     }
   ]
 }

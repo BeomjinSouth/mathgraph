@@ -803,7 +803,8 @@ export class Canvas {
             offsetX = 8,
             offsetY = -8,
             backgroundColor = null,
-            italic = false // Mk.2: 기본은 정자체(roman), true면 기울임
+            italic = false, // Mk.2: 기본은 정자체(roman), true면 기울임
+            avoidCollisions = true
         } = options;
 
         // Mk.2: 기본 roman, 옵션으로 italic 선택
@@ -817,7 +818,9 @@ export class Canvas {
 
         const metrics = ctx.measureText(text);
         const padding = backgroundColor ? 3 : 1;
-        const candidates = this.getLabelOffsetCandidates(offsetX, offsetY, metrics.width, fontSize);
+        const candidates = avoidCollisions
+            ? this.getLabelOffsetCandidates(offsetX, offsetY, metrics.width, fontSize)
+            : [{ offsetX, offsetY }];
         let chosen = null;
         let bestScore = Number.POSITIVE_INFINITY;
 
@@ -860,6 +863,7 @@ export class Canvas {
 
         ctx.fillStyle = color;
         ctx.fillText(text, x, y);
+        return labelBox;
     }
 
     getLabelOffsetCandidates(offsetX, offsetY, textWidth, fontSize) {

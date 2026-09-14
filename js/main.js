@@ -1640,6 +1640,29 @@ class GraphAApp {
             }
 
             if (this.isPointLikeObject(obj)) {
+                const fontRow = document.createElement('div');
+                fontRow.className = 'property-row';
+                fontRow.innerHTML = `
+                    <label>글씨 크기:</label>
+                    <input type="range" min="10" max="72" value="${obj.fontSize}" class="prop-slider">
+                    <span class="value-display">${obj.fontSize}</span>
+                `;
+                const fontInput = fontRow.querySelector('input');
+                const fontDisplay = fontRow.querySelector('.value-display');
+                let fontSizeEditStart;
+                fontInput.addEventListener('input', (event) => {
+                    if (fontSizeEditStart === undefined) fontSizeEditStart = obj.fontSize;
+                    obj.fontSize = Number(event.target.value);
+                    fontDisplay.textContent = String(obj.fontSize);
+                    this.render();
+                });
+                fontInput.addEventListener('change', () => {
+                    const startSize = fontSizeEditStart !== undefined ? fontSizeEditStart : obj.fontSize;
+                    fontSizeEditStart = undefined;
+                    this.recordObjectPropertyEdit(obj, 'fontSize', obj.fontSize, { oldValue: startSize });
+                });
+                container.appendChild(fontRow);
+
                 let pointSizeEditStart;
                 const pointSizeControl = this.createPointSizeControl({
                     value: obj.pointSize,
