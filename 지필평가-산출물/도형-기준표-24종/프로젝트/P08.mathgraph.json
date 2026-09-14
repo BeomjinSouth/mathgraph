@@ -1,0 +1,141 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P08 둔각의 호와 값",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": -0.5
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312446482_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312446482,
+      "x": -5,
+      "y": -3,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312446482_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312446482,
+      "x": 5,
+      "y": -3,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312446483_3",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312446483,
+      "x": -2,
+      "y": 2,
+      "labelOffset": {
+        "x": -10,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312446483_4",
+      "type": "polygon",
+      "label": "c1",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312446482_1",
+        "obj_1789312446482_2",
+        "obj_1789312446483_3"
+      ],
+      "createdAt": 1789312446483,
+      "vertexIds": [
+        "obj_1789312446482_1",
+        "obj_1789312446482_2",
+        "obj_1789312446483_3"
+      ],
+      "fillColor": "#000000",
+      "fillOpacity": 0
+    },
+    {
+      "id": "obj_1789312446484_5",
+      "type": "angleDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312446482_2",
+        "obj_1789312446483_3",
+        "obj_1789312446482_1"
+      ],
+      "createdAt": 1789312446484,
+      "vertexId": "obj_1789312446482_2",
+      "point1Id": "obj_1789312446483_3",
+      "point2Id": "obj_1789312446482_1",
+      "arcRadius": 0.7345342829213797,
+      "showValue": true,
+      "markerCount": 0,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "112°",
+      "precision": 1,
+      "labelFontSize": 22
+    }
+  ]
+}

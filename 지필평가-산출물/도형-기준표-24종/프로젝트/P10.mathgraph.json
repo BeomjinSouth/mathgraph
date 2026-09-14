@@ -1,0 +1,198 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P10 서로 다른 꼭짓점의 두 각",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312451199_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312451199,
+      "x": -5,
+      "y": -3,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312451200_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312451200,
+      "x": 5,
+      "y": -3,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312451201_3",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312451201,
+      "x": 4,
+      "y": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312451201_4",
+      "type": "point",
+      "label": "D",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312451201,
+      "x": -3,
+      "y": 3,
+      "labelOffset": {
+        "x": -26,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312451201_5",
+      "type": "polygon",
+      "label": "c1",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312451199_1",
+        "obj_1789312451200_2",
+        "obj_1789312451201_3",
+        "obj_1789312451201_4"
+      ],
+      "createdAt": 1789312451202,
+      "vertexIds": [
+        "obj_1789312451199_1",
+        "obj_1789312451200_2",
+        "obj_1789312451201_3",
+        "obj_1789312451201_4"
+      ],
+      "fillColor": "#000000",
+      "fillOpacity": 0
+    },
+    {
+      "id": "obj_1789312451202_6",
+      "type": "angleDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312451199_1",
+        "obj_1789312451200_2",
+        "obj_1789312451201_4"
+      ],
+      "createdAt": 1789312451202,
+      "vertexId": "obj_1789312451199_1",
+      "point1Id": "obj_1789312451200_2",
+      "point2Id": "obj_1789312451201_4",
+      "arcRadius": 0.7163803937997486,
+      "showValue": true,
+      "markerCount": 0,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "(x+10)°",
+      "precision": 1,
+      "labelFontSize": 22
+    },
+    {
+      "id": "obj_1789312451203_7",
+      "type": "angleDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312451200_2",
+        "obj_1789312451201_3",
+        "obj_1789312451199_1"
+      ],
+      "createdAt": 1789312451203,
+      "vertexId": "obj_1789312451200_2",
+      "point1Id": "obj_1789312451201_3",
+      "point2Id": "obj_1789312451199_1",
+      "arcRadius": 0.7163803937997486,
+      "showValue": true,
+      "markerCount": 0,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "(2x+20)°",
+      "precision": 1,
+      "labelFontSize": 22
+    }
+  ]
+}

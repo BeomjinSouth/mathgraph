@@ -1,0 +1,110 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P13 수평선분 위 길이 호",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312458263_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312458263,
+      "x": -5,
+      "y": 0,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312458263_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312458263,
+      "x": 5,
+      "y": 0,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312458264_3",
+      "type": "segment",
+      "label": "a",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312458263_1",
+        "obj_1789312458263_2"
+      ],
+      "createdAt": 1789312458264,
+      "point1Id": "obj_1789312458263_1",
+      "point2Id": "obj_1789312458263_2"
+    },
+    {
+      "id": "obj_1789312458264_4",
+      "type": "lengthDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312458264_3"
+      ],
+      "createdAt": 1789312458264,
+      "segmentId": "obj_1789312458264_3",
+      "offset": 0.5,
+      "showValue": true,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "x+4",
+      "curvature": 60.17595307917888,
+      "arcHeight": 30.08797653958944,
+      "labelFontSize": 22,
+      "precision": 2
+    }
+  ]
+}

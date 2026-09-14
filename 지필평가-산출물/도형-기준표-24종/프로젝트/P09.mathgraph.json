@@ -1,0 +1,232 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P09 한 꼭짓점의 두 겹 호",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0.5
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312448861_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312448861,
+      "x": -5,
+      "y": -3,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312448862_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312448862,
+      "x": 0,
+      "y": 0,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312448862_3",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312448862,
+      "x": 5,
+      "y": -3,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312448863_4",
+      "type": "point",
+      "label": "D",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312448863,
+      "x": 4,
+      "y": 4,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312448863_5",
+      "type": "segment",
+      "label": "a",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312448862_2",
+        "obj_1789312448861_1"
+      ],
+      "createdAt": 1789312448863,
+      "point1Id": "obj_1789312448862_2",
+      "point2Id": "obj_1789312448861_1"
+    },
+    {
+      "id": "obj_1789312448864_6",
+      "type": "segment",
+      "label": "b",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312448862_2",
+        "obj_1789312448862_3"
+      ],
+      "createdAt": 1789312448864,
+      "point1Id": "obj_1789312448862_2",
+      "point2Id": "obj_1789312448862_3"
+    },
+    {
+      "id": "obj_1789312448864_7",
+      "type": "segment",
+      "label": "c",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312448862_2",
+        "obj_1789312448863_4"
+      ],
+      "createdAt": 1789312448864,
+      "point1Id": "obj_1789312448862_2",
+      "point2Id": "obj_1789312448863_4"
+    },
+    {
+      "id": "obj_1789312448865_8",
+      "type": "angleDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312448862_2",
+        "obj_1789312448862_3",
+        "obj_1789312448863_4"
+      ],
+      "createdAt": 1789312448865,
+      "vertexId": "obj_1789312448862_2",
+      "point1Id": "obj_1789312448862_3",
+      "point2Id": "obj_1789312448863_4",
+      "arcRadius": 0.5372852953498115,
+      "showValue": true,
+      "markerCount": 0,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "α",
+      "precision": 1,
+      "labelFontSize": 22
+    },
+    {
+      "id": "obj_1789312448866_9",
+      "type": "angleDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312448862_2",
+        "obj_1789312448861_1",
+        "obj_1789312448863_4"
+      ],
+      "createdAt": 1789312448866,
+      "vertexId": "obj_1789312448862_2",
+      "point1Id": "obj_1789312448861_1",
+      "point2Id": "obj_1789312448863_4",
+      "arcRadius": 0.9133850020946794,
+      "showValue": true,
+      "markerCount": 0,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "β",
+      "precision": 1,
+      "labelFontSize": 22
+    }
+  ]
+}

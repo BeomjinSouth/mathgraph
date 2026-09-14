@@ -1,0 +1,240 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P22 원 안 두 현의 교점",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312733853_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312733853,
+      "x": 0,
+      "y": 0,
+      "labelOffset": {
+        "x": 10,
+        "y": -10
+      }
+    },
+    {
+      "id": "obj_1789312733854_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312733854,
+      "x": 5,
+      "y": 0,
+      "labelOffset": {
+        "x": 10,
+        "y": -10
+      }
+    },
+    {
+      "id": "obj_1789312733854_3",
+      "type": "circle",
+      "label": "c1",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312733853_1",
+        "obj_1789312733854_2"
+      ],
+      "createdAt": 1789312733855,
+      "centerId": "obj_1789312733853_1",
+      "pointOnCircleId": "obj_1789312733854_2",
+      "fillColor": "#000000",
+      "fillOpacity": 0,
+      "labelOffset": {
+        "x": 10,
+        "y": -10
+      }
+    },
+    {
+      "id": "obj_1789312733855_4",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312733855,
+      "x": -4,
+      "y": -3,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312733856_5",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312733856,
+      "x": 4,
+      "y": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312733856_6",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312733856,
+      "x": -4,
+      "y": 3,
+      "labelOffset": {
+        "x": -26,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312733857_7",
+      "type": "point",
+      "label": "D",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312733857,
+      "x": 4,
+      "y": -3,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312733857_8",
+      "type": "segment",
+      "label": "a",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312733855_4",
+        "obj_1789312733856_5"
+      ],
+      "createdAt": 1789312733857,
+      "point1Id": "obj_1789312733855_4",
+      "point2Id": "obj_1789312733856_5"
+    },
+    {
+      "id": "obj_1789312733858_9",
+      "type": "segment",
+      "label": "b",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312733856_6",
+        "obj_1789312733857_7"
+      ],
+      "createdAt": 1789312733858,
+      "point1Id": "obj_1789312733856_6",
+      "point2Id": "obj_1789312733857_7"
+    },
+    {
+      "id": "obj_1789312733859_10",
+      "type": "intersection",
+      "label": "P",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312733857_8",
+        "obj_1789312733858_9"
+      ],
+      "createdAt": 1789312733859,
+      "object1Id": "obj_1789312733857_8",
+      "object2Id": "obj_1789312733858_9",
+      "branch": null,
+      "anchorX": 0,
+      "anchorY": 0
+    }
+  ]
+}

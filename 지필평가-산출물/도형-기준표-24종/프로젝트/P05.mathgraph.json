@@ -1,0 +1,132 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P05 사다리꼴의 점 이름",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312439495_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312439495,
+      "x": -6,
+      "y": -3,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312439496_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312439496,
+      "x": 6,
+      "y": -3,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312439496_3",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312439496,
+      "x": 3,
+      "y": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312439497_4",
+      "type": "point",
+      "label": "D",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312439497,
+      "x": -2,
+      "y": 3,
+      "labelOffset": {
+        "x": -26,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312439497_5",
+      "type": "polygon",
+      "label": "c1",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312439495_1",
+        "obj_1789312439496_2",
+        "obj_1789312439496_3",
+        "obj_1789312439497_4"
+      ],
+      "createdAt": 1789312439497,
+      "vertexIds": [
+        "obj_1789312439495_1",
+        "obj_1789312439496_2",
+        "obj_1789312439496_3",
+        "obj_1789312439497_4"
+      ],
+      "fillColor": "#000000",
+      "fillOpacity": 0
+    }
+  ]
+}

@@ -1,0 +1,211 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P21 연장선 바깥 교점",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": -1.3888888888888888,
+      "y": 0
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312732034_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312732034,
+      "x": -5,
+      "y": -3,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312732034_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312732034,
+      "x": 0,
+      "y": -1,
+      "labelOffset": {
+        "x": -8,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312732035_3",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312732035,
+      "x": -4,
+      "y": 3,
+      "labelOffset": {
+        "x": -26,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312732035_4",
+      "type": "point",
+      "label": "D",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312732035,
+      "x": 2,
+      "y": 0,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312732035_5",
+      "type": "line",
+      "label": "a",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312732034_1",
+        "obj_1789312732034_2"
+      ],
+      "createdAt": 1789312732036,
+      "point1Id": "obj_1789312732034_1",
+      "point2Id": "obj_1789312732034_2"
+    },
+    {
+      "id": "obj_1789312732036_6",
+      "type": "line",
+      "label": "b",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312732035_3",
+        "obj_1789312732035_4"
+      ],
+      "createdAt": 1789312732036,
+      "point1Id": "obj_1789312732035_3",
+      "point2Id": "obj_1789312732035_4"
+    },
+    {
+      "id": "obj_1789312732037_7",
+      "type": "intersection",
+      "label": "P",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312732035_5",
+        "obj_1789312732036_6"
+      ],
+      "createdAt": 1789312732037,
+      "object1Id": "obj_1789312732035_5",
+      "object2Id": "obj_1789312732036_6",
+      "branch": null,
+      "anchorX": 2.2222222222222223,
+      "anchorY": -0.11111111111111116
+    },
+    {
+      "id": "obj_1789312732038_8",
+      "type": "segment",
+      "label": "c",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312732034_1",
+        "obj_1789312732037_7"
+      ],
+      "createdAt": 1789312732038,
+      "point1Id": "obj_1789312732034_1",
+      "point2Id": "obj_1789312732037_7"
+    },
+    {
+      "id": "obj_1789312732039_9",
+      "type": "segment",
+      "label": "d",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312732035_3",
+        "obj_1789312732037_7"
+      ],
+      "createdAt": 1789312732039,
+      "point1Id": "obj_1789312732035_3",
+      "point2Id": "obj_1789312732037_7"
+    }
+  ]
+}

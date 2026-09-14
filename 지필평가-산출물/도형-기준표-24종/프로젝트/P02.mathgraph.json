@@ -1,0 +1,108 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P02 둔각삼각형의 점 이름",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312431942_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312431942,
+      "x": -6,
+      "y": -2,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312431944_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312431944,
+      "x": 6,
+      "y": -2,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312431945_3",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312431945,
+      "x": -3,
+      "y": 2,
+      "labelOffset": {
+        "x": -18,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312431946_4",
+      "type": "polygon",
+      "label": "c1",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312431942_1",
+        "obj_1789312431944_2",
+        "obj_1789312431945_3"
+      ],
+      "createdAt": 1789312431946,
+      "vertexIds": [
+        "obj_1789312431942_1",
+        "obj_1789312431944_2",
+        "obj_1789312431945_3"
+      ],
+      "fillColor": "#000000",
+      "fillOpacity": 0
+    }
+  ]
+}

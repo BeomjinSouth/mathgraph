@@ -1,0 +1,110 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P15 기울어진 변의 길이 호",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312463009_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312463009,
+      "x": -4,
+      "y": -3,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312463010_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312463010,
+      "x": 4,
+      "y": 3,
+      "labelOffset": {
+        "x": 12,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312463010_3",
+      "type": "segment",
+      "label": "a",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312463009_1",
+        "obj_1789312463010_2"
+      ],
+      "createdAt": 1789312463010,
+      "point1Id": "obj_1789312463009_1",
+      "point2Id": "obj_1789312463010_2"
+    },
+    {
+      "id": "obj_1789312463011_4",
+      "type": "lengthDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312463010_3"
+      ],
+      "createdAt": 1789312463011,
+      "segmentId": "obj_1789312463010_3",
+      "offset": 0.5,
+      "showValue": true,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "7cm",
+      "curvature": 62.90322580645161,
+      "arcHeight": 31.451612903225804,
+      "labelFontSize": 22,
+      "precision": 2
+    }
+  ]
+}

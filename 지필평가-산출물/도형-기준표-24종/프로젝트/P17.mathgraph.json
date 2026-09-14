@@ -1,0 +1,201 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P17 대각선 두 부분의 길이",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312724763_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312724763,
+      "x": -6,
+      "y": 0,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312724763_2",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312724763,
+      "x": 6,
+      "y": 0,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312724764_3",
+      "type": "segment",
+      "label": "a",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312724763_1",
+        "obj_1789312724763_2"
+      ],
+      "createdAt": 1789312724764,
+      "point1Id": "obj_1789312724763_1",
+      "point2Id": "obj_1789312724763_2"
+    },
+    {
+      "id": "obj_1789312724764_4",
+      "type": "midpoint",
+      "label": "O",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312724764_3"
+      ],
+      "createdAt": 1789312724764,
+      "segmentId": "obj_1789312724764_3"
+    },
+    {
+      "id": "obj_1789312724765_5",
+      "type": "segment",
+      "label": "b",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312724763_1",
+        "obj_1789312724764_4"
+      ],
+      "createdAt": 1789312724765,
+      "point1Id": "obj_1789312724763_1",
+      "point2Id": "obj_1789312724764_4"
+    },
+    {
+      "id": "obj_1789312724765_6",
+      "type": "segment",
+      "label": "c",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312724764_4",
+        "obj_1789312724763_2"
+      ],
+      "createdAt": 1789312724765,
+      "point1Id": "obj_1789312724764_4",
+      "point2Id": "obj_1789312724763_2"
+    },
+    {
+      "id": "obj_1789312724766_7",
+      "type": "lengthDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312724765_5"
+      ],
+      "createdAt": 1789312724766,
+      "segmentId": "obj_1789312724765_5",
+      "offset": 0.5,
+      "showValue": true,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "2x+1",
+      "curvature": -122.55131964809384,
+      "arcHeight": -61.27565982404692,
+      "labelFontSize": 22,
+      "precision": 2
+    },
+    {
+      "id": "obj_1789312724767_8",
+      "type": "lengthDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312724765_6"
+      ],
+      "createdAt": 1789312724767,
+      "segmentId": "obj_1789312724765_6",
+      "offset": 0.5,
+      "showValue": true,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "x+7",
+      "curvature": 122.55131964809384,
+      "arcHeight": 61.27565982404692,
+      "labelFontSize": 22,
+      "precision": 2
+    }
+  ]
+}

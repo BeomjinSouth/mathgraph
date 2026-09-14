@@ -1,0 +1,210 @@
+{
+  "format": "mathgraph-project",
+  "version": 1,
+  "name": "P18 좁은 삼각형의 두 길이",
+  "savedAt": "2026-09-14T00:00:00.000Z",
+  "view": {
+    "offset": {
+      "x": 0,
+      "y": 0.5
+    },
+    "scale": 42
+  },
+  "objects": [
+    {
+      "id": "obj_1789312726396_1",
+      "type": "point",
+      "label": "A",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312726396,
+      "x": -4,
+      "y": -3,
+      "labelOffset": {
+        "x": -26,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312726396_2",
+      "type": "point",
+      "label": "B",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312726396,
+      "x": 4,
+      "y": -3,
+      "labelOffset": {
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "obj_1789312726397_3",
+      "type": "point",
+      "label": "C",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 0,
+      "pointStyle": "closed",
+      "fontSize": 27,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [],
+      "createdAt": 1789312726397,
+      "x": 0,
+      "y": 4,
+      "labelOffset": {
+        "x": -8,
+        "y": -24
+      }
+    },
+    {
+      "id": "obj_1789312726397_4",
+      "type": "polygon",
+      "label": "c1",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312726396_1",
+        "obj_1789312726396_2",
+        "obj_1789312726397_3"
+      ],
+      "createdAt": 1789312726397,
+      "vertexIds": [
+        "obj_1789312726396_1",
+        "obj_1789312726396_2",
+        "obj_1789312726397_3"
+      ],
+      "fillColor": "#000000",
+      "fillOpacity": 0
+    },
+    {
+      "id": "obj_1789312726397_5",
+      "type": "segment",
+      "label": "a",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312726396_1",
+        "obj_1789312726397_3"
+      ],
+      "createdAt": 1789312726398,
+      "point1Id": "obj_1789312726396_1",
+      "point2Id": "obj_1789312726397_3"
+    },
+    {
+      "id": "obj_1789312726398_6",
+      "type": "segment",
+      "label": "b",
+      "showLabel": false,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": false,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312726396_2",
+        "obj_1789312726397_3"
+      ],
+      "createdAt": 1789312726398,
+      "point1Id": "obj_1789312726396_2",
+      "point2Id": "obj_1789312726397_3"
+    },
+    {
+      "id": "obj_1789312726399_7",
+      "type": "lengthDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312726397_5"
+      ],
+      "createdAt": 1789312726399,
+      "segmentId": "obj_1789312726397_5",
+      "offset": 0.5,
+      "showValue": true,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "x+2",
+      "curvature": 75.48387096774194,
+      "arcHeight": 37.74193548387097,
+      "labelFontSize": 22,
+      "precision": 2
+    },
+    {
+      "id": "obj_1789312726399_8",
+      "type": "lengthDimension",
+      "label": "",
+      "showLabel": true,
+      "color": "#000000",
+      "lineWidth": 3,
+      "pointSize": 6,
+      "pointStyle": "closed",
+      "fontSize": 30,
+      "dashed": false,
+      "visible": true,
+      "locked": false,
+      "dependencies": [
+        "obj_1789312726398_6"
+      ],
+      "createdAt": 1789312726399,
+      "segmentId": "obj_1789312726398_6",
+      "offset": 0.5,
+      "showValue": true,
+      "labelOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "customText": "2x-3",
+      "curvature": -75.48387096774194,
+      "arcHeight": -37.74193548387097,
+      "labelFontSize": 22,
+      "precision": 2
+    }
+  ]
+}

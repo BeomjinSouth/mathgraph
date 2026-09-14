@@ -9,8 +9,10 @@ from PIL import Image, ImageDraw, ImageFont
 BASE = Path(__file__).resolve().parent
 SRC = BASE / "GraphA"
 OUT = BASE / "내보내기"
+PROJECT_FILES = BASE / "프로젝트"
 SRC.mkdir(exist_ok=True)
 OUT.mkdir(exist_ok=True)
+PROJECT_FILES.mkdir(exist_ok=True)
 NODE = r"C:\Users\pbj95\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
 EXPORT = r"C:\Users\pbj95\.codex\skills\pbj-exam-hwpx\scripts\export_mathgraph.mjs"
 PROJECT = r"C:\Users\pbj95\Desktop\mathGraph\dist"
@@ -141,6 +143,19 @@ for sample in samples:
     if not target.exists():
         subprocess.run(command,check=True)
     manifest.append({k:sample[k] for k in ("id","title","group","angle_mm","length_mm","width_mm")})
+
+    exported=json.loads(target.read_text(encoding="utf-8"))
+    frame=exported["captureFrame"]
+    envelope={
+        "format":"mathgraph-project",
+        "version":1,
+        "name":f"{sample['id']} {sample['title']}",
+        "savedAt":"2026-09-14T00:00:00.000Z",
+        "view":{"offset":frame["offset"],"scale":frame["scale"]},
+        "objects":exported["project"],
+    }
+    (PROJECT_FILES/f"{sample['id']}.mathgraph.json").write_text(
+        json.dumps(envelope,ensure_ascii=False,indent=2),encoding="utf-8")
 
 (BASE/"시안목록.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf-8")
 
