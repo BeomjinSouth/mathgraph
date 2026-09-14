@@ -4613,6 +4613,7 @@ class GraphAApp {
     }
 
     buildProjectEnvelope() {
+        const serialized = this.objectManager.toJSON();
         return createProjectEnvelope({
             name: this.projectName,
             view: {
@@ -4622,7 +4623,7 @@ class GraphAApp {
                 },
                 scale: this.canvas.scale
             },
-            objects: this.objectManager.toJSON()
+            objects: serialized.objects
         });
     }
 
@@ -4652,12 +4653,12 @@ class GraphAApp {
         try {
             const envelope = parseProjectFile(await file.text());
             const candidateManager = new ObjectManager();
-            candidateManager.fromJSON(envelope.objects);
-            if (candidateManager.toJSON().length !== envelope.objects.length) {
+            candidateManager.fromJSON({ objects: envelope.objects });
+            if (candidateManager.toJSON().objects.length !== envelope.objects.length) {
                 throw new Error('지원하지 않는 객체가 포함되어 있습니다.');
             }
 
-            this.objectManager.fromJSON(envelope.objects);
+            this.objectManager.fromJSON({ objects: envelope.objects });
             this.canvas.offset.x = envelope.view.offset.x;
             this.canvas.offset.y = envelope.view.offset.y;
             this.canvas.scale = envelope.view.scale;
