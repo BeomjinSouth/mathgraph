@@ -7,6 +7,7 @@
  */
 
 import { FunctionParser } from '../utils/Parser.js';
+import { layoutGeneratedOperationLabels } from './RenderedLabelLayout.js';
 
 const POINT_LIKE_TYPES = new Set([
     'point',
@@ -25,6 +26,7 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     if (operations.length === 0 || options.enabled === false) {
         return payload;
     }
+    const pinnedLabelIds = new Set(operations.filter(op => hasUsableLabelOffset(op) || op.labelMathPos).map(op => op.id));
 
     rebuildSquarePyramidNamedSection(operations, options);
     resolveNamedLineReferences(operations);
@@ -47,6 +49,14 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     normalizeNestedRectangularPrismLayout(ctx, text);
     normalizePrismCrossSectionLayout(ctx, text);
     normalizeNestedTriangularSolidLayout(ctx, text);
+
+    if (options.renderedLayout !== false) {
+        layoutGeneratedOperationLabels(operations, {
+            view: options.view || options.context?.view,
+            pinnedIds: pinnedLabelIds,
+            existingObjects: options.context?.objects || []
+        });
+    }
 
     return { ...payload, operations };
 }
@@ -1215,9 +1225,10 @@ function normalizeName(value) {
 }
 
 function hasUsableLabelOffset(operation) {
+    if (!operation?.labelOffset || operation.labelOffset.x == null || operation.labelOffset.y == null) return false;
     const x = Number(operation?.labelOffset?.x);
     const y = Number(operation?.labelOffset?.y);
-    return Number.isFinite(x) && Number.isFinite(y) && Math.hypot(x, y) >= 6;
+    return Number.isFinite(x) && Number.isFinite(y);
 }
 
 function setLabelOffset(operation, x, y) {

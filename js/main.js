@@ -4008,6 +4008,8 @@ class GraphAApp {
 
     buildAIContext() {
         return {
+            view: { width: this.canvas.width, height: this.canvas.height, scale: this.canvas.scale,
+                offset: { x: this.canvas.offset.x, y: this.canvas.offset.y } },
             objects: this.objectManager.getAllObjects().map(o => {
                 const serialized = typeof o.toJSON === 'function' ? o.toJSON() : {};
                 return {

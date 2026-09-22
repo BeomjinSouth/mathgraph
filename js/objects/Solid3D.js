@@ -918,10 +918,8 @@ export class Pyramid extends GeoObject {
         }
 
         // 꼭대기 점
-        canvas.drawPoint(this._apex, {
-            radius: this.pointSize,
-            color: this.color
-        });
+        // The referenced apex point owns its marker and open/closed style.
+        // Drawing another marker here defeats pointSize:0 and duplicates a visible point.
 
         if (this.showLabel && this.label) {
             canvas.drawLabel(this._apex, this.label, {

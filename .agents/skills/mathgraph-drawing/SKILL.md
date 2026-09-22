@@ -16,6 +16,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 5. For image/PDF recreation, prefer a high-level scene graph first, then compile it through the app-owned scene graph compiler.
 6. Emit GraphA JSON as `{ "operations": [...] }` when the caller needs a drawable patch.
 7. For monochrome exam diagrams or teacher calibration work, read [references/exam-diagram-layout.md](references/exam-diagram-layout.md) and run its layout check before delivery.
+8. For newly generated exam drawings, use the rendered preparation path in that reference. It produces corrected GraphA, editable project files and actual PNG evidence; direct PatchApplier calls do not run the AIService layout step. Preserve explicit teacher offsets and inspect unresolved issues instead of suppressing them.
 
 ## Reference Selection
 

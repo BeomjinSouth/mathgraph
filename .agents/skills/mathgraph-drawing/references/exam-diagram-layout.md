@@ -59,3 +59,23 @@ node .agents/skills/mathgraph-drawing/scripts/check-exam-diagram-layout.mjs --st
 ```
 
 `named-points-too-close`나 `label-offset-too-far`가 함께 나오면 라벨부터 옮기지 말고 점 배치를 다시 설계한다. `top-label-baseline-too-high`는 글자 아래쪽 기준선을 잘못 이해했을 가능성을 뜻한다.
+
+열린 점·닫힌 점이 정의역의 조건인 경우 `--point-marker "객체ID=정의역 끝점"`처럼 해당 점의 수학적 이유를 지정한다. 나머지 점 표식은 계속 검사한다. 거리와 기준선 경고는 위의 검토용 값에 따른 것이므로 실제 선·글자와 수학적 위치를 확인하여 판정하고, 경고를 없애려고 조건이나 사용자 위치를 바꾸지 않는다.
+
+## 100종 반복 검증으로 추가한 생성 경로
+
+새 시험 도형의 GraphA를 만들었으면 프로젝트 루트에서 다음 경로로 실제 글꼴·선·라벨을 검사하고 보정한 파일을 사용한다. 입력은 `operations`와 선택적으로 `view`, `conditions`를 담는다.
+
+```text
+node scripts/verify-exam-diagrams.mjs --input 도형.json --output output/새-도형-검수 --strict
+```
+
+- `custom-1.graphA.json`은 배치를 보정한 GraphA, `custom-1.mathgraph.json`은 MathGraph에서 열어 편집할 프로젝트, `custom-1.png`는 실제 렌더다. `results.json`의 미해결 항목을 확인한다. 입력·기하 조건을 수정한 경우 이유를 기록하고 다시 검사한다.
+- 앱의 AI 생성 경로는 `DiagramQualityEnhancer`에서 같은 `RenderedLabelLayout`을 호출한다. `PatchApplier.apply`만 직접 호출하는 외부 작성 스크립트는 이 과정을 건너뛴다. 그런 스크립트에는 검사된 `.graphA.json`을 전달한다.
+- 보정은 점 위치·호 반지름을 바꾸지 않고 새 라벨의 위치를 조절한다. 입력에 명시한 `labelOffset`, `labelMathPos`는 고정한다. 브라우저 없는 Node 환경에서는 실제 글꼴 보정을 실행하지 않으므로 Node 검사 통과만으로 화면 검수를 대신하지 않는다.
+- 길이 글자는 해당 호의 끊긴 부분과 연결되어야 한다. 긴 부분 길이와 전체 길이가 같은 쪽에 겹치면 도형을 설계할 때 치수 호의 쪽과 간격을 조정한다. 뒤쪽 면이 아래로 투영된 각기둥도 길이 호가 뒤쪽 모서리와 겹치지 않게 쪽을 고른다. 사용자가 고정한 치수나 기하 조건은 자동으로 뒤집지 않는다.
+- 선분 바깥 교점과 둔각삼각형의 외부 수선은 숨긴 **지지 직선**으로 계산하고 필요한 선분만 화면에 표시한다. 범위 밖 교점을 만들려고 선분의 교점 판정 규칙을 바꾸지 않는다.
+- 작은 각은 방향각의 경계를 정규화한 뒤 내부 이등분선으로 각도식을 배치한다. 각뿔의 꼭짓점은 원래 점 객체만 표식을 담당하여 검은 점이 중복 표시되지 않게 한다.
+- 100종은 에이전트가 만든 회귀 사례다. 교사가 승인한 24종 수정본과 구분하며 새로운 사용자 취향으로 저장하지 않는다. 전체 재검사는 `npm.cmd run verify:exam-diagrams`, 실제 앱의 불러오기·내보내기 검사는 `node scripts/verify-exam-diagrams.mjs --phase app --app-only`로 실행한다.
+
+이 검사는 MathGraph 캔버스와 프로젝트 저장을 확인한다. HWP에 넣을 때에는 기존 `pbj-exam-hwpx`의 수식 실측·13pt/11pt 라벨·68.2mm 출력·실제 한글/PDF 검수를 계속 적용한다. 현재 체크아웃에 `js/utils/HwpDiagram.js`가 없다면 한글 입력 경로를 사용할 수 있다고 주장하지 말고, 한글 입력이 구현된 작업 공간을 확인한다.

@@ -9,6 +9,8 @@
 /.claude/
 /docs/
 /tmp/
+/output/
+/.worktrees/
 
 # Never upload a stale locally-built output; the remote build regenerates dist/.
 /dist/

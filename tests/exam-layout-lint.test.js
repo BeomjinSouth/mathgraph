@@ -62,3 +62,14 @@ test('quality enhancer preserves an explicit teacher label offset', () => {
 
     assert.deepEqual(result.operations[0].labelOffset, { x: -25, y: 2 });
 });
+
+test('exam lint preserves explicitly justified domain endpoint markers, not arbitrary dots', () => {
+    const input = project([
+        { id: 'A', type: 'point', label: 'A', x: 0, y: 0, pointSize: 6, pointStyle: 'open', labelOffset: { x: 12, y: 2 } },
+        { id: 'B', type: 'point', label: 'B', x: 3, y: 0, pointSize: 6, pointStyle: 'closed', labelOffset: { x: 12, y: 2 } }
+    ]);
+    assert.equal(analyzeExamDiagramProject(input).errorCount, 2);
+    const result = analyzeExamDiagramProject(input, { pointMarkerReasons: { A: '정의역에서 제외하는 끝점' } });
+    assert.equal(result.errorCount, 1);
+    assert.deepEqual(result.issues.find(issue => issue.severity === 'error').objectIds, ['B']);
+});

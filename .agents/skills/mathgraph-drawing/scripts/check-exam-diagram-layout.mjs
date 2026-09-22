@@ -37,7 +37,8 @@ export function analyzeExamDiagramProject(project, options = {}) {
         const offsetX = Number(object?.labelOffset?.x);
         const offsetY = Number(object?.labelOffset?.y);
 
-        if (pointSize > 0) {
+        const markerReason = options.pointMarkerReasons?.[object.id];
+        if (pointSize > 0 && !(typeof markerReason === 'string' && markerReason.trim())) {
             addIssue('error', 'named-point-marker-visible', `${object.label}에 불필요한 점 표식이 있습니다.`, [object.id]);
         }
         if (!Number.isFinite(offsetX) || !Number.isFinite(offsetY)) {
@@ -164,7 +165,19 @@ function distance(a, b) {
 function runCli() {
     const args = process.argv.slice(2);
     const strict = args.includes('--strict');
-    const files = args.filter(arg => arg !== '--strict');
+    const pointMarkerReasons = {};
+    const files = [];
+    for (let index = 0; index < args.length; index += 1) {
+        if (args[index] === '--strict') continue;
+        if (args[index] === '--point-marker') {
+            const value = args[++index] || '';
+            const separator = value.indexOf('=');
+            if (separator <= 0 || !value.slice(separator + 1).trim()) {
+                throw new Error('--point-marker는 id=수학적_이유 형식으로 지정하세요.');
+            }
+            pointMarkerReasons[value.slice(0, separator)] = value.slice(separator + 1);
+        } else files.push(args[index]);
+    }
     if (files.length === 0) {
         console.error('사용법: node check-exam-diagram-layout.mjs [--strict] <project.mathgraph.json> [...]');
         process.exitCode = 2;
@@ -175,7 +188,7 @@ function runCli() {
     for (const file of files) {
         const absolute = path.resolve(file);
         const project = JSON.parse(fs.readFileSync(absolute, 'utf8'));
-        const result = analyzeExamDiagramProject(project);
+        const result = analyzeExamDiagramProject(project, { pointMarkerReasons });
         console.log(JSON.stringify({ file: absolute, ...result }, null, 2));
         if (result.errorCount > 0 || (strict && result.warningCount > 0)) shouldFail = true;
     }

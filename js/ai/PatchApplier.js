@@ -607,6 +607,8 @@ export class PatchApplier {
             'fontSize',
             'tickCount',
             'arcRadius',
+            'curvature',
+            'precision',
             'showValue',
             'markerCount',
             'customText',

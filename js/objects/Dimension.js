@@ -86,11 +86,16 @@ export class AngleDimension extends GeoObject {
             this.endAngle = temp;
         }
 
+        // Keep both directions in the same turn. Averaging +170° and -170°
+        // otherwise places the label/tick at 0°, opposite the rendered arc.
+        this.endAngle = this.startAngle + diff;
+
         this.angle = diff;
-        this.valid = true;
+        this.valid = pos1.distanceTo(this.vertex) > 1e-9 && pos2.distanceTo(this.vertex) > 1e-9;
     }
 
     render(canvas) {
+        this._labelBox = null;
         if (!this.visible || !this.valid || !this.vertex) return;
 
         const ctx = canvas.ctx;
@@ -188,7 +193,7 @@ export class AngleDimension extends GeoObject {
             const screen = canvas.toScreen(labelPos);
             const offsetX = 8;
             const offsetY = -8;
-            ctx.font = `${this.labelFontSize}px "Noto Sans KR", sans-serif`;
+            ctx.font = `${this.labelFontSize}px "Times New Roman", "STIX Two Math", Georgia, serif`;
             const metrics = ctx.measureText(displayText);
             const padding = 4;
             const x = screen.x + offsetX;
@@ -202,9 +207,8 @@ export class AngleDimension extends GeoObject {
                 h: this.labelFontSize + padding * 2
             };
 
-            // 기존 drawLabel 대신, 중앙 정렬 + 배경 박스로 가독성 향상
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.fillRect(this._labelBox.x, this._labelBox.y, this._labelBox.w, this._labelBox.h);
+            // Generated labels are placed in free space. Do not erase geometry
+            // with an opaque rectangle when a label overlaps a different object.
             ctx.fillStyle = this.color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -380,6 +384,7 @@ export class LengthDimension extends GeoObject {
     }
 
     render(canvas) {
+        this._labelBox = null;
         if (!this.visible || !this.valid || !this.point1 || !this.point2) return;
 
         const ctx = canvas.ctx;
@@ -406,6 +411,23 @@ export class LengthDimension extends GeoObject {
         const ctrlX = midX + perpX * screenOffset;
         const ctrlY = midY - perpY * screenOffset;
 
+        const labelX = 0.25 * s1.x + 0.5 * ctrlX + 0.25 * s2.x + this.labelOffset.x * canvas.scale;
+        const labelY = 0.25 * s1.y + 0.5 * ctrlY + 0.25 * s2.y - this.labelOffset.y * canvas.scale;
+        const lengthStr = this.customText !== null ? this.customText : this.length.toFixed(this.precision);
+        ctx.font = `${this.labelFontSize}px "Times New Roman", "STIX Two Math", Georgia, serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (this.showValue) {
+            const metrics = ctx.measureText(lengthStr);
+            const gap = 4 + this.lineWidth / 2;
+            const left = Number.isFinite(metrics.actualBoundingBoxLeft) ? metrics.actualBoundingBoxLeft : metrics.width / 2;
+            const right = Number.isFinite(metrics.actualBoundingBoxRight) ? metrics.actualBoundingBoxRight : metrics.width / 2;
+            const above = Number.isFinite(metrics.actualBoundingBoxAscent) ? metrics.actualBoundingBoxAscent : this.labelFontSize / 2;
+            const below = Number.isFinite(metrics.actualBoundingBoxDescent) ? metrics.actualBoundingBoxDescent : this.labelFontSize / 2;
+            this._labelBox = { x: labelX - left - gap, y: labelY - above - gap,
+                w: left + right + gap * 2, h: above + below + gap * 2 };
+        }
+
         // 선택/하이라이트 스타일
         if (this.selected || this.highlighted) {
             ctx.strokeStyle = this.selected ? '#f97316' : '#fbbf24';
@@ -416,45 +438,33 @@ export class LengthDimension extends GeoObject {
         }
 
         // 점선 곡선 그리기
+        ctx.save();
+        if (this._labelBox) {
+            // Cut only this curve. A white box would erase unrelated edges or shading.
+            const box = this._labelBox;
+            const padding = Math.abs(this.curvature) + this.labelFontSize + 100;
+            ctx.beginPath();
+            ctx.rect(Math.min(s1.x, s2.x, ctrlX, box.x) - padding,
+                Math.min(s1.y, s2.y, ctrlY, box.y) - padding,
+                Math.max(s1.x, s2.x, ctrlX, box.x + box.w) - Math.min(s1.x, s2.x, ctrlX, box.x) + padding * 2,
+                Math.max(s1.y, s2.y, ctrlY, box.y + box.h) - Math.min(s1.y, s2.y, ctrlY, box.y) + padding * 2);
+            ctx.rect(box.x, box.y, box.w, box.h);
+            ctx.clip('evenodd');
+        }
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
         ctx.moveTo(s1.x, s1.y);
         ctx.quadraticCurveTo(ctrlX, ctrlY, s2.x, s2.y);
         ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.restore();
 
         // 값 표시 (곡선 중간)
         if (this.showValue) {
-            // 베지어 곡선 중간점 계산 (t=0.5) + 라벨 오프셋
-            const labelOffsetScreen = canvas.toScreenLength(Math.sqrt(
-                this.labelOffset.x * this.labelOffset.x + this.labelOffset.y * this.labelOffset.y
-            ));
-            const bezierMidX = 0.25 * s1.x + 0.5 * ctrlX + 0.25 * s2.x + this.labelOffset.x * canvas.scale;
-            const bezierMidY = 0.25 * s1.y + 0.5 * ctrlY + 0.25 * s2.y - this.labelOffset.y * canvas.scale;
-
-            // Mk.2: 사용자 정의 텍스트 또는 자동 계산값
-            const lengthStr = this.customText !== null ? this.customText : this.length.toFixed(this.precision);
-            ctx.font = `${this.labelFontSize}px "Noto Sans KR", sans-serif`;
-            const textWidth = ctx.measureText(lengthStr).width;
-
-            // 배경 박스 (반투명 흰색)
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            const boxHeight = this.labelFontSize + 4;
-            ctx.fillRect(bezierMidX - textWidth / 2 - 4, bezierMidY - boxHeight / 2, textWidth + 8, boxHeight);
-
-            // Mk2.1: 라벨 바운딩 박스 저장 (숫자 클릭 선택/편집)
-            this._labelBox = {
-                x: bezierMidX - textWidth / 2 - 4,
-                y: bezierMidY - boxHeight / 2,
-                w: textWidth + 8,
-                h: boxHeight
-            };
-
             // 텍스트
             ctx.fillStyle = this.color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(lengthStr, bezierMidX, bezierMidY);
+            ctx.fillText(lengthStr, labelX, labelY);
         }
     }
 
