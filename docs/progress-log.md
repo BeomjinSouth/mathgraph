@@ -3220,3 +3220,5 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - 요구사항·구현·스킬·검증·한계는 `docs/도형-표시-확장-계획.md`에 기록했다. 자연어 생성·유료 API 호출은 확장/검증하지 않았다. SVG 주석은 기존 이미지 포함 방식이다.
 - 기존 브랜치 이력의 시험지 산출물을 보호하기 위해 이번 앱 변경만 원격 main 기반 별도 브랜치로 옮겨 공개한다. 원격 main은 f87468d, 로컬 main은 275d9ec이며 운영 배포 dpl_GqnRQhhwvW5CsRqidLn6pUg49hsc는 READY이나 CLI 결과에 소스 커밋 정보가 없어 운영 반영은 하지 않았다.
 - 공개용 `codex/geometry-annotations-preview-20260922`는 원격 main에서 시작해 `06b73d7`로 앱 변경만 반영했다. 치수·드래그의 필요한 선행 수정을 포함하고 원격의 함수 라벨 개선을 보존했다. 전체 418건·정적 빌드와 동일 브라우저 흐름을 다시 통과했고, 과도한 표시 개수 입력 거부 및 강조색 없는 출력도 확인했다. 원격 대비 20개 변경 파일과 새 Git 객체에 시험지/HWPX/PNG/PDF 산출물이 없었다. 로컬 확인 주소는 `http://127.0.0.1:8769/`다.
+- `2bb9434`까지 GitHub 푸시·커밋 일치를 확인했고 CLI Preview `dpl_DVkBAfoKKkZGUNXiwTLiXWoZ9nBq`는 READY다. 주소: https://mathgraph-h1feerso4-beomjinsouths-projects.vercel.app . 원격 빌드도 418건을 통과했고 인증된 HTTP 요청으로 새 도구 소스 일치와 홈의 버튼 세 가지를 확인했다. 운영 주소와 배포 보호는 변경하지 않았다.
+- Vercel 프로젝트는 Git 연결이 없었고 운영 소스 383462a는 원격 main의 조상이 아니었다. 자동 연결과 운영 main 통합은 기존 운영 변경을 보존하는 별도 검토가 필요하다. 이번에는 앱 변경만 Preview로 배포했다.
