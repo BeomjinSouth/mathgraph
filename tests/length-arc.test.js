@@ -36,3 +36,18 @@ test('height survives save/load and legacy curvature retains its meaning', () =>
     assert.equal(new LengthDimension('s',dimension.toJSON()).arcHeight,-15);
     assert.equal(new LengthDimension('s',{curvature:32}).arcHeight,16);
 });
+
+test('a label dragged away from the apex cuts only the overlapping part of the curve', () => {
+    const arc = lengthArcGeometry({ x: 0, y: 100 }, { x: 200, y: 100 }, 24);
+    const box = { x: 30, y: 65, width: 25, height: 35 };
+    const pieces = lengthArcPieces(arc, box);
+    assert.equal(pieces.length, 2);
+    for (const [a, control, b] of pieces) {
+        for (let i = 0; i <= 100; i++) {
+            const t = i / 100;
+            const x = (1-t)**2*a.x + 2*(1-t)*t*control.x + t*t*b.x;
+            const y = (1-t)**2*a.y + 2*(1-t)*t*control.y + t*t*b.y;
+            assert.equal(x >= box.x && x <= box.x+box.width && y >= box.y && y <= box.y+box.height, false);
+        }
+    }
+});

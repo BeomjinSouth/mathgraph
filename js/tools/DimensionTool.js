@@ -3,6 +3,7 @@
  */
 
 import { Tool } from './Tool.js';
+import { findAnnotationTarget, materializeAnnotationTarget } from '../utils/AnnotationTargets.js';
 
 /**
  * 각도 치수 도구 - 세 점 클릭 방식 (Mk.2)
@@ -15,6 +16,12 @@ export class AngleDimensionTool extends Tool {
         this.step = 0;
         this.point1 = null;  // 첫 번째 점 A
         this.vertex = null;  // 꼭짓점 B
+    }
+
+    activate(app) {
+        super.activate(app);
+        this.reset();
+        app.showToast('첫 점 → 꼭짓점 → 끝 점 순서로 선택하세요.', 'info');
     }
 
     onMouseDown(mathPos, screenPos, event, app) {
@@ -51,6 +58,7 @@ export class AngleDimensionTool extends Tool {
                     point.id
                 );
                 app.historyManager.recordCreate(dimension);
+                app.objectManager.selectObject(dimension);
 
                 const degrees = dimension.getAngleDegrees().toFixed(1);
                 app.showToast(`각도 치수 생성: ${degrees}°`, 'success');
@@ -93,11 +101,15 @@ export class LengthDimensionTool extends Tool {
 
     onMouseDown(mathPos, screenPos, event, app) {
         // 먼저 선분 찾기
-        const segment = app.objectManager.findLineAt(mathPos, 8, app.canvas);
+        const target = findAnnotationTarget(app.objectManager, mathPos, app.canvas, { segmentsOnly: true });
 
-        if (segment && segment.type === 'segment') {
+        if (target) {
+            const created = [];
+            const segment = materializeAnnotationTarget(app.objectManager, target, created);
             const dimension = app.objectManager.createLengthDimension(segment.id);
-            app.historyManager.recordCreate(dimension);
+            created.push(dimension);
+            app.historyManager.recordBatch(created.map(object => ({ type: 'create', objectData: object.toJSON() })));
+            app.objectManager.selectObject(dimension);
 
             const length = dimension.getLength().toFixed(2);
             app.showToast(`길이 치수 생성: ${length}`, 'success');
@@ -135,16 +147,16 @@ export class LengthDimensionTool extends Tool {
             return;
         }
 
-        app.showToast('선분 또는 3D 객체의 모서리를 클릭하세요', 'warning');
+        app.showToast('선분이나 다각형의 변을 선택하세요.', 'warning');
         app.render();
     }
 
     onMouseMove(mathPos, screenPos, delta, event, app) {
         // 선분 또는 3D 객체 하이라이트
-        const segment = app.objectManager.findLineAt(mathPos, 8, app.canvas);
+        const segment = findAnnotationTarget(app.objectManager, mathPos, app.canvas, { segmentsOnly: true });
 
-        if (segment && segment.type === 'segment') {
-            app.objectManager.highlightObject(segment);
+        if (segment) {
+            app.objectManager.highlightObject(segment.polygon || segment);
             app.canvasElement.style.cursor = 'pointer';
         } else {
             // 3D 객체 체크

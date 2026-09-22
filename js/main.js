@@ -27,7 +27,9 @@ import {
     PerpendicularBisectorTool, AngleBisectorTool
 } from './tools/ConstructionTools.js';
 import { FunctionTool, TangentFunctionTool } from './tools/FunctionTool.js';
-import { RightAngleTool, EqualLengthTool } from './tools/MarkerTool.js';
+import { RightAngleTool, EqualLengthTool, ParallelMarkerTool } from './tools/MarkerTool.js';
+import { EqualAngleTool, CoordinateGuidesTool } from './tools/AnnotationTools.js';
+import { appendAnnotationProperties } from './ui/AnnotationProperties.js';
 import { PrismTool, PyramidTool } from './tools/Solid3DTool.js';
 import { ArcTool, SectorTool, CircularSegmentTool } from './tools/ArcTool.js'; // Mk.2
 import { AngleDimensionTool, LengthDimensionTool } from './tools/DimensionTool.js'; // Mk.2
@@ -460,6 +462,9 @@ class GraphAApp {
         // Mk.2: 치수 도구
         this.toolManager.registerTool('angleDimension', new AngleDimensionTool());
         this.toolManager.registerTool('lengthDimension', new LengthDimensionTool());
+        this.toolManager.registerTool('equalAngle', new EqualAngleTool());
+        this.toolManager.registerTool('parallelMarker', new ParallelMarkerTool());
+        this.toolManager.registerTool('coordinateGuides', new CoordinateGuidesTool());
 
         // Mk.2: 다각형 도구
         this.toolManager.registerTool('polygon', new PolygonTool());
@@ -966,6 +971,7 @@ class GraphAApp {
             polygon: '다각형', fill: '채우기', prism: '각기둥', pyramid: '각뿔',
             angleDimension: '각도', lengthDimension: '길이',
             rightAngle: '직각', equalLength: '같은 길이',
+            equalAngle: '같은 각', parallelMarker: '평행 표시', coordinateGuides: '좌표 보조선',
             numberLine: '수직선', textLabel: '텍스트',
             cylinder: '원기둥', cone: '원뿔', sphere: '구',
             function: '함수'
@@ -1001,6 +1007,7 @@ class GraphAApp {
             lengthDimension: 'architecture',
             rightAngle: 'square_foot',
             equalLength: 'straighten',
+            equalAngle: 'equal_angle', parallelMarker: 'double_arrow', coordinateGuides: 'polyline',
             numberLine: 'timeline',
             textLabel: 'text_fields',
             cylinder: 'view_in_ar',
@@ -1953,6 +1960,8 @@ class GraphAApp {
                 container.appendChild(precisionRow);
             }
 
+            appendAnnotationProperties(this, container, obj);
+
             // 각기둥/각뿔 모서리 정보 표시
             if (obj.type === 'prism' || obj.type === 'pyramid') {
                 // 구분 제목
@@ -2333,6 +2342,8 @@ class GraphAApp {
             point: '점', segment: '선분', line: '직선', ray: '반직선', vector: '벡터',
             circle: '원', arc: '호', sector: '부채꼴', circularSegment: '활꼴',
             polygon: '다각형', lensRegion: '렌즈 영역', prism: '각기둥', pyramid: '각뿔',
+            rightAngleMarker: '직각 표시', equalLengthMarker: '같은 길이 표시',
+            parallelMarker: '평행 표시', coordinateGuides: '좌표 보조선',
             angleDimension: '각도', lengthDimension: '길이',
             function: '함수'
         };
@@ -2522,7 +2533,15 @@ class GraphAApp {
 
         for (const obj of this.getRenderOrderedObjects()) {
             if (obj.visible) {
-                obj.render(this.canvas);
+                const selected = obj.selected, highlighted = obj.highlighted;
+                try {
+                    obj.selected = false;
+                    obj.highlighted = false;
+                    obj.render(this.canvas);
+                } finally {
+                    obj.selected = selected;
+                    obj.highlighted = highlighted;
+                }
             }
         }
 
@@ -2607,7 +2626,17 @@ class GraphAApp {
             if (includeGrid) this.canvas.drawGrid();
             if (includeAxes) this.canvas.drawAxes();
             for (const obj of this.getRenderOrderedObjects()) {
-                if (obj.visible) obj.render(this.canvas);
+                if (obj.visible) {
+                    const selected = obj.selected, highlighted = obj.highlighted;
+                    try {
+                        obj.selected = false;
+                        obj.highlighted = false;
+                        obj.render(this.canvas);
+                    } finally {
+                        obj.selected = selected;
+                        obj.highlighted = highlighted;
+                    }
+                }
             }
         } finally {
             this.canvas.ctx = originalCtx;
@@ -4581,6 +4610,11 @@ class GraphAApp {
     showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         if (!container) return;
+
+        if (type === 'info' || type === 'success') {
+            container.querySelectorAll(`.toast.${type}`).forEach(toast => toast.remove());
+        }
+        while (container.children.length >= 2) container.firstElementChild.remove();
 
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;

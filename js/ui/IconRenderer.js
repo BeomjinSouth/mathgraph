@@ -6,6 +6,17 @@ const FILL = 'fill="currentColor"';
 const icon = (body) => body;
 
 const ICONS = {
+    double_arrow: icon(`
+        <path ${STROKE} d="M3 7h18M3 17h18M10 4l3 3-3 3M10 14l3 3-3 3"/>
+    `),
+    polyline: icon(`
+        <path ${STROKE} d="M4 3v17h17"/>
+        <path ${STROKE_THIN} stroke-dasharray="2 3" d="M4 7h12v13"/>
+        <circle cx="16" cy="7" r="2" ${FILL}/>
+    `),
+    equal_angle: icon(`
+        <path ${STROKE} d="M3 4v16h17M3 13a7 7 0 0 1 7 7M6 15l4 3"/>
+    `),
     arrow_selector_tool: icon(`
         <path ${STROKE} d="M5 3.8 14.2 20l1.3-6.1 5.4-2.9L5 3.8Z"/>
         <path ${STROKE_SOFT} d="M14.2 13.7 18.8 19"/>

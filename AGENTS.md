@@ -95,7 +95,7 @@ This repository is a local context hub for OpenAI developer documentation. Use i
 - Vercel project ID: `prj_72kqKNP31NaiZ86JHAhyRGF6kXIw`.
 - Vercel org/team ID: `team_IisUu66EBjsNE4JkX4qO2UAZ`.
 - Primary production alias: `https://mathgraph-five.vercel.app`.
-- Current direct-deploy branch used by Codex: `codex/ai-fallback-recovery`.
+- Production source branch: `main`. Merge and push the verified change to remote `main` before a Production deployment. Other branches are Preview only.
 - Environment variables:
   - `OPENAI_API_KEY` is required for the `박범진` owner default OpenAI proxy to call OpenAI.
   - `MATHGRAPH_LOGIN_SECRET` is **required**. Owner-session tokens are signed with it and the server now fails closed (503) when it is missing — there is no hardcoded fallback secret.
@@ -109,7 +109,7 @@ This repository is a local context hub for OpenAI developer documentation. Use i
   - Login JSON is fixed at an 8 KB maximum; owner names at 128 characters; passwords at 1024 characters. Attacker-controlled rate-key parts are SHA-256 hashed. Login and proxy use separate per-instance stores capped at 2048 entries each; a full active store fails closed for new keys instead of evicting another active limit.
   - `MATHGRAPH_PROXY_MAX_OUTPUT_TOKENS` is optional and caps the forced `max_output_tokens` on proxied Responses requests (default 16384).
   - `MATHGRAPH_PROXY_TIMEOUT_MS` is optional and bounds the upstream OpenAI request time (default 240000 ms; the proxy returns 504 on timeout). `vercel.json` gives the proxy route a 300-second function duration.
-- Last successful Vercel Production environment-name check on 2026-08-05: the local CLI is authenticated as `beomjinsouth`, and `OPENAI_API_KEY`, `MATHGRAPH_LOGIN_SECRET`, and `MATHGRAPH_OWNER_PASSWORD` are present as encrypted Production variables. Secret values were not read or printed. Re-check these names before a future production deploy because environment state can change.
+- Last successful Vercel Production environment-name check on 2026-09-22: `OPENAI_API_KEY`, `MATHGRAPH_LOGIN_SECRET`, and `MATHGRAPH_OWNER_PASSWORD` are present as encrypted Production variables. Secret values were not read or printed. Re-check these names before a future production deploy because environment state can change.
 - Production deploy command: `npx.cmd vercel deploy --prod --yes`.
 - Deployment verification steps:
   - Run `npm.cmd test`.

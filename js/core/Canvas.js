@@ -934,7 +934,7 @@ export class Canvas {
         );
 
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = options.lineWidth || 1.5;
         ctx.beginPath();
         ctx.moveTo(corner1.x, corner1.y);
         ctx.lineTo(corner3.x, corner3.y);
