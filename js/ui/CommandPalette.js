@@ -69,6 +69,9 @@ export class CommandPalette {
             { name: '각도 치수 도구', category: '도구', action: () => this.app.toolManager.setTool('angleDimension'), shortcut: 'A' },
             { name: '직각 표시 도구', category: '도구', action: () => this.app.toolManager.setTool('rightAngle') },
             { name: '같은 길이 표시 도구', category: '도구', action: () => this.app.toolManager.setTool('equalLength') },
+            { name: '같은 각 표시 도구', category: '도구', action: () => this.app.toolManager.setTool('equalAngle') },
+            { name: '평행 표시 도구', category: '도구', action: () => this.app.toolManager.setTool('parallelMarker') },
+            { name: '좌표 보조선 도구', category: '도구', action: () => this.app.toolManager.setTool('coordinateGuides') },
             { name: '각기둥 도구', category: '도구', action: () => this.app.toolManager.setTool('prism') },
             { name: '각뿔 도구', category: '도구', action: () => this.app.toolManager.setTool('pyramid') },
 

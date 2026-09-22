@@ -11,7 +11,8 @@ import { Circle, CircleThreePoints, TangentCircle } from '../objects/Circle.js';
 import { FunctionGraph, TangentFunction } from '../objects/Function.js';
 import { Ellipse, Hyperbola, Parabola } from '../objects/Conic.js';
 import { Vector } from '../objects/Vector.js';
-import { RightAngleMarker, EqualLengthMarker } from '../objects/Marker.js';
+import { RightAngleMarker, EqualLengthMarker, ParallelMarker } from '../objects/Marker.js';
+import { CoordinateGuides } from '../objects/CoordinateGuides.js';
 import { Arc, Sector, CircularSegment } from '../objects/Arc.js'; // Mk.2
 import { AngleDimension, LengthDimension } from '../objects/Dimension.js'; // Mk.2
 import { Polygon } from '../objects/Polygon.js'; // Mk.5
@@ -602,6 +603,12 @@ export class ObjectManager {
                 break;
 
             // 치수
+            case 'parallelMarker':
+                obj = new ParallelMarker(data.segment1Id, data.segment2Id, data);
+                break;
+            case 'coordinateGuides':
+                obj = new CoordinateGuides(data.originId, data);
+                break;
             case 'angleDimension':
                 obj = new AngleDimension(data.vertexId, data.point1Id, data.point2Id, data);
                 break;
@@ -747,6 +754,14 @@ export class ObjectManager {
 
     createEqualLengthMarker(segment1Id, segment2Id, params = {}) {
         return this.addObject(new EqualLengthMarker(segment1Id, segment2Id, params));
+    }
+
+    createParallelMarker(segment1Id, segment2Id, params = {}) {
+        return this.addObject(new ParallelMarker(segment1Id, segment2Id, params));
+    }
+
+    createCoordinateGuides(originId, params = {}) {
+        return this.addObject(new CoordinateGuides(originId, params));
     }
 
     // Mk.2: 호/부채꼴/활꼴 생성

@@ -53,6 +53,8 @@ export const ObjectType = {
 
     RIGHT_ANGLE_MARKER: 'rightAngleMarker',
     EQUAL_LENGTH_MARKER: 'equalLengthMarker',
+    PARALLEL_MARKER: 'parallelMarker',
+    COORDINATE_GUIDES: 'coordinateGuides',
 
     PRISM: 'prism',
     PYRAMID: 'pyramid',

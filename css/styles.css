@@ -2334,7 +2334,7 @@ body.auth-locked .modal:not(#manualModal) {
     align-items: center;
     gap: var(--spacing-sm);
     animation: toastIn var(--transition-normal);
-    pointer-events: auto;
+    pointer-events: none;
 }
 
 .toast.success {
@@ -2538,8 +2538,9 @@ body.auth-locked .modal:not(#manualModal) {
 /* Mk.2 사이드바 토글 버튼 */
 .sidebar-toggles {
     position: absolute;
-    top: 180px;
+    top: 12px;
     left: 10px;
+    z-index: 20;
     display: flex;
     gap: 4px;
 }
@@ -3398,25 +3399,7 @@ body.auth-locked .modal:not(#manualModal) {
     line-height: 1.4;
 }
 
-@media (max-width: 1360px) {
-    #tool-panel {
-        width: 60px;
-    }
-
-    #tool-panel .tool-main-content {
-        display: none;
-    }
-
-    #chat-panel {
-        left: 60px;
-    }
-}
-
 @media (max-width: 960px) {
-    #tool-panel {
-        display: none;
-    }
-
     #chat-panel {
         left: 0;
     }
@@ -3429,6 +3412,10 @@ body.auth-locked .modal:not(#manualModal) {
 /* The hardened compact drawer layout remains authoritative on phones/tablets. */
 @media (max-width: 900px) {
     #tool-panel {
+        display: flex;
+    }
+
+    #tool-panel .tool-main-content {
         display: flex;
     }
 
@@ -3461,5 +3448,20 @@ body.auth-locked .modal:not(#manualModal) {
     .send-btn {
         min-width: 104px;
         padding-inline: 12px;
+    }
+
+    #toolbar {
+        justify-content: flex-start;
+        gap: 12px;
+        overflow-x: auto;
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+        flex: 0 0 auto;
+    }
+
+    .toolbar-center {
+        flex: 0 0 auto;
     }
 }

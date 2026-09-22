@@ -5,6 +5,7 @@
 
 import { Tool } from './Tool.js';
 import { ObjectType } from '../objects/GeoObject.js';
+import { findAnnotationTarget, materializeAnnotationTarget } from '../utils/AnnotationTargets.js';
 
 /**
  * 직각 표시 도구
@@ -45,6 +46,15 @@ export class RightAngleTool extends Tool {
         if (this.selectedLines.length < 2) {
             app.showToast('두 번째 선을 선택하세요.', 'info');
         } else {
+            const [first, second] = this.selectedLines;
+            const u = first.getPoint2().sub(first.getPoint1());
+            const v = second.getPoint2().sub(second.getPoint1());
+            if (u.length() < 1e-9 || v.length() < 1e-9 || Math.abs(u.normalize().dot(v.normalize())) > 1e-7) {
+                app.showToast('직각으로 만나는 두 선을 선택하세요.', 'warning');
+                this.selectedLines = [];
+                app.render();
+                return;
+            }
             // 교점 찾기
             const intersection = app.objectManager.createIntersection(
                 this.selectedLines[0].id,
@@ -53,6 +63,7 @@ export class RightAngleTool extends Tool {
             );
 
             if (intersection.valid) {
+                intersection.visible = false;
                 // 직각 표시 생성
                 const marker = app.objectManager.createRightAngleMarker(
                     intersection.id,
@@ -60,8 +71,7 @@ export class RightAngleTool extends Tool {
                     this.selectedLines[1].id
                 );
 
-                app.historyManager.recordCreate(intersection);
-                app.historyManager.recordCreate(marker);
+                app.historyManager.recordBatch([intersection, marker].map(object => ({ type: 'create', objectData: object.toJSON() })));
                 app.objectManager.selectObject(marker);
                 app.showToast('직각 표시 생성', 'success');
                 app.toolManager.returnToSelect();
@@ -118,9 +128,7 @@ export class EqualLengthTool extends Tool {
 
     onMouseDown(mathPos, screenPos, event, app) {
         // 선분만 선택 가능
-        const segment = app.objectManager.findObjectAt(mathPos, 8, app.canvas,
-            obj => obj.type === ObjectType.SEGMENT
-        );
+        const segment = findAnnotationTarget(app.objectManager, mathPos, app.canvas, { segmentsOnly: true });
 
         if (!segment) {
             app.showToast('같은 길이로 표시할 선분 2개를 선택하세요.', 'warning');
@@ -138,13 +146,15 @@ export class EqualLengthTool extends Tool {
             app.showToast('두 번째 선분을 선택하세요.', 'info');
         } else {
             // 같은 길이 표시 생성
+            const created = [];
+            const segments = this.selectedSegments.map(target => materializeAnnotationTarget(app.objectManager, target, created));
             const marker = app.objectManager.createEqualLengthMarker(
-                this.selectedSegments[0].id,
-                this.selectedSegments[1].id,
+                segments[0].id,
+                segments[1].id,
                 { tickCount: this.tickCount }
             );
 
-            app.historyManager.recordCreate(marker);
+            app.historyManager.recordBatch([...created, marker].map(object => ({ type: 'create', objectData: object.toJSON() })));
             app.objectManager.selectObject(marker);
             app.showToast('같은 길이 표시 생성', 'success');
 
@@ -158,10 +168,8 @@ export class EqualLengthTool extends Tool {
     }
 
     onMouseMove(mathPos, screenPos, delta, event, app) {
-        const segment = app.objectManager.findObjectAt(mathPos, 8, app.canvas,
-            obj => obj.type === ObjectType.SEGMENT
-        );
-        app.objectManager.highlightObject(segment);
+        const segment = findAnnotationTarget(app.objectManager, mathPos, app.canvas, { segmentsOnly: true });
+        app.objectManager.highlightObject(segment?.polygon || segment);
         app.render();
     }
 
@@ -178,4 +186,42 @@ export class EqualLengthTool extends Tool {
     }
 }
 
-export default { RightAngleTool, EqualLengthTool };
+export class ParallelMarkerTool extends EqualLengthTool {
+    constructor() {
+        super();
+        this.name = 'parallelMarker';
+    }
+
+    onMouseDown(mathPos, screenPos, event, app) {
+        const segment = findAnnotationTarget(app.objectManager, mathPos, app.canvas);
+        if (!segment || this.selectedSegments.some(item => item.id === segment.id)) return;
+        this.selectedSegments.push(segment);
+        if (this.selectedSegments.length === 1) {
+            app.showToast('같은 화살표를 붙일 두 번째 선을 선택하세요.', 'info');
+        } else {
+            const created = [];
+            const lines = this.selectedSegments.map(target => materializeAnnotationTarget(app.objectManager, target, created));
+            const marker = app.objectManager.createParallelMarker(lines[0].id, lines[1].id, { tickCount: this.tickCount });
+            if (marker.valid) {
+                app.historyManager.recordBatch([...created, marker].map(object => ({ type: 'create', objectData: object.toJSON() })));
+                app.objectManager.selectObject(marker);
+                this.tickCount++;
+                app.toolManager.returnToSelect();
+            } else {
+                app.objectManager.removeObject(marker.id);
+                for (const object of created) app.objectManager.removeObject(object.id);
+                app.showToast('길이가 0인 선에는 표시할 수 없습니다.', 'warning');
+            }
+            this.selectedSegments = [];
+        }
+        app.render();
+    }
+
+    onMouseMove(mathPos, screenPos, delta, event, app) {
+        const target = findAnnotationTarget(app.objectManager, mathPos, app.canvas);
+        app.objectManager.highlightObject(target?.polygon || target);
+        app.render();
+    }
+}
+
+export default { RightAngleTool, EqualLengthTool, ParallelMarkerTool };
