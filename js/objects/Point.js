@@ -7,6 +7,69 @@ import { GeoObject, ObjectType } from './GeoObject.js';
 import { Vec2, Geometry } from '../utils/Geometry.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
+function renderEditablePointLabel(object, canvas) {
+    if (!object.showLabel || !object.label) {
+        object._renderedLabelBox = null;
+        return;
+    }
+
+    object._renderedLabelBox = canvas.drawLabel(object.position, object.label, {
+        fontSize: object.fontSize,
+        color: object.color,
+        offsetX: object.labelOffset.x,
+        offsetY: object.labelOffset.y,
+        // 사용자가 지정한 점 이름 위치는 확대율이나 다른 라벨에 따라 바꾸지 않는다.
+        avoidCollisions: false
+    });
+}
+
+function hitTestEditablePointLabel(object, point, canvas) {
+    if (!object.showLabel || !object.label || !object._renderedLabelBox) return false;
+    const screenPoint = canvas.toScreen(point);
+    const box = object._renderedLabelBox;
+    return screenPoint.x >= box.x - 5 &&
+        screenPoint.x <= box.x + box.w + 5 &&
+        screenPoint.y >= box.y - 5 &&
+        screenPoint.y <= box.y + box.h + 5;
+}
+
+function beginEditablePointLabelDrag(object, point, canvas) {
+    object._draggingLabel = object._hitPart === 'label' || hitTestEditablePointLabel(object, point, canvas);
+    if (!object._draggingLabel) return false;
+    object._labelDragStart = object.labelOffset.clone();
+    object._labelPointerStart = canvas.toScreen(point);
+    return true;
+}
+
+function dragEditablePointLabel(object, point, canvas) {
+    if (!object._draggingLabel || !object._labelDragStart || !object._labelPointerStart) return false;
+    const screenPoint = canvas.toScreen(point);
+    object.labelOffset = new Vec2(
+        object._labelDragStart.x + screenPoint.x - object._labelPointerStart.x,
+        object._labelDragStart.y + screenPoint.y - object._labelPointerStart.y
+    );
+    return true;
+}
+
+function endEditablePointLabelDrag(object) {
+    delete object._draggingLabel;
+    delete object._labelDragStart;
+    delete object._labelPointerStart;
+    delete object._hitPart;
+}
+
+function hitTestEditablePoint(object, point, threshold, canvas) {
+    if (hitTestEditablePointLabel(object, point, canvas)) {
+        object._hitPart = 'label';
+        return true;
+    }
+    const screenPos = canvas.toScreen(object.position);
+    const screenPoint = canvas.toScreen(point);
+    const hitPoint = screenPos.distanceTo(screenPoint) <= threshold + object.pointSize;
+    object._hitPart = hitPoint ? 'point' : null;
+    return hitPoint;
+}
+
 /**
  * 자유점 (Free Point)
  * 캔버스 어디든 배치 가능
@@ -34,56 +97,18 @@ export class FreePoint extends GeoObject {
             selected: this.selected
         });
 
-        if (this.showLabel && this.label) {
-            canvas.drawLabel(this.position, this.label, {
-                fontSize: this.fontSize,
-                color: this.color,
-                offsetX: this.labelOffset.x,
-                offsetY: this.labelOffset.y
-            });
-        }
+        renderEditablePointLabel(this, canvas);
     }
 
     hitTest(point, threshold, canvas) {
-        const screenPos = canvas.toScreen(this.position);
-        const screenPoint = canvas.toScreen(point);
-
-        // 점 영역 히트
-        if (screenPos.distanceTo(screenPoint) <= threshold + this.pointSize) {
-            return true;
-        }
-
-        // 라벨 영역 히트
-        if (this.hitTestLabel(point, canvas)) {
-            return true;
-        }
-
-        return false;
+        return hitTestEditablePoint(this, point, threshold, canvas);
     }
 
     /**
      * 라벨 영역 히트 테스트
      */
     hitTestLabel(point, canvas) {
-        if (!this.showLabel || !this.label) return false;
-
-        // 점의 화면 좌표
-        const screenPos = canvas.toScreen(this.position);
-        // 라벨의 화면 위치
-        const labelX = screenPos.x + this.labelOffset.x;
-        const labelY = screenPos.y + this.labelOffset.y - this.fontSize; // baseline 위가 실제 라벨 영역
-
-        // 마우스의 화면 좌표
-        const screenPoint = canvas.toScreen(point);
-
-        // 라벨 크기 계산
-        const labelWidth = Math.max(this.fontSize * this.label.length * 0.7, 20);
-        const labelHeight = this.fontSize + 4;
-
-        return screenPoint.x >= labelX - 5 &&
-            screenPoint.x <= labelX + labelWidth + 5 &&
-            screenPoint.y >= labelY - 5 &&
-            screenPoint.y <= labelY + labelHeight + 5;
+        return hitTestEditablePointLabel(this, point, canvas);
     }
 
     isDraggable() {
@@ -92,28 +117,14 @@ export class FreePoint extends GeoObject {
 
     startDrag(point, canvas) {
         // 라벨 영역 클릭인지 확인
-        if (this.hitTestLabel(point, canvas)) {
-            this._draggingLabel = true;
-            this._labelDragStart = this.labelOffset.clone();
-            this._dragStart = canvas.toScreen(point);
-        } else {
+        if (!beginEditablePointLabelDrag(this, point, canvas)) {
             this._draggingLabel = false;
             this.dragOffset = this.position.sub(point);
         }
     }
 
     drag(point, delta, canvas) {
-        if (this._draggingLabel) {
-            // 라벨 드래그: 스크린 좌표로 오프셋 조정
-            const screenPoint = canvas.toScreen(point);
-            const dx = screenPoint.x - this._dragStart.x;
-            const dy = screenPoint.y - this._dragStart.y;
-
-            this.labelOffset = new Vec2(
-                this._labelDragStart.x + dx,
-                this._labelDragStart.y + dy
-            );
-        } else {
+        if (!dragEditablePointLabel(this, point, canvas)) {
             // 점 드래그
             this.position = point.add(this.dragOffset);
         }
@@ -121,9 +132,7 @@ export class FreePoint extends GeoObject {
 
     endDrag() {
         delete this.dragOffset;
-        delete this._draggingLabel;
-        delete this._labelDragStart;
-        delete this._dragStart;
+        endEditablePointLabelDrag(this);
     }
 
     getPosition() {
@@ -195,21 +204,19 @@ export class PointOnLine extends GeoObject {
             selected: this.selected
         });
 
-        if (this.showLabel && this.label) {
-            canvas.drawLabel(this.position, this.label, {
-                fontSize: this.fontSize,
-                color: this.color
-            });
-        }
+        renderEditablePointLabel(this, canvas);
     }
 
     hitTest(point, threshold, canvas) {
-        const screenPos = canvas.toScreen(this.position);
-        const screenPoint = canvas.toScreen(point);
-        return screenPos.distanceTo(screenPoint) <= threshold + this.pointSize;
+        return hitTestEditablePoint(this, point, threshold, canvas);
+    }
+
+    startDrag(point, canvas) {
+        beginEditablePointLabelDrag(this, point, canvas);
     }
 
     drag(point, delta, canvas, objectManager) {
+        if (dragEditablePointLabel(this, point, canvas)) return;
         const line = objectManager.getObject(this.lineId);
         if (!line) return;
 
@@ -237,6 +244,10 @@ export class PointOnLine extends GeoObject {
         }
     }
 
+    endDrag() {
+        endEditablePointLabelDrag(this);
+    }
+
     getPosition() {
         return this.position.clone();
     }
@@ -245,7 +256,8 @@ export class PointOnLine extends GeoObject {
         return {
             ...super.toJSON(),
             lineId: this.lineId,
-            t: this.t
+            t: this.t,
+            labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y }
         };
     }
 }
@@ -295,27 +307,29 @@ export class PointOnCircle extends GeoObject {
             selected: this.selected
         });
 
-        if (this.showLabel && this.label) {
-            canvas.drawLabel(this.position, this.label, {
-                fontSize: this.fontSize,
-                color: this.color
-            });
-        }
+        renderEditablePointLabel(this, canvas);
     }
 
     hitTest(point, threshold, canvas) {
-        const screenPos = canvas.toScreen(this.position);
-        const screenPoint = canvas.toScreen(point);
-        return screenPos.distanceTo(screenPoint) <= threshold + this.pointSize;
+        return hitTestEditablePoint(this, point, threshold, canvas);
+    }
+
+    startDrag(point, canvas) {
+        beginEditablePointLabelDrag(this, point, canvas);
     }
 
     drag(point, delta, canvas, objectManager) {
+        if (dragEditablePointLabel(this, point, canvas)) return;
         const circle = objectManager.getObject(this.circleId);
         if (!circle) return;
 
         const center = circle.getCenter();
         const dir = point.sub(center);
         this.angle = Math.atan2(dir.y, dir.x);
+    }
+
+    endDrag() {
+        endEditablePointLabelDrag(this);
     }
 
     getPosition() {
@@ -326,7 +340,8 @@ export class PointOnCircle extends GeoObject {
         return {
             ...super.toJSON(),
             circleId: this.circleId,
-            angle: this.angle
+            angle: this.angle,
+            labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y }
         };
     }
 }
@@ -508,28 +523,33 @@ export class IntersectionPoint extends GeoObject {
             selected: this.selected
         });
 
-        if (this.showLabel && this.label) {
-            canvas.drawLabel(this.position, this.label, {
-                fontSize: this.fontSize,
-                color: this.color
-            });
-        }
+        renderEditablePointLabel(this, canvas);
     }
 
     hitTest(point, threshold, canvas) {
         if (!this.valid) return false;
-        const screenPos = canvas.toScreen(this.position);
-        const screenPoint = canvas.toScreen(point);
-        return screenPos.distanceTo(screenPoint) <= threshold + this.pointSize;
+        return hitTestEditablePoint(this, point, threshold, canvas);
     }
 
     getPosition() {
         return this.position.clone();
     }
 
-    // 교점은 드래그 불가 (의존 객체)
     isDraggable() {
-        return false;
+        return !this.locked && this.visible && this.showLabel;
+    }
+
+    startDrag(point, canvas) {
+        beginEditablePointLabelDrag(this, point, canvas);
+        return true;
+    }
+
+    drag(point, delta, canvas) {
+        dragEditablePointLabel(this, point, canvas);
+    }
+
+    endDrag() {
+        endEditablePointLabelDrag(this);
     }
 
     toJSON() {
@@ -539,7 +559,8 @@ export class IntersectionPoint extends GeoObject {
             object2Id: this.object2Id,
             branch: this.branch,
             anchorX: this.anchor?.x,
-            anchorY: this.anchor?.y
+            anchorY: this.anchor?.y,
+            labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y }
         };
     }
 }
@@ -585,19 +606,12 @@ export class Midpoint extends GeoObject {
             selected: this.selected
         });
 
-        if (this.showLabel && this.label) {
-            canvas.drawLabel(this.position, this.label, {
-                fontSize: this.fontSize,
-                color: this.color
-            });
-        }
+        renderEditablePointLabel(this, canvas);
     }
 
     hitTest(point, threshold, canvas) {
         if (!this.valid) return false;
-        const screenPos = canvas.toScreen(this.position);
-        const screenPoint = canvas.toScreen(point);
-        return screenPos.distanceTo(screenPoint) <= threshold + this.pointSize;
+        return hitTestEditablePoint(this, point, threshold, canvas);
     }
 
     getPosition() {
@@ -605,13 +619,27 @@ export class Midpoint extends GeoObject {
     }
 
     isDraggable() {
-        return false;
+        return !this.locked && this.visible && this.showLabel;
+    }
+
+    startDrag(point, canvas) {
+        beginEditablePointLabelDrag(this, point, canvas);
+        return true;
+    }
+
+    drag(point, delta, canvas) {
+        dragEditablePointLabel(this, point, canvas);
+    }
+
+    endDrag() {
+        endEditablePointLabelDrag(this);
     }
 
     toJSON() {
         return {
             ...super.toJSON(),
-            segmentId: this.segmentId
+            segmentId: this.segmentId,
+            labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y }
         };
     }
 }
@@ -653,19 +681,12 @@ export class CircleCenterPoint extends GeoObject {
             selected: this.selected
         });
 
-        if (this.showLabel && this.label) {
-            canvas.drawLabel(this.position, this.label, {
-                fontSize: this.fontSize,
-                color: this.color
-            });
-        }
+        renderEditablePointLabel(this, canvas);
     }
 
     hitTest(point, threshold, canvas) {
         if (!this.valid) return false;
-        const screenPos = canvas.toScreen(this.position);
-        const screenPoint = canvas.toScreen(point);
-        return screenPos.distanceTo(screenPoint) <= threshold + this.pointSize;
+        return hitTestEditablePoint(this, point, threshold, canvas);
     }
 
     getPosition() {
@@ -673,13 +694,27 @@ export class CircleCenterPoint extends GeoObject {
     }
 
     isDraggable() {
-        return false;  // 원을 따라가므로 직접 드래그 불가
+        return !this.locked && this.visible && this.showLabel;
+    }
+
+    startDrag(point, canvas) {
+        beginEditablePointLabelDrag(this, point, canvas);
+        return true;
+    }
+
+    drag(point, delta, canvas) {
+        dragEditablePointLabel(this, point, canvas);
+    }
+
+    endDrag() {
+        endEditablePointLabelDrag(this);
     }
 
     toJSON() {
         return {
             ...super.toJSON(),
-            circleId: this.circleId
+            circleId: this.circleId,
+            labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y }
         };
     }
 }

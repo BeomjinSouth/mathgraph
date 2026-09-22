@@ -15,6 +15,8 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 4. Read only matching records from `references/synthetic-drawing-data.jsonl` when an example pattern is useful.
 5. For image/PDF recreation, prefer a high-level scene graph first, then compile it through the app-owned scene graph compiler.
 6. Emit GraphA JSON as `{ "operations": [...] }` when the caller needs a drawable patch.
+7. For monochrome exam diagrams or teacher calibration work, read [references/exam-diagram-layout.md](references/exam-diagram-layout.md) and run its layout check before delivery.
+8. For newly generated exam drawings, use the rendered preparation path in that reference. It produces corrected GraphA, editable project files and actual PNG evidence; direct PatchApplier calls do not run the AIService layout step. Preserve explicit teacher offsets and inspect unresolved issues instead of suppressing them.
 
 ## Reference Selection
 
@@ -57,7 +59,13 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For `angleDimension`, choose helper points that are distinct from the vertex, far enough from the vertex, and non-collinear so the angle arc is visible.
 - When a right-angle mark would be small at a crowded vertex, add a larger `angleDimension` with `arcRadius` at least `0.7` and `showValue:false` instead of relying only on the default small `rightAngleMarker`.
 - Use `labelOffset` on required labels near tangency points, angle markers, collinear construction points, or crowded intersections so the label does not sit on top of the marker or line.
+- Point-label `labelOffset.y` addresses a bottom text baseline, not the glyph center. For an approximately 27px label, start near y=-4..7 above a point and y=30..38 below it; do not place upper labels at y=-20..-30 by habit.
+- Treat the 48px spacing and 2.4-font-height offset thresholds as review heuristics, not teacher-approved constraints. Preserve specified geometry; inspect nearby points when labels need large displacements.
+- Place angle text independently from its arc. Teacher revisions repeatedly moved angle text while retaining arc radius; assess text width, adjacent angles, and association with the intended angle before changing the arc.
+- Compare teacher edits against their original files, excluding timestamps, view pans, float noise, blocked edits, and serialization losses. Distinguish screen-pixel point offsets from mathematical-coordinate dimension offsets; read the exam layout reference for repeated evidence and exceptions.
+- Keep helper segments used only by midpoint, intersection, or length-dimension dependencies hidden when a visible parent segment already represents the same geometry.
 - Set helper-only points to `visible:false` when they should not appear as extra dots.
+- For monochrome exam diagrams, named vertices, intersections, and midpoints normally keep their labels but use `pointSize:0`; do not add filled circular markers merely because a point object exists. Preserve a visible marker only when open/closed point status or another point symbol is itself mathematical information.
 - For prism cross-sections, make the outer solid projection broad enough to read and make the section polygon span a substantial middle portion of the prism, not a tiny internal square.
 - For nested solids, leave visible projection margin between the inner solid and the outer prism/pyramid boundary; containment alone is not enough when the result looks cramped.
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.
@@ -85,3 +93,4 @@ Before returning final JSON, check:
 - A point described as lying on a segment resolves to that segment at 0 <= t <= 1; any internal-division ratio matches the requested order.
 - A named polygon whose area is the requested value, maximum, or minimum has a light fill; polygons whose area is only a given condition remain unfilled unless the source image itself is shaded.
 - Styling fields are simple values: hex colors, numeric widths/opacities, booleans for toggles. Default color fields, when included, should be `#000000`.
+- For exam-project JSON, run `node .agents/skills/mathgraph-drawing/scripts/check-exam-diagram-layout.mjs --strict <file>` and resolve close named points, excessive label offsets, baseline misuse, visible point markers, missing length curvature, and thin length strokes.

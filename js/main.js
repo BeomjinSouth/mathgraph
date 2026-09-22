@@ -1640,6 +1640,29 @@ class GraphAApp {
             }
 
             if (this.isPointLikeObject(obj)) {
+                const fontRow = document.createElement('div');
+                fontRow.className = 'property-row';
+                fontRow.innerHTML = `
+                    <label>글씨 크기:</label>
+                    <input type="range" min="10" max="72" value="${obj.fontSize}" class="prop-slider">
+                    <span class="value-display">${obj.fontSize}</span>
+                `;
+                const fontInput = fontRow.querySelector('input');
+                const fontDisplay = fontRow.querySelector('.value-display');
+                let fontSizeEditStart;
+                fontInput.addEventListener('input', (event) => {
+                    if (fontSizeEditStart === undefined) fontSizeEditStart = obj.fontSize;
+                    obj.fontSize = Number(event.target.value);
+                    fontDisplay.textContent = String(obj.fontSize);
+                    this.render();
+                });
+                fontInput.addEventListener('change', () => {
+                    const startSize = fontSizeEditStart !== undefined ? fontSizeEditStart : obj.fontSize;
+                    fontSizeEditStart = undefined;
+                    this.recordObjectPropertyEdit(obj, 'fontSize', obj.fontSize, { oldValue: startSize });
+                });
+                container.appendChild(fontRow);
+
                 let pointSizeEditStart;
                 const pointSizeControl = this.createPointSizeControl({
                     value: obj.pointSize,
@@ -3985,6 +4008,8 @@ class GraphAApp {
 
     buildAIContext() {
         return {
+            view: { width: this.canvas.width, height: this.canvas.height, scale: this.canvas.scale,
+                offset: { x: this.canvas.offset.x, y: this.canvas.offset.y } },
             objects: this.objectManager.getAllObjects().map(o => {
                 const serialized = typeof o.toJSON === 'function' ? o.toJSON() : {};
                 return {
@@ -4613,6 +4638,7 @@ class GraphAApp {
     }
 
     buildProjectEnvelope() {
+        const serialized = this.objectManager.toJSON();
         return createProjectEnvelope({
             name: this.projectName,
             view: {
@@ -4622,7 +4648,7 @@ class GraphAApp {
                 },
                 scale: this.canvas.scale
             },
-            objects: this.objectManager.toJSON()
+            objects: serialized.objects
         });
     }
 
@@ -4652,12 +4678,12 @@ class GraphAApp {
         try {
             const envelope = parseProjectFile(await file.text());
             const candidateManager = new ObjectManager();
-            candidateManager.fromJSON(envelope.objects);
-            if (candidateManager.toJSON().length !== envelope.objects.length) {
+            candidateManager.fromJSON({ objects: envelope.objects });
+            if (candidateManager.toJSON().objects.length !== envelope.objects.length) {
                 throw new Error('지원하지 않는 객체가 포함되어 있습니다.');
             }
 
-            this.objectManager.fromJSON(envelope.objects);
+            this.objectManager.fromJSON({ objects: envelope.objects });
             this.canvas.offset.x = envelope.view.offset.x;
             this.canvas.offset.y = envelope.view.offset.y;
             this.canvas.scale = envelope.view.scale;

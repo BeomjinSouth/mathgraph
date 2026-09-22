@@ -13,6 +13,11 @@
       "path": "synthetic-drawing-data.jsonl",
       "role": "synthetic examples with Korean prompts, planning steps, and valid operations payloads",
       "readWhen": "Need a concrete pattern for a complex plane figure, solid, graph, or number line. Statistical charts remain outside the standard teacher generation workflow."
+    },
+    {
+      "path": "exam-diagram-layout.md",
+      "role": "teacher-corrected label baseline, named-point spacing, hidden-helper, and length-curve rules",
+      "readWhen": "Creating, revising, or validating monochrome exam diagrams, especially when a teacher will adjust point names, intersections, or curved length marks."
     }
   ],
   "selectionRules": [

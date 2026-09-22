@@ -7,6 +7,7 @@
   "scripts": {
     "build": "node --test && node scripts/build-static.mjs",
     "test": "node --test",
+    "verify:exam-diagrams": "node scripts/verify-exam-diagrams.mjs --phase verified --strict",
     "vercel-build": "node --test && node scripts/build-static.mjs",
     "vercel:dev": "vercel dev",
     "vercel:link": "vercel link",

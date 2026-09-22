@@ -177,7 +177,7 @@
       { "name": "fillOpacity", "type": "number 0..1", "scope": "create/update", "note": "Area opacity." },
       { "name": "showLabel", "type": "boolean", "scope": "create/update", "note": "Label visibility." },
       { "name": "locked", "type": "boolean", "scope": "create/update", "note": "Prevents direct dragging when supported." },
-      { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels." }
+      { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels. Point labels use a bottom text baseline: with a 27px font, upper labels usually start near y=-4..7 and lower labels near y=30..38. Very large offsets should trigger a geometry-spacing review." }
     ],
     "updateOnlyOrObjectSpecific": ["x", "y", "width", "height", "radiusX", "radiusY", "a", "b", "p", "orientation", "rotation", "ellipseRatio", "showHiddenLines", "text", "align", "expression", "xMin", "xMax", "yMin", "yMax", "branch", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
   },
@@ -412,9 +412,9 @@
       "koreanName": "길이 치수",
       "tags": ["dimension"],
       "requiredFields": ["segmentId"],
-      "optionalFields": ["label", "color", "fontSize"],
+      "optionalFields": ["label", "color", "fontSize", "lineWidth", "curvature", "labelOffset", "customText", "labelFontSize", "showValue"],
       "template": { "op": "create", "id": "len_AB", "type": "lengthDimension", "segmentId": "AB" },
-      "notes": ["Create the segment first."]
+      "notes": ["Create the segment first.", "Signed curvature is preserved when selecting, dragging, saving, and loading the dimension. Drag the dashed curve to adjust curvature and drag its text box to adjust only the label."]
     },
     {
       "type": "arc",
@@ -604,7 +604,8 @@
   "interactionAndEditing": {
     "keyboard": ["Ctrl+Z undo", "Ctrl+Y redo", "Delete/Backspace delete selected", "Esc cancel/clear selection", "Ctrl+A select all", "Ctrl+C copy", "Ctrl+V paste", "Space+drag pan"],
     "selection": ["single select", "shift multi-select", "box select", "hidden-object visibility mode"],
-    "properties": ["label or standalone text", "color", "lineWidth", "point coordinates", "function expression and x/y limits", "intersection branch", "curved-solid width/height/ellipse ratio/hidden curves", "number-line open and closed marks", "label reset", "object visibility", "copy/paste/delete"],
+    "properties": ["label or standalone text", "point-label font size", "color", "lineWidth", "point coordinates", "function expression and x/y limits", "intersection branch", "curved-solid width/height/ellipse ratio/hidden curves", "number-line open and closed marks", "label reset", "object visibility", "copy/paste/delete"],
+    "pointLabelDrag": "Free points, points on lines or circles, intersections, midpoints, and circle centers preserve the requested screen-space labelOffset. Their visible label boxes can be dragged independently of the mathematical point.",
     "history": ["create", "delete", "propertyChange", "batch", "drag", "rollback on AI patch failure"]
   },
   "settingsAndView": {

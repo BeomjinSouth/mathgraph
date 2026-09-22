@@ -6,6 +6,7 @@ import {
     parseProjectFile,
     validateProjectEnvelope
 } from '../js/utils/ProjectFile.js';
+import { ObjectManager } from '../js/core/ObjectManager.js';
 
 test('project envelope round-trips a named document', () => {
     const envelope = createProjectEnvelope({
@@ -21,6 +22,22 @@ test('project envelope round-trips a named document', () => {
         offset: { x: 1, y: 2 },
         scale: 50
     });
+});
+
+test('parsed project objects load into ObjectManager through the UI data shape', () => {
+    const envelope = createProjectEnvelope({
+        name: '드래그 편집 시안',
+        savedAt: '2026-09-14T00:00:00.000Z',
+        view: { offset: { x: 0, y: 0 }, scale: 42 },
+        objects: [{ id: 'A', type: 'point', x: 0, y: 0, label: 'A', pointSize: 0 }]
+    });
+    const parsed = parseProjectFile(JSON.stringify(envelope));
+    const manager = new ObjectManager();
+    manager.fromJSON({ objects: parsed.objects });
+
+    assert.equal(manager.toJSON().objects.length, 1);
+    assert.equal(manager.toJSON().objects[0].label, 'A');
+    assert.equal(manager.toJSON().objects[0].pointSize, 0);
 });
 
 test('project parsing rejects unknown versions before returning objects', () => {
