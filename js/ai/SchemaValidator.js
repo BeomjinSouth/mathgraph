@@ -343,6 +343,21 @@ export class SchemaValidator {
             }
         }
 
+        if (op.type === 'lengthDimension') {
+            if (op.arcHeight !== undefined && !Number.isFinite(op.arcHeight)) {
+                errors.push(`${prefix}: lengthDimension arcHeight must be a finite number.`);
+            }
+            if (op.curvature !== undefined && (!Number.isFinite(op.curvature))) {
+                errors.push(`${prefix}: lengthDimension curvature must be a finite number.`);
+            }
+            if (op.showValue !== undefined && typeof op.showValue !== 'boolean') {
+                errors.push(`${prefix}: lengthDimension showValue must be a boolean.`);
+            }
+            if (op.labelFontSize !== undefined && (!Number.isFinite(op.labelFontSize) || op.labelFontSize <= 0)) {
+                errors.push(`${prefix}: lengthDimension labelFontSize must be a positive finite number.`);
+            }
+        }
+
         if (op.type === 'equalLengthMarker' && op.tickCount != null &&
             (!Number.isInteger(op.tickCount) || op.tickCount < 1)) {
             errors.push(`${prefix}: equalLengthMarker tickCount must be a positive integer.`);

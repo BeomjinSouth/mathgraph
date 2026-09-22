@@ -561,13 +561,17 @@ export class SceneGraphCompiler {
             : type === 'vector'
                 ? { startPointId: first, endPointId: second }
                 : { point1Id: first, point2Id: second };
+        const displayFields = commonFields(node);
+        if (displayFields.showLabel === undefined) {
+            displayFields.showLabel = typeof node.label === 'string' && node.label.trim().length > 0;
+        }
 
         this.addOperation({
             op: 'create',
             id,
             type,
             ...fields,
-            ...commonFields(node)
+            ...displayFields
         });
         this.createdIds.add(id);
     }

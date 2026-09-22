@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "base_branch": "codex/ai-fallback-recovery",
+  "checks": [["npm.cmd", "test"], ["npm.cmd", "run", "vercel-build"], ["git", "diff", "--check"]],
+  "shared_resources": []
+}

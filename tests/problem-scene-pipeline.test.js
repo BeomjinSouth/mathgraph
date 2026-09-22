@@ -89,6 +89,91 @@ test('problem scenes resolve dependencies and preserve point-on-segment construc
     assert.deepEqual(validateProblemSceneCoverage(scenePayload().scene, compiled), { valid: true, errors: [] });
 });
 
+test('printed segment lengths become one dotted-arc dimension each, while segment names remain labels', () => {
+    const payload = scenePayload({
+        nodes: [
+            node('A', 'point', { numbers: [-4, 4] }),
+            node('B', 'point', { numbers: [4, 4] }),
+            node('C', 'point', { numbers: [4, -4] }),
+            node('D', 'point', { numbers: [-4, -4] }),
+            node('AB', 'segment', { refs: ['A', 'B'], label: '8' }),
+            node('BC', 'segment', { refs: ['B', 'C'], label: 'x' }),
+            node('CD', 'segment', { refs: ['C', 'D'], label: '\\frac{1}{2}' }),
+            node('DA', 'segment', { refs: ['D', 'A'], label: 'AB' })
+        ],
+        relations: [node('given_BC', 'lengthDimension', { refs: ['BC'], label: 'x' })],
+        mustDraw: [{
+            id: 'lengths', description: 'Printed lengths 8, x and one half',
+            nodeIds: ['AB', 'BC', 'CD', 'DA'], relationIds: ['given_BC'], required: true, evidence: 'source labels'
+        }]
+    });
+    const compiled = compileProblemScenePayload(payload);
+    const operation = id => compiled.operations.find(item => item.id === id);
+    const dimensions = compiled.operations.filter(item => item.type === 'lengthDimension');
+
+    assert.equal(operation('AB').showLabel, false);
+    assert.equal(operation('BC').showLabel, false);
+    assert.equal(operation('CD').showLabel, false);
+    assert.notEqual(operation('DA').showLabel, false);
+    assert.equal(dimensions.length, 3);
+    assert.equal(operation('length_AB').customText, '8');
+    assert.equal(operation('given_BC').customText, 'x');
+    assert.equal(operation('length_CD').customText, '\\frac{1}{2}');
+    assert.equal(operation('length_AB').curvature, 48, 'top side bows away from the figure');
+    assert.equal(operation('given_BC').curvature, 48, 'right side bows away from the figure');
+    assert.equal(operation('length_CD').curvature, 48, 'bottom side bows away from the figure');
+    assert.deepEqual(validateProblemSceneCoverage(payload.scene, compiled), { valid: true, errors: [] });
+});
+
+test('a text-only question keeps an editable target-distance relation without exporting a generic distance label', () => {
+    const payload = scenePayload({
+        diagramType: 'function_graph',
+        nodes: [
+            node('C', 'point', { label: 'C', numbers: [-2, 0] }),
+            node('D', 'point', { label: 'D', numbers: [2, 0] }),
+            node('CD', 'segment', { refs: ['C', 'D'] })
+        ],
+        relations: [node('target_distance', 'lengthDimension', { refs: ['CD'], label: '두 점 사이의 거리' })],
+        mustDraw: [{
+            id: 'intercept-distance', description: '두 x절편 사이의 거리',
+            nodeIds: ['C', 'D', 'CD'], relationIds: ['target_distance'], required: true,
+            evidence: '거리의 수치는 문제 그림에 인쇄되어 있지 않다.'
+        }]
+    });
+
+    const compiled = compileProblemScenePayload(payload);
+    const target = compiled.operations.find(operation => operation.id === 'target_distance');
+
+    assert.equal(target.type, 'lengthDimension');
+    assert.equal(target.showValue, false);
+    assert.equal(target.customText, null);
+    assert.equal(target.label, null);
+    assert.deepEqual(validateProblemSceneCoverage(payload.scene, compiled), { valid: true, errors: [] });
+});
+
+test('a text-only problem preserves a stated algebraic length value', () => {
+    const payload = scenePayload({
+        nodes: [
+            node('A', 'point', { numbers: [0, 0] }),
+            node('B', 'point', { numbers: [4, 0] }),
+            node('AB', 'segment', { refs: ['A', 'B'] })
+        ],
+        relations: [node('given_length', 'lengthDimension', { refs: ['AB'], label: 'x' })],
+        mustDraw: [{
+            id: 'given-length', description: '선분 AB의 길이는 x',
+            nodeIds: ['A', 'B', 'AB'], relationIds: ['given_length'], required: true,
+            evidence: '문제 본문에 주어진 길이 x'
+        }]
+    });
+
+    const compiled = compileProblemScenePayload(payload);
+    const given = compiled.operations.find(operation => operation.id === 'given_length');
+
+    assert.equal(given.showValue, undefined);
+    assert.equal(given.label, 'x');
+    assert.deepEqual(validateProblemSceneCoverage(payload.scene, compiled), { valid: true, errors: [] });
+});
+
 test('coverage rejects a required source item that was not compiled', () => {
     const payload = scenePayload({
         mustDraw: [{
@@ -390,6 +475,7 @@ test('problem-scene prompts preserve source-stated angle vertices and separate e
     assert.match(prompt, /∠XYZ/);
     assert.match(prompt, /refs=\[Y,X,Z\]/);
     assert.match(prompt, /independent equal-length groups separate/i);
+    assert.match(prompt, /lengthDimension relation/);
 });
 
 test('image-only problem diagrams use one Luna scene call and local compilation on success', async () => {
