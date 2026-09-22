@@ -243,7 +243,14 @@ export function buildExamDiagramCases() {
                 add('pyramid', 'solid', { baseVertexIds: ['A', 'B', 'C', 'D'], apexId: 'V' });
                 length('A', 'B', long, -90);
             }
+            // Exercise bad model-proposed offsets as well as absent offsets.
+            // This is not a saved teacher edit and may be corrected at generation time.
+            if (variant === 2) {
+                const proposed = operations.find(o => o.type === 'point' && o.visible !== false);
+                if (proposed) proposed.labelOffset = { x: -85, y: -24 };
+            }
             cases.push({ id, family: names[family], variant: variant + 1, split: variant === 3 ? 'holdout' : 'development',
+                preserveExplicitOffsets: false,
                 title: `${names[family]} · ${['기본', '긴 조건', '기울기·기호', '검증용 변형'][variant]}`,
                 source: 'agent-synthetic; teacher-approved rules, not teacher-approved examples',
                 operations, conditions, view: { width: 700, height: 600, scale: family >= 19 ? 40 : 48, offset: { x: 0, y: 0 } } });

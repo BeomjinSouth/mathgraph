@@ -17,7 +17,9 @@ export async function renderExamCase(source) {
     const manager = new ObjectManager();
     const history = new HistoryManager(manager);
     const schema = new SchemaValidator().validate({ operations: source.operations });
-    const payload = enhanceDiagramQuality({ operations: source.operations }, '시험 도형', { view: source.view });
+    const payload = enhanceDiagramQuality({ operations: source.operations }, '시험 도형', {
+        view: source.view, preserveExplicitOffsets: source.preserveExplicitOffsets !== false
+    });
     const result = new PatchApplier(manager, history).apply(payload);
     if (!schema.valid || !result.success)
         return { id: source.id, errors: [...schema.errors, ...result.errors] };
@@ -37,7 +39,7 @@ export async function renderExamCase(source) {
         }
         if (op.type === 'point' && (Math.abs(obj.position.x - op.x) > 1e-9 || Math.abs(obj.position.y - op.y) > 1e-9))
             add('geometry-changed', { id: op.id });
-        if (op.labelOffset && JSON.stringify(op.labelOffset) !== JSON.stringify(obj.toJSON().labelOffset))
+        if (source.preserveExplicitOffsets !== false && op.labelOffset && JSON.stringify(op.labelOffset) !== JSON.stringify(obj.toJSON().labelOffset))
             add('manual-offset-changed', { id: op.id });
     }
     for (const c of source.conditions) {

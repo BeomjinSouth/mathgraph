@@ -16,6 +16,7 @@ const output = path.resolve(root, flag('--output', `output/exam-diagrams-100/${p
 const input = flag('--input', null);
 const custom = input ? JSON.parse(await fs.readFile(path.resolve(input), 'utf8')) : null;
 const cases = argv.includes('--app-only') ? [] : custom ? [{ id: 'custom-1', family: '사용자 도형', title: '입력 도형 검수', split: 'custom', conditions: custom.conditions || [],
+        preserveExplicitOffsets: !argv.includes('--generated'),
         view: { width: 700, height: 600, scale: 48, offset: { x: 0, y: 0 }, ...custom.view }, operations: custom.operations }]
     : buildExamDiagramCases().filter(c => split === 'all' || c.split === split);
 await fs.mkdir(output, { recursive: true });
@@ -167,12 +168,24 @@ try {
             }
             checks.push(checked);
         }
-        const preserved = await appPage.evaluate(() => {
+        const preserved = await appPage.evaluate(async () => {
             const app = window.app;
             const input = { operations: [{ op: 'create', type: 'point', id: 'manual', label: 'Q', x: -3, y: -2, pointSize: 0, labelOffset: { x: 0, y: 0 } }] };
-            const result = app.aiService.enhanceDiagramQuality(input, '시험 도형', app.buildAIContext());
+            const { enhanceDiagramQuality } = await import('/js/ai/DiagramQualityEnhancer.js');
+            const result = enhanceDiagramQuality(input, '시험 도형', { context: app.buildAIContext() });
             if (JSON.stringify(result.operations[0].labelOffset) !== JSON.stringify({ x: 0, y: 0 }))
                 throw Error('explicit offset changed');
+            const locked = { operations: [{ ...input.operations[0], locked: true }] };
+            const lockedResult = app.aiService.enhanceDiagramQuality(locked, '시험 도형', app.buildAIContext());
+            if (JSON.stringify(lockedResult.operations[0].labelOffset) !== JSON.stringify({ x: 0, y: 0 }))
+                throw Error('locked label changed');
+            const existing = JSON.stringify(app.objectManager.toJSON());
+            const bad = { operations: [{ ...input.operations[0], labelOffset: { x: -85, y: -24 } }] };
+            const corrected = app.aiService.enhanceDiagramQuality(bad, '시험 도형', app.buildAIContext());
+            if (JSON.stringify(corrected.operations[0].labelOffset) === JSON.stringify(bad.operations[0].labelOffset))
+                throw Error('model-proposed bad offset was not corrected');
+            if (JSON.stringify(app.objectManager.toJSON()) !== existing)
+                throw Error('existing teacher objects changed during generation');
             if (app.aiService.enhanceDiagramQuality(input, '', null, 'patch') !== input)
                 throw Error('patch mode modified');
             return true;

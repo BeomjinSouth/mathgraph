@@ -71,8 +71,8 @@ node scripts/verify-exam-diagrams.mjs --input 도형.json --output output/새-�
 ```
 
 - `custom-1.graphA.json`은 배치를 보정한 GraphA, `custom-1.mathgraph.json`은 MathGraph에서 열어 편집할 프로젝트, `custom-1.png`는 실제 렌더다. `results.json`의 미해결 항목을 확인한다. 입력·기하 조건을 수정한 경우 이유를 기록하고 다시 검사한다.
-- 앱의 AI 생성 경로는 `DiagramQualityEnhancer`에서 같은 `RenderedLabelLayout`을 호출한다. `PatchApplier.apply`만 직접 호출하는 외부 작성 스크립트는 이 과정을 건너뛴다. 그런 스크립트에는 검사된 `.graphA.json`을 전달한다.
-- 보정은 점 위치·호 반지름을 바꾸지 않고 새 라벨의 위치를 조절한다. 입력에 명시한 `labelOffset`, `labelMathPos`는 고정한다. 브라우저 없는 Node 환경에서는 실제 글꼴 보정을 실행하지 않으므로 Node 검사 통과만으로 화면 검수를 대신하지 않는다.
+- 앱의 AI 생성 경로는 `DiagramQualityEnhancer`에서 같은 `RenderedLabelLayout`을 호출한다. AI가 새로 제안한 오프셋도 보정하며, 문서에 이미 있던 교사 객체와 patch 모드는 보존한다. `PatchApplier.apply`만 직접 호출하는 외부 작성 스크립트는 이 과정을 건너뛴다. 그런 스크립트에는 검사된 `.graphA.json`을 전달한다.
+- CLI는 기본적으로 입력의 명시적 `labelOffset`, `labelMathPos`를 고정한다. 새 AI 시안의 제안 위치까지 고치려면 위 명령에 `--generated`를 추가한다. 교사가 직접 고친 파일에는 이 옵션을 쓰지 않는다. 점 위치·호 반지름은 보정 대상이 아니다. 브라우저 없는 Node 환경에서는 실제 글꼴 보정을 실행하지 않으므로 Node 검사 통과만으로 화면 검수를 대신하지 않는다.
 - 길이 글자는 해당 호의 끊긴 부분과 연결되어야 한다. 긴 부분 길이와 전체 길이가 같은 쪽에 겹치면 도형을 설계할 때 치수 호의 쪽과 간격을 조정한다. 뒤쪽 면이 아래로 투영된 각기둥도 길이 호가 뒤쪽 모서리와 겹치지 않게 쪽을 고른다. 사용자가 고정한 치수나 기하 조건은 자동으로 뒤집지 않는다.
 - 선분 바깥 교점과 둔각삼각형의 외부 수선은 숨긴 **지지 직선**으로 계산하고 필요한 선분만 화면에 표시한다. 범위 밖 교점을 만들려고 선분의 교점 판정 규칙을 바꾸지 않는다.
 - 작은 각은 방향각의 경계를 정규화한 뒤 내부 이등분선으로 각도식을 배치한다. 각뿔의 꼭짓점은 원래 점 객체만 표식을 담당하여 검은 점이 중복 표시되지 않게 한다.

@@ -26,7 +26,9 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     if (operations.length === 0 || options.enabled === false) {
         return payload;
     }
-    const pinnedLabelIds = new Set(operations.filter(op => hasUsableLabelOffset(op) || op.labelMathPos).map(op => op.id));
+    const pinnedLabelIds = new Set(operations.filter(op => op.locked || (
+        options.preserveExplicitOffsets !== false && (hasUsableLabelOffset(op) || op.labelMathPos)
+    )).map(op => op.id));
 
     rebuildSquarePyramidNamedSection(operations, options);
     resolveNamedLineReferences(operations);

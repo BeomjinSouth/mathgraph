@@ -1697,6 +1697,9 @@ export class AIService {
         return enhanceDiagramQuality(json, requestText, {
             context,
             mode,
+            // These offsets are model proposals in a fresh generation. Existing
+            // teacher objects live in context; patch mode returns above unchanged.
+            preserveExplicitOffsets: false,
             enabled: this.config.diagramQualityEnhancement !== false
         });
     }
