@@ -348,6 +348,14 @@ export class PatchApplier {
                 );
                 break;
 
+            case 'functionRegion':
+                object = this.objectManager.createFunctionRegion(
+                    resolvedOp.function1Id, resolvedOp.function2Id ?? null,
+                    resolvedOp.xMin, resolvedOp.xMax,
+                    { ...commonParams, baselineY: resolvedOp.baselineY ?? 0 }
+                );
+                break;
+
             case 'prism':
                 object = this.objectManager.createPrism(
                     resolvedOp.baseVertexIds,
@@ -468,6 +476,7 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'ellipseRatio', op.ellipseRatio);
         this.applyPropertyUpdate(object, 'showHiddenLines', op.showHiddenLines);
         this.applyPropertyUpdate(object, 'xMin', op.xMin);
+        this.applyPropertyUpdate(object, 'baselineY', op.baselineY);
         this.applyPropertyUpdate(object, 'xMax', op.xMax);
         this.applyPropertyUpdate(object, 'yMin', op.yMin);
         this.applyPropertyUpdate(object, 'yMax', op.yMax);

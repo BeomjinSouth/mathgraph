@@ -13,7 +13,8 @@ const EXPECTED_SINGLE_FIELDS = [
     'originId', 'directionPointId', 'lineId', 'circleId', 'segmentId',
     'circle1Id', 'circle2Id', 'object1Id', 'object2Id', 'baseLineId',
     'throughPointId', 'startPointId', 'endPointId', 'functionId', 'vertexId',
-    'line1Id', 'line2Id', 'segment1Id', 'segment2Id', 'tangentPointId', 'apexId'
+    'line1Id', 'line2Id', 'segment1Id', 'segment2Id', 'tangentPointId', 'apexId',
+    'function1Id', 'function2Id'
 ];
 
 const EXPECTED_ARRAY_FIELDS = [

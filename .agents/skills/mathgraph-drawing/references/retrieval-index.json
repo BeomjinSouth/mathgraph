@@ -111,7 +111,7 @@
     {
       "id": "objects-graph",
       "file": "feature-manual.json",
-      "objectTypes": ["function", "ellipse", "hyperbola", "parabola", "tangentFunction", "intersection", "line", "segment", "point"]
+      "objectTypes": ["function", "functionRegion", "ellipse", "hyperbola", "parabola", "tangentFunction", "intersection", "line", "segment", "point"]
     },
     {
       "id": "objects-number-line",

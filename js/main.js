@@ -2050,7 +2050,7 @@ class GraphAApp {
      */
     getRenderOrderedObjects() {
         const pointLikeTypes = new Set(['point', 'pointOnObject', 'intersection', 'midpoint']);
-        const backgroundRegionTypes = new Set(['closedRegion']);
+        const backgroundRegionTypes = new Set(['closedRegion', 'functionRegion']);
         const objects = this.objectManager.getAllObjects();
 
         return [
@@ -2970,6 +2970,16 @@ class GraphAApp {
             `${this.buildSVGStrokeAttributes(obj, { fill: obj.fillColor || obj.color, fillOpacity: obj.fillOpacity ?? 0.12 })} />`;
     }
 
+    buildSVGFunctionRegionMarkup(obj) {
+        if (!obj.valid) return '';
+        const points = obj.getPathPoints(this.canvas.scale);
+        if (points.length < 4) return '';
+        const screen = points.map(point => this.canvas.toScreen(point));
+        return `<path data-type="functionRegion" data-id="${this.escapeSVG(obj.id)}" ` +
+            `d="${this.buildSVGPath(screen, true)}" fill="${this.escapeSVG(obj.fillColor)}" ` +
+            `fill-opacity="${obj.fillOpacity}" stroke="none" />`;
+    }
+
     buildSVGClosedRegionMarkup(obj) {
         if (!obj.valid || !Array.isArray(obj.vertices) || obj.vertices.length < 3) return '';
 
@@ -3236,6 +3246,8 @@ class GraphAApp {
                 return this.buildSVGClosedRegionMarkup(obj);
             case 'polygon':
                 return this.buildSVGPolygonMarkup(obj);
+            case 'functionRegion':
+                return this.buildSVGFunctionRegionMarkup(obj);
             case 'numberLine':
                 return this.buildSVGNumberLineMarkup(obj);
             case 'textLabel':
@@ -4009,7 +4021,8 @@ class GraphAApp {
     buildAIContext() {
         return {
             view: { width: this.canvas.width, height: this.canvas.height, scale: this.canvas.scale,
-                offset: { x: this.canvas.offset.x, y: this.canvas.offset.y } },
+                offset: { x: this.canvas.offset.x, y: this.canvas.offset.y },
+                showXAxis: this.canvas.showXAxis, showYAxis: this.canvas.showYAxis },
             objects: this.objectManager.getAllObjects().map(o => {
                 const serialized = typeof o.toJSON === 'function' ? o.toJSON() : {};
                 return {

@@ -16,7 +16,9 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
     const element = new OffscreenCanvas(width, height);
     const canvas = Object.create(Canvas.prototype);
     Object.assign(canvas, { canvas: element, ctx: element.getContext('2d', { willReadFrequently: true }), width, height,
-        scale: Number(view.scale) || 50, offset: { x: Number(view.offset?.x) || 0, y: Number(view.offset?.y) || 0 }, labelBounds: [] });
+        scale: Number(view.scale) || 50, offset: { x: Number(view.offset?.x) || 0, y: Number(view.offset?.y) || 0 },
+        showXAxis: Boolean(view.showXAxis), showYAxis: Boolean(view.showYAxis), showAxisNumbers: false,
+        labelBounds: [] });
     const manager = new ObjectManager();
     if (existingObjects.length)
         manager.fromJSON({ objects: existingObjects });
@@ -59,6 +61,9 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
         ctx.clearRect(0, 0, width, height);
         mode = 'geometry';
         canvas.resetLabelLayout();
+        current = null;
+        if (canvas.showXAxis || canvas.showYAxis)
+            canvas.drawAxes();
         for (const obj of objects)
             if (obj.visible && obj.valid && obj !== excluded) {
                 current = obj;
@@ -190,6 +195,32 @@ function candidateCenters(obj, box, canvas) {
                     continue;
                 result.push({ x, y, cost: Math.abs(tangent) + Math.abs(normal) * 2 });
             }
+    }
+    else if (obj.type === 'function') {
+        const bounds = canvas.getVisibleBounds();
+        const min = Math.max(bounds.minX + 0.25, obj.xMin ?? bounds.minX);
+        const max = Math.min(bounds.maxX - 0.25, obj.xMax ?? bounds.maxX);
+        const fn = obj.getFunction();
+        result.push({ ...initial, cost: 0 });
+        if (fn && min < max) {
+            for (let i = 0; i <= 24; i++) {
+                const x = min + (max - min) * i / 24, y = fn(x);
+                if (!Number.isFinite(y) || !obj.isPointWithinVisibleRange(x, y)) continue;
+                const screen = canvas.toScreen({ x, y });
+                const delta = Math.max(0.001, (max - min) / 1000);
+                const slope = (fn(x + delta) - fn(x - delta)) / (2 * delta);
+                if (!Number.isFinite(slope)) continue;
+                const normalSize = Math.hypot(slope, 1);
+                for (const sign of [-1, 1])
+                    for (const gap of [8, 16, 26, 38]) {
+                        const distance = box.h / 2 + gap;
+                        const px = screen.x + sign * slope / normalSize * distance;
+                        const py = screen.y + sign / normalSize * distance;
+                        result.push({ x: px, y: py,
+                            cost: Math.hypot(px - initial.x, py - initial.y) + gap / 2 });
+                    }
+            }
+        }
     }
     else {
         for (const dx of [0, -24, 24, -48, 48, -80, 80])

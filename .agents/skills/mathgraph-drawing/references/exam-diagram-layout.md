@@ -79,3 +79,9 @@ node scripts/verify-exam-diagrams.mjs --input 도형.json --output output/새-�
 - 100종은 에이전트가 만든 회귀 사례다. 교사가 승인한 24종 수정본과 구분하며 새로운 사용자 취향으로 저장하지 않는다. 전체 재검사는 `npm.cmd run verify:exam-diagrams`, 실제 앱의 불러오기·내보내기 검사는 `node scripts/verify-exam-diagrams.mjs --phase app --app-only`로 실행한다.
 
 이 검사는 MathGraph 캔버스와 프로젝트 저장을 확인한다. HWP에 넣을 때에는 기존 `pbj-exam-hwpx`의 수식 실측·13pt/11pt 라벨·68.2mm 출력·실제 한글/PDF 검수를 계속 적용한다. 현재 체크아웃에 `js/utils/HwpDiagram.js`가 없다면 한글 입력 경로를 사용할 수 있다고 주장하지 말고, 한글 입력이 구현된 작업 공간을 확인한다.
+
+## 복합 도형과 함수 넓이
+
+- 같은 각은 동일한 `markerCount`를 가진 두 `angleDimension`으로, 같은 길이는 한 묶음에 동일한 `tickCount`를 가진 `equalLengthMarker`로 나타낸다. 수학적으로 같지 않은 각·선분에 표식만 붙이지 않는다.
+- 함수 사이 또는 함수와 수평선 사이의 넓이를 묻는다면 함수와 `functionRegion`을 연결한다. `xMin`과 `xMax`가 실제 교점·지정된 수직 경계인지 확인하고, 축·곡선·음영 전체가 화면 안에 들어오게 배율을 정한다. 함수의 표시 범위 밖, 극점이 포함된 구간, 잘린 음영은 검수 통과로 보지 않는다.
+- 복합 사례 검수는 `npm.cmd run verify:complex-exam-diagrams`를 사용한다. 결과의 `output/exam-diagrams-complex/verified/`에 원본 조건, GraphA, 편집 가능한 프로젝트, PNG, 모아보기, 변형 오류 검출 결과가 남는다. 이 검사는 한글 인쇄나 자연어 모델의 모든 응답을 보증하지 않는다.

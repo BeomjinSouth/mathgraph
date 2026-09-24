@@ -40,7 +40,7 @@ export class SchemaValidator {
             'vector', 'rightAngleMarker', 'equalLengthMarker',
             'angleDimension', 'lengthDimension',
             'arc', 'sector', 'circularSegment',
-            'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine', 'textLabel',
+            'lensRegion', 'polygon', 'functionRegion', 'prism', 'pyramid', 'numberLine', 'textLabel',
             'cylinder', 'cone', 'sphere'
         ];
 
@@ -78,6 +78,7 @@ export class SchemaValidator {
             circularSegment: ['circleId', 'startPointId', 'endPointId'],
             lensRegion: ['circle1Id', 'circle2Id'],
             polygon: ['vertexIds'],
+            functionRegion: ['function1Id', 'xMin', 'xMax'],
             prism: ['baseVertexIds', 'topVertexIds'],
             pyramid: ['baseVertexIds', 'apexId'],
             numberLine: ['start', 'end', 'step', 'y'],
@@ -163,6 +164,15 @@ export class SchemaValidator {
 
         if (op.type === 'polygon' && Array.isArray(op.vertexIds) && op.vertexIds.length < 3) {
             errors.push(`${prefix}: polygon vertexIds must contain at least 3 vertices.`);
+        }
+
+        if (op.type === 'functionRegion') {
+            if (!Number.isFinite(op.xMin) || !Number.isFinite(op.xMax) || op.xMin >= op.xMax)
+                errors.push(`${prefix}: functionRegion requires finite xMin < xMax.`);
+            if (op.baselineY !== undefined && !Number.isFinite(op.baselineY))
+                errors.push(`${prefix}: functionRegion baselineY must be finite.`);
+            if (op.function2Id !== undefined && op.function2Id !== null && typeof op.function2Id !== 'string')
+                errors.push(`${prefix}: functionRegion function2Id must be a function id or null.`);
         }
 
         if (op.type === 'prism') {
@@ -380,7 +390,7 @@ export class SchemaValidator {
                 'object1Id', 'object2Id', 'baseLineId', 'throughPointId',
                 'startPointId', 'endPointId', 'functionId', 'vertexId',
                 'line1Id', 'line2Id', 'segment1Id', 'segment2Id',
-                'tangentPointId', 'apexId'
+                'tangentPointId', 'apexId', 'function1Id', 'function2Id'
             ];
 
             for (const field of refFields) {

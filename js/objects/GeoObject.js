@@ -38,6 +38,7 @@ export const ObjectType = {
     LENS_REGION: 'lensRegion',
     CLOSED_REGION: 'closedRegion',
     POLYGON: 'polygon',
+    FUNCTION_REGION: 'functionRegion',
 
     PARALLEL: 'parallel',
     PERPENDICULAR: 'perpendicular',
@@ -325,6 +326,7 @@ export class GeoObject {
             [ObjectType.LENS_REGION]: 'circle',
             [ObjectType.CLOSED_REGION]: 'polygon',
             [ObjectType.POLYGON]: 'polygon',
+            [ObjectType.FUNCTION_REGION]: 'polygon',
             [ObjectType.FUNCTION]: 'function',
             [ObjectType.VECTOR]: 'vector',
             [ObjectType.RIGHT_ANGLE_MARKER]: 'marker',
