@@ -331,6 +331,9 @@ try {
                 { id: 'arc-60', text: '원 O에서 OA=OB=3cm, ∠AOB=60°를 표시하고 호 AB를 그려줘.',
                     radius: 3, degrees: 60, fill: false, equalRadii: true,
                     inside: [1, 1], outside: [0, -1] },
+                { id: 'sector-arc-60', text: '원 O에서 OA=OB=3cm, ∠AOB=60°, 부채꼴 AOB를 색칠하고 호 AB도 표시해줘.',
+                    radius: 3, degrees: 60, fill: true, arc: true, equalRadii: true,
+                    inside: [1, 0.5], outside: [0, -1] },
                 { id: 'sector-small', text: '원 O에서 OA=OB=1cm, ∠AOB=30°, 부채꼴 AOB를 색칠해줘.',
                     radius: 1, degrees: 30, fill: true, equalRadii: true,
                     inside: [0.55, 0.1], outside: [0, -0.6], fit: 'larger' },
@@ -363,7 +366,8 @@ try {
                         Math.abs(angle?.getAngleDegrees() - prompt.degrees) > 1e-8 ||
                         objects.filter(o => o.type === 'equalLengthMarker').length !== Number(prompt.equalRadii) ||
                         objects.some(o => !o.valid) ||
-                        (prompt.fill ? !area?.valid || area.fillOpacity <= 0 : Boolean(area) || !arc?.valid))
+                        (prompt.fill ? !area?.valid || area.fillOpacity <= 0 : Boolean(area) || !arc?.valid) ||
+                        (prompt.arc && !arc?.valid))
                         throw Error(prompt.id + ': radius, angle, sector or arc invalid');
                     const center = app.canvas.toScreen(circle.getCenter());
                     const drawnRadius = prompt.radius * app.canvas.scale;

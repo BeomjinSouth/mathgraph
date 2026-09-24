@@ -49,6 +49,12 @@ test('an arc-only request creates an arc without inventing a shaded sector', asy
     assert.equal(objects.filter(o => o.type === 'sector').length, 0);
 });
 
+test('a request for both a shaded sector and its named arc creates both', async () => {
+    const { objects } = await draw('원 O에서 OA=OB=3cm, ∠AOB=60°, 부채꼴 AOB를 색칠하고 호 AB도 표시해줘.');
+    assert.equal(objects.filter(o => o.type === 'sector').length, 1);
+    assert.equal(objects.filter(o => o.type === 'arc').length, 1);
+});
+
 test('inconsistent or extra circle conditions do not return a bare circle as success', async () => {
     const ai = new AIService({ provider: 'local', apiKey: '' });
     for (const prompt of [

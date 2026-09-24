@@ -120,3 +120,12 @@ test('command validation rejects an omitted named arc', async () => {
     assert.equal(check(ai, complete, prompt).valid, true);
     assert.equal(check(ai, { operations: complete.operations.filter(op => op.type !== 'arc') }, prompt).valid, false);
 });
+
+test('command validation rejects missing equal-radius markers and a missing arc from a combined sector request', async () => {
+    const prompt = '원 O에서 OA=OB=3cm, ∠AOB=60°, 부채꼴 AOB를 색칠하고 호 AB도 표시해줘.';
+    const ai = service();
+    const complete = (await ai.processCommand(prompt)).json;
+    assert.equal(check(ai, complete, prompt).valid, true);
+    for (const type of ['equalLengthMarker', 'arc'])
+        assert.equal(check(ai, { operations: complete.operations.filter(op => op.type !== type) }, prompt).valid, false, type);
+});
