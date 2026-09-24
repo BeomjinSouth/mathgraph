@@ -4148,9 +4148,14 @@ class GraphAApp {
             return false;
         }
 
+        const wasEmpty = existingIds.size === 0;
         const patchResult = this.patchApplier.apply(data);
 
         if (patchResult.success) {
+            if (wasEmpty && Math.abs(this.canvas.scale - 50) < 1e-9 &&
+                Math.abs(this.canvas.offset.x) < 1e-9 && Math.abs(this.canvas.offset.y) < 1e-9 &&
+                data.operations?.some(operation => operation.op === 'create' && operation.type === 'functionRegion'))
+                this.fitNewFunctionRegion(patchResult.createdObjects);
             this.render();
             this.updateSidebar();
             this.addChatMessage(`✅ ${patchResult.message}`, 'assistant', {
@@ -4189,6 +4194,24 @@ class GraphAApp {
             });
             return false;
         }
+    }
+
+    fitNewFunctionRegion(createdObjects = []) {
+        const regions = createdObjects.filter(object => object?.type === 'functionRegion' && object.valid);
+        const points = regions.flatMap(region => region.pathPoints || []);
+        if (points.length < 4) return;
+        const xs = points.map(point => point.x), ys = points.map(point => point.y);
+        const minX = Math.min(...xs, this.canvas.showYAxis ? 0 : Infinity);
+        const maxX = Math.max(...xs, this.canvas.showYAxis ? 0 : -Infinity);
+        const minY = Math.min(...ys, this.canvas.showXAxis ? 0 : Infinity);
+        const maxY = Math.max(...ys, this.canvas.showXAxis ? 0 : -Infinity);
+        const spanX = Math.max(0.5, maxX - minX), spanY = Math.max(0.5, maxY - minY);
+        const scale = Math.min(160, this.canvas.width / (spanX * 1.4), this.canvas.height / (spanY * 1.4));
+        if (!Number.isFinite(scale) || scale <= 5) return;
+        this.canvas.scale = scale;
+        this.canvas.offset.x = (minX + maxX) / 2;
+        this.canvas.offset.y = (minY + maxY) / 2;
+        this.updateZoomDisplay();
     }
 
     /**

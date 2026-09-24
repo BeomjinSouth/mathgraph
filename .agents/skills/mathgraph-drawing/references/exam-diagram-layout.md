@@ -85,3 +85,4 @@ node scripts/verify-exam-diagrams.mjs --input 도형.json --output output/새-�
 - 같은 각은 동일한 `markerCount`를 가진 두 `angleDimension`으로, 같은 길이는 한 묶음에 동일한 `tickCount`를 가진 `equalLengthMarker`로 나타낸다. 수학적으로 같지 않은 각·선분에 표식만 붙이지 않는다.
 - 함수 사이 또는 함수와 수평선 사이의 넓이를 묻는다면 함수와 `functionRegion`을 연결한다. `xMin`과 `xMax`가 실제 교점·지정된 수직 경계인지 확인하고, 축·곡선·음영 전체가 화면 안에 들어오게 배율을 정한다. 함수의 표시 범위 밖, 극점이 포함된 구간, 잘린 음영은 검수 통과로 보지 않는다.
 - 복합 사례 검수는 `npm.cmd run verify:complex-exam-diagrams`를 사용한다. 결과의 `output/exam-diagrams-complex/verified/`에 원본 조건, GraphA, 편집 가능한 프로젝트, PNG, 모아보기, 변형 오류 검출 결과가 남는다. 이 검사는 한글 인쇄나 자연어 모델의 모든 응답을 보증하지 않는다.
+- 로컬 단일 요청은 `f(x)=…`, 선택적으로 `g(x)=…`, `x=시작값부터 끝값까지`가 분명한 넓이 문제를 함수·음영으로 만든다. 함수 하나만 있으면 `x축`을 경계로 명시해야 한다. 범위가 없거나 정의되지 않는 구간은 추측하지 않는다. 빈 기본 화면의 첫 생성만 영역과 축이 보이도록 확대하며, 기존 화면·교사 객체는 유지한다.

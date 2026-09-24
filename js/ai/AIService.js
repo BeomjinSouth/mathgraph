@@ -9,6 +9,7 @@ import { parseAIJSONPayload } from './JSONUtils.js';
 import { SchemaValidator } from './SchemaValidator.js';
 import { SemanticValidator } from './SemanticValidator.js';
 import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
+import { ObjectManager } from '../core/ObjectManager.js';
 import {
     diffImageAnalysisOperations,
     recordImageAnalysisStage
@@ -1009,7 +1010,8 @@ export class AIService {
             deterministicOnly: mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM
         });
 
-        if (!fallback.success && mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM && options.noProvider) {
+        if (!fallback.success && mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM && options.noProvider &&
+            !fallback.error?.startsWith('함수 넓이 요청:')) {
             return {
                 ...fallback,
                 success: false,
@@ -1740,6 +1742,9 @@ export class AIService {
         if (deterministicResult.success) {
             return deterministicResult;
         }
+        if (deterministicResult.error?.startsWith('함수 넓이 요청:')) {
+            return deterministicResult;
+        }
         if (options.deterministicOnly) {
             return deterministicResult;
         }
@@ -2043,6 +2048,7 @@ export class AIService {
         }
 
         const builders = [
+            () => this.buildFunctionAreaOperations(normalizedMessage),
             () => this.buildKnownHyperbolaAsymptoteOperations(normalizedMessage),
             () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
             () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage)
@@ -2074,6 +2080,7 @@ export class AIService {
         const lower = normalizedMessage.toLowerCase();
         const state = this.buildContextState(context);
         const builders = [
+            () => this.buildFunctionAreaOperations(normalizedMessage),
             () => this.buildNumberLineOperations(normalizedMessage),
             () => this.buildMidpointOperations(normalizedMessage, state),
             () => this.buildTangentFunctionOperations(normalizedMessage, state),
@@ -2416,6 +2423,54 @@ export class AIService {
                 { op: 'create', type: 'function', expression }
             ]
         };
+    }
+
+    buildFunctionAreaOperations(message) {
+        const source = String(message || '').replace(/[−–—]/g, '-').replace(/π/g, 'pi');
+        const asksForArea = /넓이(?:를|의|은|는)?[^.?!\n]{0,70}(?:구하|찾|계산|색칠|표시|나타내)|색칠|음영|shad(?:e|ed)|\barea\b/i.test(source);
+        if (!asksForArea || !/[a-z]\s*\(\s*x\s*\)\s*=/i.test(source)) return null;
+
+        const assignments = [...source.matchAll(/([a-z])\s*\(\s*x\s*\)\s*=/gi)];
+        if (assignments.length < 1 || assignments.length > 2 ||
+            new Set(assignments.map(match => match[1].toLowerCase())).size !== assignments.length)
+            return { error: '함수 넓이 요청: 서로 다른 함수식을 한 개 또는 두 개 지정해 주세요.' };
+        const expressions = assignments.map((match, index) => {
+            const end = assignments[index + 1]?.index ?? source.length;
+            const tail = source.slice(match.index + match[0].length, end);
+            return tail.split(/[,;，\n]|[가-힣]|(?=\bx\s*=)/, 1)[0].trim();
+        });
+        if (expressions.some(expr => !expr))
+            return { error: '함수 넓이 요청: 함수식을 읽을 수 없습니다.' };
+
+        const number = '([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+))';
+        const fromTo = new RegExp(`x\\s*=\\s*${number}\\s*(?:부터|에서|~|～|to)\\s*(?:x\\s*=\\s*)?${number}`, 'i');
+        const between = new RegExp(`${number}\\s*(?:≤|<=|<)\\s*x\\s*(?:≤|<=|<)\\s*${number}`, 'i');
+        const bounds = source.match(fromTo) || source.match(between);
+        if (!bounds) return { error: '함수 넓이 요청: 색칠할 x의 범위(시작값과 끝값)를 지정해 주세요.' };
+        const xMin = Number(bounds[1]), xMax = Number(bounds[2]);
+        if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin >= xMax)
+            return { error: '함수 넓이 요청: x의 시작값은 끝값보다 작아야 합니다.' };
+        if (expressions.length === 1 && !/(?:x축|y\s*=\s*0|x-axis)/i.test(source))
+            return { error: '함수 넓이 요청: 두 번째 경계 함수나 x축을 지정해 주세요.' };
+
+        const manager = new ObjectManager();
+        const graphs = expressions.map(expression => manager.createFunction(expression, { xMin, xMax }));
+        if (graphs.some(graph => !graph.valid))
+            return { error: '함수 넓이 요청: 함수식을 계산할 수 없습니다.' };
+        const area = manager.createFunctionRegion(graphs[0].id, graphs[1]?.id ?? null, xMin, xMax);
+        if (!area.valid)
+            return { error: '함수 넓이 요청: 이 구간에서는 함수가 정의되지 않거나 음영 경계가 닫히지 않습니다.' };
+
+        const operations = expressions.map((expression, index) => ({
+            op: 'create', id: assignments[index][1].toLowerCase(), type: 'function',
+            expression, xMin, xMax, label: assignments[index][1].toLowerCase(),
+            showLabel: true, fontSize: 22
+        }));
+        operations.push({ op: 'create', id: 'requested_area', type: 'functionRegion',
+            function1Id: operations[0].id,
+            ...(operations[1] ? { function2Id: operations[1].id } : { baselineY: 0 }),
+            xMin, xMax, fillColor: '#000000', fillOpacity: 0.2, showLabel: false });
+        return { operations };
     }
 
     buildBasicCurvedSolidOperations(message, layoutOrigin = { x: 0, y: 0 }) {
