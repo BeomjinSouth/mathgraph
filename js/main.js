@@ -4153,9 +4153,13 @@ class GraphAApp {
 
         if (patchResult.success) {
             if (wasEmpty && Math.abs(this.canvas.scale - 50) < 1e-9 &&
-                Math.abs(this.canvas.offset.x) < 1e-9 && Math.abs(this.canvas.offset.y) < 1e-9 &&
-                data.operations?.some(operation => operation.op === 'create' && operation.type === 'functionRegion'))
-                this.fitNewFunctionRegion(patchResult.createdObjects);
+                Math.abs(this.canvas.offset.x) < 1e-9 && Math.abs(this.canvas.offset.y) < 1e-9) {
+                if (data.operations?.some(operation => operation.op === 'create' && operation.type === 'functionRegion'))
+                    this.fitNewFunctionRegion(patchResult.createdObjects);
+                else if (data.operations?.some(operation => operation.op === 'create' && operation.type === 'circle') &&
+                    data.operations?.some(operation => operation.op === 'create' && ['arc', 'sector'].includes(operation.type)))
+                    this.fitNewCircleDiagram(patchResult.createdObjects);
+            }
             this.render();
             this.updateSidebar();
             this.addChatMessage(`✅ ${patchResult.message}`, 'assistant', {
@@ -4211,6 +4215,26 @@ class GraphAApp {
         this.canvas.scale = scale;
         this.canvas.offset.x = (minX + maxX) / 2;
         this.canvas.offset.y = (minY + maxY) / 2;
+        this.updateZoomDisplay();
+    }
+
+    fitNewCircleDiagram(createdObjects = []) {
+        const allowedTypes = new Set(['point', 'circle', 'segment', 'equalLengthMarker',
+            'lengthDimension', 'angleDimension', 'arc', 'sector']);
+        if (!createdObjects.every(object => allowedTypes.has(object?.type)) ||
+            createdObjects.filter(object => object?.type === 'circle').length !== 1) return;
+        const circle = createdObjects.find(object => object?.type === 'circle' && object.valid);
+        if (!circle || !createdObjects.some(object => ['arc', 'sector'].includes(object?.type) && object.valid)) return;
+        const center = circle.getCenter(), radius = circle.getRadius();
+        if (!center || !Number.isFinite(center.x) || !Number.isFinite(center.y) ||
+            !Number.isFinite(radius) || radius <= 0) return;
+        const scale = Math.min(160,
+            (this.canvas.width - 180) / (2 * radius),
+            (this.canvas.height - 180) / (2 * radius));
+        if (!Number.isFinite(scale) || scale <= 5) return;
+        this.canvas.scale = scale;
+        this.canvas.offset.x = center.x;
+        this.canvas.offset.y = center.y;
         this.updateZoomDisplay();
     }
 

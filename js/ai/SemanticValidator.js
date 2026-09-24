@@ -177,7 +177,61 @@ export class SemanticValidator {
         if (/[a-z]\s*\(\s*x\s*\)\s*=/i.test(prompt) && /접선|tangent/i.test(prompt) &&
             ofType('tangentFunction').length === 0)
             result.addError('함수의 접선 요청에 tangentFunction이 없습니다.');
+        this.validateExamCircleIntent(prompt, creates, result);
         return result;
+    }
+
+    validateExamCircleIntent(prompt, creates, result) {
+        if (/원기둥|원뿔/.test(prompt)) return;
+        const angle = prompt.match(/∠\s*([A-Z])([A-Z])([A-Z])\s*=\s*(\d+(?:\.\d+)?)\s*°/);
+        if (!angle || !/원|부채꼴|호/.test(prompt)) return;
+        const [aName, oName, bName, degrees] = [angle[1], angle[2], angle[3], Number(angle[4])];
+        const byId = new Map(creates.filter(op => op.id).map(op => [op.id, op]));
+        const points = Object.fromEntries(creates.filter(op => op.type === 'point' && op.label)
+            .map(op => [op.label, op]));
+        const [a, o, b] = [points[aName], points[oName], points[bName]];
+        if ([a, o, b].some(op => !op || op.visible === false || op.showLabel === false || op.pointSize !== 0 ||
+            !Number.isFinite(op.x) || !Number.isFinite(op.y))) {
+            result.addError('원 문항의 중심과 호 양 끝점 이름·위치·점 표식이 잘못되었습니다.');
+            return;
+        }
+        const distance = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+        const radiusText = prompt.match(/반지름\s*(?:은|는|이|가)?\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
+        const equalRadius = prompt.match(/[A-Z]{2}\s*=\s*[A-Z]{2}\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
+        const radius = Number(radiusText?.[1] ?? equalRadius?.[1]);
+        const circle = creates.find(op => op.type === 'circle' && byId.get(op.centerId)?.label === oName &&
+            [aName, bName].includes(byId.get(op.pointOnCircleId)?.label));
+        const radiusValid = circle && Number.isFinite(radius) &&
+            Math.abs(distance(o, a) - radius) < 1e-6 && Math.abs(distance(o, b) - radius) < 1e-6;
+        if (!radiusValid) result.addError('원의 중심·반지름과 호 양 끝점의 거리가 요청한 값과 다릅니다.');
+        const radiusDimension = creates.some(op => {
+            if (op.type !== 'lengthDimension' || op.showValue === false) return false;
+            const segment = byId.get(op.segmentId);
+            const endpoints = [byId.get(segment?.point1Id)?.label, byId.get(segment?.point2Id)?.label];
+            return endpoints.includes(oName) && (endpoints.includes(aName) || endpoints.includes(bName)) &&
+                (!op.customText || Math.abs(Number.parseFloat(op.customText) - radius) < 1e-9);
+        });
+        if (!radiusDimension) result.addError('반지름 수치가 해당 반지름의 점선 길이 호에 없습니다.');
+        const angleMark = creates.find(op => op.type === 'angleDimension' &&
+            byId.get(op.vertexId)?.label === oName &&
+            [byId.get(op.point1Id)?.label, byId.get(op.point2Id)?.label].sort().join('') === [aName, bName].sort().join(''));
+        const u = [a.x - o.x, a.y - o.y], v = [b.x - o.x, b.y - o.y];
+        const cosine = (u[0] * v[0] + u[1] * v[1]) / (Math.hypot(...u) * Math.hypot(...v));
+        const actualDegrees = Math.acos(Math.max(-1, Math.min(1, cosine))) * 180 / Math.PI;
+        if (!angleMark || angleMark.showValue === false || Math.abs(actualDegrees - degrees) > 0.5 ||
+            (angleMark.customText && Math.abs(Number.parseFloat(angleMark.customText) - degrees) > 1e-9))
+            result.addError('중심각 호의 꼭짓점·양 끝점·수치가 요청과 다릅니다.');
+        const wantsSector = /부채꼴/.test(prompt);
+        const wantsFill = wantsSector && /색칠|음영|넓이.{0,20}(?:구하|찾|계산)/.test(prompt);
+        const matchingBoundary = op => op.circleId === circle?.id &&
+            [byId.get(op.startPointId)?.label, byId.get(op.endPointId)?.label].sort().join('') ===
+                [aName, bName].sort().join('') && op.mode !== 'major';
+        if (wantsSector && !creates.some(op => op.type === 'sector' && matchingBoundary(op) &&
+            (!wantsFill || op.fillOpacity === undefined || Number(op.fillOpacity) > 0)))
+            result.addError('요청한 두 반지름과 짧은 호 사이의 부채꼴 색칠이 없습니다.');
+        if (!wantsSector && /호\s*[A-Z]{2}/.test(prompt) &&
+            !creates.some(op => op.type === 'arc' && matchingBoundary(op)))
+            result.addError('요청한 호의 시작·끝점에 연결된 호 객체가 없습니다.');
     }
 
     validatePdfSample(data, sampleOrCategory) {

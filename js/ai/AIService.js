@@ -12,6 +12,7 @@ import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
 import { ObjectManager } from '../core/ObjectManager.js';
 import { buildExamGeometryOperations } from './ExamGeometryFallback.js';
 import { buildExamSolidOperations } from './ExamSolidFallback.js';
+import { buildExamCircleOperations } from './ExamCircleFallback.js';
 import {
     diffImageAnalysisOperations,
     recordImageAnalysisStage
@@ -1015,7 +1016,8 @@ export class AIService {
         if (!fallback.success && mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM && options.noProvider &&
             !fallback.error?.startsWith('함수 넓이 요청:') &&
             !fallback.error?.startsWith('시험 도형 요청:') &&
-            !fallback.error?.startsWith('시험 입체도형 요청:')) {
+            !fallback.error?.startsWith('시험 입체도형 요청:') &&
+            !fallback.error?.startsWith('원·부채꼴 요청:')) {
             return {
                 ...fallback,
                 success: false,
@@ -1760,7 +1762,8 @@ export class AIService {
         }
         if (deterministicResult.error?.startsWith('함수 넓이 요청:') ||
             deterministicResult.error?.startsWith('시험 도형 요청:') ||
-            deterministicResult.error?.startsWith('시험 입체도형 요청:')) {
+            deterministicResult.error?.startsWith('시험 입체도형 요청:') ||
+            deterministicResult.error?.startsWith('원·부채꼴 요청:')) {
             return deterministicResult;
         }
         if (options.deterministicOnly) {
@@ -2071,7 +2074,8 @@ export class AIService {
             () => this.buildKnownHyperbolaAsymptoteOperations(normalizedMessage),
             () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
             () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage),
-            () => buildExamSolidOperations(normalizedMessage)
+            () => buildExamSolidOperations(normalizedMessage),
+            () => buildExamCircleOperations(normalizedMessage)
         ];
 
         for (const builder of builders) {
@@ -2109,6 +2113,7 @@ export class AIService {
             () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
             () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage),
             () => buildExamSolidOperations(normalizedMessage),
+            () => buildExamCircleOperations(normalizedMessage),
             () => this.buildBasicFunctionOperations(normalizedMessage),
             () => this.buildBasicCurvedSolidOperations(normalizedMessage, state.layoutOrigin),
             () => this.buildBasicSolidOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
