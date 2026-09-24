@@ -210,6 +210,7 @@ try {
         }
         const oneShotChecks = [];
         const geometryOneShotChecks = [];
+        const circleOneShotChecks = [];
         const solidOneShotChecks = [];
         let existingViewPreserved = null;
         if (suite === 'complex') {
@@ -319,6 +320,118 @@ try {
                     Buffer.from(checked.image.split(',')[1], 'base64'));
                 delete checked.image;
                 geometryOneShotChecks.push(checked);
+            }
+            const circlePrompts = [
+                { id: 'sector-60', text: '원 O에서 반지름 OA=OB=3cm, ∠AOB=60°, 부채꼴 AOB를 색칠해줘.',
+                    radius: 3, degrees: 60, fill: true, equalRadii: true,
+                    inside: [1, 0.5], outside: [0, -1] },
+                { id: 'sector-120', text: '중심이 O이고 반지름 4cm인 원에서 중심각 ∠AOB=120°인 작은 부채꼴을 색칠해줘.',
+                    radius: 4, degrees: 120, fill: true, equalRadii: false,
+                    inside: [1, 1], outside: [-1, -1] },
+                { id: 'arc-60', text: '원 O에서 OA=OB=3cm, ∠AOB=60°를 표시하고 호 AB를 그려줘.',
+                    radius: 3, degrees: 60, fill: false, equalRadii: true,
+                    inside: [1, 1], outside: [0, -1] },
+                { id: 'sector-small', text: '원 O에서 OA=OB=1cm, ∠AOB=30°, 부채꼴 AOB를 색칠해줘.',
+                    radius: 1, degrees: 30, fill: true, equalRadii: true,
+                    inside: [0.55, 0.1], outside: [0, -0.6], fit: 'larger' },
+                { id: 'sector-large', text: '중심이 O이고 반지름 8cm인 원에서 중심각 ∠AOB=150°인 작은 부채꼴을 색칠해줘.',
+                    radius: 8, degrees: 150, fill: true, equalRadii: false,
+                    inside: [1, 1], outside: [-1, -1], fit: 'smaller' }
+            ];
+            for (const prompt of circlePrompts) {
+                const checked = await appPage.evaluate(async (prompt) => {
+                    const app = window.app;
+                    app.objectManager.clear();
+                    app.historyManager.clear();
+                    app.canvas.scale = 50;
+                    app.canvas.offset.x = 0;
+                    app.canvas.offset.y = 0;
+                    app.aiService.config.provider = 'local';
+                    app.aiService.config.apiKey = '';
+                    const result = await app.aiService.processCommand(prompt.text, app.buildAIContext());
+                    if (!result.success || !app.processAIJSON(JSON.stringify(result.json), { mode: 'command' }))
+                        throw Error(prompt.id + ': circle one-shot failed: ' + result.error);
+                    const objects = app.objectManager.getAllObjects();
+                    const points = objects.filter(o => o.type === 'point');
+                    const circle = objects.find(o => o.type === 'circle');
+                    const angle = objects.find(o => o.type === 'angleDimension');
+                    const area = objects.find(o => o.type === 'sector');
+                    const arc = objects.find(o => o.type === 'arc');
+                    if (JSON.stringify(points.map(o => o.label)) !== JSON.stringify(['O', 'A', 'B']) ||
+                        points.some(o => o.pointSize !== 0) ||
+                        Math.abs(circle?.getRadius() - prompt.radius) > 1e-8 ||
+                        Math.abs(angle?.getAngleDegrees() - prompt.degrees) > 1e-8 ||
+                        objects.filter(o => o.type === 'equalLengthMarker').length !== Number(prompt.equalRadii) ||
+                        objects.some(o => !o.valid) ||
+                        (prompt.fill ? !area?.valid || area.fillOpacity <= 0 : Boolean(area) || !arc?.valid))
+                        throw Error(prompt.id + ': radius, angle, sector or arc invalid');
+                    const center = app.canvas.toScreen(circle.getCenter());
+                    const drawnRadius = prompt.radius * app.canvas.scale;
+                    if (center.x - drawnRadius < 75 || center.x + drawnRadius > app.canvas.width - 75 ||
+                        center.y - drawnRadius < 75 || center.y + drawnRadius > app.canvas.height - 75)
+                        throw Error(prompt.id + ': circle was clipped or has insufficient label margin');
+                    if ((prompt.fit === 'larger' && app.canvas.scale <= 50) ||
+                        (prompt.fit === 'smaller' && app.canvas.scale >= 50))
+                        throw Error(prompt.id + ': circle did not fit the empty canvas');
+                    const image = document.createElement('canvas');
+                    app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    const pixel = pair => {
+                        const p = app.canvas.toScreen({ x: pair[0], y: pair[1] });
+                        return image.getContext('2d').getImageData(Math.round(p.x), Math.round(p.y), 1, 1).data[0];
+                    };
+                    const inside = pixel(prompt.inside), outside = pixel(prompt.outside);
+                    if ((prompt.fill && (inside >= 245 || outside <= 240)) ||
+                        (!prompt.fill && inside <= 240))
+                        throw Error(prompt.id + ': sector fill pixels wrong: ' + inside + '/' + outside);
+                    const count = objects.length, beforePixels = image.toDataURL();
+                    const repeatImage = document.createElement('canvas');
+                    app.renderSceneToCanvas(repeatImage, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    if (repeatImage.toDataURL() !== beforePixels)
+                        return { id: prompt.id, error: 'repeat render changed pixels',
+                            beforePixels, afterPixels: repeatImage.toDataURL() };
+                    const beforeState = app.objectManager.toJSON().objects;
+                    app.historyManager.undo();
+                    if (app.objectManager.getAllObjects().length !== 0)
+                        throw Error(prompt.id + ': undo failed');
+                    app.historyManager.redo();
+                    if (app.objectManager.getAllObjects().length !== count)
+                        throw Error(prompt.id + ': redo failed');
+                    const afterState = app.objectManager.toJSON().objects;
+                    const differences = beforeState.flatMap((op, i) => Object.keys(op)
+                        .filter(key => key !== 'createdAt' && JSON.stringify(op[key]) !== JSON.stringify(afterState[i]?.[key]))
+                        .map(key => ({ type: op.type, key, before: op[key], after: afterState[i]?.[key] })));
+                    if (differences.length)
+                        throw Error(prompt.id + ': redo changed object state: ' + JSON.stringify(differences));
+                    const redoImage = document.createElement('canvas');
+                    app.renderSceneToCanvas(redoImage, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    if (redoImage.toDataURL() !== beforePixels)
+                        return { id: prompt.id, error: 'redo changed rendered pixels',
+                            beforePixels, afterPixels: redoImage.toDataURL() };
+                    const saved = app.buildProjectEnvelope();
+                    await app.importProjectFile(new File([JSON.stringify(saved)], prompt.id + '.mathgraph.json', { type: 'application/json' }));
+                    const restoredImage = document.createElement('canvas');
+                    app.renderSceneToCanvas(restoredImage, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    if (restoredImage.toDataURL() !== beforePixels)
+                        return { id: prompt.id, error: 'project import changed rendered pixels',
+                            beforePixels, afterPixels: restoredImage.toDataURL() };
+                    return { id: prompt.id, count, radius: circle.getRadius(), angle: angle.getAngleDegrees(),
+                        fittedScale: app.canvas.scale,
+                        fillInside: inside, fillOutside: outside, image: beforePixels, project: saved };
+                }, prompt);
+                if (checked.error) {
+                    await fs.writeFile(path.join(output, `one-shot-${checked.id}-before.png`),
+                        Buffer.from(checked.beforePixels.split(',')[1], 'base64'));
+                    await fs.writeFile(path.join(output, `one-shot-${checked.id}-after.png`),
+                        Buffer.from(checked.afterPixels.split(',')[1], 'base64'));
+                    throw Error(checked.id + ': ' + checked.error);
+                }
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.png`),
+                    Buffer.from(checked.image.split(',')[1], 'base64'));
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.mathgraph.json`),
+                    JSON.stringify(checked.project, null, 2));
+                delete checked.image;
+                delete checked.project;
+                circleOneShotChecks.push(checked);
             }
             const solidPrompts = [
                 { id: 'triangular-prism', text: '삼각기둥 ABC-DEF에서 AB=4cm, 높이 6cm, 가려진 모서리는 점선으로 표시해줘.',
@@ -432,6 +545,30 @@ try {
                 if (app.canvas.scale !== 50 || !app.objectManager.getObject(teacherId) ||
                     JSON.stringify(app.objectManager.getObject(teacherId).toJSON().labelOffset) !== JSON.stringify({ x: 0, y: 0 }))
                     throw Error('existing teacher view/object changed');
+                const circlePrompt = '원 O에서 OA=OB=1cm, ∠AOB=30°, 부채꼴 AOB를 색칠해줘.';
+                app.objectManager.clear();
+                app.historyManager.clear();
+                app.canvas.scale = 80;
+                app.canvas.offset.x = 1;
+                app.canvas.offset.y = -1;
+                result = await app.aiService.processCommand(circlePrompt, app.buildAIContext());
+                if (!result.success || !app.processAIJSON(JSON.stringify(result.json), { mode: 'command' }))
+                    throw Error('custom view circle creation failed');
+                if (app.canvas.scale !== 80 || app.canvas.offset.x !== 1 || app.canvas.offset.y !== -1)
+                    throw Error('custom circle view was overwritten');
+                app.objectManager.clear();
+                app.historyManager.clear();
+                app.canvas.scale = 50;
+                app.canvas.offset.x = 0;
+                app.canvas.offset.y = 0;
+                const circleTeacherPoint = app.objectManager.createPoint(-3, -2,
+                    { label: 'T', labelOffset: { x: 0, y: 0 }, pointSize: 0 });
+                result = await app.aiService.processCommand(circlePrompt, app.buildAIContext());
+                if (!result.success || !app.processAIJSON(JSON.stringify(result.json), { mode: 'command' }))
+                    throw Error('existing-object circle creation failed');
+                if (app.canvas.scale !== 50 || !app.objectManager.getObject(circleTeacherPoint.id) ||
+                    JSON.stringify(app.objectManager.getObject(circleTeacherPoint.id).toJSON().labelOffset) !== JSON.stringify({ x: 0, y: 0 }))
+                    throw Error('existing teacher circle view/object changed');
                 return true;
             });
         }
@@ -464,7 +601,7 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, solidOneShotChecks, existingViewPreserved,
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, existingViewPreserved,
             explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));

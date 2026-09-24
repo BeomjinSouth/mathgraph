@@ -93,3 +93,30 @@ test('command validation rejects a pyramid with a displaced apex, foot or height
         assert.equal(check(ai, invalid, prompt).valid, false, JSON.stringify(invalid));
     }
 });
+
+test('command validation rejects a circle with the wrong central angle or unshaded sector', async () => {
+    const prompt = '중심이 O이고 반지름 4cm인 원에서 중심각 ∠AOB=120°인 작은 부채꼴을 색칠해줘.';
+    const ai = service();
+    const complete = (await ai.processCommand(prompt)).json;
+    assert.equal(check(ai, complete, prompt).valid, true);
+    const mutations = [
+        ops => ops.map(op => op.type === 'sector' ? { ...op, fillOpacity: 0 } : op),
+        ops => ops.filter(op => op.type !== 'sector'),
+        ops => ops.map(op => op.type === 'angleDimension' ? { ...op, customText: '90°' } : op),
+        ops => ops.map(op => op.id === 'B' ? { ...op, x: op.x + 0.5 } : op),
+        ops => ops.map(op => op.type === 'lengthDimension' ? { ...op, customText: '5 cm' } : op),
+        ops => ops.map(op => op.id === 'O' ? { ...op, pointSize: 6 } : op)
+    ];
+    for (const mutate of mutations) {
+        const invalid = { operations: mutate(structuredClone(complete.operations)) };
+        assert.equal(check(ai, invalid, prompt).valid, false, JSON.stringify(invalid));
+    }
+});
+
+test('command validation rejects an omitted named arc', async () => {
+    const prompt = '원 O에서 OA=OB=3cm, ∠AOB=60°를 표시하고 호 AB를 그려줘.';
+    const ai = service();
+    const complete = (await ai.processCommand(prompt)).json;
+    assert.equal(check(ai, complete, prompt).valid, true);
+    assert.equal(check(ai, { operations: complete.operations.filter(op => op.type !== 'arc') }, prompt).valid, false);
+});
