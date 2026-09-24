@@ -326,7 +326,9 @@ try {
                 { id: 'cube', text: '정육면체 ABCD-EFGH에서 모서리 4cm를 표시해줘.',
                     labels: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], dimensions: ['4 cm'] },
                 { id: 'cylinder', text: '원기둥의 반지름은 3cm, 높이는 6cm이고 뒤쪽 원호는 점선으로 그려줘.',
-                    kind: 'cylinder', dimensions: ['3 cm', '6 cm'] }
+                    kind: 'cylinder', dimensions: ['3 cm', '6 cm'] },
+                { id: 'square-pyramid', text: '사각뿔 V-ABCD에서 밑면 AB=4cm, 높이 6cm를 표시해줘.',
+                    kind: 'pyramid', labels: ['A', 'B', 'C', 'D', 'V'], dimensions: ['4 cm', '6 cm'] }
             ];
             for (const prompt of solidPrompts) {
                 const checked = await appPage.evaluate(async (prompt) => {
@@ -345,6 +347,7 @@ try {
                     const points = objects.filter(o => o.type === 'point');
                     const dimensions = objects.filter(o => o.type === 'lengthDimension');
                     const prism = objects.find(o => o.type === 'prism');
+                    const pyramid = objects.find(o => o.type === 'pyramid');
                     const cylinder = objects.find(o => o.type === 'cylinder');
                     if (JSON.stringify(dimensions.map(o => o.customText)) !== JSON.stringify(prompt.dimensions) ||
                         points.some(o => o.pointSize !== 0) || objects.some(o => !o.valid))
@@ -357,6 +360,20 @@ try {
                             points.length !== 3 || points.some(o => o.visible !== false || o.showLabel !== false) ||
                             JSON.stringify(supports.map(o => o.visible)) !== JSON.stringify([true, false]))
                             throw Error(prompt.id + ': radius, height, or dashed rear arc missing');
+                    } else if (prompt.kind === 'pyramid') {
+                        const visiblePoints = points.filter(o => o.visible !== false);
+                        const foot = points.find(o => o.visible === false);
+                        const apex = visiblePoints.find(o => o.label === 'V');
+                        const base = visiblePoints.filter(o => o.label !== 'V');
+                        const cx = base.reduce((sum, o) => sum + o.position.x, 0) / 4;
+                        const cy = base.reduce((sum, o) => sum + o.position.y, 0) / 4;
+                        if (JSON.stringify(visiblePoints.map(o => o.label)) !== JSON.stringify(prompt.labels) ||
+                            !pyramid?.valid || pyramid._hiddenEdges.length < 2 || !foot || foot.pointSize !== 0 ||
+                            Math.abs(foot.position.x - cx) > 1e-8 || Math.abs(foot.position.y - cy) > 1e-8 ||
+                            Math.abs(apex.position.x - cx) > 1e-8 ||
+                            Math.abs(apex.position.y - cy - 6) > 1e-8 ||
+                            Math.abs(dimensions[1].length - 6) > 1e-8)
+                            throw Error(prompt.id + ': upright pyramid height, labels, or hidden edges missing');
                     } else if (JSON.stringify(points.map(o => o.label)) !== JSON.stringify(prompt.labels) ||
                         !prism?.valid || prism._hiddenEdges.length < 1) {
                         throw Error(prompt.id + ': prism labels or hidden edges missing');
@@ -376,7 +393,7 @@ try {
                     app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
                     if (image.toDataURL() !== beforePixels)
                         throw Error(prompt.id + ': project import changed rendered pixels');
-                    return { id: prompt.id, count, hiddenEdges: prism?._hiddenEdges || null,
+                    return { id: prompt.id, count, hiddenEdges: prism?._hiddenEdges || pyramid?._hiddenEdges || null,
                         rearArcDashed: cylinder?.showHiddenLines || null,
                         dimensions: dimensions.map(o => o.customText), image: beforePixels, project: saved };
                 }, prompt);

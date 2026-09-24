@@ -86,6 +86,37 @@ export class SemanticValidator {
             if (names && [...names[1], ...names[2]].some(label => !labels.has(label)))
                 result.addError('입체도형에서 요청한 꼭짓점 이름이 모두 표시되지 않았습니다.');
         }
+        const pyramidNames = prompt.match(/사각뿔\s*([A-Z])\s*[-–—]\s*([A-Z]{4})/);
+        const pyramidHeight = prompt.match(/높이\s*(?:는|가|이)?\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
+        if (pyramidNames && pyramidHeight) {
+            const [apexLabel, baseLabels] = [pyramidNames[1], [...pyramidNames[2]]];
+            const pyramid = ofType('pyramid').find(op =>
+                pointById.get(op.apexId)?.label === apexLabel &&
+                JSON.stringify(op.baseVertexIds?.map(id => pointById.get(id)?.label)) === JSON.stringify(baseLabels));
+            const base = pyramid?.baseVertexIds?.map(id => pointById.get(id)) || [];
+            const apex = pointById.get(pyramid?.apexId);
+            const height = Number(pyramidHeight[1]);
+            const center = base.length === 4 && base.every(p => Number.isFinite(p?.x) && Number.isFinite(p?.y))
+                ? { x: base.reduce((sum, p) => sum + p.x, 0) / 4,
+                    y: base.reduce((sum, p) => sum + p.y, 0) / 4 }
+                : null;
+            const upright = center && apex && Math.abs(apex.x - center.x) < 1e-6 &&
+                Math.abs(apex.y - center.y - height) < 1e-6;
+            const visibleNames = [...base, apex].every(p => p && p.visible !== false && p.showLabel !== false && p.pointSize === 0);
+            if (!pyramid || !upright || !visibleNames)
+                result.addError('사각뿔의 꼭짓점 이름 또는 밑면 중심 위의 수치 높이가 맞지 않습니다.');
+            const heightLine = ofType('segment').find(op => {
+                const a = pointById.get(op.point1Id), b = pointById.get(op.point2Id);
+                const foot = a?.id === pyramid?.apexId ? b : b?.id === pyramid?.apexId ? a : null;
+                return foot && foot.visible === false && center &&
+                    Math.abs(foot.x - center.x) < 1e-6 && Math.abs(foot.y - center.y) < 1e-6 &&
+                    op.visible !== false && op.dashed === true;
+            });
+            const marked = heightLine && ofType('lengthDimension').some(op =>
+                op.segmentId === heightLine.id && op.showValue !== false &&
+                (!op.customText || Math.abs(Number.parseFloat(op.customText) - height) < 1e-9));
+            if (!marked) result.addError('사각뿔의 점선 높이선과 수치 치수 호가 연결되지 않았습니다.');
+        }
         if (/원기둥/.test(prompt)) {
             const radius = prompt.match(/반지름(?:의\s*길이)?\s*(?:은|는|이|가)?\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
             const height = prompt.match(/높이\s*(?:는|가|이)?\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
