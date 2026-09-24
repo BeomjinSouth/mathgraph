@@ -36,6 +36,26 @@ test('command validation rejects incomplete function area and tangent even for s
     }
 });
 
+test('command validation rejects a shifted horizontal area boundary or incomplete x interval', async () => {
+    const prompt = 'f(x)=sin(x), y=0.5, x=0부터 3.141592653589793까지 두 그래프 사이 넓이를 색칠해줘.';
+    const ai = service();
+    const complete = (await ai.processCommand(prompt)).json;
+    assert.equal(check(ai, complete, prompt).valid, true);
+    for (const change of [
+        { baselineY: 0 }, { xMin: 0.5 }, { xMax: 2 }, { fillOpacity: 0 }
+    ]) {
+        const invalid = { operations: complete.operations.map(op =>
+            op.type === 'functionRegion' ? { ...op, ...change } : op) };
+        assert.equal(check(ai, invalid, prompt).valid, false, JSON.stringify(change));
+    }
+    const constantGraph = { operations: [
+        complete.operations[0],
+        { op: 'create', id: 'h', type: 'function', expression: '0.5', xMin: 0, xMax: Math.PI },
+        { ...complete.operations[1], function2Id: 'h', baselineY: 0 }
+    ] };
+    assert.equal(check(ai, constantGraph, prompt).valid, true);
+});
+
 test('independent equal-length groups cannot reuse one tick count', async () => {
     const prompt = '평행사변형 ABCD에서 AB=CD, BC=DA, ∠A=∠C, AB=8cm, ∠A=70°를 표시해줘.';
     const ai = service();

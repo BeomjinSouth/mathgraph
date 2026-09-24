@@ -13,6 +13,7 @@ import { ObjectManager } from '../core/ObjectManager.js';
 import { buildExamGeometryOperations } from './ExamGeometryFallback.js';
 import { buildExamSolidOperations } from './ExamSolidFallback.js';
 import { buildExamCircleOperations } from './ExamCircleFallback.js';
+import { readHorizontalAreaBoundary, readRequestedXBounds } from './FunctionAreaIntent.js';
 import {
     diffImageAnalysisOperations,
     recordImageAnalysisStage
@@ -2477,16 +2478,17 @@ export class AIService {
         if (expressions.some(expr => !expr))
             return { error: '함수 넓이 요청: 함수식을 읽을 수 없습니다.' };
 
-        const number = '([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+))';
-        const fromTo = new RegExp(`x\\s*=\\s*${number}\\s*(?:부터|에서|~|～|to)\\s*(?:x\\s*=\\s*)?${number}`, 'i');
-        const between = new RegExp(`${number}\\s*(?:≤|<=|<)\\s*x\\s*(?:≤|<=|<)\\s*${number}`, 'i');
-        const bounds = source.match(fromTo) || source.match(between);
+        const bounds = readRequestedXBounds(source);
         if (!bounds) return { error: '함수 넓이 요청: 색칠할 x의 범위(시작값과 끝값)를 지정해 주세요.' };
-        const xMin = Number(bounds[1]), xMax = Number(bounds[2]);
+        const { xMin, xMax } = bounds;
         if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin >= xMax)
             return { error: '함수 넓이 요청: x의 시작값은 끝값보다 작아야 합니다.' };
-        if (expressions.length === 1 && !/(?:x축|y\s*=\s*0|x-axis)/i.test(source))
-            return { error: '함수 넓이 요청: 두 번째 경계 함수나 x축을 지정해 주세요.' };
+        const horizontal = readHorizontalAreaBoundary(source);
+        if (horizontal.error) return { error: `함수 넓이 요청: ${horizontal.error}` };
+        if (expressions.length === 1 && horizontal.baselineY === null)
+            return { error: '함수 넓이 요청: 두 번째 경계 함수나 x축 또는 수평선 y=c를 지정해 주세요.' };
+        if (expressions.length === 2 && /\by\s*=/i.test(source))
+            return { error: '함수 넓이 요청: 두 함수와 수평선 중 색칠 경계가 어느 두 개입니까?' };
 
         let tangentTarget = null;
         let tangentX = null;
@@ -2509,7 +2511,8 @@ export class AIService {
             if (!tangent.valid)
                 return { error: '함수 넓이 요청: 지정한 점에서 접선을 계산할 수 없습니다.' };
         }
-        const area = manager.createFunctionRegion(graphs[0].id, graphs[1]?.id ?? null, xMin, xMax);
+        const area = manager.createFunctionRegion(graphs[0].id, graphs[1]?.id ?? null, xMin, xMax,
+            { baselineY: horizontal.baselineY ?? 0 });
         if (!area.valid)
             return { error: '함수 넓이 요청: 이 구간에서는 함수가 정의되지 않거나 음영 경계가 닫히지 않습니다.' };
 
@@ -2520,7 +2523,7 @@ export class AIService {
         }));
         operations.push({ op: 'create', id: 'requested_area', type: 'functionRegion',
             function1Id: operations[0].id,
-            ...(operations[1] ? { function2Id: operations[1].id } : { baselineY: 0 }),
+            ...(operations[1] ? { function2Id: operations[1].id } : { baselineY: horizontal.baselineY }),
             xMin, xMax, fillColor: '#000000', fillOpacity: 0.2, showLabel: false });
         if (tangentTarget) operations.push({ op: 'create', id: 'requested_tangent', type: 'tangentFunction',
             functionId: tangentTarget, x: tangentX, showLabel: false, lineWidth: 2 });
