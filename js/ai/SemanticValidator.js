@@ -86,6 +86,60 @@ export class SemanticValidator {
             if (names && [...names[1], ...names[2]].some(label => !labels.has(label)))
                 result.addError('입체도형에서 요청한 꼭짓점 이름이 모두 표시되지 않았습니다.');
         }
+        if (/원기둥/.test(prompt)) {
+            const radius = prompt.match(/반지름(?:의\s*길이)?\s*(?:은|는|이|가)?\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
+            const height = prompt.match(/높이\s*(?:는|가|이)?\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
+            const cylinder = ofType('cylinder')[0];
+            const dimensions = ofType('lengthDimension');
+            const cx = Number(cylinder?.x), cy = Number(cylinder?.y);
+            const radiusLength = Number(cylinder?.width) / 2;
+            const ellipseRy = radiusLength * Number(cylinder?.ellipseRatio ?? 0.28);
+            const faceY = [cy + Number(cylinder?.height) / 2 - ellipseRy,
+                cy - Number(cylinder?.height) / 2 + ellipseRy];
+            const endpoints = op => {
+                const segment = segmentById.get(op.segmentId);
+                return [pointById.get(segment?.point1Id), pointById.get(segment?.point2Id)];
+            };
+            const close = (a, b) => Math.abs(a - b) < 1e-6;
+            const dimensionFor = value => dimensions.filter(op => {
+                const [a, b] = endpoints(op);
+                if (!a || !b || op.showValue === false) return false;
+                const measured = Math.hypot(a.x - b.x, a.y - b.y);
+                return Math.abs(measured - value) < 1e-6 &&
+                    (!op.customText || Math.abs(Number.parseFloat(op.customText) - value) < 1e-9);
+            });
+            if (radius) {
+                const value = Number(radius[1]);
+                if (!cylinder || Math.abs(Number(cylinder.width) - 2 * value) > 1e-6 ||
+                    !dimensionFor(value).some(op => {
+                        const [a, b] = endpoints(op);
+                        const onFace = faceY.some(y => close(a.y, y) && close(b.y, y));
+                        const radial = (close(a.x, cx) && close(Math.abs(b.x - cx), value)) ||
+                            (close(b.x, cx) && close(Math.abs(a.x - cx), value));
+                        return segmentById.get(op.segmentId)?.visible !== false && onFace && radial;
+                    }))
+                    result.addError('원기둥의 반지름 값과 연결된 반지름 선분·치수 호가 일치하지 않습니다.');
+            }
+            if (height) {
+                const value = Number(height[1]);
+                const ratio = Number(cylinder?.ellipseRatio ?? 0.28);
+                if (!cylinder || Math.abs(Number(cylinder.height) - Number(cylinder.width) * ratio - value) > 1e-6 ||
+                    !dimensionFor(value).some(op => {
+                        const [a, b] = endpoints(op);
+                        const onRim = close(a.x, b.x) && close(Math.abs(a.x - cx), radiusLength);
+                        const betweenFaces = (close(a.y, faceY[0]) && close(b.y, faceY[1])) ||
+                            (close(b.y, faceY[0]) && close(a.y, faceY[1]));
+                        return onRim && betweenFaces;
+                    }))
+                    result.addError('원기둥의 높이 값과 두 밑면 중심 사이의 높이 치수 호가 일치하지 않습니다.');
+            }
+            if (radius && height && Number(radius[1]) === Number(height[1]) &&
+                new Set(dimensionFor(Number(radius[1])).map(op => op.segmentId)).size < 2)
+                result.addError('반지름과 높이가 같은 수치여도 각각 다른 치수선에 표시해야 합니다.');
+            if (/뒤쪽.{0,12}(?:원호|호).{0,12}점선|가려진.{0,12}호.{0,12}점선/.test(prompt) &&
+                cylinder?.showHiddenLines === false)
+                result.addError('원기둥의 가려진 뒤쪽 호를 점선으로 표시해야 합니다.');
+        }
         if (/[a-z]\s*\(\s*x\s*\)\s*=/i.test(prompt) && /색칠|음영|넓이.{0,35}(?:구하|찾|계산|표시)|shad(?:e|ed)/i.test(prompt) &&
             ofType('functionRegion').length === 0)
             result.addError('함수의 넓이 요청에 색칠된 functionRegion이 없습니다.');
@@ -507,7 +561,7 @@ export class SemanticValidator {
         const normalized = this.text(raw);
         if (!raw) return false;
         if (raw.length > 28) return true;
-        if (/[①②③④⑤]|(?:^|\s)[1-5][).]/.test(raw)) return true;
+        if (/[①②③④⑤]|(?:^|\s)[1-5][).](?!\d)/.test(raw)) return true;
         if (/[ㄱㄴㄷㄹ]\s*[).]/.test(raw)) return true;
         return /다음|보기|선택지|정답|풀이|해설|구하여라|구하시오|옳은|옳지|값은|답은|문제|조건|which of|answer|solution|explanation|choose|following/.test(normalized);
     }

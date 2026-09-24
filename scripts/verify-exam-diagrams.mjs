@@ -324,7 +324,9 @@ try {
                 { id: 'triangular-prism', text: '삼각기둥 ABC-DEF에서 AB=4cm, 높이 6cm, 가려진 모서리는 점선으로 표시해줘.',
                     labels: ['A', 'B', 'C', 'D', 'E', 'F'], dimensions: ['4 cm', '6 cm'] },
                 { id: 'cube', text: '정육면체 ABCD-EFGH에서 모서리 4cm를 표시해줘.',
-                    labels: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], dimensions: ['4 cm'] }
+                    labels: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], dimensions: ['4 cm'] },
+                { id: 'cylinder', text: '원기둥의 반지름은 3cm, 높이는 6cm이고 뒤쪽 원호는 점선으로 그려줘.',
+                    kind: 'cylinder', dimensions: ['3 cm', '6 cm'] }
             ];
             for (const prompt of solidPrompts) {
                 const checked = await appPage.evaluate(async (prompt) => {
@@ -343,12 +345,22 @@ try {
                     const points = objects.filter(o => o.type === 'point');
                     const dimensions = objects.filter(o => o.type === 'lengthDimension');
                     const prism = objects.find(o => o.type === 'prism');
-                    if (JSON.stringify(points.map(o => o.label)) !== JSON.stringify(prompt.labels) ||
-                        points.some(o => o.pointSize !== 0) ||
-                        JSON.stringify(dimensions.map(o => o.customText)) !== JSON.stringify(prompt.dimensions) ||
-                        !prism?.valid || prism._hiddenEdges.length < 1 ||
-                        objects.some(o => !o.valid))
-                        throw Error(prompt.id + ': prism labels, dimensions, or hidden edges missing');
+                    const cylinder = objects.find(o => o.type === 'cylinder');
+                    if (JSON.stringify(dimensions.map(o => o.customText)) !== JSON.stringify(prompt.dimensions) ||
+                        points.some(o => o.pointSize !== 0) || objects.some(o => !o.valid))
+                        throw Error(prompt.id + ': dimensions or objects missing');
+                    if (prompt.kind === 'cylinder') {
+                        const supports = objects.filter(o => o.type === 'segment');
+                        if (!cylinder?.showHiddenLines || Math.abs(cylinder.width - 6) > 1e-8 ||
+                            Math.abs(cylinder.height - cylinder.width * cylinder.ellipseRatio - 6) > 1e-8 ||
+                            JSON.stringify(dimensions.map(o => o.length)) !== JSON.stringify([3, 6]) ||
+                            points.length !== 3 || points.some(o => o.visible !== false || o.showLabel !== false) ||
+                            JSON.stringify(supports.map(o => o.visible)) !== JSON.stringify([true, false]))
+                            throw Error(prompt.id + ': radius, height, or dashed rear arc missing');
+                    } else if (JSON.stringify(points.map(o => o.label)) !== JSON.stringify(prompt.labels) ||
+                        !prism?.valid || prism._hiddenEdges.length < 1) {
+                        throw Error(prompt.id + ': prism labels or hidden edges missing');
+                    }
                     const count = objects.length;
                     const image = document.createElement('canvas');
                     app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
@@ -364,7 +376,8 @@ try {
                     app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
                     if (image.toDataURL() !== beforePixels)
                         throw Error(prompt.id + ': project import changed rendered pixels');
-                    return { id: prompt.id, count, hiddenEdges: prism._hiddenEdges,
+                    return { id: prompt.id, count, hiddenEdges: prism?._hiddenEdges || null,
+                        rearArcDashed: cylinder?.showHiddenLines || null,
                         dimensions: dimensions.map(o => o.customText), image: beforePixels, project: saved };
                 }, prompt);
                 await fs.writeFile(path.join(output, `one-shot-${checked.id}.png`),

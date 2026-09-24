@@ -4,6 +4,7 @@ import { AIService } from '../js/ai/AIService.js';
 import { ObjectManager } from '../js/core/ObjectManager.js';
 import { HistoryManager } from '../js/core/HistoryManager.js';
 import { PatchApplier } from '../js/ai/PatchApplier.js';
+import { buildExamSolidOperations } from '../js/ai/ExamSolidFallback.js';
 
 async function draw(prompt) {
     const service = new AIService({ provider: 'local', apiKey: '' });
@@ -52,11 +53,48 @@ test('dimensioned cube has square front face, eight labels and three hidden edge
     assert.equal(objects.find(o => o.type === 'lengthDimension').customText, '4 cm');
 });
 
+test('dimensioned cylinder connects its radius and true face-center height to visible and dashed curves', async () => {
+    const { operations, objects } = await draw(
+        '원기둥의 반지름은 3cm, 높이는 6cm이고 뒤쪽 원호는 점선으로 그려줘.');
+    const cylinder = objects.find(o => o.type === 'cylinder');
+    assert.equal(cylinder.valid, true);
+    assert.equal(cylinder.showHiddenLines, true);
+    assert.ok(near(cylinder.width, 6));
+    assert.ok(near(cylinder.height - cylinder.width * cylinder.ellipseRatio, 6));
+    const dimensions = objects.filter(o => o.type === 'lengthDimension');
+    assert.deepEqual(dimensions.map(o => o.customText), ['3 cm', '6 cm']);
+    assert.deepEqual(dimensions.map(o => o.length), [3, 6]);
+    assert.ok(operations.filter(o => o.type === 'point').every(o => o.visible === false && o.pointSize === 0));
+    assert.deepEqual(operations.filter(o => o.type === 'segment').map(o => o.visible), [true, false]);
+});
+
+test('cylinder dimensions stay exact across unequal, equal and decimal measurements', async () => {
+    for (const [radius, height] of [[2, 4], [3, 3], [4.5, 7.25]]) {
+        const { objects } = await draw(
+            `원기둥의 반지름은 ${radius}cm, 높이는 ${height}cm이고 뒤쪽 원호는 점선으로 그려줘.`);
+        const solid = objects.find(o => o.type === 'cylinder');
+        const measured = objects.filter(o => o.type === 'lengthDimension').map(o => o.length);
+        assert.ok(near(solid.width / 2, radius));
+        assert.ok(near(solid.height - solid.width * solid.ellipseRatio, height));
+        assert.deepEqual(measured, [radius, height]);
+    }
+});
+
+test('decimal dimension punctuation does not turn a short drawing command into problem mode or an answer choice', () => {
+    const ai = new AIService({ provider: 'local', apiKey: '' });
+    const prompt = '원기둥의 반지름은 4.5cm, 높이는 7.25cm이고 뒤쪽 원호는 점선으로 그려줘.';
+    assert.equal(ai.detectCommandMode(prompt), 'command');
+});
+
+test('the verb 구해줘 in a circle measurement request is not mistaken for a sphere', () => {
+    assert.equal(buildExamSolidOperations('원의 반지름 3cm를 구해줘.'), null);
+});
+
 test('unrepresented solid measurements fail instead of returning an unlabeled generic solid', async () => {
     const service = new AIService({ provider: 'local', apiKey: '' });
     for (const prompt of [
         '사각뿔 V-ABCD에서 밑면 AB=4cm, 높이 6cm를 표시해줘.',
-        '원기둥의 반지름은 3cm, 높이는 6cm이고 뒤쪽 원호는 점선으로 그려줘.',
+        '원기둥의 반지름은 3cm, 높이는 6cm이고 부피도 함께 표시해줘.',
         '삼각기둥 ABC-DEF에서 AB=4cm, 높이 6cm, 부피 24㎤도 표시해줘.'
     ]) {
         const result = await service.processCommand(prompt);

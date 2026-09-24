@@ -54,3 +54,23 @@ test('command validation rejects a named solid missing its requested vertices', 
     const invalid = { operations: complete.operations.map(op => op.label === 'H' ? { ...op, label: 'Q' } : op) };
     assert.equal(check(ai, invalid, prompt).valid, false);
 });
+
+test('command validation checks radius, height and hidden rear arc of a cylinder', async () => {
+    const prompt = '원기둥의 반지름은 3cm, 높이는 6cm이고 뒤쪽 원호는 점선으로 그려줘.';
+    const ai = service();
+    const complete = (await ai.processCommand(prompt)).json;
+    assert.equal(check(ai, complete, prompt).valid, true);
+    const mutations = [
+        ops => ops.map(op => op.type === 'cylinder' ? { ...op, width: 4 } : op),
+        ops => ops.map(op => op.type === 'cylinder' ? { ...op, height: 6 } : op),
+        ops => ops.map(op => op.type === 'cylinder' ? { ...op, showHiddenLines: false } : op),
+        ops => ops.filter(op => op.id !== 'length_top_rightbottom_right'),
+        ops => ops.map(op => op.id === 'length_top_centertop_right' ? { ...op, customText: '4 cm' } : op),
+        ops => ops.map(op => op.id === 'top_center' ? { ...op, x: 0.5 } : op),
+        ops => ops.map(op => op.id === 'bottom_right' ? { ...op, x: 2.5 } : op)
+    ];
+    for (const mutate of mutations) {
+        const invalid = { operations: mutate(structuredClone(complete.operations)) };
+        assert.equal(check(ai, invalid, prompt).valid, false, JSON.stringify(invalid));
+    }
+});

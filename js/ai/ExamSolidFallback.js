@@ -4,12 +4,41 @@ function namedPoint(id, x, y) {
     return { op: 'create', type: 'point', id, label: id, x, y, pointSize: 0 };
 }
 
-function lengthMark(a, b, text, curvature = -60) {
+function lengthMark(a, b, text, curvature = -60, visibleSegment = false) {
     return [
-        { op: 'create', type: 'segment', id: `${a}${b}`, point1Id: a, point2Id: b, visible: false },
+        { op: 'create', type: 'segment', id: `${a}${b}`, point1Id: a, point2Id: b,
+            visible: visibleSegment, showLabel: false },
         { op: 'create', type: 'lengthDimension', id: `length_${a}${b}`, segmentId: `${a}${b}`,
             customText: text, curvature, lineWidth: 3, labelFontSize: 15 }
     ];
+}
+
+function cylinder(message) {
+    if (!/원기둥/.test(message) || hasUnrepresentedCondition(message)) return null;
+    const radius = message.match(new RegExp(`반지름(?:의길이)?(?:은|는|이|가)?(${dimension})(cm|㎝)?`, 'i'));
+    const height = message.match(new RegExp(`높이(?:는|가|이)?(${dimension})(cm|㎝)?`, 'i'));
+    if (!radius || !height || message.includes('=') ||
+        [...message.matchAll(/[0-9]+(?:\.[0-9]+)?(?:cm|㎝)?/gi)].length !== 2) return null;
+    const r = Number(radius[1]), h = Number(height[1]);
+    if (!(r >= 1 && r <= 5 && h >= 2 && h <= 10))
+        return { error: '시험 입체도형 요청: 반지름 1~5cm, 높이 2~10cm인 원기둥만 현재 자동 배치합니다.' };
+
+    const ellipseRatio = 0.28;
+    // CurvedSolid.height includes both ellipse half-heights. The distance
+    // between the two face centers must equal the stated cylinder height.
+    const totalHeight = h + 2 * r * ellipseRatio;
+    const helper = (id, x, y) => ({ op: 'create', type: 'point', id, x, y,
+        label: null, showLabel: false, pointSize: 0, visible: false });
+    return { operations: [
+        { op: 'create', type: 'cylinder', id: 'exam_cylinder', x: 0, y: 0,
+            width: 2 * r, height: totalHeight, ellipseRatio, showHiddenLines: true,
+            showLabel: false, lineWidth: 2 },
+        helper('top_center', 0, h / 2),
+        helper('top_right', r, h / 2),
+        helper('bottom_right', r, -h / 2),
+        ...lengthMark('top_center', 'top_right', `${radius[1]}${radius[2] ? ' cm' : ''}`, -45, true),
+        ...lengthMark('top_right', 'bottom_right', `${height[1]}${height[2] ? ' cm' : ''}`, 85)
+    ] };
 }
 
 function hasUnrepresentedCondition(message) {
@@ -71,12 +100,15 @@ function cube(message) {
 /** Handle only solid dimensions whose meaning is explicitly represented. */
 export function buildExamSolidOperations(message) {
     const compact = String(message).replace(/\s+/g, '').replace(/＝/g, '=');
-    const built = triangularPrism(compact) || cube(compact);
+    const built = cylinder(compact) || triangularPrism(compact) || cube(compact);
     if (built) return built;
-    if (/(삼각기둥|사각기둥|각기둥|사각뿔|각뿔|정육면체|직육면체|원기둥|원뿔|구)/.test(compact) &&
+    const mentionsSolid = /(삼각기둥|사각기둥|각기둥|사각뿔|각뿔|정육면체|직육면체|원기둥|원뿔)/.test(compact) ||
+        /(?:^|[^가-힣])구(?=$|를|을|와|과|가|이|의|안|속|내부)/.test(compact);
+    if (mentionsSolid &&
         (/[0-9]+(?:\.[0-9]+)?\s*(?:cm|㎝)/i.test(compact) ||
+            /(?:반지름|높이|모서리)(?:은|는|이|가|의길이)?[0-9]+(?:\.[0-9]+)?/i.test(compact) ||
             /(?:[A-Z]{3,4}[-–—][A-Z]{3,4}|부피|겉넓이|단면)/.test(compact))) {
-        return { error: '시험 입체도형 요청: 이름·길이·숨은선 조건을 모두 표현할 수 없어 일부만 그리지 않았습니다. 현재는 밑변과 높이가 명시된 ABC-DEF형 삼각기둥 또는 모서리 길이가 명시된 ABCD-EFGH형 정육면체를 지원합니다.' };
+        return { error: '시험 입체도형 요청: 이름·길이·숨은선 조건을 모두 표현할 수 없어 일부만 그리지 않았습니다. 현재는 밑변과 높이가 명시된 ABC-DEF형 삼각기둥, 모서리 길이가 명시된 ABCD-EFGH형 정육면체, 반지름과 높이가 명시된 원기둥을 지원합니다.' };
     }
     return null;
 }
