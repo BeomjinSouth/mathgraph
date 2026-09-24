@@ -97,10 +97,52 @@ function cube(message) {
     return { operations };
 }
 
+function quadrilateralPyramid(message) {
+    const names = message.match(/사각뿔([A-Z])[-–—]([A-Z]{4})/);
+    if (!names || hasUnrepresentedCondition(message)) return null;
+    const [apexName, baseNames] = [names[1], [...names[2]]];
+    if (new Set([apexName, ...baseNames]).size !== 5) return null;
+    const edgeName = `${baseNames[0]}${baseNames[1]}`;
+    const edge = message.match(new RegExp(`${edgeName}=(${dimension})(cm|㎝)?`, 'i'));
+    const height = message.match(new RegExp(`높이(?:는|가|이)?(${dimension})(cm|㎝)?`, 'i'));
+    if (!edge || !height || [...message.matchAll(/[0-9]+(?:\.[0-9]+)?(?:cm|㎝)?/gi)].length !== 2 ||
+        [...message.matchAll(/=/g)].length !== 1) return null;
+    const size = Number(edge[1]), tall = Number(height[1]);
+    if (!(size >= 2 && size <= 7 && tall >= Math.max(3, size * 0.8) && tall <= 10))
+        return { error: '시험 입체도형 요청: 밑변 2~7cm, 높이는 밑변의 0.8배 이상이면서 3~10cm인 사각뿔만 현재 자동 배치합니다.' };
+
+    const left = -size / 2 - 1, bottom = -2;
+    const depthX = size / 4, depthY = size / 2;
+    const base = [[left, bottom], [left + size, bottom],
+        [left + size + depthX, bottom + depthY], [left + depthX, bottom + depthY]];
+    const center = [left + size / 2 + depthX / 2, bottom + depthY / 2];
+    // An upright textbook projection keeps the altitude measurable on the
+    // drawing itself; the foot is the center of the projected base.
+    const apex = [center[0], center[1] + tall];
+    const helper = { op: 'create', type: 'point', id: 'height_foot',
+        x: center[0], y: center[1], label: null, showLabel: false,
+        pointSize: 0, visible: false };
+    const operations = [
+        ...base.map((p, i) => namedPoint(baseNames[i], p[0], p[1])),
+        namedPoint(apexName, apex[0], apex[1]), helper,
+        { op: 'create', type: 'pyramid', id: 'exam_pyramid',
+            baseVertexIds: baseNames, apexId: apexName, showLabel: false, lineWidth: 2 },
+        ...lengthMark(baseNames[0], baseNames[1], `${edge[1]}${edge[2] ? ' cm' : ''}`),
+        { op: 'create', type: 'segment', id: 'height_line',
+            point1Id: 'height_foot', point2Id: apexName, dashed: true,
+            showLabel: false, lineWidth: 2 },
+        { op: 'create', type: 'lengthDimension', id: 'length_height',
+            segmentId: 'height_line', customText: `${height[1]}${height[2] ? ' cm' : ''}`,
+            curvature: 30, lineWidth: 3, labelFontSize: 15,
+            labelOffset: { x: -0.2, y: 0 } }
+    ];
+    return { operations };
+}
+
 /** Handle only solid dimensions whose meaning is explicitly represented. */
 export function buildExamSolidOperations(message) {
     const compact = String(message).replace(/\s+/g, '').replace(/＝/g, '=');
-    const built = cylinder(compact) || triangularPrism(compact) || cube(compact);
+    const built = cylinder(compact) || triangularPrism(compact) || cube(compact) || quadrilateralPyramid(compact);
     if (built) return built;
     const mentionsSolid = /(삼각기둥|사각기둥|각기둥|사각뿔|각뿔|정육면체|직육면체|원기둥|원뿔)/.test(compact) ||
         /(?:^|[^가-힣])구(?=$|를|을|와|과|가|이|의|안|속|내부)/.test(compact);
@@ -108,7 +150,7 @@ export function buildExamSolidOperations(message) {
         (/[0-9]+(?:\.[0-9]+)?\s*(?:cm|㎝)/i.test(compact) ||
             /(?:반지름|높이|모서리)(?:은|는|이|가|의길이)?[0-9]+(?:\.[0-9]+)?/i.test(compact) ||
             /(?:[A-Z]{3,4}[-–—][A-Z]{3,4}|부피|겉넓이|단면)/.test(compact))) {
-        return { error: '시험 입체도형 요청: 이름·길이·숨은선 조건을 모두 표현할 수 없어 일부만 그리지 않았습니다. 현재는 밑변과 높이가 명시된 ABC-DEF형 삼각기둥, 모서리 길이가 명시된 ABCD-EFGH형 정육면체, 반지름과 높이가 명시된 원기둥을 지원합니다.' };
+        return { error: '시험 입체도형 요청: 이름·길이·숨은선 조건을 모두 표현할 수 없어 일부만 그리지 않았습니다. 현재는 밑변과 높이가 명시된 삼각기둥·사각뿔, 모서리 길이가 명시된 정육면체, 반지름과 높이가 명시된 원기둥을 지원합니다.' };
     }
     return null;
 }

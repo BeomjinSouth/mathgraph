@@ -2356,6 +2356,12 @@ export class AIService {
         if (!/(마름모|mid-?height|중간\s*높이|단면|cross-?section|first-class)/i.test(text)) {
             return null;
         }
+        // This legacy fixed scene has no bindings for extra numerical lengths
+        // or a requested shaded section; let the explicit-condition handler
+        // reject those requests instead of returning an incomplete picture.
+        if (/[A-Z]{2}\s*=\s*\d|색칠|음영/i.test(text)) {
+            return null;
+        }
 
         const hidden = { visible: false, showLabel: false };
         return {

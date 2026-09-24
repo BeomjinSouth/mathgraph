@@ -74,3 +74,22 @@ test('command validation checks radius, height and hidden rear arc of a cylinder
         assert.equal(check(ai, invalid, prompt).valid, false, JSON.stringify(invalid));
     }
 });
+
+test('command validation rejects a pyramid with a displaced apex, foot or height annotation', async () => {
+    const prompt = '사각뿔 V-ABCD에서 밑면 AB=4cm, 높이 6cm를 표시해줘.';
+    const ai = service();
+    const complete = (await ai.processCommand(prompt)).json;
+    assert.equal(check(ai, complete, prompt).valid, true);
+    const mutations = [
+        ops => ops.map(op => op.id === 'V' ? { ...op, y: op.y + 1 } : op),
+        ops => ops.map(op => op.id === 'height_foot' ? { ...op, x: op.x + 0.5 } : op),
+        ops => ops.map(op => op.id === 'height_line' ? { ...op, dashed: false } : op),
+        ops => ops.map(op => op.id === 'length_height' ? { ...op, customText: '5 cm' } : op),
+        ops => ops.map(op => op.id === 'D' ? { ...op, label: 'Q' } : op),
+        ops => ops.filter(op => op.id !== 'length_height')
+    ];
+    for (const mutate of mutations) {
+        const invalid = { operations: mutate(structuredClone(complete.operations)) };
+        assert.equal(check(ai, invalid, prompt).valid, false, JSON.stringify(invalid));
+    }
+});

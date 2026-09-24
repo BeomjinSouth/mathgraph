@@ -68,6 +68,38 @@ test('dimensioned cylinder connects its radius and true face-center height to vi
     assert.deepEqual(operations.filter(o => o.type === 'segment').map(o => o.visible), [true, false]);
 });
 
+test('quadrilateral pyramid keeps an upright measurable altitude and three hidden edges', async () => {
+    const { operations, objects } = await draw(
+        '사각뿔 V-ABCD에서 밑면 AB=4cm, 높이 6cm를 표시해줘.');
+    const visible = objects.filter(o => o.type === 'point' && o.visible);
+    assert.deepEqual(visible.map(o => o.label), ['A', 'B', 'C', 'D', 'V']);
+    assert.ok(visible.every(o => o.pointSize === 0));
+    const p = Object.fromEntries(visible.map(o => [o.label, o.position]));
+    const center = { x: (p.A.x + p.B.x + p.C.x + p.D.x) / 4,
+        y: (p.A.y + p.B.y + p.C.y + p.D.y) / 4 };
+    assert.ok(near(p.B.x - p.A.x, 4) && near(p.B.y, p.A.y));
+    assert.ok(near(p.V.x, center.x) && near(p.V.y - center.y, 6));
+    const foot = objects.find(o => o.type === 'point' && !o.visible);
+    assert.ok(foot && near(foot.position.x, center.x) && near(foot.position.y, center.y));
+    const pyramid = objects.find(o => o.type === 'pyramid');
+    assert.deepEqual(pyramid._hiddenEdges, [
+        { type: 'base', index: 2 }, { type: 'base', index: 3 }, { type: 'lateral', index: 3 }
+    ]);
+    const heightLine = operations.find(o => o.id === 'height_line');
+    assert.equal(heightLine.dashed, true);
+    assert.deepEqual(objects.filter(o => o.type === 'lengthDimension').map(o => o.length), [4, 6]);
+    assert.deepEqual(objects.filter(o => o.type === 'lengthDimension').map(o => o.customText), ['4 cm', '6 cm']);
+});
+
+test('quadrilateral pyramid dimensions remain exact for varied stated sizes', async () => {
+    for (const [base, height] of [[2, 3], [3, 4], [4.5, 6.5], [5, 6], [7, 8]]) {
+        const { objects } = await draw(
+            `사각뿔 V-ABCD에서 밑면 AB=${base}cm, 높이 ${height}cm를 표시해줘.`);
+        assert.deepEqual(objects.filter(o => o.type === 'lengthDimension').map(o => o.length), [base, height]);
+        assert.ok(objects.find(o => o.type === 'pyramid')._hiddenEdges.length >= 1);
+    }
+});
+
 test('cylinder dimensions stay exact across unequal, equal and decimal measurements', async () => {
     for (const [radius, height] of [[2, 4], [3, 3], [4.5, 7.25]]) {
         const { objects } = await draw(
@@ -93,7 +125,7 @@ test('the verb 구해줘 in a circle measurement request is not mistaken for a s
 test('unrepresented solid measurements fail instead of returning an unlabeled generic solid', async () => {
     const service = new AIService({ provider: 'local', apiKey: '' });
     for (const prompt of [
-        '사각뿔 V-ABCD에서 밑면 AB=4cm, 높이 6cm를 표시해줘.',
+        '사각뿔 V-ABCD에서 밑면 AB=4cm, 높이 6cm, 단면을 색칠해줘.',
         '원기둥의 반지름은 3cm, 높이는 6cm이고 부피도 함께 표시해줘.',
         '삼각기둥 ABC-DEF에서 AB=4cm, 높이 6cm, 부피 24㎤도 표시해줘.'
     ]) {
