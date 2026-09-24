@@ -1227,7 +1227,7 @@ export class AIService {
 
         const compact = text.replace(/\s+/g, ' ');
         const lineCount = text.split(/\r?\n/).filter(line => line.trim()).length;
-        const sentenceBreakCount = (text.match(/[.?!。？！]|[가-힣]\)|\d+[.)]/g) || []).length;
+        const sentenceBreakCount = (text.match(/\.(?!\d)|[?!。？！]|[가-힣]\)|\d+[.)](?!\d)/g) || []).length;
         const longEnough = compact.length >= 80 || lineCount >= 3 || sentenceBreakCount >= 3;
         if (!longEnough) {
             const koreanSentenceBreakCount = (text.match(/[\u3131-\uD7A3][.)]|[①②③④⑤]/g) || []).length;
