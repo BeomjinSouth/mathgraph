@@ -209,6 +209,7 @@ try {
             checks.push(checked);
         }
         const oneShotChecks = [];
+        const geometryOneShotChecks = [];
         let existingViewPreserved = null;
         if (suite === 'complex') {
             const prompts = [
@@ -257,6 +258,62 @@ try {
                     Buffer.from(checked.image.split(',')[1], 'base64'));
                 delete checked.image;
                 oneShotChecks.push(checked);
+            }
+            const geometryPrompts = [
+                { id: 'isosceles', text: '삼각형 ABC에서 AB=AC, ∠B=∠C, BC=6cm, ∠A=40°를 표시해줘.',
+                    labels: ['A', 'B', 'C'], angles: [70, 70, 40], ticks: [1], length: 6 },
+                { id: 'parallelogram', text: '평행사변형 ABCD에서 AB=CD, BC=DA, ∠A=∠C, AB=8cm, ∠A=70°를 표시해줘.',
+                    labels: ['A', 'B', 'C', 'D'], angles: [70, 70], ticks: [1, 2], length: 8 }
+            ];
+            for (const prompt of geometryPrompts) {
+                const checked = await appPage.evaluate(async (prompt) => {
+                    const app = window.app;
+                    app.objectManager.clear();
+                    app.historyManager.clear();
+                    app.canvas.scale = 50;
+                    app.canvas.offset.x = 0;
+                    app.canvas.offset.y = 0;
+                    app.aiService.config.provider = 'local';
+                    app.aiService.config.apiKey = '';
+                    const result = await app.aiService.processCommand(prompt.text, app.buildAIContext());
+                    if (!result.success || !app.processAIJSON(JSON.stringify(result.json), { mode: 'command' }))
+                        throw Error(prompt.id + ': one-shot request failed: ' + result.error);
+                    const objects = app.objectManager.getAllObjects();
+                    const points = objects.filter(o => o.type === 'point');
+                    const angles = objects.filter(o => o.type === 'angleDimension');
+                    const ticks = objects.filter(o => o.type === 'equalLengthMarker');
+                    const dimension = objects.find(o => o.type === 'lengthDimension');
+                    if (JSON.stringify(points.map(o => o.label)) !== JSON.stringify(prompt.labels) ||
+                        points.some(o => o.pointSize !== 0) ||
+                        JSON.stringify(angles.map(o => Math.round(o.getAngleDegrees()))) !== JSON.stringify(prompt.angles) ||
+                        JSON.stringify(ticks.map(o => o.tickCount)) !== JSON.stringify(prompt.ticks) ||
+                        Math.abs(dimension?.length - prompt.length) > 1e-8 ||
+                        objects.some(o => !o.valid))
+                        throw Error(prompt.id + ': rendered geometry does not match the requested conditions');
+                    const count = objects.length;
+                    app.historyManager.undo();
+                    if (app.objectManager.getAllObjects().length !== 0)
+                        throw Error(prompt.id + ': undo failed');
+                    app.historyManager.redo();
+                    if (app.objectManager.getAllObjects().length !== count)
+                        throw Error(prompt.id + ': redo failed');
+                    const saved = app.buildProjectEnvelope();
+                    const image = document.createElement('canvas');
+                    app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    const beforePixels = image.toDataURL();
+                    await app.importProjectFile(new File([JSON.stringify(saved)], prompt.id + '.mathgraph.json', { type: 'application/json' }));
+                    if (app.objectManager.getAllObjects().length !== count)
+                        throw Error(prompt.id + ': project import changed object count');
+                    app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    if (image.toDataURL() !== beforePixels)
+                        throw Error(prompt.id + ': project import changed rendered pixels');
+                    return { id: prompt.id, count, angles: angles.map(o => Math.round(o.getAngleDegrees())),
+                        tickGroups: ticks.map(o => o.tickCount), length: dimension.length, image: image.toDataURL() };
+                }, prompt);
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.png`),
+                    Buffer.from(checked.image.split(',')[1], 'base64'));
+                delete checked.image;
+                geometryOneShotChecks.push(checked);
             }
             existingViewPreserved = await appPage.evaluate(async () => {
                 const app = window.app;
@@ -317,7 +374,7 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, existingViewPreserved,
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, existingViewPreserved,
             explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));
