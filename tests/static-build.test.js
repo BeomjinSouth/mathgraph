@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
@@ -9,6 +10,19 @@ const repoRoot = new URL('..', import.meta.url);
 function readRootFile(name) {
     return readFileSync(new URL(name, repoRoot), 'utf8');
 }
+
+test('runtime drawing references match the project drawing skill', () => {
+    const digest = file => createHash('sha256')
+        .update(JSON.stringify(JSON.parse(readRootFile(file))))
+        .digest('hex');
+    for (const name of ['feature-manual.json', 'retrieval-index.json']) {
+        assert.equal(
+            digest(`runtime/mathgraph-drawing/references/${name}`),
+            digest(`.agents/skills/mathgraph-drawing/references/${name}`),
+            `the app and the drawing skill must use the same ${name}`
+        );
+    }
+});
 
 test('vercel config serves the built dist directory instead of the repo root', () => {
     const vercelConfig = JSON.parse(readRootFile('vercel.json'));

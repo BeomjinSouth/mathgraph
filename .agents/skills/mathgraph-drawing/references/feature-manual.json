@@ -1,7 +1,7 @@
 {
-  "manualVersion": 5,
+  "manualVersion": 6,
   "project": "MathGraph",
-  "updatedAt": "2026-08-05",
+  "updatedAt": "2026-09-24",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
@@ -47,6 +47,9 @@
   "visualGuardrails": [
     "Problem diagram mode must create the exam figure only: no solution text, no copied body prose, no copied answer choices, and no long explanatory labels.",
     "Problem diagram mode defaults to monochrome exam style: thin black strokes, sparse hatching/light shading, concise labels, and hidden helper points with visible:false or pointSize:0.",
+    "Named exam vertices, intersections, and midpoints keep readable labels but normally use pointSize:0; use visible open/closed dots only when endpoint status is mathematical information.",
+    "For equal lengths, use equalLengthMarker with one tickCount per connected equality group and different counts for independent groups. For equal angles, use angleDimension with matching markerCount on the actual vertices.",
+    "Attach each requested numeric length to its real segment with a curved dashed lengthDimension, and each requested angle to the correct vertex with a visible angleDimension arc and value. Do not rely on detached text alone.",
     "For construction-only polygons that should look like outlines, set fillOpacity:0; omit positive fill unless a shaded region is requested.",
     "When a named triangle or quadrilateral area is the value, maximum, or minimum asked by the question, create that polygon with fillOpacity 0.18 to 0.24. When area is only a given value, comparison, ratio, or intermediate condition and another quantity is asked, keep the polygon unfilled unless the source image itself is shaded.",
     "For two-circle lens overlaps, use lensRegion with circle1Id and circle2Id instead of polygon approximations.",
