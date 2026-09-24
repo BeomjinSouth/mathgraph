@@ -33,6 +33,27 @@ test('a shaded area request without endpoints does not invent its x interval', a
     assert.match(result.error, /범위|구간/);
 });
 
+test('a combined area-and-tangent request does not silently omit the tangent', async () => {
+    const result = await service().processCommand(
+        'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 그래프 사이를 색칠하고 x=0에서의 접선을 그려줘.');
+    assert.equal(result.success, false);
+    assert.match(result.error, /접선/);
+});
+
+test('an explicit area-and-tangent request creates the shaded region and the named tangent together', async () => {
+    const result = await service().processCommand(
+        'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 그래프 사이를 색칠하고 f(x)의 x=0.5에서의 접선을 그려줘.');
+    assert.equal(result.success, true, result.error);
+    assert.deepEqual(result.json.operations.map(op => op.type),
+        ['function', 'function', 'functionRegion', 'tangentFunction']);
+    const manager = new ObjectManager();
+    assert.equal(new PatchApplier(manager, new HistoryManager(manager)).apply(result.json).success, true);
+    const tangent = manager.getAllObjects().find(o => o.type === 'tangentFunction');
+    assert.equal(tangent.valid, true);
+    assert.ok(Math.abs(tangent._slope - 1) < 1e-9);
+    assert.equal(manager.getAllObjects().find(o => o.type === 'functionRegion').valid, true);
+});
+
 test('five distinct function families create the requested selectable area in one command', async () => {
     const examples = [
         ['f(x)=4-x^2, g(x)=x+2, x=-2부터 1까지 두 그래프 사이 넓이를 색칠해줘.', [0, 3]],

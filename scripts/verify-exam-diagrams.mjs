@@ -210,6 +210,7 @@ try {
         }
         const oneShotChecks = [];
         const geometryOneShotChecks = [];
+        const solidOneShotChecks = [];
         let existingViewPreserved = null;
         if (suite === 'complex') {
             const prompts = [
@@ -220,7 +221,9 @@ try {
                 { id: 'reciprocal', text: 'f(x)=1/x, x=1부터 4까지 x축과 그래프 사이 넓이를 색칠해줘.',
                     inside: [2, 0.25], outside: [2, -0.7] },
                 { id: 'cubic', text: 'f(x)=2.5*(x^3-x), x=-1부터 1까지 x축과 그래프 사이 넓이를 색칠해줘.',
-                    inside: [-0.5, 0.4], outside: [-0.5, -0.4] }
+                    inside: [-0.5, 0.4], outside: [-0.5, -0.4] },
+                { id: 'parabola-tangent', text: 'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 그래프 사이를 색칠하고 f(x)의 x=0.5에서의 접선을 그려줘.',
+                    inside: [0.5, 0.6], outside: [0.5, 1.6], tangent: true }
             ];
             for (const prompt of prompts) {
                 const checked = await appPage.evaluate(async (prompt) => {
@@ -239,6 +242,8 @@ try {
                     const areas = app.objectManager.getAllObjects().filter(obj => obj.type === 'functionRegion');
                     if (areas.length !== 1 || !areas[0].valid)
                         throw Error(prompt.id + ': area missing or invalid');
+                    if (prompt.tangent && !app.objectManager.getAllObjects().some(obj => obj.type === 'tangentFunction' && obj.valid))
+                        throw Error(prompt.id + ': tangent missing or invalid');
                     if (app.canvas.scale <= 50)
                         throw Error(prompt.id + ': area was not fitted to the empty canvas');
                     const image = document.createElement('canvas');
@@ -315,6 +320,61 @@ try {
                 delete checked.image;
                 geometryOneShotChecks.push(checked);
             }
+            const solidPrompts = [
+                { id: 'triangular-prism', text: '삼각기둥 ABC-DEF에서 AB=4cm, 높이 6cm, 가려진 모서리는 점선으로 표시해줘.',
+                    labels: ['A', 'B', 'C', 'D', 'E', 'F'], dimensions: ['4 cm', '6 cm'] },
+                { id: 'cube', text: '정육면체 ABCD-EFGH에서 모서리 4cm를 표시해줘.',
+                    labels: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], dimensions: ['4 cm'] }
+            ];
+            for (const prompt of solidPrompts) {
+                const checked = await appPage.evaluate(async (prompt) => {
+                    const app = window.app;
+                    app.objectManager.clear();
+                    app.historyManager.clear();
+                    app.canvas.scale = 50;
+                    app.canvas.offset.x = 0;
+                    app.canvas.offset.y = 0;
+                    app.aiService.config.provider = 'local';
+                    app.aiService.config.apiKey = '';
+                    const result = await app.aiService.processCommand(prompt.text, app.buildAIContext());
+                    if (!result.success || !app.processAIJSON(JSON.stringify(result.json), { mode: 'command' }))
+                        throw Error(prompt.id + ': one-shot request failed: ' + result.error);
+                    const objects = app.objectManager.getAllObjects();
+                    const points = objects.filter(o => o.type === 'point');
+                    const dimensions = objects.filter(o => o.type === 'lengthDimension');
+                    const prism = objects.find(o => o.type === 'prism');
+                    if (JSON.stringify(points.map(o => o.label)) !== JSON.stringify(prompt.labels) ||
+                        points.some(o => o.pointSize !== 0) ||
+                        JSON.stringify(dimensions.map(o => o.customText)) !== JSON.stringify(prompt.dimensions) ||
+                        !prism?.valid || prism._hiddenEdges.length < 1 ||
+                        objects.some(o => !o.valid))
+                        throw Error(prompt.id + ': prism labels, dimensions, or hidden edges missing');
+                    const count = objects.length;
+                    const image = document.createElement('canvas');
+                    app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    const beforePixels = image.toDataURL();
+                    app.historyManager.undo();
+                    if (app.objectManager.getAllObjects().length !== 0)
+                        throw Error(prompt.id + ': undo failed');
+                    app.historyManager.redo();
+                    if (app.objectManager.getAllObjects().length !== count)
+                        throw Error(prompt.id + ': redo failed');
+                    const saved = app.buildProjectEnvelope();
+                    await app.importProjectFile(new File([JSON.stringify(saved)], prompt.id + '.mathgraph.json', { type: 'application/json' }));
+                    app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    if (image.toDataURL() !== beforePixels)
+                        throw Error(prompt.id + ': project import changed rendered pixels');
+                    return { id: prompt.id, count, hiddenEdges: prism._hiddenEdges,
+                        dimensions: dimensions.map(o => o.customText), image: beforePixels, project: saved };
+                }, prompt);
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.png`),
+                    Buffer.from(checked.image.split(',')[1], 'base64'));
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.mathgraph.json`),
+                    JSON.stringify(checked.project, null, 2));
+                delete checked.image;
+                delete checked.project;
+                solidOneShotChecks.push(checked);
+            }
             existingViewPreserved = await appPage.evaluate(async () => {
                 const app = window.app;
                 const prompt = 'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 함수 사이 넓이를 색칠해줘.';
@@ -374,7 +434,7 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, existingViewPreserved,
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, solidOneShotChecks, existingViewPreserved,
             explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));

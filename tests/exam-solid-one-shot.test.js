@@ -1,0 +1,66 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { AIService } from '../js/ai/AIService.js';
+import { ObjectManager } from '../js/core/ObjectManager.js';
+import { HistoryManager } from '../js/core/HistoryManager.js';
+import { PatchApplier } from '../js/ai/PatchApplier.js';
+
+async function draw(prompt) {
+    const service = new AIService({ provider: 'local', apiKey: '' });
+    const result = await service.processCommand(prompt);
+    assert.equal(result.success, true, result.error);
+    assert.equal(service.validateCommandResult(result.json).valid, true);
+    const manager = new ObjectManager();
+    assert.equal(new PatchApplier(manager, new HistoryManager(manager)).apply(result.json).success, true);
+    return { operations: result.json.operations, objects: manager.getAllObjects() };
+}
+
+function near(a, b) { return Math.abs(a - b) < 1e-9; }
+
+test('named triangular prism keeps six requested labels, two dimensions and dashed hidden edges', async () => {
+    const { operations, objects } = await draw(
+        '삼각기둥 ABC-DEF에서 AB=4cm, 높이 6cm, 가려진 모서리는 점선으로 표시해줘.');
+    const points = objects.filter(o => o.type === 'point');
+    assert.deepEqual(points.map(o => o.label), ['A', 'B', 'C', 'D', 'E', 'F']);
+    assert.ok(points.every(o => o.pointSize === 0));
+    const p = Object.fromEntries(points.map(o => [o.label, o.position]));
+    assert.ok(near(p.B.x - p.A.x, 4));
+    for (const [a, b] of [['A', 'D'], ['B', 'E'], ['C', 'F']]) {
+        assert.ok(near(p[b].x - p[a].x, p.D.x - p.A.x));
+        assert.ok(near(p[b].y - p[a].y, p.D.y - p.A.y));
+    }
+    const prism = objects.find(o => o.type === 'prism');
+    assert.ok(prism.valid);
+    assert.ok(prism._hiddenEdges.length >= 1);
+    assert.ok(prism._hiddenEdges.length < 9);
+    assert.deepEqual(objects.filter(o => o.type === 'lengthDimension').map(o => o.customText), ['4 cm', '6 cm']);
+    assert.ok(operations.filter(o => o.type === 'segment').every(o => o.visible === false));
+});
+
+test('dimensioned cube has square front face, eight labels and three hidden edges', async () => {
+    const { objects } = await draw('정육면체 ABCD-EFGH에서 모서리 4cm를 표시해줘.');
+    const points = objects.filter(o => o.type === 'point');
+    assert.deepEqual(points.map(o => o.label), ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+    assert.ok(points.every(o => o.pointSize === 0));
+    const p = Object.fromEntries(points.map(o => [o.label, o.position]));
+    assert.ok(near(p.B.x - p.A.x, 4) && near(p.D.y - p.A.y, 4));
+    assert.ok(near(p.E.x - p.A.x, p.H.x - p.D.x));
+    const prism = objects.find(o => o.type === 'prism');
+    assert.deepEqual(prism._hiddenEdges, [
+        { type: 'top', index: 0 }, { type: 'top', index: 3 }, { type: 'vertical', index: 0 }
+    ]);
+    assert.equal(objects.find(o => o.type === 'lengthDimension').customText, '4 cm');
+});
+
+test('unrepresented solid measurements fail instead of returning an unlabeled generic solid', async () => {
+    const service = new AIService({ provider: 'local', apiKey: '' });
+    for (const prompt of [
+        '사각뿔 V-ABCD에서 밑면 AB=4cm, 높이 6cm를 표시해줘.',
+        '원기둥의 반지름은 3cm, 높이는 6cm이고 뒤쪽 원호는 점선으로 그려줘.',
+        '삼각기둥 ABC-DEF에서 AB=4cm, 높이 6cm, 부피 24㎤도 표시해줘.'
+    ]) {
+        const result = await service.processCommand(prompt);
+        assert.equal(result.success, false, prompt);
+        assert.match(result.error, /시험 입체도형 요청:/);
+    }
+});
