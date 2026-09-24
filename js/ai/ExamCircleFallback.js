@@ -60,7 +60,8 @@ export function buildExamCircleOperations(message) {
             circleId: 'exam_circle', startPointId: firstName, endPointId: lastName,
             mode: 'minor', fillColor: '#000000', fillOpacity: shadesSector ? 0.2 : 0,
             showLabel: false, lineWidth: 2 });
-    } else if (arcName) {
+    }
+    if (arcName) {
         operations.push({ op: 'create', type: 'arc', id: 'requested_arc',
             circleId: 'exam_circle', startPointId: firstName, endPointId: lastName,
             mode: 'minor', showLabel: false, lineWidth: 4 });

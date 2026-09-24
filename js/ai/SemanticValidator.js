@@ -197,8 +197,8 @@ export class SemanticValidator {
         }
         const distance = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
         const radiusText = prompt.match(/반지름\s*(?:은|는|이|가)?\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
-        const equalRadius = prompt.match(/[A-Z]{2}\s*=\s*[A-Z]{2}\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
-        const radius = Number(radiusText?.[1] ?? equalRadius?.[1]);
+        const equalRadius = prompt.match(/([A-Z]{2})\s*=\s*([A-Z]{2})\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/i);
+        const radius = Number(radiusText?.[1] ?? equalRadius?.[3]);
         const circle = creates.find(op => op.type === 'circle' && byId.get(op.centerId)?.label === oName &&
             [aName, bName].includes(byId.get(op.pointOnCircleId)?.label));
         const radiusValid = circle && Number.isFinite(radius) &&
@@ -212,6 +212,18 @@ export class SemanticValidator {
                 (!op.customText || Math.abs(Number.parseFloat(op.customText) - radius) < 1e-9);
         });
         if (!radiusDimension) result.addError('반지름 수치가 해당 반지름의 점선 길이 호에 없습니다.');
+        if (equalRadius) {
+            const expectedEnds = new Set([[oName, aName], [oName, bName]]
+                .map(names => names.sort().join('')));
+            const radiusSegments = creates.filter(op => op.type === 'segment' &&
+                expectedEnds.has([byId.get(op.point1Id)?.label, byId.get(op.point2Id)?.label]
+                    .sort().join('')));
+            const segmentIds = new Set(radiusSegments.map(op => op.id));
+            if (segmentIds.size !== 2 || !creates.some(op => op.type === 'equalLengthMarker' &&
+                segmentIds.has(op.segment1Id) && segmentIds.has(op.segment2Id) &&
+                op.segment1Id !== op.segment2Id))
+                result.addError('같은 반지름 두 선분의 동일 길이 표식이 없습니다.');
+        }
         const angleMark = creates.find(op => op.type === 'angleDimension' &&
             byId.get(op.vertexId)?.label === oName &&
             [byId.get(op.point1Id)?.label, byId.get(op.point2Id)?.label].sort().join('') === [aName, bName].sort().join(''));
@@ -229,7 +241,7 @@ export class SemanticValidator {
         if (wantsSector && !creates.some(op => op.type === 'sector' && matchingBoundary(op) &&
             (!wantsFill || op.fillOpacity === undefined || Number(op.fillOpacity) > 0)))
             result.addError('요청한 두 반지름과 짧은 호 사이의 부채꼴 색칠이 없습니다.');
-        if (!wantsSector && /호\s*[A-Z]{2}/.test(prompt) &&
+        if (/호\s*[A-Z]{2}/.test(prompt) &&
             !creates.some(op => op.type === 'arc' && matchingBoundary(op)))
             result.addError('요청한 호의 시작·끝점에 연결된 호 객체가 없습니다.');
     }
