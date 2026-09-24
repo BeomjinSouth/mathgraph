@@ -594,6 +594,7 @@
     "trigger": "Used when provider is local, no API key exists, or API parsing fails.",
     "safeDeletePolicy": "Delete-like requests are rejected unless handled by direct JSON/update/delete flow.",
     "deterministicPatterns": [
+      "function area between one or two explicitly named f(x)/g(x) expressions and a numeric x interval; a single function also needs an explicit x-axis boundary",
       "number line ranges and steps",
       "midpoint from coordinates or existing named endpoints",
       "function tangent at x=value",

@@ -208,6 +208,86 @@ try {
             }
             checks.push(checked);
         }
+        const oneShotChecks = [];
+        let existingViewPreserved = null;
+        if (suite === 'complex') {
+            const prompts = [
+                { id: 'parabola', text: '함수 f(x)=x^2, g(x)=1에 대하여 x=-1부터 1까지 두 그래프 사이의 넓이를 색칠해줘.',
+                    inside: [0.5, 0.6], outside: [0.5, 1.6] },
+                { id: 'exponential', text: 'f(x)=2^x, g(x)=1, x=0부터 2까지 두 함수 사이 넓이를 색칠해줘.',
+                    inside: [1, 1.5], outside: [1, 0.5] },
+                { id: 'reciprocal', text: 'f(x)=1/x, x=1부터 4까지 x축과 그래프 사이 넓이를 색칠해줘.',
+                    inside: [2, 0.25], outside: [2, -0.7] },
+                { id: 'cubic', text: 'f(x)=2.5*(x^3-x), x=-1부터 1까지 x축과 그래프 사이 넓이를 색칠해줘.',
+                    inside: [-0.5, 0.4], outside: [-0.5, -0.4] }
+            ];
+            for (const prompt of prompts) {
+                const checked = await appPage.evaluate(async (prompt) => {
+                    const app = window.app;
+                    app.objectManager.clear();
+                    app.historyManager.clear();
+                    app.canvas.scale = 50;
+                    app.canvas.offset.x = 0;
+                    app.canvas.offset.y = 0;
+                    app.aiService.config.provider = 'local';
+                    app.aiService.config.apiKey = '';
+                    const result = await app.aiService.processCommand(prompt.text, app.buildAIContext());
+                    if (!result.success) throw Error(prompt.id + ': ' + result.error);
+                    if (!app.processAIJSON(JSON.stringify(result.json), { mode: 'command' }))
+                        throw Error(prompt.id + ': app rejected one-shot GraphA');
+                    const areas = app.objectManager.getAllObjects().filter(obj => obj.type === 'functionRegion');
+                    if (areas.length !== 1 || !areas[0].valid)
+                        throw Error(prompt.id + ': area missing or invalid');
+                    if (app.canvas.scale <= 50)
+                        throw Error(prompt.id + ': area was not fitted to the empty canvas');
+                    const image = document.createElement('canvas');
+                    app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: true, includeBackground: true });
+                    const sample = position => {
+                        const p = app.canvas.toScreen({ x: position[0], y: position[1] });
+                        return image.getContext('2d').getImageData(Math.round(p.x), Math.round(p.y), 1, 1).data[0];
+                    };
+                    const inside = sample(prompt.inside), outside = sample(prompt.outside);
+                    if (inside >= 245 || outside <= 240)
+                        throw Error(prompt.id + ': fill pixels wrong, inside=' + inside + ', outside=' + outside);
+                    return { id: prompt.id, operationTypes: result.json.operations.map(op => op.type),
+                        fittedScale: app.canvas.scale, fillInside: inside, fillOutside: outside,
+                        image: image.toDataURL() };
+                }, prompt);
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.png`),
+                    Buffer.from(checked.image.split(',')[1], 'base64'));
+                delete checked.image;
+                oneShotChecks.push(checked);
+            }
+            existingViewPreserved = await appPage.evaluate(async () => {
+                const app = window.app;
+                const prompt = 'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 함수 사이 넓이를 색칠해줘.';
+                app.objectManager.clear();
+                app.historyManager.clear();
+                app.canvas.scale = 80;
+                app.canvas.offset.x = 1;
+                app.canvas.offset.y = -1;
+                let result = await app.aiService.processCommand(prompt, app.buildAIContext());
+                if (!result.success || !app.processAIJSON(JSON.stringify(result.json), { mode: 'command' }))
+                    throw Error('custom view area creation failed');
+                if (app.canvas.scale !== 80 || app.canvas.offset.x !== 1 || app.canvas.offset.y !== -1)
+                    throw Error('custom view was overwritten');
+                app.objectManager.clear();
+                app.historyManager.clear();
+                app.canvas.scale = 50;
+                app.canvas.offset.x = 0;
+                app.canvas.offset.y = 0;
+                const teacherPoint = app.objectManager.createPoint(-3, -2,
+                    { label: 'T', labelOffset: { x: 0, y: 0 }, pointSize: 0 });
+                const teacherId = teacherPoint.id;
+                result = await app.aiService.processCommand(prompt, app.buildAIContext());
+                if (!result.success || !app.processAIJSON(JSON.stringify(result.json), { mode: 'command' }))
+                    throw Error('existing-object area creation failed');
+                if (app.canvas.scale !== 50 || !app.objectManager.getObject(teacherId) ||
+                    JSON.stringify(app.objectManager.getObject(teacherId).toJSON().labelOffset) !== JSON.stringify({ x: 0, y: 0 }))
+                    throw Error('existing teacher view/object changed');
+                return true;
+            });
+        }
         const preserved = await appPage.evaluate(async () => {
             const app = window.app;
             const input = { operations: [{ op: 'create', type: 'point', id: 'manual', label: 'Q', x: -3, y: -2, pointSize: 0, labelOffset: { x: 0, y: 0 } }] };
@@ -237,7 +317,8 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, explicitPositionsPreserved: preserved, errors, screenshotDir };
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, existingViewPreserved,
+            explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));
         if (errors.length)
