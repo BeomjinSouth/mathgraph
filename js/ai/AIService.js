@@ -10,6 +10,7 @@ import { SchemaValidator } from './SchemaValidator.js';
 import { SemanticValidator } from './SemanticValidator.js';
 import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
 import { ObjectManager } from '../core/ObjectManager.js';
+import { buildExamGeometryOperations } from './ExamGeometryFallback.js';
 import {
     diffImageAnalysisOperations,
     recordImageAnalysisStage
@@ -1011,7 +1012,8 @@ export class AIService {
         });
 
         if (!fallback.success && mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM && options.noProvider &&
-            !fallback.error?.startsWith('함수 넓이 요청:')) {
+            !fallback.error?.startsWith('함수 넓이 요청:') &&
+            !fallback.error?.startsWith('시험 도형 요청:')) {
             return {
                 ...fallback,
                 success: false,
@@ -1742,7 +1744,8 @@ export class AIService {
         if (deterministicResult.success) {
             return deterministicResult;
         }
-        if (deterministicResult.error?.startsWith('함수 넓이 요청:')) {
+        if (deterministicResult.error?.startsWith('함수 넓이 요청:') ||
+            deterministicResult.error?.startsWith('시험 도형 요청:')) {
             return deterministicResult;
         }
         if (options.deterministicOnly) {
@@ -2049,6 +2052,7 @@ export class AIService {
 
         const builders = [
             () => this.buildFunctionAreaOperations(normalizedMessage),
+            () => buildExamGeometryOperations(normalizedMessage),
             () => this.buildKnownHyperbolaAsymptoteOperations(normalizedMessage),
             () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
             () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage)
@@ -2081,6 +2085,7 @@ export class AIService {
         const state = this.buildContextState(context);
         const builders = [
             () => this.buildFunctionAreaOperations(normalizedMessage),
+            () => buildExamGeometryOperations(normalizedMessage),
             () => this.buildNumberLineOperations(normalizedMessage),
             () => this.buildMidpointOperations(normalizedMessage, state),
             () => this.buildTangentFunctionOperations(normalizedMessage, state),
