@@ -224,7 +224,13 @@ try {
                 { id: 'cubic', text: 'f(x)=2.5*(x^3-x), x=-1부터 1까지 x축과 그래프 사이 넓이를 색칠해줘.',
                     inside: [-0.5, 0.4], outside: [-0.5, -0.4] },
                 { id: 'parabola-tangent', text: 'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 그래프 사이를 색칠하고 f(x)의 x=0.5에서의 접선을 그려줘.',
-                    inside: [0.5, 0.6], outside: [0.5, 1.6], tangent: true }
+                    inside: [0.5, 0.6], outside: [0.5, 1.6], tangent: true },
+                { id: 'sine-horizontal-half', text: 'f(x)=sin(x), y=0.5, x=0부터 3.141592653589793까지 두 그래프 사이 넓이를 색칠해줘.',
+                    inside: [1.57, 0.75], outside: [1.57, 0.25], baselineY: 0.5 },
+                { id: 'absolute-horizontal-one', text: 'f(x)=abs(x), y=1, x=-2부터 2까지 함수와 직선 사이 넓이를 색칠해줘.',
+                    inside: [0.4, 0.7], outside: [0.4, 1.5], baselineY: 1 },
+                { id: 'quadratic-horizontal-negative', text: 'f(x)=x^2, y=-1, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.',
+                    inside: [0.4, -0.5], outside: [0.4, -1.5], baselineY: -1 }
             ];
             for (const prompt of prompts) {
                 const checked = await appPage.evaluate(async (prompt) => {
@@ -243,6 +249,9 @@ try {
                     const areas = app.objectManager.getAllObjects().filter(obj => obj.type === 'functionRegion');
                     if (areas.length !== 1 || !areas[0].valid)
                         throw Error(prompt.id + ': area missing or invalid');
+                    if (prompt.baselineY !== undefined &&
+                        (areas[0].function2Id || Math.abs(areas[0].baselineY - prompt.baselineY) > 1e-9))
+                        throw Error(prompt.id + ': horizontal boundary is not the requested y value');
                     if (prompt.tangent && !app.objectManager.getAllObjects().some(obj => obj.type === 'tangentFunction' && obj.valid))
                         throw Error(prompt.id + ': tangent missing or invalid');
                     if (app.canvas.scale <= 50)
@@ -256,13 +265,35 @@ try {
                     const inside = sample(prompt.inside), outside = sample(prompt.outside);
                     if (inside >= 245 || outside <= 240)
                         throw Error(prompt.id + ': fill pixels wrong, inside=' + inside + ', outside=' + outside);
+                    const pixels = image.toDataURL();
+                    const count = app.objectManager.getAllObjects().length;
+                    app.historyManager.undo();
+                    if (app.objectManager.getAllObjects().length !== 0)
+                        throw Error(prompt.id + ': area undo failed');
+                    app.historyManager.redo();
+                    if (app.objectManager.getAllObjects().length !== count)
+                        throw Error(prompt.id + ': area redo failed');
+                    const redoImage = document.createElement('canvas');
+                    app.renderSceneToCanvas(redoImage, { includeGrid: false, includeAxes: true, includeBackground: true });
+                    if (redoImage.toDataURL() !== pixels)
+                        throw Error(prompt.id + ': area pixels changed after redo');
+                    const project = app.buildProjectEnvelope();
+                    await app.importProjectFile(new File([JSON.stringify(project)], prompt.id + '.mathgraph.json',
+                        { type: 'application/json' }));
+                    const restoredImage = document.createElement('canvas');
+                    app.renderSceneToCanvas(restoredImage, { includeGrid: false, includeAxes: true, includeBackground: true });
+                    if (restoredImage.toDataURL() !== pixels)
+                        throw Error(prompt.id + ': area pixels changed after import');
                     return { id: prompt.id, operationTypes: result.json.operations.map(op => op.type),
                         fittedScale: app.canvas.scale, fillInside: inside, fillOutside: outside,
-                        image: image.toDataURL() };
+                        image: pixels, project };
                 }, prompt);
                 await fs.writeFile(path.join(output, `one-shot-${checked.id}.png`),
                     Buffer.from(checked.image.split(',')[1], 'base64'));
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.mathgraph.json`),
+                    JSON.stringify(checked.project, null, 2));
                 delete checked.image;
+                delete checked.project;
                 oneShotChecks.push(checked);
             }
             const geometryPrompts = [

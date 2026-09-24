@@ -85,3 +85,38 @@ test('a closed inequality interval keeps its stated endpoints', async () => {
     assert.equal(result.success, true, result.error);
     assert.deepEqual([result.json.operations.at(-1).xMin, result.json.operations.at(-1).xMax], [-1, 1]);
 });
+
+test('a decimal horizontal boundary is not silently changed into the x-axis', async () => {
+    const result = await service().processCommand(
+        'f(x)=sin(x), y=0.5, x=0부터 3.141592653589793까지 두 그래프 사이 넓이를 색칠해줘.');
+    assert.equal(result.success, true, result.error);
+    assert.equal(result.json.operations.at(-1).baselineY, 0.5);
+    const manager = new ObjectManager();
+    assert.equal(new PatchApplier(manager, new HistoryManager(manager)).apply(result.json).success, true);
+    const area = manager.getAllObjects().at(-1);
+    assert.equal(area.hitTest(new Vec2(Math.PI / 2, 0.75)), true);
+    assert.equal(area.hitTest(new Vec2(Math.PI / 2, 0.25)), false);
+});
+
+test('a positive or negative horizontal boundary is kept and ambiguous boundaries are rejected', async () => {
+    for (const [prompt, expected] of [
+        ['f(x)=x^2, y=2, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.', 2],
+        ['f(x)=x^2, y=-1, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.', -1]
+    ]) {
+        const result = await service().processCommand(prompt);
+        assert.equal(result.success, true, result.error);
+        assert.equal(result.json.operations.at(-1).baselineY, expected);
+    }
+    for (const prompt of [
+        'f(x)=x^2, y=1, y=2, x=-1부터 1까지 넓이를 색칠해줘.',
+        'f(x)=x^2, y=1, x=-1부터 1까지 x축과 직선 사이 넓이를 색칠해줘.',
+        'f(x)=x^2, y=1/2, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.',
+        'f(x)=x^2, y=1+2, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.'
+    ]) {
+        const result = await service().processCommand(prompt);
+        assert.equal(result.success, false, prompt);
+    }
+    const axesVisible = await service().processCommand(
+        'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 함수 사이 넓이를 색칠하고 x축도 보여줘.');
+    assert.equal(axesVisible.success, true, axesVisible.error);
+});

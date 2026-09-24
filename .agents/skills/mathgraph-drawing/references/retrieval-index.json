@@ -161,6 +161,11 @@
       "objectTypes": ["function", "tangentFunction", "point", "line", "intersection"]
     },
     {
+      "id": "graph_horizontal_line_area",
+      "tags": ["graph", "function", "horizontal_boundary", "shaded_region"],
+      "objectTypes": ["function", "functionRegion"]
+    },
+    {
       "id": "graph_piecewise_open_closed_points",
       "tags": ["graph", "function", "piecewise", "open_endpoint", "closed_endpoint"],
       "objectTypes": ["function", "point", "segment", "textLabel"]

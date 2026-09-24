@@ -1,4 +1,5 @@
 import { ValidationResult } from './SchemaValidator.js';
+import { readHorizontalAreaBoundary, readRequestedXBounds } from './FunctionAreaIntent.js';
 
 const SQRT2 = Math.SQRT2;
 
@@ -177,8 +178,58 @@ export class SemanticValidator {
         if (/[a-z]\s*\(\s*x\s*\)\s*=/i.test(prompt) && /접선|tangent/i.test(prompt) &&
             ofType('tangentFunction').length === 0)
             result.addError('함수의 접선 요청에 tangentFunction이 없습니다.');
+        this.validateHorizontalFunctionAreaIntent(prompt, creates, result);
         this.validateExamCircleIntent(prompt, creates, result);
         return result;
+    }
+
+    validateHorizontalFunctionAreaIntent(prompt, creates, result) {
+        const source = prompt.replace(/[−–—]/g, '-');
+        if (!/색칠|음영|넓이.{0,35}(?:구하|찾|계산|표시)|shad(?:e|ed)/i.test(source)) return;
+        const assignments = [...source.matchAll(/([a-z])\s*\(\s*x\s*\)\s*=/gi)];
+        if (assignments.length !== 1) return;
+        const boundary = readHorizontalAreaBoundary(source);
+        if (boundary.error) {
+            result.addError(boundary.error);
+            return;
+        }
+        if (boundary.baselineY === null) return;
+        const bounds = readRequestedXBounds(source);
+        if (!bounds) return;
+        const name = assignments[0][1].toLowerCase();
+        const functions = creates.filter(op => op.type === 'function');
+        const graph = functions.find(op => op.id === name || op.label === name);
+        const byId = new Map(functions.map(op => [op.id, op]));
+        const areas = creates.filter(op => op.type === 'functionRegion');
+        const isConstantBoundary = id => {
+            const expression = String(byId.get(id)?.expression || '').trim();
+            return /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(expression) &&
+                Math.abs(Number(expression) - boundary.baselineY) < 1e-9;
+        };
+        const matchesBoundary = op => {
+            if (!graph) return false;
+            if (op.function1Id === graph.id && !op.function2Id)
+                return Math.abs(Number(op.baselineY ?? 0) - boundary.baselineY) < 1e-9;
+            const otherId = op.function1Id === graph.id ? op.function2Id :
+                op.function2Id === graph.id ? op.function1Id : null;
+            return otherId && isConstantBoundary(otherId);
+        };
+        const validAreas = areas.filter(op => matchesBoundary(op) &&
+            Number(op.fillOpacity ?? 0.2) > 0 &&
+            Number.isFinite(op.xMin) && Number.isFinite(op.xMax) &&
+            op.xMin < op.xMax && op.xMin >= bounds.xMin - 1e-9 &&
+            op.xMax <= bounds.xMax + 1e-9);
+        if (!graph || !areas.length || validAreas.length !== areas.length) {
+            result.addError('함수의 색칠 경계·수평선 높이 또는 구간이 요청과 다릅니다.');
+            return;
+        }
+        let coveredUntil = bounds.xMin;
+        for (const area of validAreas.sort((a, b) => a.xMin - b.xMin)) {
+            if (area.xMin > coveredUntil + 1e-9) break;
+            coveredUntil = Math.max(coveredUntil, area.xMax);
+        }
+        if (coveredUntil < bounds.xMax - 1e-9)
+            result.addError('색칠한 구간이 요청한 x 범위를 모두 덮지 않습니다.');
     }
 
     validateExamCircleIntent(prompt, creates, result) {
