@@ -3,6 +3,98 @@ import { ValidationResult } from './SchemaValidator.js';
 const SQRT2 = Math.SQRT2;
 
 export class SemanticValidator {
+    validateExamAnnotationIntent(data, options = {}) {
+        const operations = data?.operations || (Array.isArray(data) ? data : []);
+        if (!Array.isArray(operations))
+            return ValidationResult.failure('exam annotation validation requires operations to be an array.');
+        const prompt = String(options.prompt || options.userMessage || '');
+        const creates = operations.filter(op => op?.op === 'create');
+        const ofType = type => creates.filter(op => op.type === type);
+        const result = ValidationResult.success();
+        const pointById = new Map(ofType('point').map(op => [op.id, op]));
+        const segmentById = new Map(ofType('segment').map(op => [op.id, op]));
+        const sideName = id => {
+            const segment = segmentById.get(id);
+            const a = pointById.get(segment?.point1Id)?.label;
+            const b = pointById.get(segment?.point2Id)?.label;
+            return a && b ? [a, b].sort().join('') : null;
+        };
+        const normalizedSide = side => [...side].sort().join('');
+        const sideEquals = [...prompt.matchAll(/\b([A-Z]{2})\s*=\s*([A-Z]{2})\b/g)];
+        const lengthMarkers = ofType('equalLengthMarker');
+        const namedLengthMarkers = lengthMarkers.map(op => ({
+            pair: [sideName(op.segment1Id), sideName(op.segment2Id)], tickCount: op.tickCount || 1
+        }));
+        const angleMarkers = ofType('angleDimension').filter(op => (op.markerCount || 0) > 0);
+        const anglesByVertex = label => angleMarkers.filter(op => pointById.get(op.vertexId)?.label === label);
+        const requestedSideMarks = [];
+
+        for (const [, first, second] of sideEquals) {
+            const a = normalizedSide(first), b = normalizedSide(second);
+            const matching = namedLengthMarkers.find(marker => marker.pair.includes(a) && marker.pair.includes(b));
+            if (matching) requestedSideMarks.push({ sides: [a, b], tickCount: matching.tickCount });
+            if (!matching && (namedLengthMarkers.some(marker => marker.pair.every(Boolean)) || lengthMarkers.length === 0))
+                result.addError(`${first}=${second}에 대응하는 같은 길이 표식이 없습니다.`);
+        }
+        for (let i = 0; i < requestedSideMarks.length; i++) {
+            for (let j = i + 1; j < requestedSideMarks.length; j++) {
+                const a = requestedSideMarks[i], b = requestedSideMarks[j];
+                if (!a.sides.some(side => b.sides.includes(side)) && a.tickCount === b.tickCount)
+                    result.addError('서로 독립인 같은 길이 묶음은 서로 다른 눈금 개수로 표시해야 합니다.');
+            }
+        }
+        for (const [, first, second] of prompt.matchAll(/∠\s*([A-Z])\s*=\s*∠\s*([A-Z])/g)) {
+            const firstMarks = anglesByVertex(first), secondMarks = anglesByVertex(second);
+            const matching = firstMarks.some(a => secondMarks.some(b => a.markerCount === b.markerCount));
+            if (!matching && (angleMarkers.some(op => pointById.has(op.vertexId)) || angleMarkers.length < 2))
+                result.addError(`∠${first}=∠${second}에 대응하는 같은 각 호·표식이 없습니다.`);
+        }
+        for (const [, side, value] of prompt.matchAll(/\b([A-Z]{2})\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/gi)) {
+            const wanted = normalizedSide(side.toUpperCase());
+            const dimensions = ofType('lengthDimension');
+            const matching = dimensions.some(op => {
+                if (sideName(op.segmentId) !== wanted) return false;
+                if (op.customText) return Math.abs(Number.parseFloat(op.customText) - Number(value)) < 1e-9;
+                const segment = segmentById.get(op.segmentId);
+                const a = pointById.get(segment?.point1Id), b = pointById.get(segment?.point2Id);
+                return op.showValue !== false && a && b &&
+                    Math.abs(Math.hypot(a.x - b.x, a.y - b.y) - Number(value)) < 1e-6;
+            });
+            if (!matching && (dimensions.some(op => sideName(op.segmentId)) || dimensions.length === 0))
+                result.addError(`${side}=${value}cm의 점선 길이 호가 해당 변에 없습니다.`);
+        }
+        for (const [, vertex, value] of prompt.matchAll(/∠\s*([A-Z])\s*=\s*(\d+(?:\.\d+)?)\s*°/g)) {
+            const dimensions = ofType('angleDimension');
+            const matching = dimensions.some(op => {
+                if (pointById.get(op.vertexId)?.label !== vertex) return false;
+                if (op.customText) return Math.abs(Number.parseFloat(op.customText) - Number(value)) < 1e-9;
+                const center = pointById.get(op.vertexId);
+                const a = pointById.get(op.point1Id), b = pointById.get(op.point2Id);
+                if (!center || !a || !b || op.showValue === false) return false;
+                const u = [a.x - center.x, a.y - center.y], v = [b.x - center.x, b.y - center.y];
+                const magnitude = Math.hypot(...u) * Math.hypot(...v);
+                if (magnitude < 1e-9) return false;
+                const degrees = Math.acos(Math.max(-1, Math.min(1, (u[0] * v[0] + u[1] * v[1]) / magnitude))) * 180 / Math.PI;
+                return Math.abs(degrees - Number(value)) <= 0.5;
+            });
+            if (!matching && (dimensions.some(op => pointById.has(op.vertexId)) || dimensions.length === 0))
+                result.addError(`∠${vertex}=${value}°의 각도 호·값이 해당 꼭짓점에 없습니다.`);
+        }
+        if (/(?:삼각기둥|정육면체)\s*[A-Z]{3,4}\s*[-–—]\s*[A-Z]{3,4}/.test(prompt)) {
+            const names = prompt.match(/(?:삼각기둥|정육면체)\s*([A-Z]{3,4})\s*[-–—]\s*([A-Z]{3,4})/);
+            const labels = new Set(ofType('point').map(op => op.label));
+            if (names && [...names[1], ...names[2]].some(label => !labels.has(label)))
+                result.addError('입체도형에서 요청한 꼭짓점 이름이 모두 표시되지 않았습니다.');
+        }
+        if (/[a-z]\s*\(\s*x\s*\)\s*=/i.test(prompt) && /색칠|음영|넓이.{0,35}(?:구하|찾|계산|표시)|shad(?:e|ed)/i.test(prompt) &&
+            ofType('functionRegion').length === 0)
+            result.addError('함수의 넓이 요청에 색칠된 functionRegion이 없습니다.');
+        if (/[a-z]\s*\(\s*x\s*\)\s*=/i.test(prompt) && /접선|tangent/i.test(prompt) &&
+            ofType('tangentFunction').length === 0)
+            result.addError('함수의 접선 요청에 tangentFunction이 없습니다.');
+        return result;
+    }
+
     validatePdfSample(data, sampleOrCategory) {
         const category = typeof sampleOrCategory === 'string'
             ? sampleOrCategory
@@ -95,7 +187,9 @@ export class SemanticValidator {
         const hasSolidPrompt = /입체|직육면체|정육면체|각기둥|각뿔|원기둥|원뿔|구|solid|prism|pyramid|cube|cylinder|cone|sphere/.test(prompt);
         const hasChartPrompt = /통계|도수|히스토그램|산점도|상자그림|분포|자료|chart|histogram|scatter|box plot|statistics|frequency|distribution/.test(prompt);
         const hasPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
-        const effectiveGeometryPrompt = hasGeometryPrompt && hasPlaneGeometryPrompt && !(
+        const hasNonTangentPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
+        const effectiveGeometryPrompt = hasGeometryPrompt && hasPlaneGeometryPrompt &&
+            (hasNonTangentPlaneGeometryPrompt || !hasGraphPrompt) && !(
             hasNumberLinePrompt &&
             !/삼각형|사각형|다각형|도형|원\s|접선|반지름|지름|호|부채꼴|각|닮음|평행|triangle|circle|polygon|angle|similar|parallel/.test(prompt)
         );

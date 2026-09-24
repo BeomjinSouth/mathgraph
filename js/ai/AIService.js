@@ -11,6 +11,7 @@ import { SemanticValidator } from './SemanticValidator.js';
 import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
 import { ObjectManager } from '../core/ObjectManager.js';
 import { buildExamGeometryOperations } from './ExamGeometryFallback.js';
+import { buildExamSolidOperations } from './ExamSolidFallback.js';
 import {
     diffImageAnalysisOperations,
     recordImageAnalysisStage
@@ -1013,7 +1014,8 @@ export class AIService {
 
         if (!fallback.success && mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM && options.noProvider &&
             !fallback.error?.startsWith('함수 넓이 요청:') &&
-            !fallback.error?.startsWith('시험 도형 요청:')) {
+            !fallback.error?.startsWith('시험 도형 요청:') &&
+            !fallback.error?.startsWith('시험 입체도형 요청:')) {
             return {
                 ...fallback,
                 success: false,
@@ -1023,6 +1025,11 @@ export class AIService {
         }
 
         const result = this.enhanceProcessResult(fallback, message, context, mode);
+        if (result?.success) {
+            const validation = this.validateCommandResult(result.json, context, { mode, userMessage: message });
+            if (!validation.valid) return { success: false,
+                error: `요청한 그림 조건이 빠졌습니다: ${validation.errors.join(' ')}`, mode };
+        }
         return result?.success
             ? { ...result, mode: result.mode || mode }
             : { ...result, mode: result?.mode || mode };
@@ -1049,6 +1056,13 @@ export class AIService {
         });
         if (!solidIntentResult.valid) {
             return solidIntentResult;
+        }
+
+        const examIntentResult = this.semanticValidator.validateExamAnnotationIntent(json, {
+            prompt: options.userMessage
+        });
+        if (!examIntentResult.valid) {
+            return examIntentResult;
         }
 
         if (options.mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM) {
@@ -1745,7 +1759,8 @@ export class AIService {
             return deterministicResult;
         }
         if (deterministicResult.error?.startsWith('함수 넓이 요청:') ||
-            deterministicResult.error?.startsWith('시험 도형 요청:')) {
+            deterministicResult.error?.startsWith('시험 도형 요청:') ||
+            deterministicResult.error?.startsWith('시험 입체도형 요청:')) {
             return deterministicResult;
         }
         if (options.deterministicOnly) {
@@ -2055,7 +2070,8 @@ export class AIService {
             () => buildExamGeometryOperations(normalizedMessage),
             () => this.buildKnownHyperbolaAsymptoteOperations(normalizedMessage),
             () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
-            () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage)
+            () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage),
+            () => buildExamSolidOperations(normalizedMessage)
         ];
 
         for (const builder of builders) {
@@ -2092,6 +2108,7 @@ export class AIService {
             () => this.buildKnownHyperbolaAsymptoteOperations(normalizedMessage),
             () => this.buildKnownThreeCircleLensOperations(normalizedMessage),
             () => this.buildKnownSquarePyramidMidsectionOperations(normalizedMessage),
+            () => buildExamSolidOperations(normalizedMessage),
             () => this.buildBasicFunctionOperations(normalizedMessage),
             () => this.buildBasicCurvedSolidOperations(normalizedMessage, state.layoutOrigin),
             () => this.buildBasicSolidOperations(normalizedMessage, state.usedLabels, state.layoutOrigin),
@@ -2434,6 +2451,8 @@ export class AIService {
         const source = String(message || '').replace(/[−–—]/g, '-').replace(/π/g, 'pi');
         const asksForArea = /넓이(?:를|의|은|는)?[^.?!\n]{0,70}(?:구하|찾|계산|색칠|표시|나타내)|색칠|음영|shad(?:e|ed)|\barea\b/i.test(source);
         if (!asksForArea || !/[a-z]\s*\(\s*x\s*\)\s*=/i.test(source)) return null;
+        if (/법선|미분/i.test(source))
+            return { error: '함수 넓이 요청: 색칠 영역과 함께 요청한 법선·미분 표시는 이 원샷 경로에서 아직 만들 수 없습니다.' };
 
         const assignments = [...source.matchAll(/([a-z])\s*\(\s*x\s*\)\s*=/gi)];
         if (assignments.length < 1 || assignments.length > 2 ||
@@ -2458,10 +2477,27 @@ export class AIService {
         if (expressions.length === 1 && !/(?:x축|y\s*=\s*0|x-axis)/i.test(source))
             return { error: '함수 넓이 요청: 두 번째 경계 함수나 x축을 지정해 주세요.' };
 
+        let tangentTarget = null;
+        let tangentX = null;
+        if (/접선|tangent/i.test(source)) {
+            const tangent = source.match(/([a-z])\s*(?:\(\s*x\s*\))?\s*의\s*x\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*에서(?:의)?\s*접선/i);
+            tangentTarget = tangent?.[1]?.toLowerCase() || null;
+            tangentX = tangent ? Number(tangent[2]) : null;
+            if (!tangentTarget || !Number.isFinite(tangentX) || tangentX < xMin || tangentX > xMax ||
+                !assignments.some(match => match[1].toLowerCase() === tangentTarget))
+                return { error: '함수 넓이 요청: 접선의 대상 함수와 색칠 구간 안의 x좌표를 명시해 주세요. 예: f(x)의 x=0에서의 접선.' };
+        }
+
         const manager = new ObjectManager();
         const graphs = expressions.map(expression => manager.createFunction(expression, { xMin, xMax }));
         if (graphs.some(graph => !graph.valid))
             return { error: '함수 넓이 요청: 함수식을 계산할 수 없습니다.' };
+        if (tangentTarget) {
+            const index = assignments.findIndex(match => match[1].toLowerCase() === tangentTarget);
+            const tangent = manager.createTangentFunction(graphs[index].id, tangentX);
+            if (!tangent.valid)
+                return { error: '함수 넓이 요청: 지정한 점에서 접선을 계산할 수 없습니다.' };
+        }
         const area = manager.createFunctionRegion(graphs[0].id, graphs[1]?.id ?? null, xMin, xMax);
         if (!area.valid)
             return { error: '함수 넓이 요청: 이 구간에서는 함수가 정의되지 않거나 음영 경계가 닫히지 않습니다.' };
@@ -2475,6 +2511,8 @@ export class AIService {
             function1Id: operations[0].id,
             ...(operations[1] ? { function2Id: operations[1].id } : { baselineY: 0 }),
             xMin, xMax, fillColor: '#000000', fillOpacity: 0.2, showLabel: false });
+        if (tangentTarget) operations.push({ op: 'create', id: 'requested_tangent', type: 'tangentFunction',
+            functionId: tangentTarget, x: tangentX, showLabel: false, lineWidth: 2 });
         return { operations };
     }
 
