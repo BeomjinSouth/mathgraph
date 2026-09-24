@@ -54,6 +54,8 @@ const NODE_KIND_ALIASES = new Map(Object.entries({
     lensregion: 'lensRegion',
     circleintersectionregion: 'lensRegion',
     polygon: 'polygon',
+    functionregion: 'functionRegion',
+    areabetweenfunctions: 'functionRegion',
     triangle: 'polygon',
     quadrilateral: 'polygon',
     function: 'function',
@@ -116,6 +118,7 @@ export const SCENE_GRAPH_SUPPORTED_NODE_KINDS = [
     'circularSegment',
     'lensRegion',
     'polygon',
+    'functionRegion',
     'function',
     'numberLine',
     'prism',
@@ -369,6 +372,9 @@ export class SceneGraphCompiler {
                 break;
             case 'polygon':
                 this.addPolygon(node);
+                break;
+            case 'functionRegion':
+                this.addFunctionRegion(node);
                 break;
             case 'function':
                 this.addFunction(node);
@@ -719,6 +725,26 @@ export class SceneGraphCompiler {
         this.createdIds.add(id);
     }
 
+    addFunctionRegion(node) {
+        const id = this.nodeId(node, 'functionRegion');
+        const refs = refsFrom(node.refs);
+        const numbers = numbersFrom(node);
+        const function1Id = ref(node.function1Id ?? node.function1 ?? node.upperFunctionId ?? refs[0]);
+        const function2Id = ref(node.function2Id ?? node.function2 ?? node.lowerFunctionId ?? refs[1]);
+        const xMin = numberFrom(node.xMin ?? numbers[0]);
+        const xMax = numberFrom(node.xMax ?? numbers[1]);
+        const baselineY = numberFrom(node.baselineY ?? numbers[2] ?? 0);
+        if (!function1Id || !Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin >= xMax ||
+            !Number.isFinite(baselineY)) {
+            this.warn(`functionRegion "${id}" skipped because a function and finite xMin < xMax are required.`);
+            return;
+        }
+        this.addOperation({ op: 'create', id, type: 'functionRegion', function1Id,
+            ...(function2Id ? { function2Id } : { baselineY }), xMin, xMax,
+            ...polygonCommonFields(node) });
+        this.createdIds.add(id);
+    }
+
     addFunction(node) {
         const id = this.nodeId(node, 'function');
         const numbers = numbersFrom(node);
@@ -986,7 +1012,8 @@ function legacyNodeDependencies(node, kind) {
         arc: ['circleId', 'circle', 'startPointId', 'startPoint', 'endPointId', 'endPoint'],
         sector: ['circleId', 'circle', 'startPointId', 'startPoint', 'endPointId', 'endPoint'],
         circularSegment: ['circleId', 'circle', 'startPointId', 'startPoint', 'endPointId', 'endPoint'],
-        lensRegion: ['circle1Id', 'circle1', 'circle2Id', 'circle2']
+        lensRegion: ['circle1Id', 'circle1', 'circle2Id', 'circle2'],
+        functionRegion: ['function1Id', 'function1', 'upperFunctionId', 'function2Id', 'function2', 'lowerFunctionId']
     };
     const aliases = aliasesByKind[kind] || [];
     const dependencies = aliases.map(alias => ref(node?.[alias])).filter(Boolean);

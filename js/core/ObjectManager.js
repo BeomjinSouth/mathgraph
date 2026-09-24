@@ -15,6 +15,7 @@ import { RightAngleMarker, EqualLengthMarker } from '../objects/Marker.js';
 import { Arc, Sector, CircularSegment } from '../objects/Arc.js'; // Mk.2
 import { AngleDimension, LengthDimension } from '../objects/Dimension.js'; // Mk.2
 import { Polygon } from '../objects/Polygon.js'; // Mk.5
+import { FunctionRegion } from '../objects/FunctionRegion.js';
 import { LensRegion } from '../objects/LensRegion.js';
 import { ClosedRegion } from '../objects/ClosedRegion.js';
 import { Prism, Pyramid } from '../objects/Solid3D.js'; // Mk.3
@@ -573,6 +574,11 @@ export class ObjectManager {
                 obj = new Polygon(data.vertexIds, data);
                 break;
 
+            case ObjectType.FUNCTION_REGION:
+            case 'functionRegion':
+                obj = new FunctionRegion(data.function1Id, data.function2Id, data.xMin, data.xMax, data);
+                break;
+
             // 함수
             case ObjectType.FUNCTION:
             case 'function':
@@ -772,6 +778,10 @@ export class ObjectManager {
 
     createPolygon(vertexIds, params = {}) {
         return this.addObject(new Polygon(vertexIds, params));
+    }
+
+    createFunctionRegion(function1Id, function2Id, xMin, xMax, params = {}) {
+        return this.addObject(new FunctionRegion(function1Id, function2Id, xMin, xMax, params));
     }
 
     // Mk.2: 치수 생성

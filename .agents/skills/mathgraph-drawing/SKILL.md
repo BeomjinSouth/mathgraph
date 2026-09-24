@@ -23,7 +23,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Plane figures: load core contract, point/line/polygon/textLabel objects, construction objects, marker/dimension objects, and examples tagged `plane`.
 - Circles and curved regions: load circle, circleThreePoints, pointOnCircle, tangentCircle, arc, sector, circularSegment, lensRegion, and examples tagged `circle`.
 - Solids: load prism/pyramid plus first-class cylinder/cone/sphere projections, base/top/apex point patterns, and examples tagged `solid`.
-- Graphs/functions: load function, tangentFunction, intersection, line/segment, numberLine, and examples tagged `graph`.
+- Graphs/functions: load function, functionRegion, tangentFunction, intersection, line/segment, numberLine, and examples tagged `graph`.
 - Statistical or chart-like requests: report them as explicitly excluded from the standard teacher generation workflow. Do not imply first-class support for bar/pie charts, histograms, frequency polygons, box plots, dot plots, or scatter plots.
 - API integration prompts: load `api_prompting`, `operationContract`, and `validationWorkflow` from the feature manual.
 - Image reference or patching prompts: load `api_prompting`, `operationContract`, `validationWorkflow`, known gaps, and only the object chunks relevant to the pasted image/instruction.
@@ -48,7 +48,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For `∠XYZ`, use `Y` as the `angleDimension.vertexId` and keep a source-stated angle at that vertex instead of substituting a derived angle elsewhere.
 - For concentric-circle or fixed-radius prompts, reuse the same center id and create radius points at the requested distance.
 - There is no first-class `annularSector` yet; when a prompt accepts approximation, use a normal sector plus an inner circle outline rather than claiming a true ring-sector cutout.
-- For function-bounded curved regions, use a polygon through explicit boundary/sample points and hide helper vertices with `visible:false`; exact curved fills need future primitives.
+- When a problem asks for area between two function graphs or a graph and a horizontal line on a stated x-interval, create `functionRegion` after its function objects. Use `function1Id`, optional `function2Id` (otherwise `baselineY`, default 0), and `xMin`/`xMax`; keep the shaded span within the visible canvas and both function domains. Inspect the fill and x-boundary strokes. The path samples the functions, so it is a visual diagram rather than an exact area calculation.
 - For piecewise functions, clip every function with `xMin`/`xMax`. Mark excluded endpoints with `pointStyle:"open"` and included endpoints with `pointStyle:"closed"`; do not imitate an open endpoint with a separate circle.
 - For parameterized graph problems with no fixed parameter value, choose a valid non-degenerate representative that keeps named points and construction lines distinct; avoid limit, boundary, or special values that collapse the diagram.
 - Use `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` for current solid support. Curved solids use editable textbook projections with optional dashed hidden curves; nets and revolution sweeps remain unsupported.

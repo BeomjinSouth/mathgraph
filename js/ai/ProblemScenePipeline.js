@@ -148,7 +148,7 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'Unlabeled construction helpers must have label=null and visible=false. Shading polygons and outline polygons must have label=null unless the source explicitly prints a region name.',
     'Order is not important; MathGraph resolves dependencies locally.',
     'Use mustDraw as an audit list. Every required visual fact must name the scene nodeIds or relationIds that implement it.',
-    'A printed shaded face or requested area region must be a polygon, sector, circularSegment, or lensRegion node with fillOpacity between 0.18 and 0.24.',
+    'A printed shaded face or requested area region must be a polygon, sector, circularSegment, lensRegion, or functionRegion node with fillOpacity between 0.18 and 0.24. For functionRegion, put one or two graph ids in refs in boundary order and [xMin, xMax, baselineY] in numbers (baselineY is needed only for a horizontal second boundary).',
     'A semicircle must use an arc with mode minor or major, not a full circle alone.',
     'For compact items: refs contains referenced ids, groups contains grouped vertex ids, numbers contains numeric parameters, and text contains an expression or annotation.',
     'Do not copy long problem prose into the scene. Keep constructionSummary and evidence short and factual.'
@@ -442,7 +442,7 @@ export function validateProblemSceneCoverage(scene, compiled) {
         const boundOperations = operations.filter(operation => bindings.includes(operation.id));
         if (/shade|shaded|fill|색칠|음영/i.test(description)) {
             const hasVisibleFill = boundOperations.some(operation =>
-                ['polygon', 'sector', 'circularSegment', 'lensRegion'].includes(operation.type) &&
+                ['polygon', 'sector', 'circularSegment', 'lensRegion', 'functionRegion'].includes(operation.type) &&
                 Number(operation.fillOpacity) >= 0.05
             );
             if (!hasVisibleFill) {

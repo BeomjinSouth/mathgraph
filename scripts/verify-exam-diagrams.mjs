@@ -7,18 +7,22 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
 import { buildExamDiagramCases } from './exam-diagram-cases.mjs';
+import { buildComplexExamDiagramCases } from './complex-exam-diagram-cases.mjs';
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => argv.includes(name) ? argv[argv.indexOf(name) + 1] : fallback;
 const phase = flag('--phase', 'baseline');
 const split = flag('--split', 'all');
-const output = path.resolve(root, flag('--output', `output/exam-diagrams-100/${phase}`));
+const suite = flag('--suite', 'original');
+if (!['original', 'complex'].includes(suite)) throw Error(`Unknown suite: ${suite}`);
+const generatedCases = suite === 'complex' ? buildComplexExamDiagramCases() : buildExamDiagramCases();
+const output = path.resolve(root, flag('--output', `output/exam-diagrams-${suite}/${phase}`));
 const input = flag('--input', null);
 const custom = input ? JSON.parse(await fs.readFile(path.resolve(input), 'utf8')) : null;
 const cases = argv.includes('--app-only') ? [] : custom ? [{ id: 'custom-1', family: '사용자 도형', title: '입력 도형 검수', split: 'custom', conditions: custom.conditions || [],
         preserveExplicitOffsets: !argv.includes('--generated'),
         view: { width: 700, height: 600, scale: 48, offset: { x: 0, y: 0 }, ...custom.view }, operations: custom.operations }]
-    : buildExamDiagramCases().filter(c => split === 'all' || c.split === split);
+    : generatedCases.filter(c => split === 'all' || c.split === split);
 await fs.mkdir(output, { recursive: true });
 const server = http.createServer(async (req, res) => {
     try {
@@ -78,11 +82,36 @@ try {
     for (const r of results)
         for (const i of r.issues || [])
             byCode[i.code] = (byCode[i.code] || 0) + 1;
-    const summary = { phase, split, sourceHash: createHash('sha256').update(JSON.stringify(cases)).digest('hex'),
+    const summary = { phase, split, suite, sourceHash: createHash('sha256').update(JSON.stringify(cases)).digest('hex'),
         rendererRevision: argv.includes('--original-code') ? 'a370cb0' : 'working-tree',
         caseCount: results.length, familyCount: new Set(results.map(r => r.family)).size,
         failedCases: results.filter(r => r.errors?.length || r.issues?.length).length, byCode, consoleErrors };
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ summary, results }, null, 2));
+    if (suite === 'complex' && argv.includes('--mutation-audit')) {
+        const mutations = [
+            { id: 'C001', change: source => { source.operations.find(op => op.id === 'equalACBC').tickCount = 2; },
+                expected: 'equal-length-mismatch' },
+            { id: 'C001', change: source => { source.operations.find(op => op.id === 'ang_BAC').markerCount = 2; },
+                expected: 'equal-angle-mismatch' },
+            { id: 'C016', change: source => { source.conditions.find(c => c.kind === 'solid-edges').hidden = []; },
+                expected: 'solid-edge-style-mismatch' },
+            { id: 'C022', change: source => { source.operations.find(op => op.id === 'area').xMax = 0.5; },
+                expected: 'function-region-boundary-mismatch' }
+        ];
+        const checked = [];
+        for (const mutation of mutations) {
+            const source = structuredClone(generatedCases.find(c => c.id === mutation.id));
+            mutation.change(source);
+            const result = await page.evaluate(source => window.renderCase(source), source);
+            const actual = (result.issues || []).map(issue => issue.code);
+            checked.push({ id: mutation.id, expected: mutation.expected, detected: actual.includes(mutation.expected) });
+        }
+        await fs.writeFile(path.join(output, 'mutation-audit.json'), JSON.stringify(checked, null, 2));
+        if (checked.some(item => !item.detected)) {
+            console.error('Mutation audit missed a deliberate error:', checked.filter(item => !item.detected));
+            process.exitCode = 1;
+        }
+    }
     // Contact sheets use the actual exported canvases, without re-drawing the diagrams.
     for (let start = 0; start < results.length; start += 12) {
         const part = results.slice(start, start + 12);
@@ -119,8 +148,11 @@ try {
         await appPage.waitForFunction(() => window.app?.canvas?.width > 0);
         await appPage.locator('#guestLoginButton').click();
         const checks = [];
-        for (const id of ['E014', 'E042', 'E055', 'E071', 'E096', 'E100']) {
-            const source = buildExamDiagramCases().find(c => c.id === id);
+        const appIds = suite === 'complex'
+            ? ['C001', 'C006', 'C017', 'C020', 'C022', 'C026', 'C039', 'C045']
+            : ['E014', 'E042', 'E055', 'E071', 'E096', 'E100'];
+        for (const id of appIds) {
+            const source = generatedCases.find(c => c.id === id);
             const checked = await appPage.evaluate(async (source) => {
                 const app = window.app;
                 app.objectManager.clear();
@@ -130,11 +162,19 @@ try {
                 app.canvas.offset.y = 0;
                 const input = { operations: source.operations };
                 const before = JSON.stringify(input);
-                const payload = app.aiService.enhanceDiagramQuality(input, '시험 도형', app.buildAIContext());
+                const payload = app.aiService.enhanceDiagramQuality(input, source.prompt || '시험 도형', app.buildAIContext());
                 if (JSON.stringify(input) !== before)
                     throw Error('source was mutated');
                 if (!app.processAIJSON(JSON.stringify(payload), { mode: 'command' }))
                     throw Error('app rejected ' + source.id);
+                if (source.operations.some(operation => operation.type === 'functionRegion')) {
+                    const svg = app.buildSVGMarkup({ includeAxes: false, includeBackground: true });
+                    const document = new DOMParser().parseFromString(svg, 'image/svg+xml');
+                    const areaPath = document.querySelector('path[data-type="functionRegion"]');
+                    if (!areaPath || areaPath.getAttribute('fill-opacity') !== '0.2' ||
+                        areaPath.getAttribute('stroke') !== 'none')
+                        throw Error('SVG area missing or not filled');
+                }
                 const count = app.objectManager.getAllObjects().length;
                 // Re-created objects have a new creation timestamp, which is not a visual edit.
                 const serialize = () => JSON.stringify(app.objectManager.toJSON(), (key, value) => key === 'createdAt' ? undefined : value);

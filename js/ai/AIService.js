@@ -221,7 +221,7 @@ const GRAPH_OPERATION_TYPES = [
     'vector', 'rightAngleMarker', 'equalLengthMarker',
     'angleDimension', 'lengthDimension',
     'arc', 'sector', 'circularSegment',
-    'lensRegion', 'polygon', 'prism', 'pyramid', 'numberLine', 'textLabel',
+    'lensRegion', 'polygon', 'functionRegion', 'prism', 'pyramid', 'numberLine', 'textLabel',
     'cylinder', 'cone', 'sphere'
 ];
 
@@ -305,6 +305,9 @@ const operationProperties = {
     startPointId: NULLABLE_STRING,
     endPointId: NULLABLE_STRING,
     functionId: NULLABLE_STRING,
+    function1Id: NULLABLE_STRING,
+    function2Id: NULLABLE_STRING,
+    baselineY: NULLABLE_NUMBER,
     vertexId: NULLABLE_STRING,
     line1Id: NULLABLE_STRING,
     line2Id: NULLABLE_STRING,
@@ -518,6 +521,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 5. 기본 도형 색상은 #000000입니다. 사용자가 색을 명시적으로 요청하지 않으면 여러 색을 넣지 마세요.
 6. Visual fidelity guardrails:
    - For two-circle lens overlaps, use lensRegion with circle1Id and circle2Id. Do not approximate this with a polygon unless lensRegion is unavailable.
+   - When the question asks for the area between function curves or a function and y=constant on a closed x-interval, create a functionRegion after its function objects. Set function1Id, optional function2Id, xMin, xMax, and baselineY when the second boundary is horizontal. Verify both boundaries are finite and within their domains throughout the interval. Do not shade unrelated lobes or the whole graph.
    - For construction-only polygons that should look like outlines, set fillOpacity:0. Use fillOpacity above 0 only for requested shaded regions.
    - If the question asks for the value, maximum, or minimum of a named triangle/quadrilateral area, create that named polygon with fillColor #000000 and fillOpacity 0.18-0.24. Do not shade when area is only a given condition, ratio, or intermediate fact and the question asks for another quantity.
    - For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough away to render a visible, non-degenerate angle arc.
@@ -579,6 +583,7 @@ const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시�
 - angleDimension: vertexId, point1Id, point2Id (optional arcRadius, showValue, markerCount, customText, labelOffset)
 - lengthDimension: segmentId
 - polygon: vertexIds (array of at least 3 point IDs)
+- functionRegion: function1Id, xMin, xMax (optional function2Id for the second graph; otherwise baselineY defaults to 0). Fill is only the region between those boundaries on that interval.
 - lensRegion: circle1Id, circle2Id (filled intersection of two circles)
 - arc, sector, circularSegment: circleId, startPointId, endPointId, mode ("minor" 또는 "major")
 - prism: baseVertexIds (배열), topVertexIds (배열) - 각기둥
@@ -658,6 +663,7 @@ export const PROBLEM_SITUATION_GRAPH_GUIDANCE = [
     '점이 선분 위에 있다고 명시되면 선분을 먼저 만든 뒤 pointOnLine으로 종속시키고, 내분비가 주어지면 t를 정확히 계산하세요.',
     '같은 선분 위의 점들을 서로 다른 비공선 선분으로 나누어 표현하지 마세요.',
     '질문이 이름 붙은 삼각형·사각형의 넓이, 넓이의 최댓값 또는 최솟값을 직접 요구하면 해당 도형을 polygon으로 만들고 fillOpacity 0.18~0.24로 옅게 채우세요. 넓이가 주어진 조건·비율일 뿐 다른 값을 묻는 문제는 채우지 마세요.',
+    '두 함수 또는 함수와 수평선으로 둘러싸인 넓이를 묻는 문제는 functionRegion을 사용하고, 실제 경계 함수 ID와 시작·끝 x좌표를 연결해 해당 구간만 옅게 채우세요.',
     '조건이 모호하면 정확한 수치가 주어진 요소를 우선 그리고, 남은 요소는 수학적으로 자연스러운 대표 배치로 구성하세요.'
 ].join('\n');
 
@@ -674,6 +680,7 @@ export const PROBLEM_DIAGRAM_GRAPH_GUIDANCE = [
     'Do not create function-function intersection objects; the runtime does not support them. Represent y=constant with a two-point horizontal line when it must intersect a function, or use explicit computed point coordinates.',
     'Default visual style is monochrome Korean exam paper style: thin black lines, sparse hatching or light shading when needed, no decoration, no heavy colors.',
     'Shade a named triangle or quadrilateral only when its area value, maximum, or minimum is the actual question target. Use a black polygon with fillOpacity 0.18-0.24. If area is merely given as 25, compared as a ratio, or used as an intermediate condition while another value is asked, keep the polygon unfilled.',
+    'For an area bounded by function curves or a function and a horizontal line, create a functionRegion referencing the graph IDs and exact x interval. Keep fillOpacity around 0.2 and leave other regions unfilled.',
     'Hide helper points with visible:false or pointSize:0. Keep labels sparse and avoid overlap.',
     'Use pointStyle:"open" for excluded endpoints of piecewise functions and pointStyle:"closed" for included endpoints.',
     'For ellipse, hyperbola, geometric parabola, cylinder, cone, or sphere prompts, use the matching first-class object. For unsupported chart families, use a disclosed approximation only when reasonable.',
@@ -1426,7 +1433,7 @@ export class AIService {
             add('point', 'segment', 'polygon', 'prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'textLabel');
             includeKnownGaps = true;
         };
-        const addGraph = () => add('point', 'segment', 'line', 'vector', 'function', 'ellipse', 'hyperbola', 'parabola', 'tangentFunction', 'intersection', 'polygon');
+        const addGraph = () => add('point', 'segment', 'line', 'vector', 'function', 'functionRegion', 'ellipse', 'hyperbola', 'parabola', 'tangentFunction', 'intersection', 'polygon');
         const addNumberLine = () => add('numberLine', 'point', 'segment');
         const addChart = () => {
             add('point', 'segment', 'polygon', 'numberLine', 'line');

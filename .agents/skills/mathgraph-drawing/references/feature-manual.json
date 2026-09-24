@@ -57,7 +57,7 @@
     "When a named point lies on a segment, create the segment first and create the named point as pointOnLine with lineId referencing that segment and t in [0,1]. For AP:PB=m:n use t=m/(m+n), then verify collinearity and the ratio.",
     "For concentric circles and fixed-radius tangency diagrams, reuse the same center id and place radius points at the requested numeric distance.",
     "For annular-sector-like requests, current GraphA has no first-class annularSector. Use a normal sector plus inner circle outline only when approximation is acceptable.",
-    "For function-bounded curved fills, approximate with a polygon through explicit boundary/sample points and hide helper vertices unless a future first-class region exists.",
+    "For an area between two function graphs or one function and a horizontal line on a closed x-interval, use functionRegion after its function dependencies. It samples the functions at canvas scale; check the interval, domains, clipping, and actual fill. It does not calculate the exact area.",
     "For whole-problem text prompts, do not create objects for the full problem prose or answer choices; create only the graph, figure, labels, functions, and shaded regions needed to visualize the situation.",
     "For parameterized graph problems with no fixed value, choose a valid non-degenerate representative that keeps named intersections and construction lines distinct. Avoid limit, boundary, or special values that collapse the diagram, and do not present the representative value as the answer.",
     "For full-photo recreation, prioritize a visible diagram and preserve relative positions of axes, ticks, labels, intersections, tangencies, solid/dashed strokes, and shaded regions. If no diagram is printed, extract only explicit drawable relations from the problem text and construct the supporting diagram without solving it.",
@@ -157,6 +157,7 @@
       "circularSegment",
       "lensRegion",
       "polygon",
+      "functionRegion",
       "prism",
       "pyramid",
       "numberLine"
@@ -461,7 +462,17 @@
       "optionalFields": ["fillColor", "fillOpacity", "label", "color", "lineWidth", "dashed"],
       "template": { "op": "create", "id": "poly_ABC", "type": "polygon", "vertexIds": ["A", "B", "C"], "fillColor": "#000000", "fillOpacity": 0.12 },
       "validationRules": ["vertexIds must contain at least 3 point IDs."],
-      "notes": ["Best current primitive for triangles, quadrilaterals, filled graph regions, and histogram bars."]
+      "notes": ["Use for triangles and quadrilaterals. Use functionRegion for fill bounded by graph curves."]
+    },
+    {
+      "type": "functionRegion",
+      "koreanName": "함수 그래프 사이의 음영",
+      "tags": ["graph", "function", "area", "shaded_region"],
+      "requiredFields": ["function1Id", "xMin", "xMax"],
+      "optionalFields": ["function2Id", "baselineY", "fillColor", "fillOpacity", "lineWidth"],
+      "template": { "op": "create", "id": "area_fg", "type": "functionRegion", "function1Id": "f", "function2Id": "g", "xMin": -1, "xMax": 1, "fillColor": "#000000", "fillOpacity": 0.2 },
+      "validationRules": ["Create the function objects first.", "xMin and xMax must be finite with xMin < xMax.", "The interval must lie within both function domains and avoid undefined values or poles."],
+      "notes": ["If function2Id is omitted, baselineY defaults to 0.", "The app draws short vertical edges where boundaries differ at xMin or xMax.", "Canvas-scale sampling is visual; verify the numerical area separately."]
     },
     {
       "type": "prism",
@@ -662,8 +673,8 @@
       "currentApproximation": "Create explicitly calculated free points and ordinary lines when their numeric coordinates are known; do not claim that those helpers stay constrained after conic parameter edits."
     },
     {
-      "gap": "Annular sectors and exact function-bounded curved regions are not first-class objects.",
-      "currentApproximation": "Use sectors, circles, polygons, and hidden helper points only when approximation is acceptable. State that exact ring-sector cutouts or exact fill-between-functions need future primitives."
+      "gap": "Annular sectors and symbolic exact integration of function-bounded areas are not first-class objects.",
+      "currentApproximation": "Use sectors and circles for an approximate annular diagram when acceptable. functionRegion follows referenced graph objects but samples its outline for display; verify the numerical area separately."
     }
   ]
 }
