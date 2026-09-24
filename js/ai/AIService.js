@@ -1400,7 +1400,7 @@ export class AIService {
 
         if (Array.isArray(manual.visualGuardrails) && manual.visualGuardrails.length > 0) {
             lines.push('- Visual fidelity guardrails:');
-            const guardrailLimit = mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? 12 : 8;
+            const guardrailLimit = mode === AI_COMMAND_MODE.PROBLEM_DIAGRAM ? 15 : 11;
             for (const rule of manual.visualGuardrails.slice(0, guardrailLimit)) {
                 lines.push(`  - ${rule}`);
             }

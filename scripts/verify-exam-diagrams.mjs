@@ -607,6 +607,19 @@ try {
                 return true;
             });
         }
+        const drawingGuidanceLoaded = await appPage.evaluate(async () => {
+            const app = window.app;
+            const prompt = await app.aiService.buildDrawingReferencePrompt(
+                '시험지용 삼각형 ABC의 같은 변·각과 길이·각도 표시', app.buildAIContext(), 'command'
+            );
+            return app.aiService.drawingFeatureManual?.manualVersion === 6 &&
+                app.aiService.drawingReferenceIndex?.version === 6 &&
+                /Named exam vertices.*pointSize:0/.test(prompt) &&
+                /equalLengthMarker.*tickCount/.test(prompt) &&
+                /curved dashed lengthDimension/.test(prompt);
+        });
+        if (!drawingGuidanceLoaded)
+            throw Error('the app did not load the current exam drawing guidance');
         const preserved = await appPage.evaluate(async () => {
             const app = window.app;
             const input = { operations: [{ op: 'create', type: 'point', id: 'manual', label: 'Q', x: -3, y: -2, pointSize: 0, labelOffset: { x: 0, y: 0 } }] };
@@ -636,7 +649,7 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, existingViewPreserved,
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, existingViewPreserved, drawingGuidanceLoaded,
             explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));

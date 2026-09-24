@@ -1,6 +1,6 @@
 ---
 name: mathgraph-drawing
-description: Convert Korean natural-language MathGraph drawing requests into valid GraphA operations, select only the needed drawing schema references, and use synthetic examples for complex plane geometry, solid geometry, function graphs, number lines, and mixed textbook-style diagrams. Use when building or prompting GPT/OpenAI API workflows for this MathGraph project, validating AI-generated `operations[]` JSON, or planning accurate diagram construction from informal Korean prompts.
+description: Create, revise, or verify editable MathGraph drawings from Korean requests, including exam figures, solid geometry, and shaded function graphs. Use for MathGraph GraphA operations and AI drawing workflows; not for a plain math solution without a drawing.
 ---
 
 # MathGraph Drawing
@@ -15,8 +15,9 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 4. Read only matching records from `references/synthetic-drawing-data.jsonl` when an example pattern is useful.
 5. For image/PDF recreation, prefer a high-level scene graph first, then compile it through the app-owned scene graph compiler.
 6. Emit GraphA JSON as `{ "operations": [...] }` when the caller needs a drawable patch.
-7. For monochrome exam diagrams or teacher calibration work, read [references/exam-diagram-layout.md](references/exam-diagram-layout.md) and run its layout check before delivery.
-8. For newly generated exam drawings, use the rendered preparation path in that reference. It produces corrected GraphA, editable project files and actual PNG evidence; direct PatchApplier calls do not run the AIService layout step. Preserve explicit teacher offsets and inspect unresolved issues instead of suppressing them.
+7. For monochrome exam diagrams or teacher calibration work, read [references/exam-diagram-layout.md](references/exam-diagram-layout.md). Its rules reflect observed teacher revisions, not a fixed template for every figure.
+8. For a natural-language one-shot request, check that the returned GraphA and the actual app render include every stated condition. A partial diagram is a failure. The confirmed patterns and unverified boundaries are recorded in `docs/시험-도형-복합요소-검수결과.md`; do not generalize the 20 checked app prompts to arbitrary exam problems.
+9. For newly generated exam drawings, use the rendered preparation path and strict layout check in that reference before delivery. It produces corrected GraphA, editable project files and actual PNG evidence; direct PatchApplier calls do not run the AIService layout step. Preserve explicit teacher offsets and inspect unresolved issues instead of suppressing them.
 
 ## Reference Selection
 

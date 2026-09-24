@@ -1,7 +1,7 @@
 {
-  "manualVersion": 2,
+  "manualVersion": 6,
   "project": "MathGraph",
-  "updatedAt": "2026-07-10",
+  "updatedAt": "2026-09-24",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
@@ -47,21 +47,27 @@
   "visualGuardrails": [
     "Problem diagram mode must create the exam figure only: no solution text, no copied body prose, no copied answer choices, and no long explanatory labels.",
     "Problem diagram mode defaults to monochrome exam style: thin black strokes, sparse hatching/light shading, concise labels, and hidden helper points with visible:false or pointSize:0.",
+    "Named exam vertices, intersections, and midpoints keep readable labels but normally use pointSize:0; use visible open/closed dots only when endpoint status is mathematical information.",
+    "For equal lengths, use equalLengthMarker with one tickCount per connected equality group and different counts for independent groups. For equal angles, use angleDimension with matching markerCount on the actual vertices.",
+    "Attach each requested numeric length to its real segment with a curved dashed lengthDimension, and each requested angle to the correct vertex with a visible angleDimension arc and value. Do not rely on detached text alone.",
     "For construction-only polygons that should look like outlines, set fillOpacity:0; omit positive fill unless a shaded region is requested.",
+    "When a named triangle or quadrilateral area is the value, maximum, or minimum asked by the question, create that polygon with fillOpacity 0.18 to 0.24. When area is only a given value, comparison, ratio, or intermediate condition and another quantity is asked, keep the polygon unfilled unless the source image itself is shaded.",
     "For two-circle lens overlaps, use lensRegion with circle1Id and circle2Id instead of polygon approximations.",
     "For angleDimension, point1Id and point2Id must be distinct from vertexId and far enough from the vertex to render a visible non-degenerate arc.",
     "When a right-angle mark sits on a crowded point or radial center, add a larger angleDimension with arcRadius at least 0.7 and showValue:false instead of relying only on the default small rightAngleMarker.",
     "Use labelOffset on required labels near tangency points, angle markers, collinear construction points, or crowded intersections; hiding helper labels is not enough when requested labels remain close to geometry.",
     "For focus/directrix, tangent-from-point, feasible-region, and named construction-point prompts, create the named points at the exact requested coordinates and create reference lines from support points on the exact equation.",
+    "When a named point lies on a segment, create the segment first and create the named point as pointOnLine with lineId referencing that segment and t in [0,1]. For AP:PB=m:n use t=m/(m+n), then verify collinearity and the ratio.",
     "For concentric circles and fixed-radius tangency diagrams, reuse the same center id and place radius points at the requested numeric distance.",
     "For annular-sector-like requests, current GraphA has no first-class annularSector. Use a normal sector plus inner circle outline only when approximation is acceptable.",
-    "For function-bounded curved fills, approximate with a polygon through explicit boundary/sample points and hide helper vertices unless a future first-class region exists.",
+    "For an area between two function graphs or one function and a horizontal line on a closed x-interval, use functionRegion after its function dependencies. It samples the functions at canvas scale; check the interval, domains, clipping, and actual fill. It does not calculate the exact area.",
     "For whole-problem text prompts, do not create objects for the full problem prose or answer choices; create only the graph, figure, labels, functions, and shaded regions needed to visualize the situation.",
     "For parameterized graph problems with no fixed value, choose a valid non-degenerate representative that keeps named intersections and construction lines distinct. Avoid limit, boundary, or special values that collapse the diagram, and do not present the representative value as the answer.",
     "For full-photo recreation, prioritize a visible diagram and preserve relative positions of axes, ticks, labels, intersections, tangencies, solid/dashed strokes, and shaded regions. If no diagram is printed, extract only explicit drawable relations from the problem text and construct the supporting diagram without solving it.",
     "GraphA point x/y values are math coordinates, not screen pixels. For image reconstruction without explicit coordinate values, keep every point within +/-20 math units so the diagram remains visible in the default canvas view.",
     "For coordinate graph photos, use function objects for smooth visible graphs and preserve short equation labels; use vector objects for standalone direction arrows.",
     "For solid prompts, make the outer prism/pyramid projection large enough to read; cross-section polygons should span a substantial middle portion of the outer solid instead of becoming a tiny internal square.",
+    "For every prism, pair topVertexIds[i] with baseVertexIds[i] in the same order and use one common 2D depth shift; the app normalizes small source-image perspective mismatches unless the user supplies several explicit coordinates.",
     "For nested solids, use prism/pyramid objects, keep inner solid vertices inside the outer projection, leave visible margins from the outer edges, and keep projected centers visually separated instead of piling them on the same screen area.",
     "For pyramids, apexId must not appear in baseVertexIds and should be a real apex separated from the base centroid.",
     "Hide construction helper points with visible:false when they are only used to shape regions or guide construction."
@@ -73,8 +79,10 @@
     "skips": ["selected-object patch mode", "projection rewriting for coordinate-heavy prompts"],
     "rules": [
       "Add screen-space labelOffset values for crowded visible point labels, tangent labels such as T1/T2, and Euler-line labels O/G/H.",
+      "Create or strengthen a light polygon fill for a named triangle or quadrilateral only when its area value, maximum, or minimum is the actual question target.",
       "Add a larger hidden-label angleDimension aid for right-angle requests when a rightAngleMarker alone may be visually weak.",
       "Expand prism cross-section prompts so the outer projection is broad and the section polygon spans a substantial middle portion.",
+      "Normalize each prism rear face to a common translated copy of its near/front face so corresponding side edges remain parallel.",
       "Expand and recenter triangular-pyramid-inside-triangular-prism prompts so the inner solid has visible projection margins."
     ]
   },
@@ -83,7 +91,7 @@
     "recommendedFor": ["pasted image recreation", "whole-photo diagram recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
     "sceneRootShape": {
       "sceneType": "diagram",
-      "nodes": "Array of math entities such as point, segment, vector, circle, arc, sector, lensRegion, polygon, function, numberLine, textLabel, prism, pyramid, cylinder, cone, sphere.",
+      "nodes": "Array of math entities such as point, segment, vector, circle, ellipse, hyperbola, parabola, arc, sector, lensRegion, polygon, function, numberLine, textLabel, prism, pyramid, cylinder, cone, sphere.",
       "relations": "Array of constraints or annotations such as intersection, midpoint, parallel, perpendicular, rightAngle, equalLength, angleDimension, lengthDimension, tangentFunction.",
       "unsupported": "Array of unsupported first-class requests such as native statistical charts, tables, nets, annular sectors, or exact function-bounded curved fills.",
       "notes": "Optional source evidence, uncertainty, or crop notes."
@@ -91,7 +99,8 @@
     "compiler": {
       "file": "js/ai/SceneGraphCompiler.js",
       "outputRoot": "{ \"operations\": [...] }",
-      "rule": "The compiler creates support points first, then base primitives, then relation/annotation objects.",
+      "rule": "The compiler resolves nodes and relations in one dependency schedule, so midpoint or intersection ids can feed later lines, polygons, circles, and relations without duplicate helper points.",
+      "labelRule": "Unlabeled point helpers and polygons default to hidden labels; only source-named points and explicitly printed region names should be visible.",
       "warningPolicy": "Unsupported scene nodes must become warnings, not guessed invalid GraphA operations.",
       "validation": ["SchemaValidator.validate", "SchemaValidator.validateReferences", "SemanticValidator where category metadata exists", "browser render smoke checks"]
     },
@@ -129,6 +138,9 @@
       "ray",
       "circle",
       "circleThreePoints",
+      "ellipse",
+      "hyperbola",
+      "parabola",
       "intersection",
       "midpoint",
       "parallel",
@@ -148,6 +160,7 @@
       "circularSegment",
       "lensRegion",
       "polygon",
+      "functionRegion",
       "prism",
       "pyramid",
       "numberLine"
@@ -168,9 +181,9 @@
       { "name": "fillOpacity", "type": "number 0..1", "scope": "create/update", "note": "Area opacity." },
       { "name": "showLabel", "type": "boolean", "scope": "create/update", "note": "Label visibility." },
       { "name": "locked", "type": "boolean", "scope": "create/update", "note": "Prevents direct dragging when supported." },
-      { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels." }
+      { "name": "labelOffset", "type": "{x:number,y:number}", "scope": "create/update", "note": "Screen-space label offset for objects that support labels. Point labels use a bottom text baseline: with a 27px font, upper labels usually start near y=-4..7 and lower labels near y=30..38. Very large offsets should trigger a geometry-spacing review." }
     ],
-    "updateOnlyOrObjectSpecific": ["x", "y", "width", "height", "ellipseRatio", "showHiddenLines", "text", "align", "expression", "xMin", "xMax", "yMin", "yMax", "branch", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
+    "updateOnlyOrObjectSpecific": ["x", "y", "width", "height", "radiusX", "radiusY", "a", "b", "p", "orientation", "rotation", "ellipseRatio", "showHiddenLines", "text", "align", "expression", "xMin", "xMax", "yMin", "yMax", "branch", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
   },
   "aiCreatableObjects": [
     {
@@ -336,6 +349,33 @@
       "notes": ["Use * for multiplication. Parser supports sin, cos, tan, sqrt, abs, log, ln, exp, min, max, pow, pi, e. AI create/update accepts xMin/xMax/yMin/yMax for visible domain and range clipping."]
     },
     {
+      "type": "ellipse",
+      "koreanName": "타원",
+      "tags": ["graph", "conic", "ellipse"],
+      "requiredFields": ["x", "y", "radiusX", "radiusY"],
+      "optionalFields": ["rotation", "label", "color", "lineWidth", "dashed", "fillColor", "fillOpacity"],
+      "template": { "op": "create", "id": "ellipse_1", "type": "ellipse", "x": 0, "y": 0, "radiusX": 5, "radiusY": 3 },
+      "notes": ["x/y are the center. radiusX/radiusY must be positive. rotation is in radians."]
+    },
+    {
+      "type": "hyperbola",
+      "koreanName": "쌍곡선",
+      "tags": ["graph", "conic", "hyperbola"],
+      "requiredFields": ["x", "y", "a", "b", "orientation"],
+      "optionalFields": ["rotation", "label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "hyperbola_1", "type": "hyperbola", "x": 0, "y": 0, "a": 2, "b": 3, "orientation": "horizontal" },
+      "notes": ["orientation is horizontal or vertical. a/b must be positive. rotation is in radians."]
+    },
+    {
+      "type": "parabola",
+      "koreanName": "포물선",
+      "tags": ["graph", "conic", "parabola"],
+      "requiredFields": ["x", "y", "p", "orientation"],
+      "optionalFields": ["rotation", "label", "color", "lineWidth", "dashed"],
+      "template": { "op": "create", "id": "parabola_1", "type": "parabola", "x": -2, "y": 0, "p": 1.5, "orientation": "right" },
+      "notes": ["x/y are the vertex. p is the positive focal distance. orientation is right, left, up, or down; rotation is in radians."]
+    },
+    {
       "type": "vector",
       "koreanName": "벡터",
       "tags": ["plane", "vector"],
@@ -358,9 +398,9 @@
       "koreanName": "같은 길이 표시",
       "tags": ["marker"],
       "requiredFields": ["segment1Id", "segment2Id"],
-      "optionalFields": ["color", "lineWidth"],
-      "template": { "op": "create", "id": "eq_AB_CD", "type": "equalLengthMarker", "segment1Id": "AB", "segment2Id": "CD" },
-      "notes": ["Use for congruent sides or symmetric lengths."]
+      "optionalFields": ["color", "lineWidth", "tickCount"],
+      "template": { "op": "create", "id": "eq_AB_CD", "type": "equalLengthMarker", "segment1Id": "AB", "segment2Id": "CD", "tickCount": 1 },
+      "notes": ["Use for congruent sides or symmetric lengths.", "Use the same positive tickCount within one connected equality class and different tickCount values for independent classes."]
     },
     {
       "type": "angleDimension",
@@ -376,9 +416,9 @@
       "koreanName": "길이 치수",
       "tags": ["dimension"],
       "requiredFields": ["segmentId"],
-      "optionalFields": ["label", "color", "fontSize"],
+      "optionalFields": ["label", "color", "fontSize", "lineWidth", "curvature", "labelOffset", "customText", "labelFontSize", "showValue"],
       "template": { "op": "create", "id": "len_AB", "type": "lengthDimension", "segmentId": "AB" },
-      "notes": ["Create the segment first."]
+      "notes": ["Create the segment first.", "Signed curvature is preserved when selecting, dragging, saving, and loading the dimension. Drag the dashed curve to adjust curvature and drag its text box to adjust only the label."]
     },
     {
       "type": "arc",
@@ -425,7 +465,17 @@
       "optionalFields": ["fillColor", "fillOpacity", "label", "color", "lineWidth", "dashed"],
       "template": { "op": "create", "id": "poly_ABC", "type": "polygon", "vertexIds": ["A", "B", "C"], "fillColor": "#000000", "fillOpacity": 0.12 },
       "validationRules": ["vertexIds must contain at least 3 point IDs."],
-      "notes": ["Best current primitive for triangles, quadrilaterals, filled graph regions, and histogram bars."]
+      "notes": ["Use for triangles and quadrilaterals. Use functionRegion for fill bounded by graph curves."]
+    },
+    {
+      "type": "functionRegion",
+      "koreanName": "함수 그래프 사이의 음영",
+      "tags": ["graph", "function", "area", "shaded_region"],
+      "requiredFields": ["function1Id", "xMin", "xMax"],
+      "optionalFields": ["function2Id", "baselineY", "fillColor", "fillOpacity", "lineWidth"],
+      "template": { "op": "create", "id": "area_fg", "type": "functionRegion", "function1Id": "f", "function2Id": "g", "xMin": -1, "xMax": 1, "fillColor": "#000000", "fillOpacity": 0.2 },
+      "validationRules": ["Create the function objects first.", "xMin and xMax must be finite with xMin < xMax.", "The interval must lie within both function domains and avoid undefined values or poles."],
+      "notes": ["If function2Id is omitted, baselineY defaults to 0.", "The app draws short vertical edges where boundaries differ at xMin or xMax.", "Canvas-scale sampling is visual; verify the numerical area separately."]
     },
     {
       "type": "prism",
@@ -547,6 +597,7 @@
     "trigger": "Used when provider is local, no API key exists, or API parsing fails.",
     "safeDeletePolicy": "Delete-like requests are rejected unless handled by direct JSON/update/delete flow.",
     "deterministicPatterns": [
+      "function area between one or two explicitly named f(x)/g(x) expressions and a numeric x interval; a single function also needs an explicit x-axis or numeric y=c horizontal boundary",
       "number line ranges and steps",
       "midpoint from coordinates or existing named endpoints",
       "function tangent at x=value",
@@ -568,7 +619,8 @@
   "interactionAndEditing": {
     "keyboard": ["Ctrl+Z undo", "Ctrl+Y redo", "Delete/Backspace delete selected", "Esc cancel/clear selection", "Ctrl+A select all", "Ctrl+C copy", "Ctrl+V paste", "Space+drag pan"],
     "selection": ["single select", "shift multi-select", "box select", "hidden-object visibility mode"],
-    "properties": ["label or standalone text", "color", "lineWidth", "point coordinates", "function expression and x/y limits", "intersection branch", "curved-solid width/height/ellipse ratio/hidden curves", "number-line open and closed marks", "label reset", "object visibility", "copy/paste/delete"],
+    "properties": ["label or standalone text", "point-label font size", "color", "lineWidth", "point coordinates", "function expression and x/y limits", "intersection branch", "curved-solid width/height/ellipse ratio/hidden curves", "number-line open and closed marks", "label reset", "object visibility", "copy/paste/delete"],
+    "pointLabelDrag": "Free points, points on lines or circles, intersections, midpoints, and circle centers preserve the requested screen-space labelOffset. Their visible label boxes can be dragged independently of the mathematical point.",
     "history": ["create", "delete", "propertyChange", "batch", "drag", "rollback on AI patch failure"]
   },
   "settingsAndView": {
@@ -595,7 +647,7 @@
   "exportAndPersistence": {
     "exportFormats": ["PNG", "SVG"],
     "exportOptions": ["scale 1x/2x/3x for PNG", "HWP 80 mm at 300 dpi", "HWP 120 mm at 300 dpi", "print 160 mm at 600 dpi", "include background", "include grid", "include axes"],
-    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "functions", "arc", "sector", "circularSegment", "lensRegion", "polygon", "numberLine", "textLabel", "cylinder", "cone", "sphere", "grid", "axes", "fallback embedded PNG"],
+    "svgCoverage": ["points", "segments", "lines", "rays", "vectors", "circles", "ellipses", "hyperbolas", "parabolas", "functions", "arc", "sector", "circularSegment", "lensRegion", "polygon", "numberLine", "textLabel", "cylinder", "cone", "sphere", "grid", "axes", "fallback embedded PNG"],
     "physicalPresets": { "hwpCompact": "80 mm at 300 dpi", "hwpWide": "120 mm at 300 dpi", "printHigh": "160 mm at 600 dpi" },
     "projectFile": "Exports and imports a named versioned mathgraph-project JSON envelope with view and editable objects.",
     "projectImportValidation": "Rejects unknown format/version, invalid view data, and non-array object collections before replacing the current project.",
@@ -621,8 +673,12 @@
       "currentApproximation": "Use branch 0 or 1 after checking object order, or create explicit support points when a semantic side name must remain stable."
     },
     {
-      "gap": "Annular sectors and exact function-bounded curved regions are not first-class objects.",
-      "currentApproximation": "Use sectors, circles, polygons, and hidden helper points only when approximation is acceptable. State that exact ring-sector cutouts or exact fill-between-functions need future primitives."
+      "gap": "Ellipse, hyperbola, and parabola are first-class drawable objects, but automatic conic intersections, point-on-conic constraints, and conic tangents are not first-class yet.",
+      "currentApproximation": "Create explicitly calculated free points and ordinary lines when their numeric coordinates are known; do not claim that those helpers stay constrained after conic parameter edits."
+    },
+    {
+      "gap": "Annular sectors and symbolic exact integration of function-bounded areas are not first-class objects.",
+      "currentApproximation": "Use sectors and circles for an approximate annular diagram when acceptable. functionRegion follows referenced graph objects but samples its outline for display; verify the numerical area separately."
     }
   ]
 }

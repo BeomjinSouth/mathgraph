@@ -1,7 +1,7 @@
 {
-  "version": 2,
+  "version": 6,
   "project": "MathGraph",
-  "updatedAt": "2026-07-10",
+  "updatedAt": "2026-09-24",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
   "referenceFiles": [
     {
@@ -13,6 +13,11 @@
       "path": "synthetic-drawing-data.jsonl",
       "role": "synthetic examples with Korean prompts, planning steps, and valid operations payloads",
       "readWhen": "Need a concrete pattern for a complex plane figure, solid, graph, or number line. Statistical charts remain outside the standard teacher generation workflow."
+    },
+    {
+      "path": "exam-diagram-layout.md",
+      "role": "teacher-corrected label baseline, named-point spacing, hidden-helper, and length-curve rules",
+      "readWhen": "Creating, revising, or validating monochrome exam diagrams, especially when a teacher will adjust point names, intersections, or curved length marks."
     }
   ],
   "selectionRules": [
@@ -32,7 +37,7 @@
       "exampleTags": ["solid"]
     },
     {
-      "ifPromptMentions": ["함수", "그래프", "접선", "교점", "연립", "직선", "포물선", "이차함수"],
+      "ifPromptMentions": ["함수", "그래프", "접선", "교점", "연립", "직선", "타원", "쌍곡선", "포물선", "이차함수"],
       "loadChunks": ["contract-core", "objects-graph", "objects-plane-core"],
       "exampleTags": ["graph", "function"]
     },
@@ -106,7 +111,7 @@
     {
       "id": "objects-graph",
       "file": "feature-manual.json",
-      "objectTypes": ["function", "tangentFunction", "intersection", "line", "segment", "point"]
+      "objectTypes": ["function", "functionRegion", "ellipse", "hyperbola", "parabola", "tangentFunction", "intersection", "line", "segment", "point"]
     },
     {
       "id": "objects-number-line",
@@ -156,6 +161,11 @@
       "objectTypes": ["function", "tangentFunction", "point", "line", "intersection"]
     },
     {
+      "id": "graph_horizontal_line_area",
+      "tags": ["graph", "function", "horizontal_boundary", "shaded_region"],
+      "objectTypes": ["function", "functionRegion"]
+    },
+    {
       "id": "graph_piecewise_open_closed_points",
       "tags": ["graph", "function", "piecewise", "open_endpoint", "closed_endpoint"],
       "objectTypes": ["function", "point", "segment", "textLabel"]
@@ -164,6 +174,21 @@
       "id": "graph_parameterized_exponential_vertical_maps",
       "tags": ["graph", "function", "exponential", "parameter", "vertical_segment", "problem_diagram"],
       "objectTypes": ["function", "point", "segment", "textLabel"]
+    },
+    {
+      "id": "graph_conic_gallery",
+      "tags": ["graph", "conic", "ellipse", "hyperbola", "parabola"],
+      "objectTypes": ["ellipse", "hyperbola", "parabola", "point", "line", "textLabel"]
+    },
+    {
+      "id": "graph_named_area_target_shading",
+      "tags": ["graph", "plane", "polygon", "area_target", "shaded_region"],
+      "objectTypes": ["function", "point", "polygon", "segment"]
+    },
+    {
+      "id": "graph_ellipse_focus_on_chord",
+      "tags": ["graph", "conic", "ellipse", "focus", "point_on_segment", "internal_division"],
+      "objectTypes": ["ellipse", "point", "segment", "pointOnLine"]
     },
     {
       "id": "graph_simultaneous_linear_equations",

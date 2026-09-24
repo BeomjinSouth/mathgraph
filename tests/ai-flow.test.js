@@ -1228,6 +1228,18 @@ test('problem_diagram prompt references prioritize broad exam diagram objects an
     assert.match(referencePrompt, /prism|pyramid/);
 });
 
+test('exam drawing prompts automatically include the verified point, equality, and dimension rules', () => {
+    const service = createAIService();
+    for (const mode of [AI_COMMAND_MODE.COMMAND, AI_COMMAND_MODE.PROBLEM_DIAGRAM]) {
+        const referencePrompt = service.buildDrawingReferencePromptFromManual(
+            manual, retrievalIndex, '시험지용 삼각형 ABC의 같은 변·각과 길이·각도 표시', null, mode
+        );
+        assert.match(referencePrompt, /Named exam vertices.*pointSize:0/);
+        assert.match(referencePrompt, /equalLengthMarker.*tickCount/);
+        assert.match(referencePrompt, /curved dashed lengthDimension/);
+    }
+});
+
 test('processCommand requires provider for unsupported whole-problem interpretation', async () => {
     const service = createAIService();
     const problemText = [
