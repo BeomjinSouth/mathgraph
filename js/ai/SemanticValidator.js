@@ -1,5 +1,6 @@
 import { ValidationResult } from './SchemaValidator.js';
-import { readHorizontalAreaBoundary, readRequestedXBounds } from './FunctionAreaIntent.js';
+import { readHorizontalAreaBoundary, readRequestedXBounds, readConstant } from './FunctionAreaIntent.js';
+import { readPiecewiseFunctionIntent, validatePiecewiseFunctionIntent } from './PiecewiseFunctionIntent.js';
 
 const SQRT2 = Math.SQRT2;
 
@@ -179,12 +180,14 @@ export class SemanticValidator {
             ofType('tangentFunction').length === 0)
             result.addError('함수의 접선 요청에 tangentFunction이 없습니다.');
         this.validateHorizontalFunctionAreaIntent(prompt, creates, result);
+        for (const error of validatePiecewiseFunctionIntent(prompt, creates)) result.addError(error);
         this.validateExamCircleIntent(prompt, creates, result);
         return result;
     }
 
     validateHorizontalFunctionAreaIntent(prompt, creates, result) {
         const source = prompt.replace(/[−–—]/g, '-');
+        if (readPiecewiseFunctionIntent(source)) return;
         if (!/색칠|음영|넓이.{0,35}(?:구하|찾|계산|표시)|shad(?:e|ed)/i.test(source)) return;
         const assignments = [...source.matchAll(/([a-z])\s*\(\s*x\s*\)\s*=/gi)];
         if (assignments.length !== 1) return;
@@ -203,8 +206,8 @@ export class SemanticValidator {
         const areas = creates.filter(op => op.type === 'functionRegion');
         const isConstantBoundary = id => {
             const expression = String(byId.get(id)?.expression || '').trim();
-            return /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(expression) &&
-                Math.abs(Number(expression) - boundary.baselineY) < 1e-9;
+            const value = readConstant(expression);
+            return value !== null && Math.abs(value - boundary.baselineY) < 1e-9;
         };
         const matchesBoundary = op => {
             if (!graph) return false;
@@ -386,7 +389,7 @@ export class SemanticValidator {
         const hasGraphPrompt = /함수|그래프|좌표|좌표평면|직선|타원|쌍곡선|포물선|이차|일차|방정식|부등식|교점|접선|graph|function|line|ellipse|hyperbola|parabola|quadratic|linear|inequality|intersection|tangent/.test(prompt);
         const hasGeometryPrompt = /삼각형|사각형|다각형|도형|원|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직|길이|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
         const hasNumberLinePrompt = /수직선|실수|근호|제곱근|number line|numberline|radical/.test(prompt);
-        const hasSolidPrompt = /입체|직육면체|정육면체|각기둥|각뿔|원기둥|원뿔|구|solid|prism|pyramid|cube|cylinder|cone|sphere/.test(prompt);
+        const hasSolidPrompt = /입체|직육면체|정육면체|각기둥|각뿔|원기둥|원뿔|(?:^|[\s,(])구(?=$|[\s,.)]|(?:를|을|와|과|가|이|의|안|속|내부))|solid|prism|pyramid|cube|cylinder|cone|sphere/.test(prompt);
         const hasChartPrompt = /통계|도수|히스토그램|산점도|상자그림|분포|자료|chart|histogram|scatter|box plot|statistics|frequency|distribution/.test(prompt);
         const hasPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
         const hasNonTangentPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);

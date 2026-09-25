@@ -6,6 +6,14 @@ import { FunctionGraph } from '../js/objects/Function.js';
 import { AlgebraInput } from '../js/ui/AlgebraInput.js';
 import { FunctionParser } from '../js/utils/Parser.js';
 
+test('constant evaluation retains expressions and refuses variables, nonfinite and malformed numbers', () => {
+    assert.equal(FunctionParser.parseConstant('1/2'), 0.5);
+    assert.equal(FunctionParser.parseConstant('-sqrt(2)'), -Math.SQRT2);
+    assert.equal(FunctionParser.parseConstant('2pi'), 2 * Math.PI);
+    for (const expression of ['x-x+1', 'a', '1/0', '0.5.1', '.'])
+        assert.throws(() => FunctionParser.parseConstant(expression), expression);
+});
+
 test('function parser treats -x^2 as the negated square', () => {
     const fn = FunctionParser.parse('-x^2 + 4');
 
@@ -49,6 +57,9 @@ test('function parser still inserts implicit multiplication before a parenthesis
 
     const squared = FunctionParser.parse('3(x - 1)^2');
     assert.equal(squared(4), 27);
+    assert.equal(FunctionParser.parse('x(x+1)')(2), 6);
+    assert.equal(FunctionParser.parse('max(x,0)')(-2), 0);
+    assert.equal(FunctionParser.parse('max(x,0)')(2), 2);
 });
 
 test('FunctionGraph accepts y equals input while storing the right-hand side', () => {

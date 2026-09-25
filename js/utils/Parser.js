@@ -105,6 +105,9 @@ class Lexer {
         while (this.isDigit(this.peek())) {
             num += this.advance();
         }
+        if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(num)) {
+            throw new Error(`잘못된 수치: ${num}`);
+        }
         return parseFloat(num);
     }
 
@@ -355,6 +358,17 @@ function compile(ast) {
  * 함수 표현식 파서
  */
 export class FunctionParser {
+    /** Evaluate a finite constant without silently substituting a value for x. */
+    static parseConstant(expression) {
+        const tokens = new Lexer(expression).tokenize();
+        if (tokens.some(token => token.type === TokenType.VARIABLE)) {
+            throw new Error('경계값에는 변수가 없는 상수식을 사용해 주세요.');
+        }
+        const value = this.parse(expression)(0);
+        if (!Number.isFinite(value)) throw new Error('유한한 경계값을 계산할 수 없습니다.');
+        return value;
+    }
+
     /**
      * 표현식을 파싱하여 함수 반환
      * @param {string} expression - 수학 표현식 (예: "x^2 - 2*x + 1")
@@ -371,15 +385,7 @@ export class FunctionParser {
                 .replace(/(\d)([a-zA-Z])/g, '$1*$2')
                 .replace(/(\))(\d)/g, '$1*$2')
                 .replace(/(\))(\()/g, '$1*$2')
-                .replace(/(\))([a-zA-Z])/g, '$1*$2')
-                .replace(/([a-zA-Z])(\()/g, (match, p1, p2) => {
-                    // 함수 호출은 제외
-                    if (p1 in FUNCTIONS || p1 === 'x' || p1 === 'y') {
-                        if (p1 in FUNCTIONS) return match;
-                        return p1 + '*' + p2;
-                    }
-                    return match;
-                });
+                .replace(/(\))([a-zA-Z])/g, '$1*$2');
 
             const lexer = new Lexer(expression);
             const tokens = lexer.tokenize();

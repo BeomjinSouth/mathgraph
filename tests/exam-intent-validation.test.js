@@ -56,6 +56,20 @@ test('command validation rejects a shifted horizontal area boundary or incomplet
     assert.equal(check(ai, constantGraph, prompt).valid, true);
 });
 
+test('symbolic horizontal boundaries are checked against values rather than numeric prefixes', async () => {
+    const prompt = 'f(x)=sin(x), y=1/2, x=0부터 pi까지 함수와 직선 사이를 색칠해줘.';
+    const ai = service();
+    const complete = (await ai.processCommand(prompt)).json;
+    assert.equal(check(ai, complete, prompt).valid, true);
+    const area = complete.operations.find(op => op.type === 'functionRegion');
+    const equivalent = { operations: [complete.operations[0],
+        { op: 'create', id: 'h', type: 'function', expression: '1/2', xMin: 0, xMax: Math.PI },
+        { ...area, function2Id: 'h' }] };
+    assert.equal(check(ai, equivalent, prompt).valid, true);
+    for (const change of [{ baselineY: 1 }, { xMax: 3 }, { fillOpacity: 0 }])
+        assert.equal(check(ai, { operations: [complete.operations[0], { ...area, ...change }] }, prompt).valid, false);
+});
+
 test('independent equal-length groups cannot reuse one tick count', async () => {
     const prompt = '평행사변형 ABCD에서 AB=CD, BC=DA, ∠A=∠C, AB=8cm, ∠A=70°를 표시해줘.';
     const ai = service();

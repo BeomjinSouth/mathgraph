@@ -597,7 +597,8 @@
     "trigger": "Used when provider is local, no API key exists, or API parsing fails.",
     "safeDeletePolicy": "Delete-like requests are rejected unless handled by direct JSON/update/delete flow.",
     "deterministicPatterns": [
-      "function area between one or two explicitly named f(x)/g(x) expressions and a numeric x interval; a single function also needs an explicit x-axis or numeric y=c horizontal boundary",
+      "function area between one or two explicitly named f(x)/g(x) expressions and a finite x interval; bounds and y=c can use constant expressions such as 1/2, pi or sqrt(2); a single function needs an explicit x-axis or horizontal boundary",
+      "finite piecewise functions such as f(x)={x+1 (-2<=x<0); x^2 (0<=x<=2)}, with open/closed endpoints and optional separate shaded regions against x-axis or y=c; gaps remain unfilled",
       "number line ranges and steps",
       "midpoint from coordinates or existing named endpoints",
       "function tangent at x=value",

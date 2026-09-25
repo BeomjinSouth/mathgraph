@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 import os from 'node:os';
 import { buildExamDiagramCases } from './exam-diagram-cases.mjs';
 import { buildComplexExamDiagramCases } from './complex-exam-diagram-cases.mjs';
+import { piecewiseBrowserCases } from './verify-piecewise-browser.mjs';
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => argv.includes(name) ? argv[argv.indexOf(name) + 1] : fallback;
@@ -212,8 +213,18 @@ try {
         const geometryOneShotChecks = [];
         const circleOneShotChecks = [];
         const solidOneShotChecks = [];
+        const piecewiseChecks = [];
         let existingViewPreserved = null;
         if (suite === 'complex') {
+            for (const spec of piecewiseBrowserCases) {
+                const checked = await appPage.evaluate(async spec =>
+                    (await import('/scripts/verify-piecewise-browser.mjs')).verifyPiecewiseInApp(spec), spec);
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.png`), Buffer.from(checked.png.split(',')[1], 'base64'));
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.mathgraph.json`), JSON.stringify(checked.project, null, 2));
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.graphA.json`), JSON.stringify(checked.graphA, null, 2));
+                delete checked.png; delete checked.project; delete checked.graphA;
+                piecewiseChecks.push(checked);
+            }
             const prompts = [
                 { id: 'parabola', text: '함수 f(x)=x^2, g(x)=1에 대하여 x=-1부터 1까지 두 그래프 사이의 넓이를 색칠해줘.',
                     inside: [0.5, 0.6], outside: [0.5, 1.6] },
@@ -649,7 +660,7 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, existingViewPreserved, drawingGuidanceLoaded,
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, piecewiseChecks, existingViewPreserved, drawingGuidanceLoaded,
             explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));

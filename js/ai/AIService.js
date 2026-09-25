@@ -13,7 +13,8 @@ import { ObjectManager } from '../core/ObjectManager.js';
 import { buildExamGeometryOperations } from './ExamGeometryFallback.js';
 import { buildExamSolidOperations } from './ExamSolidFallback.js';
 import { buildExamCircleOperations } from './ExamCircleFallback.js';
-import { readHorizontalAreaBoundary, readRequestedXBounds } from './FunctionAreaIntent.js';
+import { readHorizontalAreaBoundary, readRequestedXBounds, readMathExpression } from './FunctionAreaIntent.js';
+import { buildPiecewiseFunctionOperations } from './PiecewiseFunctionIntent.js';
 import {
     diffImageAnalysisOperations,
     recordImageAnalysisStage
@@ -1018,6 +1019,7 @@ export class AIService {
             !fallback.error?.startsWith('함수 넓이 요청:') &&
             !fallback.error?.startsWith('시험 도형 요청:') &&
             !fallback.error?.startsWith('시험 입체도형 요청:') &&
+            !fallback.error?.startsWith('구간별 함수 요청:') &&
             !fallback.error?.startsWith('원·부채꼴 요청:')) {
             return {
                 ...fallback,
@@ -2070,6 +2072,7 @@ export class AIService {
         }
 
         const builders = [
+            () => buildPiecewiseFunctionOperations(normalizedMessage),
             () => this.buildFunctionAreaOperations(normalizedMessage),
             () => buildExamGeometryOperations(normalizedMessage),
             () => this.buildKnownHyperbolaAsymptoteOperations(normalizedMessage),
@@ -2105,6 +2108,7 @@ export class AIService {
         const lower = normalizedMessage.toLowerCase();
         const state = this.buildContextState(context);
         const builders = [
+            () => buildPiecewiseFunctionOperations(normalizedMessage),
             () => this.buildFunctionAreaOperations(normalizedMessage),
             () => buildExamGeometryOperations(normalizedMessage),
             () => this.buildNumberLineOperations(normalizedMessage),
@@ -2473,7 +2477,7 @@ export class AIService {
         const expressions = assignments.map((match, index) => {
             const end = assignments[index + 1]?.index ?? source.length;
             const tail = source.slice(match.index + match[0].length, end);
-            return tail.split(/[,;，\n]|[가-힣]|(?=\bx\s*=)/, 1)[0].trim();
+            return readMathExpression(tail);
         });
         if (expressions.some(expr => !expr))
             return { error: '함수 넓이 요청: 함수식을 읽을 수 없습니다.' };
