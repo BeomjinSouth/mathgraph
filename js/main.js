@@ -45,6 +45,7 @@ import { MathUtils } from './utils/MathUtils.js';
 // Mk.2: AI 모듈
 import { SchemaValidator } from './ai/SchemaValidator.js';
 import { PatchApplier } from './ai/PatchApplier.js';
+import { layoutGeneratedOperationLabels } from './ai/RenderedLabelLayout.js';
 import {
     AIService,
     DEFAULT_OPENAI_MODEL,
@@ -3962,7 +3963,8 @@ class GraphAApp {
             if (result.success && result.json) {
                 // JSON 패치 적용
                 return this.processAIJSON(result.json, {
-                    modelMeta: this.getAIModelResultMeta(result)
+                    modelMeta: this.getAIModelResultMeta(result),
+                    generated: true, mode: result.mode, userMessage: message
                 });
             } else if (result.error) {
                 this.addChatMessage(result.error, 'assistant');
@@ -4149,12 +4151,30 @@ class GraphAApp {
         }
 
         const wasEmpty = existingIds.size === 0;
+        // Fit and lay out fresh AI graph labels before recording the create transaction,
+        // so undo/redo restores the final positions and teacher-authored JSON stays pinned.
+        if (intentOptions.generated && wasEmpty && Math.abs(this.canvas.scale - 50) < 1e-9 &&
+            Math.abs(this.canvas.offset.x) < 1e-9 && Math.abs(this.canvas.offset.y) < 1e-9 &&
+            data.operations?.some(operation => operation.op === 'create' && operation.type === 'function')) {
+            const previewManager = new ObjectManager();
+            const preview = new PatchApplier(previewManager, new HistoryManager(previewManager)).apply(data);
+            if (preview.success && preview.createdObjects.some(object => object.type === 'functionRegion' ||
+                (object.type === 'point' && ['open', 'closed'].includes(object.pointStyle)))) {
+                this.fitNewFunctionRegion(preview.createdObjects);
+                layoutGeneratedOperationLabels(data.operations, { view: this.buildAIContext().view,
+                    pinnedIds: new Set(data.operations.filter(operation => operation.type !== 'function' || operation.locked)
+                        .map(operation => operation.id)) });
+            }
+        }
         const patchResult = this.patchApplier.apply(data);
 
         if (patchResult.success) {
             if (wasEmpty && Math.abs(this.canvas.scale - 50) < 1e-9 &&
                 Math.abs(this.canvas.offset.x) < 1e-9 && Math.abs(this.canvas.offset.y) < 1e-9) {
-                if (data.operations?.some(operation => operation.op === 'create' && operation.type === 'functionRegion'))
+                if (data.operations?.some(operation => operation.op === 'create' && operation.type === 'functionRegion') ||
+                    (data.operations?.some(operation => operation.op === 'create' && operation.type === 'function') &&
+                        data.operations?.some(operation => operation.op === 'create' && operation.type === 'point' &&
+                            ['open', 'closed'].includes(operation.pointStyle))))
                     this.fitNewFunctionRegion(patchResult.createdObjects);
                 else if (data.operations?.some(operation => operation.op === 'create' && operation.type === 'circle') &&
                     data.operations?.some(operation => operation.op === 'create' && ['arc', 'sector'].includes(operation.type)))
@@ -4203,6 +4223,17 @@ class GraphAApp {
     fitNewFunctionRegion(createdObjects = []) {
         const regions = createdObjects.filter(object => object?.type === 'functionRegion' && object.valid);
         const points = regions.flatMap(region => region.pathPoints || []);
+        // A narrower shaded interval must not crop the rest of a piecewise graph.
+        for (const graph of createdObjects.filter(object => object?.type === 'function' && object.valid &&
+            Number.isFinite(object.xMin) && Number.isFinite(object.xMax))) {
+            for (let i = 0; i <= 120; i++) {
+                const x = graph.xMin + (graph.xMax - graph.xMin) * i / 120;
+                const y = graph.evaluate(x);
+                if (Number.isFinite(y) && graph.isPointWithinVisibleRange(x, y)) points.push({ x, y });
+            }
+        }
+        points.push(...createdObjects.filter(object => object?.type === 'point' && object.visible && object.valid)
+            .map(object => object.position));
         if (points.length < 4) return;
         const xs = points.map(point => point.x), ys = points.map(point => point.y);
         const minX = Math.min(...xs, this.canvas.showYAxis ? 0 : Infinity);

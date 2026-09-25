@@ -110,8 +110,8 @@ test('a positive or negative horizontal boundary is kept and ambiguous boundarie
     for (const prompt of [
         'f(x)=x^2, y=1, y=2, x=-1부터 1까지 넓이를 색칠해줘.',
         'f(x)=x^2, y=1, x=-1부터 1까지 x축과 직선 사이 넓이를 색칠해줘.',
-        'f(x)=x^2, y=1/2, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.',
-        'f(x)=x^2, y=1+2, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.'
+        'f(x)=x^2, y=a, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.',
+        'f(x)=x^2, y=1/0, x=-1부터 1까지 함수와 직선 사이 넓이를 색칠해줘.'
     ]) {
         const result = await service().processCommand(prompt);
         assert.equal(result.success, false, prompt);
@@ -119,4 +119,21 @@ test('a positive or negative horizontal boundary is kept and ambiguous boundarie
     const axesVisible = await service().processCommand(
         'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 함수 사이 넓이를 색칠하고 x축도 보여줘.');
     assert.equal(axesVisible.success, true, axesVisible.error);
+});
+
+test('constant expressions preserve fractional, radical and pi area boundaries', async () => {
+    for (const [prompt, expected] of [
+        ['f(x)=sin(x), y=1/2, x=0부터 pi까지 함수와 직선 사이 넓이를 색칠해줘.', [0, Math.PI, 0.5]],
+        ['f(x)=x^2, y=1+2, -sqrt(2) ≤ x ≤ sqrt(2)에서 함수와 직선 사이를 색칠해줘.', [-Math.SQRT2, Math.SQRT2, 3]],
+        ['f(x)=max(x,0), y=-1/2, x=-3/2부터 3/2까지 함수와 직선 사이를 색칠해줘.', [-1.5, 1.5, -0.5]]
+    ]) {
+        const result = await service().processCommand(prompt);
+        assert.equal(result.success, true, result.error);
+        const area = result.json.operations.find(op => op.type === 'functionRegion');
+        assert.deepEqual([area.xMin, area.xMax, area.baselineY], expected);
+    }
+    for (const boundary of ['0.5.1', '1/0', 'x+1', 'a', 'sqrt(-1)']) {
+        const result = await service().processCommand(`f(x)=x^2, y=${boundary}, x=-1부터 1까지 색칠해줘.`);
+        assert.equal(result.success, false, boundary);
+    }
 });
