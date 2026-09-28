@@ -214,8 +214,14 @@ try {
         const circleOneShotChecks = [];
         const solidOneShotChecks = [];
         const piecewiseChecks = [];
+        let annotationUpdateCheck = null;
         let existingViewPreserved = null;
         if (suite === 'complex') {
+            annotationUpdateCheck = await appPage.evaluate(async () =>
+                (await import('/scripts/verify-annotation-update-browser.mjs')).verifyAnnotationUpdateInApp());
+            await fs.writeFile(path.join(output, 'annotation-update.png'), Buffer.from(annotationUpdateCheck.image.split(',')[1], 'base64'));
+            await fs.writeFile(path.join(output, 'annotation-update.mathgraph.json'), JSON.stringify(annotationUpdateCheck.project, null, 2));
+            delete annotationUpdateCheck.image; delete annotationUpdateCheck.project;
             for (const spec of piecewiseBrowserCases) {
                 const checked = await appPage.evaluate(async spec =>
                     (await import('/scripts/verify-piecewise-browser.mjs')).verifyPiecewiseInApp(spec), spec);
@@ -666,7 +672,7 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, piecewiseChecks, existingViewPreserved, drawingGuidanceLoaded,
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, piecewiseChecks, annotationUpdateCheck, existingViewPreserved, drawingGuidanceLoaded,
             explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));

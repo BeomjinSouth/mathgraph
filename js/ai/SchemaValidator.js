@@ -338,7 +338,7 @@ export class SchemaValidator {
             errors.push(`${prefix}: function expression must omit "y=" and contain only the right-hand side.`);
         }
 
-        if (op.type === 'angleDimension') {
+        if (op.type === 'angleDimension' || op.type === 'lengthDimension' || op.op === 'update') {
             if (op.arcRadius !== undefined && (!Number.isFinite(op.arcRadius) || op.arcRadius <= 0)) {
                 errors.push(`${prefix}: angleDimension arcRadius must be a positive finite number.`);
             }
@@ -351,6 +351,12 @@ export class SchemaValidator {
             if (op.labelFontSize !== undefined && (!Number.isFinite(op.labelFontSize) || op.labelFontSize <= 0)) {
                 errors.push(`${prefix}: angleDimension labelFontSize must be a positive finite number.`);
             }
+            if (op.curvature !== undefined && !Number.isFinite(op.curvature))
+                errors.push(`${prefix}: dimension curvature must be a finite number.`);
+            if (op.precision !== undefined && (!Number.isInteger(op.precision) || op.precision < 0 || op.precision > 100))
+                errors.push(`${prefix}: dimension precision must be an integer from 0 to 100.`);
+            if (op.customText !== undefined && op.customText !== null && typeof op.customText !== 'string')
+                errors.push(`${prefix}: dimension customText must be a string or null.`);
         }
 
         if (op.type === 'equalLengthMarker' && op.tickCount != null &&

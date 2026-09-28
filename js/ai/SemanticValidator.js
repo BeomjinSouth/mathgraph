@@ -2,7 +2,7 @@ import { ValidationResult } from './SchemaValidator.js';
 import { readHorizontalAreaBoundary, readRequestedXBounds, readConstant, readMathExpression, normalizeMathText } from './FunctionAreaIntent.js';
 import { FunctionParser } from '../utils/Parser.js';
 import { readPiecewiseFunctionIntent, validatePiecewiseFunctionIntent } from './PiecewiseFunctionIntent.js';
-import { resolveAnnotationPoints, validateAnnotationGeometry } from './ExamAnnotationGeometry.js';
+import { resolveAnnotationPoints, validateAnnotationGeometry, previewAnnotationState } from './ExamAnnotationGeometry.js';
 
 const SQRT2 = Math.SQRT2;
 
@@ -13,11 +13,17 @@ export class SemanticValidator {
             return ValidationResult.failure('exam annotation validation requires operations to be an array.');
         const prompt = String(options.prompt || options.userMessage || '');
         const creates = operations.filter(op => op?.op === 'create');
-        const ofType = type => creates.filter(op => op.type === type);
         const result = ValidationResult.success();
-        const pointById = resolveAnnotationPoints(creates);
+        let annotationCreates = creates;
+        if (options.context?.objects?.length && /∠|\b[A-Z]{2}\s*=/.test(prompt)) {
+            const preview = previewAnnotationState(operations, options.context);
+            if (preview.error) return ValidationResult.failure(`기존 그림의 표시 변경을 검증할 수 없습니다: ${preview.error}`);
+            annotationCreates = preview.creates;
+        }
+        const ofType = type => annotationCreates.filter(op => op.type === type);
+        const pointById = resolveAnnotationPoints(annotationCreates);
         const segmentById = new Map(ofType('segment').map(op => [op.id, op]));
-        for (const error of validateAnnotationGeometry(prompt, creates, pointById)) result.addError(error);
+        for (const error of validateAnnotationGeometry(prompt, annotationCreates, pointById)) result.addError(error);
         if (/(?:삼각기둥|정육면체)\s*[A-Z]{3,4}\s*[-–—]\s*[A-Z]{3,4}/.test(prompt)) {
             const names = prompt.match(/(?:삼각기둥|정육면체)\s*([A-Z]{3,4})\s*[-–—]\s*([A-Z]{3,4})/);
             const labels = new Set(ofType('point').map(op => op.label));
@@ -117,7 +123,7 @@ export class SemanticValidator {
             result.addError('함수의 접선 요청에 tangentFunction이 없습니다.');
         this.validateFunctionAreaIntent(prompt, creates, result);
         for (const error of validatePiecewiseFunctionIntent(prompt, creates)) result.addError(error);
-        this.validateExamCircleIntent(prompt, creates, result);
+        this.validateExamCircleIntent(prompt, annotationCreates, result);
         return result;
     }
 
@@ -209,7 +215,8 @@ export class SemanticValidator {
     validateExamCircleIntent(prompt, creates, result) {
         if (/원기둥|원뿔/.test(prompt)) return;
         const angle = prompt.match(/∠\s*([A-Z])([A-Z])([A-Z])\s*=\s*(\d+(?:\.\d+)?)\s*°/);
-        if (!angle || !/원|부채꼴|호/.test(prompt)) return;
+        const namesCircle = /부채꼴|(?:^|[\s,(])원(?:\s*[A-Z]|(?=$|[\s,.)])|에서|의|을|은|과|인)/.test(prompt);
+        if (!angle || (!namesCircle && !/호\s*[A-Z]{2}/.test(prompt))) return;
         const [aName, oName, bName, degrees] = [angle[1], angle[2], angle[3], Number(angle[4])];
         const byId = new Map(creates.filter(op => op.id).map(op => [op.id, op]));
         const points = Object.fromEntries(creates.filter(op => op.type === 'point' && op.label)

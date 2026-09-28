@@ -2,6 +2,26 @@ import { ObjectManager } from '../core/ObjectManager.js';
 import { HistoryManager } from '../core/HistoryManager.js';
 import { PatchApplier } from './PatchApplier.js';
 
+/** Replay only into an isolated manager; never validate a proposed edit against stale geometry. */
+export function previewAnnotationState(operations, context) {
+    const manager = new ObjectManager();
+    try {
+        manager.fromJSON({objects:structuredClone(context.objects)});
+        const applied = new PatchApplier(manager, new HistoryManager(manager)).apply({operations});
+        if (!applied.success) return {error:applied.errors.join(' ')};
+        const pointTypes = new Set(['point','pointOnObject','midpoint','intersection','circleCenterPoint']);
+        const creates = manager.getAllObjects().map(object => {
+            const data = {...object.toJSON(),op:'create'};
+            if (pointTypes.has(object.type) && typeof object.getPosition === 'function') {
+                const position = object.getPosition();
+                return {...data,type:'point',x:object.valid ? position?.x : NaN,y:object.valid ? position?.y : NaN};
+            }
+            return data;
+        });
+        return {creates};
+    } catch (error) { return {error:error.message}; }
+}
+
 export function resolveAnnotationPoints(creates) {
     const points = new Map(creates.filter(op => op.type === 'point').map(op => [op.id, op]));
     if (!creates.some(op => ['midpoint', 'intersection', 'pointOnLine', 'pointOnCircle', 'circleCenterPoint'].includes(op.type))) return points;
@@ -57,7 +77,11 @@ export function validateAnnotationGeometry(prompt, creates, points) {
     const errors = [];
     const labels = new Map([...points.values()].filter(point => point.label).map(point => [point.label, point]));
     const segments = new Map(creates.filter(op => op.type === 'segment').map(op => [op.id, op]));
-    const projected = creates.some(op => ['prism','pyramid','cylinder','cone','sphere'].includes(op.type));
+    // An unrelated solid elsewhere on an existing canvas must not disable plane checks.
+    const projectedVertices = new Set(creates.filter(op => ['prism','pyramid'].includes(op.type))
+        .flatMap(op => [...(op.baseVertexIds || []),...(op.topVertexIds || []),op.apexId].filter(Boolean)));
+    const projected = /입체|기둥|각뿔|원뿔|면체|sphere|prism|pyramid|cube|cone|cylinder/i.test(prompt);
+    const projectedNames = names => projected || names.every(name => [...name].every(label => projectedVertices.has(labels.get(label)?.id)));
     const side = id => {
         const segment = segments.get(id), a = points.get(segment?.point1Id)?.label, b = points.get(segment?.point2Id)?.label;
         return a && b ? sideKey(a+b) : null;
@@ -88,7 +112,7 @@ export function validateAnnotationGeometry(prompt, creates, points) {
             errors.push(`${group.join('=')}의 같은 길이 표식이 빠졌거나 눈금 수가 서로 다릅니다.`);
         else if (usedTicks.has([...ticks][0])) errors.push('서로 독립인 같은 길이 묶음은 서로 다른 눈금 개수로 표시해야 합니다.');
         else usedTicks.add([...ticks][0]);
-        if (!projected && !group.every(name => nearLength(sideLength(name), sideLength(group[0]))))
+        if (!projectedNames(group) && !group.every(name => nearLength(sideLength(name), sideLength(group[0]))))
             errors.push(`${group.join('=')}의 실제 선분 길이가 서로 다릅니다.`);
     }
     const angleEdges = [...prompt.matchAll(/(?=∠\s*([A-Z]{3}|[A-Z])(?![A-Z])\s*=\s*∠\s*([A-Z]{3}|[A-Z])(?![A-Z]))/g)]
@@ -102,20 +126,20 @@ export function validateAnnotationGeometry(prompt, creates, points) {
         else {
             if (usedAngleTicks.has(marked[0].markerCount)) errors.push('서로 독립인 같은 각 묶음은 서로 다른 표식 개수로 표시해야 합니다.');
             usedAngleTicks.add(marked[0].markerCount);
-            if (!projected && !marked.every(op => Math.abs(degrees(op)-degrees(marked[0])) <= 0.5))
+            if (!projectedNames(group) && !marked.every(op => Math.abs(degrees(op)-degrees(marked[0])) <= 0.5))
                 errors.push('같은 각 표식이 붙은 각의 실제 크기가 서로 다릅니다.');
         }
     }
     for (const [, name, value] of prompt.matchAll(/∠\s*([A-Z]{3}|[A-Z])(?![A-Z])\s*=\s*(\d+(?:\.\d+)?)\s*°/g)) {
         const matching = dimensions.some(op => angleMatches(name,op) && op.showValue !== false &&
             (!op.customText || Number.parseFloat(op.customText) === Number(value)) &&
-            (projected || Math.abs(degrees(op)-Number(value)) <= 0.5));
+            (projectedNames([name]) || Math.abs(degrees(op)-Number(value)) <= 0.5));
         if (!matching) errors.push(`∠${name}=${value}°의 꼭짓점·두 반직선·각도 호 또는 값이 일치하지 않습니다.`);
     }
     for (const [, name, value] of prompt.matchAll(/\b([A-Z]{2})\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/g)) {
         const matching = creates.some(op => op.type === 'lengthDimension' && op.visible !== false && op.showValue !== false &&
             side(op.segmentId) === sideKey(name) && (!op.customText || Number.parseFloat(op.customText) === Number(value)) &&
-            (projected || nearLength(sideLength(name), Number(value))));
+            (projectedNames([name]) || nearLength(sideLength(name), Number(value))));
         if (!matching) errors.push(`${name}=${value}cm의 실제 길이·치수 호 또는 값이 일치하지 않습니다.`);
     }
     return [...new Set(errors)];

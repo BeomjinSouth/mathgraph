@@ -453,6 +453,8 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'pointStyle', op.pointStyle);
         this.applyPropertyUpdate(object, 'fontSize', op.fontSize);
         this.applyPropertyUpdate(object, 'tickCount', op.tickCount);
+        for (const field of ['arcRadius','curvature','precision','showValue','markerCount','customText','labelFontSize'])
+            this.applyPropertyUpdate(object, field, op[field]);
         this.applyPropertyUpdate(object, 'dashed', op.dashed);
         this.applyPropertyUpdate(object, 'fillColor', op.fillColor);
         this.applyPropertyUpdate(object, 'fillOpacity', op.fillOpacity);
