@@ -70,6 +70,47 @@ test('symbolic horizontal boundaries are checked against values rather than nume
         assert.equal(check(ai, { operations: [complete.operations[0], { ...area, ...change }] }, prompt).valid, false);
 });
 
+test('two-function shaded regions reject wrong equations, boundaries, hidden graphs and partial coverage', async () => {
+    const prompt = 'f(x)=x^2, g(x)=1, x=-1부터 1까지 두 그래프 사이를 색칠하고 f(x)의 x=0.5에서의 접선을 그려줘.';
+    const ai = service();
+    const complete = (await ai.processCommand(prompt)).json;
+    assert.equal(check(ai, complete, prompt).valid, true);
+    const mutations = [
+        ops => { ops.find(op => op.id === 'f').expression = 'x^2+1'; },
+        ops => { ops.find(op => op.id === 'g').expression = '2'; },
+        ops => { ops.find(op => op.id === 'g').xMax = 0.5; },
+        ops => { ops.find(op => op.id === 'f').visible = false; },
+        ops => { ops.find(op => op.type === 'functionRegion').function2Id = 'f'; },
+        ops => { ops.find(op => op.type === 'functionRegion').xMin = 0; },
+        ops => { ops.find(op => op.type === 'functionRegion').xMax = 2; },
+        ops => { ops.find(op => op.type === 'functionRegion').visible = false; },
+        ops => { ops.find(op => op.type === 'tangentFunction').functionId = 'g'; },
+        ops => { ops.find(op => op.type === 'tangentFunction').x = 0; }
+    ];
+    for (const mutate of mutations) {
+        const invalid = structuredClone(complete);
+        mutate(invalid.operations);
+        assert.equal(check(ai, invalid, prompt).valid, false, JSON.stringify(invalid));
+    }
+    const equivalent = structuredClone(complete);
+    equivalent.operations.find(op => op.id === 'f').expression = 'x*x';
+    const region = equivalent.operations.find(op => op.type === 'functionRegion');
+    [region.function1Id, region.function2Id] = [region.function2Id, region.function1Id];
+    region.xMax = 0;
+    equivalent.operations.push({ ...region, id: 'second_half', xMin: 0, xMax: 1 });
+    assert.equal(check(ai, equivalent, prompt).valid, true);
+    region.xMax = -0.1;
+    assert.equal(check(ai, equivalent, prompt).valid, false, 'gap in shading');
+});
+
+test('horizontal shading cannot use the right name with the wrong function expression', async () => {
+    const prompt = 'f(x)=sin(x), y=1/2, x=0부터 pi까지 함수와 직선 사이를 색칠해줘.';
+    const ai = service();
+    const invalid = (await ai.processCommand(prompt)).json;
+    invalid.operations[0].expression = 'cos(x)';
+    assert.equal(check(ai, invalid, prompt).valid, false);
+});
+
 test('independent equal-length groups cannot reuse one tick count', async () => {
     const prompt = '평행사변형 ABCD에서 AB=CD, BC=DA, ∠A=∠C, AB=8cm, ∠A=70°를 표시해줘.';
     const ai = service();

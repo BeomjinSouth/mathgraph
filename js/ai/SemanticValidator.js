@@ -1,5 +1,6 @@
 import { ValidationResult } from './SchemaValidator.js';
-import { readHorizontalAreaBoundary, readRequestedXBounds, readConstant } from './FunctionAreaIntent.js';
+import { readHorizontalAreaBoundary, readRequestedXBounds, readConstant, readMathExpression, normalizeMathText } from './FunctionAreaIntent.js';
+import { FunctionParser } from '../utils/Parser.js';
 import { readPiecewiseFunctionIntent, validatePiecewiseFunctionIntent } from './PiecewiseFunctionIntent.js';
 
 const SQRT2 = Math.SQRT2;
@@ -179,51 +180,78 @@ export class SemanticValidator {
         if (/[a-z]\s*\(\s*x\s*\)\s*=/i.test(prompt) && /접선|tangent/i.test(prompt) &&
             ofType('tangentFunction').length === 0)
             result.addError('함수의 접선 요청에 tangentFunction이 없습니다.');
-        this.validateHorizontalFunctionAreaIntent(prompt, creates, result);
+        this.validateFunctionAreaIntent(prompt, creates, result);
         for (const error of validatePiecewiseFunctionIntent(prompt, creates)) result.addError(error);
         this.validateExamCircleIntent(prompt, creates, result);
         return result;
     }
 
-    validateHorizontalFunctionAreaIntent(prompt, creates, result) {
-        const source = prompt.replace(/[−–—]/g, '-');
+    validateFunctionAreaIntent(prompt, creates, result) {
+        const source = normalizeMathText(prompt);
         if (readPiecewiseFunctionIntent(source)) return;
         if (!/색칠|음영|넓이.{0,35}(?:구하|찾|계산|표시)|shad(?:e|ed)/i.test(source)) return;
         const assignments = [...source.matchAll(/([a-z])\s*\(\s*x\s*\)\s*=/gi)];
-        if (assignments.length !== 1) return;
+        if (assignments.length < 1 || assignments.length > 2) return;
+        const expressions = assignments.map((match, index) => readMathExpression(
+            source.slice(match.index + match[0].length, assignments[index + 1]?.index ?? source.length)));
         const boundary = readHorizontalAreaBoundary(source);
         if (boundary.error) {
             result.addError(boundary.error);
             return;
         }
-        if (boundary.baselineY === null) return;
+        if (assignments.length === 1 && boundary.baselineY === null) return;
         const bounds = readRequestedXBounds(source);
-        if (!bounds) return;
-        const name = assignments[0][1].toLowerCase();
+        if (!bounds || bounds.xMin >= bounds.xMax) return;
         const functions = creates.filter(op => op.type === 'function');
-        const graph = functions.find(op => op.id === name || op.label === name);
         const byId = new Map(functions.map(op => [op.id, op]));
         const areas = creates.filter(op => op.type === 'functionRegion');
+        const compiled = new Map();
+        const evaluate = expression => {
+            if (!compiled.has(expression)) {
+                try { compiled.set(expression, FunctionParser.parse(expression)); }
+                catch { compiled.set(expression, null); }
+            }
+            return compiled.get(expression);
+        };
+        const close = (a, b) => Number.isFinite(a) && Number.isFinite(b) &&
+            Math.abs(a - b) <= 1e-8 * Math.max(1, Math.abs(a), Math.abs(b));
+        // Samples detect wrong curves; they are not a proof of symbolic equivalence.
+        const matchesGraph = (id, expression, xMin, xMax) => {
+            const graph = byId.get(id), actual = graph && evaluate(graph.expression), expected = evaluate(expression);
+            if (!actual || !expected || graph.visible === false ||
+                (graph.xMin != null && graph.xMin > xMin + 1e-9) ||
+                (graph.xMax != null && graph.xMax < xMax - 1e-9)) return false;
+            return [0, 0.071, 0.193, 0.317, 0.503, 0.691, 0.827, 0.947, 1].every(t => {
+                const x = xMin + t * (xMax - xMin), y = actual(x);
+                return close(y, expected(x)) && (graph.yMin == null || y >= graph.yMin - 1e-9) &&
+                    (graph.yMax == null || y <= graph.yMax + 1e-9);
+            });
+        };
         const isConstantBoundary = id => {
             const expression = String(byId.get(id)?.expression || '').trim();
             const value = readConstant(expression);
             return value !== null && Math.abs(value - boundary.baselineY) < 1e-9;
         };
         const matchesBoundary = op => {
-            if (!graph) return false;
-            if (op.function1Id === graph.id && !op.function2Id)
-                return Math.abs(Number(op.baselineY ?? 0) - boundary.baselineY) < 1e-9;
-            const otherId = op.function1Id === graph.id ? op.function2Id :
-                op.function2Id === graph.id ? op.function1Id : null;
-            return otherId && isConstantBoundary(otherId);
+            const matches = (id, expression) => matchesGraph(id, expression, op.xMin, op.xMax);
+            if (assignments.length === 2) {
+                return op.function1Id !== op.function2Id &&
+                    ((matches(op.function1Id, expressions[0]) && matches(op.function2Id, expressions[1])) ||
+                        (matches(op.function2Id, expressions[0]) && matches(op.function1Id, expressions[1])));
+            }
+            if (!op.function2Id) return matches(op.function1Id, expressions[0]) &&
+                close(Number(op.baselineY ?? 0), boundary.baselineY);
+            return [[op.function1Id, op.function2Id], [op.function2Id, op.function1Id]].some(([graphId, constantId]) =>
+                matches(graphId, expressions[0]) && isConstantBoundary(constantId) &&
+                matches(constantId, String(boundary.baselineY)));
         };
-        const validAreas = areas.filter(op => matchesBoundary(op) &&
+        const validAreas = areas.filter(op => op.visible !== false && matchesBoundary(op) &&
             Number(op.fillOpacity ?? 0.2) > 0 &&
             Number.isFinite(op.xMin) && Number.isFinite(op.xMax) &&
             op.xMin < op.xMax && op.xMin >= bounds.xMin - 1e-9 &&
             op.xMax <= bounds.xMax + 1e-9);
-        if (!graph || !areas.length || validAreas.length !== areas.length) {
-            result.addError('함수의 색칠 경계·수평선 높이 또는 구간이 요청과 다릅니다.');
+        if (!areas.length || validAreas.length !== areas.length) {
+            result.addError('함수식·색칠 경계·수평선 높이 또는 구간이 요청과 다릅니다.');
             return;
         }
         let coveredUntil = bounds.xMin;
@@ -233,6 +261,14 @@ export class SemanticValidator {
         }
         if (coveredUntil < bounds.xMax - 1e-9)
             result.addError('색칠한 구간이 요청한 x 범위를 모두 덮지 않습니다.');
+        const tangent = source.match(/([a-z])\s*(?:\(\s*x\s*\))?\s*의\s*x\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*에서(?:의)?\s*접선/i);
+        if (tangent) {
+            const index = assignments.findIndex(match => match[1].toLowerCase() === tangent[1].toLowerCase());
+            const x = Number(tangent[2]);
+            if (index < 0 || !creates.some(op => op.type === 'tangentFunction' && op.visible !== false &&
+                close(op.x, x) && matchesGraph(op.functionId, expressions[index], bounds.xMin, bounds.xMax)))
+                result.addError('접선의 대상 함수 또는 접점의 x좌표가 요청과 다릅니다.');
+        }
     }
 
     validateExamCircleIntent(prompt, creates, result) {
