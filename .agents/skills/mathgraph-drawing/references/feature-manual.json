@@ -91,9 +91,9 @@
     "recommendedFor": ["pasted image recreation", "whole-photo diagram recreation", "PDF crop recreation", "textbook diagram understanding", "targeted image-reference patching"],
     "sceneRootShape": {
       "sceneType": "diagram",
-      "nodes": "Array of math entities such as point, segment, vector, circle, ellipse, hyperbola, parabola, arc, sector, lensRegion, polygon, function, numberLine, textLabel, prism, pyramid, cylinder, cone, sphere.",
+      "nodes": "Array of math entities such as point, segment, vector, circle, ellipse, hyperbola, parabola, arc, sector, lensRegion, polygon, function, numberLine, textLabel, prism, pyramid, cylinder, cone, sphere, statisticalChart, annularSector, solidNet, vennDiagram.",
       "relations": "Array of constraints or annotations such as intersection, midpoint, parallel, perpendicular, rightAngle, equalLength, angleDimension, lengthDimension, tangentFunction.",
-      "unsupported": "Array of unsupported first-class requests such as native statistical charts, tables, nets, annular sectors, or exact function-bounded curved fills.",
+      "unsupported": "Array of unsupported requests such as tables, arbitrary polyhedron nets, sphere nets, and exact symbolic integration. Statistical charts, regular solid nets, annular sectors and Venn diagrams are supported.",
       "notes": "Optional source evidence, uncertainty, or crop notes."
     },
     "compiler": {
@@ -129,6 +129,7 @@
       "additionalProperties": false
     },
     "supportedCreateTypes": [
+      "statisticalChart", "annularSector", "solidNet", "vennDiagram", "textLabel", "cylinder", "cone", "sphere",
       "point",
       "pointOnLine",
       "pointOnCircle",
@@ -186,6 +187,10 @@
     "updateOnlyOrObjectSpecific": ["x", "y", "width", "height", "radiusX", "radiusY", "a", "b", "p", "orientation", "rotation", "ellipseRatio", "showHiddenLines", "text", "align", "expression", "xMin", "xMax", "yMin", "yMax", "branch", "mode", "t", "angle", "start", "end", "step", "showArrows", "tickHeight", "customMarks"]
   },
   "aiCreatableObjects": [
+    {"type": "statisticalChart", "koreanName": "통계·확률분포 그림", "tags": ["statistics", "probability"], "requiredFields": ["x", "y", "width", "height", "chartKind"], "optionalFields": ["dataValues", "dataLabels", "dataX", "dataY", "binEdges", "mean", "standardDeviation", "xMin", "xMax", "fillOpacity"], "template": {"op": "create", "id": "chart", "type": "statisticalChart", "x": -5, "y": -3, "width": 10, "height": 6, "chartKind": "histogram", "binEdges": [0, 10, 20, 30], "dataValues": [2, 5, 3]}, "notes": ["chartKind: bar, pie, histogram, frequencyPolygon, boxPlot, dotPlot, scatter, line, discrete, normal.", "histogram/frequencyPolygon: increasing binEdges, one more than frequencies; unequal histogram bins use frequency density.", "boxPlot dataValues are exactly min,Q1,median,Q3,max; dotPlot uses raw observations; scatter uses dataX,dataY.", "normal uses mean and standardDeviation > 0, optional finite xMin<xMax for shading; discrete uses dataValues probabilities and dataLabels values.", "Do not invent missing source values. Arrays max 200 entries."]},
+    {"type": "annularSector", "koreanName": "고리 부채꼴", "tags": ["circle", "shading"], "requiredFields": ["x", "y", "radius", "innerRadius", "startAngle", "sweepAngle"], "optionalFields": ["fillOpacity"], "template": {"op": "create", "id": "ring", "type": "annularSector", "x": 0, "y": 0, "radius": 4, "innerRadius": 2, "startAngle": 0, "sweepAngle": 90}, "notes": ["True transparent inner hole and exact circular arcs in Canvas and SVG.", "Angles in degrees, counterclockwise; 0<=innerRadius<radius and 0<sweepAngle<=360."]},
+    {"type": "solidNet", "koreanName": "입체 전개도", "tags": ["solid", "net"], "requiredFields": ["x", "y", "width", "height", "netKind"], "optionalFields": ["depth", "radius", "sideCount", "showMeasurements"], "template": {"op": "create", "id": "net", "type": "solidNet", "x": 0, "y": 0, "netKind": "cuboid", "width": 3, "height": 4, "depth": 2, "showMeasurements": true}, "notes": ["netKind: cube, cuboid, cylinder, cone, prism, pyramid.", "width=base edge, cuboid depth=second base edge; curved nets also need radius.", "cone height is SLANT height; pyramid height is face SLANT height; prism/pyramid require regular base and sideCount 3..12.", "Shared folds dashed. showMeasurements adds numeric length labels. Sphere and arbitrary polyhedron nets unsupported."]},
+    {"type": "vennDiagram", "koreanName": "벤 다이어그램", "tags": ["sets", "shading"], "requiredFields": ["x", "y", "width", "height", "setCount", "setExpression"], "optionalFields": ["fillOpacity"], "template": {"op": "create", "id": "venn", "type": "vennDiagram", "x": -5, "y": -3, "width": 10, "height": 6, "setCount": 3, "setExpression": "A∩(B∪C)"}, "notes": ["Two or three overlapping sets. setExpression uses A,B,C,U, intersection ∩ or &, union ∪ or |, difference -, complement ! or apostrophe, parentheses.", "Empty expression draws outlines only. Uses exact circular Boolean boundaries. Does not infer containment or disjoint-set layouts."]},
     {
       "type": "point",
       "koreanName": "자유점",
@@ -597,6 +602,7 @@
     "trigger": "Used when provider is local, no API key exists, or API parsing fails.",
     "safeDeletePolicy": "Delete-like requests are rejected unless handled by direct JSON/update/delete flow.",
     "deterministicPatterns": [
+      "explicit statistical arrays, box summaries, annular radii/angles, regular solid-net dimensions, two/three-set Boolean Venn shading, and normal/binomial distribution parameters",
       "function area between one or two explicitly named f(x)/g(x) expressions and a finite x interval; bounds and y=c can use constant expressions such as 1/2, pi or sqrt(2); a single function needs an explicit x-axis or horizontal boundary",
       "finite piecewise functions such as f(x)={x+1 (-2<=x<0); x^2 (0<=x<=2)}, with open/closed endpoints and optional separate shaded regions against x-axis or y=c; gaps remain unfilled",
       "number line ranges and steps",
@@ -666,10 +672,6 @@
   ],
   "knownGapsAndApproximations": [
     {
-      "gap": "Statistical chart primitives are not first-class objects.",
-      "currentApproximation": "The standard teacher generation workflow explicitly excludes bar/pie charts, histograms, frequency polygons, box plots, dot plots, and scatter plots instead of claiming first-class support."
-    },
-    {
       "gap": "Two-valued intersections support branch 0 or 1, but do not expose semantic left/right/upper/lower anchor names.",
       "currentApproximation": "Use branch 0 or 1 after checking object order, or create explicit support points when a semantic side name must remain stable."
     },
@@ -678,8 +680,8 @@
       "currentApproximation": "Create explicitly calculated free points and ordinary lines when their numeric coordinates are known; do not claim that those helpers stay constrained after conic parameter edits."
     },
     {
-      "gap": "Annular sectors and symbolic exact integration of function-bounded areas are not first-class objects.",
-      "currentApproximation": "Use sectors and circles for an approximate annular diagram when acceptable. functionRegion follows referenced graph objects but samples its outline for display; verify the numerical area separately."
+      "gap": "Symbolic exact integration of function-bounded areas is not implemented.",
+      "currentApproximation": "annularSector uses exact circular paths. functionRegion and normal-distribution shading sample a curve for display; verify numerical probability or area separately."
     }
   ]
 }

@@ -4,6 +4,7 @@
  */
 
 import { ObjectType } from '../objects/GeoObject.js';
+import { CurriculumDiagram } from '../objects/CurriculumDiagram.js';
 import { Vec2 } from '../utils/Geometry.js';
 import { FreePoint, PointOnLine, PointOnCircle, IntersectionPoint, Midpoint, CircleCenterPoint } from '../objects/Point.js';
 import { Segment, Line, Ray, ParallelLine, PerpendicularLine, PerpendicularBisector, AngleBisector } from '../objects/Line.js';
@@ -643,6 +644,13 @@ export class ObjectManager {
                 obj = new CurvedSolid(data.type, data);
                 break;
 
+            case 'statisticalChart':
+            case 'annularSector':
+            case 'solidNet':
+            case 'vennDiagram':
+                obj = new CurriculumDiagram(data.type, data);
+                break;
+
             default:
                 console.warn(`알 수 없는 객체 타입: ${data.type}`);
                 return null;
@@ -665,6 +673,12 @@ export class ObjectManager {
      */
     createPoint(x, y, params = {}) {
         return this.addObject(new FreePoint(x, y, this.getPointCreationParams(params)));
+    }
+
+    createCurriculumDiagram(type, params = {}) {
+        const object = new CurriculumDiagram(type, params);
+        if (!object.valid) throw new Error(object.errors.join(' '));
+        return this.addObject(object);
     }
 
     createSegment(point1Id, point2Id, params = {}) {

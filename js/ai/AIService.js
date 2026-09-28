@@ -15,6 +15,8 @@ import { buildExamSolidOperations } from './ExamSolidFallback.js';
 import { buildExamCircleOperations } from './ExamCircleFallback.js';
 import { readHorizontalAreaBoundary, readRequestedXBounds, readMathExpression } from './FunctionAreaIntent.js';
 import { buildPiecewiseFunctionOperations } from './PiecewiseFunctionIntent.js';
+import { buildProbabilityOperations, validateProbabilityIntent } from './ProbabilityIntent.js';
+import { CURRICULUM_TYPES, CURRICULUM_SCHEMA_PROPERTIES, CURRICULUM_PROMPT, buildCurriculumOperations, validateCurriculumIntent } from './CurriculumIntent.js';
 import {
     diffImageAnalysisOperations,
     recordImageAnalysisStage
@@ -228,7 +230,7 @@ const GRAPH_OPERATION_TYPES = [
     'angleDimension', 'lengthDimension',
     'arc', 'sector', 'circularSegment',
     'lensRegion', 'polygon', 'functionRegion', 'prism', 'pyramid', 'numberLine', 'textLabel',
-    'cylinder', 'cone', 'sphere'
+    'cylinder', 'cone', 'sphere', ...CURRICULUM_TYPES
 ];
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
@@ -250,6 +252,7 @@ const customMarkSchema = {
 };
 
 const operationProperties = {
+    ...CURRICULUM_SCHEMA_PROPERTIES,
     op: {
         type: 'string',
         enum: ['create', 'update', 'delete'],
@@ -517,6 +520,7 @@ export function extractOpenAIResponseText(data) {
 
 // AI 참조 문서에서 가져온 시스템 프롬프트
 const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시스턴트입니다.
+${CURRICULUM_PROMPT}
 사용자의 요청을 분석하여 아래 JSON 스키마에 맞는 **구조화된 출력만** 생성합니다.
 
 ## 중요 규칙
@@ -1020,7 +1024,8 @@ export class AIService {
             !fallback.error?.startsWith('시험 도형 요청:') &&
             !fallback.error?.startsWith('시험 입체도형 요청:') &&
             !fallback.error?.startsWith('구간별 함수 요청:') &&
-            !fallback.error?.startsWith('원·부채꼴 요청:')) {
+            !fallback.error?.startsWith('원·부채꼴 요청:') &&
+            !fallback.error?.startsWith('수학 그림 요청:')) {
             return {
                 ...fallback,
                 success: false,
@@ -1055,6 +1060,10 @@ export class AIService {
         if (!referenceResult.valid) {
             return referenceResult;
         }
+
+        const curriculumErrors = validateCurriculumIntent(json, options.userMessage);
+        curriculumErrors.push(...validateProbabilityIntent(json, options.userMessage));
+        if (curriculumErrors.length) return { valid: false, errors: curriculumErrors };
 
         const solidIntentResult = this.semanticValidator.validateRequestedSolidIntent(json, {
             prompt: options.userMessage
@@ -1450,16 +1459,16 @@ export class AIService {
         };
 
         const addPlane = () => add('point', 'segment', 'line', 'ray', 'vector', 'polygon');
-        const addCircle = () => add('point', 'circle', 'circleThreePoints', 'pointOnCircle', 'circleCenterPoint', 'arc', 'sector', 'circularSegment', 'lensRegion', 'tangentCircle');
+        const addCircle = () => add('point', 'circle', 'circleThreePoints', 'pointOnCircle', 'circleCenterPoint', 'arc', 'sector', 'circularSegment', 'lensRegion', 'tangentCircle', 'annularSector', 'vennDiagram');
         const addConstruction = () => add('intersection', 'midpoint', 'parallel', 'perpendicular', 'perpendicularBisector', 'angleBisector', 'rightAngleMarker', 'equalLengthMarker', 'angleDimension', 'lengthDimension');
         const addSolid = () => {
-            add('point', 'segment', 'polygon', 'prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'textLabel');
+            add('point', 'segment', 'polygon', 'prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'textLabel', 'solidNet');
             includeKnownGaps = true;
         };
         const addGraph = () => add('point', 'segment', 'line', 'vector', 'function', 'functionRegion', 'ellipse', 'hyperbola', 'parabola', 'tangentFunction', 'intersection', 'polygon');
         const addNumberLine = () => add('numberLine', 'point', 'segment');
         const addChart = () => {
-            add('point', 'segment', 'polygon', 'numberLine', 'line');
+            add('statisticalChart');
             includeKnownGaps = true;
         };
 
@@ -1766,7 +1775,8 @@ export class AIService {
         if (deterministicResult.error?.startsWith('함수 넓이 요청:') ||
             deterministicResult.error?.startsWith('시험 도형 요청:') ||
             deterministicResult.error?.startsWith('시험 입체도형 요청:') ||
-            deterministicResult.error?.startsWith('원·부채꼴 요청:')) {
+            deterministicResult.error?.startsWith('원·부채꼴 요청:') ||
+            deterministicResult.error?.startsWith('수학 그림 요청:')) {
             return deterministicResult;
         }
         if (options.deterministicOnly) {
@@ -2072,6 +2082,8 @@ export class AIService {
         }
 
         const builders = [
+            () => buildProbabilityOperations(normalizedMessage),
+            () => buildCurriculumOperations(normalizedMessage),
             () => buildPiecewiseFunctionOperations(normalizedMessage),
             () => this.buildFunctionAreaOperations(normalizedMessage),
             () => buildExamGeometryOperations(normalizedMessage),
@@ -2108,6 +2120,8 @@ export class AIService {
         const lower = normalizedMessage.toLowerCase();
         const state = this.buildContextState(context);
         const builders = [
+            () => buildProbabilityOperations(normalizedMessage),
+            () => buildCurriculumOperations(normalizedMessage),
             () => buildPiecewiseFunctionOperations(normalizedMessage),
             () => this.buildFunctionAreaOperations(normalizedMessage),
             () => buildExamGeometryOperations(normalizedMessage),

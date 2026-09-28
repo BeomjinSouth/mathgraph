@@ -3,6 +3,7 @@
  */
 
 import { parseAIJSONPayload } from './JSONUtils.js';
+import { CURRICULUM_TYPES, validateCurriculumDiagram } from '../objects/CurriculumDiagram.js';
 
 /**
  * Validation result wrapper.
@@ -41,7 +42,7 @@ export class SchemaValidator {
             'angleDimension', 'lengthDimension',
             'arc', 'sector', 'circularSegment',
             'lensRegion', 'polygon', 'functionRegion', 'prism', 'pyramid', 'numberLine', 'textLabel',
-            'cylinder', 'cone', 'sphere'
+            'cylinder', 'cone', 'sphere', ...CURRICULUM_TYPES
         ];
 
         this.validOperations = ['create', 'update', 'delete'];
@@ -124,6 +125,9 @@ export class SchemaValidator {
     validateOperation(op, index) {
         const errors = [];
         const prefix = `operations[${index}]`;
+        if (op.op === 'create' && CURRICULUM_TYPES.includes(op.type)) {
+            errors.push(...validateCurriculumDiagram(op).map(error => `${prefix}: ${error}`));
+        }
 
         if (!op.op) {
             errors.push(`${prefix}: op field is missing.`);

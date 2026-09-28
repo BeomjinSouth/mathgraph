@@ -3,6 +3,7 @@
  */
 
 import { remapObjectReferences } from '../utils/ObjectReferences.js';
+import { CURRICULUM_TYPES, CURRICULUM_FIELDS } from '../objects/CurriculumDiagram.js';
 
 export class PatchResult {
     constructor(success, message = '', createdObjects = []) {
@@ -398,6 +399,13 @@ export class PatchApplier {
                 );
                 break;
 
+            case 'statisticalChart':
+            case 'annularSector':
+            case 'solidNet':
+            case 'vennDiagram':
+                object = this.objectManager.createCurriculumDiagram(op.type, { ...resolvedOp, ...commonParams });
+                break;
+
             case 'cylinder':
             case 'cone':
             case 'sphere':
@@ -491,6 +499,16 @@ export class PatchApplier {
         this.applyPropertyUpdate(object, 'orientation', op.orientation);
         this.applyPropertyUpdate(object, 'rotation', op.rotation);
 
+        if (CURRICULUM_TYPES.includes(object.type)) {
+            if (object.chartKind === 'discrete' && op.dataValues !== undefined && op.label === undefined && /^B\(/.test(object.label || '') &&
+                JSON.stringify(op.dataValues) !== JSON.stringify(object.dataValues)) this.applyPropertyUpdate(object, 'label', '');
+            for (const field of CURRICULUM_FIELDS) {
+                if (op[field] === undefined) continue;
+                this.recordPropertyChange(object, field, this.cloneValue(object[field]), this.cloneValue(op[field]));
+                object[field] = this.cloneValue(op[field]);
+            }
+        }
+
         if (op.labelOffset !== undefined && 'labelOffset' in object) {
             this.recordPropertyChange(object, 'labelOffset', object.labelOffset, op.labelOffset);
             object.labelOffset = this.cloneValue(op.labelOffset);
@@ -502,6 +520,7 @@ export class PatchApplier {
         }
 
         this.objectManager.updateObject(id);
+        if (CURRICULUM_TYPES.includes(object.type) && !object.valid) throw new Error(object.errors.join(' '));
         stats.updated += 1;
 
         return { kind: 'update', object };

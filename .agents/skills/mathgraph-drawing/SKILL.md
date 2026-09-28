@@ -25,7 +25,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Circles and curved regions: load circle, circleThreePoints, pointOnCircle, tangentCircle, arc, sector, circularSegment, lensRegion, and examples tagged `circle`.
 - Solids: load prism/pyramid plus first-class cylinder/cone/sphere projections, base/top/apex point patterns, and examples tagged `solid`.
 - Graphs/functions: load function, functionRegion, tangentFunction, intersection, line/segment, numberLine, and examples tagged `graph`.
-- Statistical or chart-like requests: report them as explicitly excluded from the standard teacher generation workflow. Do not imply first-class support for bar/pie charts, histograms, frequency polygons, box plots, dot plots, or scatter plots.
+- Statistical, probability, Venn, annular-sector and net requests: load `objects-curriculum` from the feature manual and `docs/중고등-그림지원-범위와검증.md`. These now have editable native objects. Preserve source data, clarify missing quartiles/parameters, and never substitute invented values.
 - API integration prompts: load `api_prompting`, `operationContract`, and `validationWorkflow` from the feature manual.
 - Image reference or patching prompts: load `api_prompting`, `operationContract`, `validationWorkflow`, known gaps, and only the object chunks relevant to the pasted image/instruction.
 
@@ -48,11 +48,11 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Treat same-length statements as equivalence classes. Connected equalities share one `tickCount`; independent groups use distinct positive `tickCount` values so `AB=AC` and `AD=BC` never look like all four segments are equal.
 - For `∠XYZ`, use `Y` as the `angleDimension.vertexId` and keep a source-stated angle at that vertex instead of substituting a derived angle elsewhere.
 - For concentric-circle or fixed-radius prompts, reuse the same center id and create radius points at the requested distance.
-- There is no first-class `annularSector` yet; when a prompt accepts approximation, use a normal sector plus an inner circle outline rather than claiming a true ring-sector cutout.
+- Use `annularSector` with x/y, radius, innerRadius, startAngle and sweepAngle (degrees) for a true transparent ring sector. Preserve a requested center and validate innerRadius < radius.
 - When a problem asks for area between two function graphs or a graph and a horizontal line on a stated x-interval, create `functionRegion` after its function objects. Use `function1Id`, optional `function2Id` (otherwise `baselineY`, default 0), and `xMin`/`xMax`; keep the shaded span within the visible canvas and both function domains. Inspect the fill and x-boundary strokes. The path samples the functions, so it is a visual diagram rather than an exact area calculation.
 - For piecewise functions, clip every function with `xMin`/`xMax`. Mark excluded endpoints with `pointStyle:"open"` and included endpoints with `pointStyle:"closed"`; do not imitate an open endpoint with a separate circle.
 - For parameterized graph problems with no fixed parameter value, choose a valid non-degenerate representative that keeps named points and construction lines distinct; avoid limit, boundary, or special values that collapse the diagram.
-- Use `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` for current solid support. Curved solids use editable textbook projections with optional dashed hidden curves; nets and revolution sweeps remain unsupported.
+- Use `prism`, `pyramid`, `cylinder`, `cone`, and `sphere` for projections. Use `solidNet` for cube/cuboid/cylinder/cone/regular-prism/regular-pyramid nets; cone height means slant height, pyramid height means face slant height. Set showMeasurements when length labels are requested. Arbitrary polyhedron nets, sphere nets and revolution sweeps remain unsupported.
 - For `prism`, put the near/front face in `baseVertexIds` and the shifted rear face in `topVertexIds` so the runtime can keep front edges solid and hidden rear edges dashed.
 - For an oblique prism projection, every `topVertexIds[i]` must equal `baseVertexIds[i]` plus the same 2D depth vector. Do not preserve small perspective-like mismatches from a source image.
 - For `pyramid`, keep `apexId` out of `baseVertexIds` and place the apex far enough from the base centroid to read as a real apex.
@@ -72,7 +72,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - For OpenAI Responses API prompts, keep the current strict Structured Outputs `operations[]` contract and avoid adding unsupported fields.
 - For command/recreate AI flows, remember that `AIService` now runs `DiagramQualityEnhancer` after JSON parsing; prompt for good geometry, but rely on the app-owned enhancer for recurring label-offset, right-angle-aid, prism cross-section, and nested triangular-solid layout corrections.
 - Default object stroke and fill color is `#000000`; omit color fields unless a user explicitly requests color, and never introduce multiple colors on your own.
-- For image/PDF recreation, use first-class `cylinder`, `cone`, `sphere`, and `textLabel` nodes when visible. Emit unsupported items for native statistical charts, tables, nets, annular sectors, or exact function-bounded curved fills instead of silently guessing them.
+- For image/PDF recreation, use first-class `cylinder`, `cone`, `sphere`, `textLabel`, `statisticalChart`, `solidNet`, `annularSector`, and `vennDiagram` nodes when visible. Emit unsupported items for tables, arbitrary nets, or exact symbolic integration. Compact curriculum nodes put x/y/width/height in numbers and remaining data fields as JSON in text.
 
 ## Quality Checks
 

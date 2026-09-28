@@ -1537,7 +1537,8 @@ test('AIService can build prompt references from the real JSON manual', () => {
     assert.match(referencePrompt, /feature-manual\.json/);
     assert.match(referencePrompt, /polygon/);
     assert.match(referencePrompt, /numberLine/);
-    assert.match(referencePrompt, /Statistical chart primitives/);
+    assert.match(referencePrompt, /statisticalChart: required x, y, width, height, chartKind/);
+    assert.doesNotMatch(referencePrompt, /Statistical chart primitives are not first-class/);
     assert.match(referencePrompt, /Visual fidelity guardrails/);
     assert.match(referencePrompt, /angleDimension/);
 });

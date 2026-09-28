@@ -7,6 +7,7 @@
  */
 
 import { compileSceneGraph } from './SceneGraphCompiler.js';
+import { CURRICULUM_PROMPT } from './CurriculumIntent.js';
 import Geometry, { Vec2 } from '../utils/Geometry.js';
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
@@ -131,6 +132,7 @@ export const PROBLEM_SCENE_RESPONSE_FORMAT = {
 };
 
 export const PROBLEM_SCENE_SYSTEM_PROMPT = [
+    CURRICULUM_PROMPT,
     'You read Korean math problem images and return a compact, source-grounded scene plan.',
     'Do not solve the question and do not state the requested final answer.',
     'First identify every point, segment, line, curve, circle, arc, region, solid, axis, label, and construction that the source requires.',

@@ -6,24 +6,29 @@ const SUPPORTED_FAMILIES = [
     ['numberLine', /수직선|number\s*line/i],
     ['function', /함수|그래프|function|graph/i],
     ['prism', /각기둥|직육면체|정육면체|prism|cuboid|cube/i],
-    ['pyramid', /각뿔|pyramid/i]
-];
-
-const APPROXIMATED_FAMILIES = [
-    ['annularSector', /고리\s*부채꼴|환형\s*부채꼴|annular\s*sector/i]
-];
-
-const EXCLUDED_FAMILIES = [
+    ['pyramid', /각뿔|pyramid/i],
+    ['annularSector', /고리\s*(?:모양\s*)?부채꼴|환형\s*부채꼴|annular\s*sector|고리\s*영역/i],
+    ['solidNet', /전개도|\bnet\b/i],
+    ['vennDiagram', /벤\s*(?:다이어그램|다이아그램)|venn/i],
+    ['probabilityDistribution', /정규\s*분포|이항\s*분포|normal\s*distribution|binomial/i],
     ['barChart', /막대\s*(?:그래프|도표)|bar\s*chart/i],
     ['pieChart', /원\s*(?:그래프|도표)|파이\s*(?:그래프|차트)|pie\s*chart/i],
-    ['boxPlot', /상자\s*(?:수염\s*)?그림|상자그림|box\s*plot/i],
+    ['boxPlot', /상자\s*(?:수염\s*)?그림|box\s*plot/i],
     ['scatterPlot', /산점도|scatter\s*plot/i],
     ['histogram', /히스토그램|histogram/i],
-    ['frequencyPolygon', /도수분포다각형|frequency\s*polygon/i],
-    ['dotPlot', /점도표|dot\s*plot/i]
+    ['frequencyPolygon', /도수\s*분포\s*다각형|frequency\s*polygon/i],
+    ['dotPlot', /점\s*도표|dot\s*plot/i],
+    ['lineChart', /꺾은선\s*그래프|line\s*chart/i]
+];
+
+const APPROXIMATED_FAMILIES = [];
+
+const EXCLUDED_FAMILIES = [
+    ['sphereNet', /구(?:의)?\s*전개도|sphere\s*net/i]
 ];
 
 const FAMILY_LABELS = Object.freeze({
+    sphereNet: '구의 정확한 평면 전개도',
     annularSector: '고리 부채꼴',
     barChart: '막대그래프',
     boxPlot: '상자그림',

@@ -12,7 +12,7 @@
     {
       "path": "synthetic-drawing-data.jsonl",
       "role": "synthetic examples with Korean prompts, planning steps, and valid operations payloads",
-      "readWhen": "Need a concrete pattern for a complex plane figure, solid, graph, or number line. Statistical charts remain outside the standard teacher generation workflow."
+      "readWhen": "Need a concrete pattern for a complex plane figure, solid, graph, or number line. Statistical charts are first-class statisticalChart objects; use the data contract in objects-curriculum."
     },
     {
       "path": "exam-diagram-layout.md",
@@ -21,6 +21,7 @@
     }
   ],
   "selectionRules": [
+    {"ifPromptMentions":["통계","전개도","고리","벤","집합","정규분포","이항분포","막대","원그래프","상자그림","산점도"],"loadChunks":["contract-core","objects-curriculum"],"exampleTags":[]},
     {
       "ifPromptMentions": ["삼각형", "사각형", "다각형", "도형", "넓이", "음영", "닮음", "합동"],
       "loadChunks": ["contract-core", "objects-plane-core", "objects-construction", "objects-markers-dimensions"],
@@ -48,7 +49,7 @@
     },
     {
       "ifPromptMentions": ["히스토그램", "도수", "상자그림", "산점도", "통계", "막대"],
-      "loadChunks": ["known-gaps"],
+      "loadChunks": ["contract-core", "objects-curriculum", "known-gaps"],
       "exampleTags": []
     },
     {
@@ -68,6 +69,7 @@
     }
   ],
   "chunks": [
+    {"id":"objects-curriculum","file":"feature-manual.json","objectTypes":["statisticalChart","annularSector","solidNet","vennDiagram"]},
     {
       "id": "contract-core",
       "file": "feature-manual.json",

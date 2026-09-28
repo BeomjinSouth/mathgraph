@@ -7,6 +7,7 @@
  */
 
 import { SchemaValidator } from './SchemaValidator.js';
+import { CURRICULUM_TYPES, compileCurriculumNode } from './CurriculumIntent.js';
 
 const COMMON_FIELDS = [
     'label',
@@ -26,6 +27,10 @@ const COMMON_FIELDS = [
 ];
 
 const NODE_KIND_ALIASES = new Map(Object.entries({
+    statisticalchart: 'statisticalChart',
+    annularsector: 'annularSector',
+    solidnet: 'solidNet',
+    venndiagram: 'vennDiagram',
     point: 'point',
     point2d: 'point',
     pointonline: 'pointOnLine',
@@ -101,6 +106,7 @@ const UNSUPPORTED_NODE_KINDS = new Set([
 ]);
 
 export const SCENE_GRAPH_SUPPORTED_NODE_KINDS = [
+    ...CURRICULUM_TYPES,
     'point',
     'pointOnLine',
     'pointOnCircle',
@@ -288,6 +294,7 @@ export class SceneGraphCompiler {
         const kind = normalizeNodeKind(node?.kind ?? node?.type);
         const refs = refsFrom(node?.refs);
         const groups = groupsFrom(node?.groups);
+        if (CURRICULUM_TYPES.includes(kind)) return [];
         if (kind === 'point' || kind === 'function' || kind === 'numberLine' ||
             kind === 'ellipse' || kind === 'hyperbola' || kind === 'parabola' ||
             kind === 'cylinder' || kind === 'cone' || kind === 'sphere' || kind === 'textLabel') {
@@ -388,6 +395,15 @@ export class SceneGraphCompiler {
             case 'pyramid':
                 this.addPyramid(node);
                 break;
+            case 'statisticalChart':
+            case 'annularSector':
+            case 'solidNet':
+            case 'vennDiagram': {
+                const id = this.nodeId(node, kind);
+                this.addOperation({ op: 'create', id, ...compileCurriculumNode(node, kind), ...commonFields(node) });
+                this.createdIds.add(id);
+                break;
+            }
             case 'cylinder':
             case 'cone':
             case 'sphere':

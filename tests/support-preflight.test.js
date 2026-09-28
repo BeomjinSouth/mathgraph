@@ -3,21 +3,18 @@ import test from 'node:test';
 
 import { analyzeDrawingSupport } from '../js/ai/SupportPreflight.js';
 
-test('statistical chart requests are explicitly excluded', () => {
+test('statistical chart requests have dedicated editable support', () => {
     const result = analyzeDrawingSupport('상자그림과 산점도를 그려줘');
-    assert.equal(result.status, 'excluded');
-    assert.deepEqual(result.excluded, ['boxPlot', 'scatterPlot']);
-    assert.match(result.message, /지원하지/);
-    assert.match(result.message, /상자그림.*산점도/);
+    assert.equal(result.status, 'supported');
+    assert.ok(result.supported.includes('boxPlot') && result.supported.includes('scatterPlot'));
+    assert.deepEqual(result.excluded, []);
 });
 
-test('basic statistical chart families remain excluded from the teacher workflow', () => {
+test('basic statistical chart families are supported', () => {
     const result = analyzeDrawingSupport('막대그래프와 원그래프를 시험지 그림으로 만들어줘');
-    assert.equal(result.status, 'excluded');
-    assert.deepEqual(result.excluded, ['barChart', 'pieChart']);
-    assert.match(result.message, /지원하지/);
-    assert.match(result.message, /막대그래프.*원그래프/);
-    assert.doesNotMatch(result.message, /barChart|pieChart/);
+    assert.equal(result.status, 'supported');
+    assert.ok(result.supported.includes('barChart') && result.supported.includes('pieChart'));
+    assert.deepEqual(result.excluded, []);
 });
 
 test('curved solid requests are supported', () => {
@@ -27,9 +24,10 @@ test('curved solid requests are supported', () => {
     assert.deepEqual(result.excluded, []);
 });
 
-test('known approximations are disclosed before generation', () => {
+test('annular sectors are exact and sphere nets remain excluded', () => {
     const result = analyzeDrawingSupport('두 원 사이의 고리 부채꼴을 그려줘');
-    assert.equal(result.status, 'approximated');
-    assert.deepEqual(result.approximated, ['annularSector']);
-    assert.match(result.message, /근사/);
+    assert.equal(result.status, 'supported');
+    assert.ok(result.supported.includes('annularSector'));
+    assert.deepEqual(result.approximated, []);
+    assert.equal(analyzeDrawingSupport('구의 전개도').status, 'excluded');
 });

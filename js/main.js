@@ -35,6 +35,8 @@ import { PolygonTool } from './tools/PolygonTool.js'; // Mk.2
 import { NumberLineTool } from './tools/NumberLineTool.js'; // Mk.4
 import { TextTool } from './tools/TextTool.js';
 import { CurvedSolidTool } from './tools/CurvedSolidTool.js';
+import { CURRICULUM_TYPES } from './objects/CurriculumDiagram.js';
+import { appendCurriculumProperties } from './ui/CurriculumProperties.js';
 import { FillTool } from './tools/FillTool.js';
 import { AreaExportTool } from './tools/AreaExportTool.js';
 
@@ -1639,6 +1641,8 @@ class GraphAApp {
                 });
                 container.appendChild(hiddenRow);
             }
+
+            if (CURRICULUM_TYPES.includes(obj.type)) appendCurriculumProperties(this, container, obj);
 
             if (this.isPointLikeObject(obj)) {
                 const fontRow = document.createElement('div');
@@ -3253,6 +3257,11 @@ class GraphAApp {
                 return this.buildSVGNumberLineMarkup(obj);
             case 'textLabel':
                 return this.buildSVGTextLabelMarkup(obj);
+            case 'statisticalChart':
+            case 'annularSector':
+            case 'solidNet':
+            case 'vennDiagram':
+                return obj.toSVG(this.canvas);
             case 'cylinder':
             case 'cone':
             case 'sphere':
@@ -4179,6 +4188,12 @@ class GraphAApp {
                 else if (data.operations?.some(operation => operation.op === 'create' && operation.type === 'circle') &&
                     data.operations?.some(operation => operation.op === 'create' && ['arc', 'sector'].includes(operation.type)))
                     this.fitNewCircleDiagram(patchResult.createdObjects);
+                else if (patchResult.createdObjects.some(object => CURRICULUM_TYPES.includes(object.type))) {
+                    this.fitNewCurriculumDiagram(patchResult.createdObjects);
+                    if (intentOptions.generated && patchResult.createdObjects.every(object => CURRICULUM_TYPES.includes(object.type))) {
+                        this.canvas.showGrid = this.canvas.showXAxis = this.canvas.showYAxis = false;
+                    }
+                }
             }
             this.render();
             this.updateSidebar();
@@ -4244,6 +4259,20 @@ class GraphAApp {
         const scale = Math.min(160, this.canvas.width / (spanX * 1.4), this.canvas.height / (spanY * 1.4));
         if (!Number.isFinite(scale) || scale <= 5) return;
         this.canvas.scale = scale;
+        this.canvas.offset.x = (minX + maxX) / 2;
+        this.canvas.offset.y = (minY + maxY) / 2;
+        this.updateZoomDisplay();
+    }
+
+    fitNewCurriculumDiagram(createdObjects = []) {
+        const diagrams = createdObjects.filter(object => CURRICULUM_TYPES.includes(object.type) && object.valid);
+        if (!diagrams.length) return;
+        const bounds = diagrams.map(object => object.getBounds());
+        const minX = Math.min(...bounds.map(b => b.minX)), maxX = Math.max(...bounds.map(b => b.maxX));
+        const minY = Math.min(...bounds.map(b => b.minY)), maxY = Math.max(...bounds.map(b => b.maxY));
+        const horizontalPadding = Math.min(220, Math.max(100, this.canvas.width * 0.18));
+        this.canvas.scale = Math.min(100, Math.max(0.01, (this.canvas.width - horizontalPadding) / Math.max(1, maxX - minX)),
+            Math.max(0.01, (this.canvas.height - 150) / Math.max(1, maxY - minY)));
         this.canvas.offset.x = (minX + maxX) / 2;
         this.canvas.offset.y = (minY + maxY) / 2;
         this.updateZoomDisplay();

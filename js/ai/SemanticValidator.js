@@ -1,4 +1,5 @@
 import { ValidationResult } from './SchemaValidator.js';
+import { validateCurriculumIntent } from './CurriculumIntent.js';
 import { readHorizontalAreaBoundary, readRequestedXBounds, readConstant, readMathExpression, normalizeMathText } from './FunctionAreaIntent.js';
 import { FunctionParser } from '../utils/Parser.js';
 import { readPiecewiseFunctionIntent, validatePiecewiseFunctionIntent } from './PiecewiseFunctionIntent.js';
@@ -14,6 +15,10 @@ export class SemanticValidator {
         const prompt = String(options.prompt || options.userMessage || '');
         const creates = operations.filter(op => op?.op === 'create');
         const result = ValidationResult.success();
+        if (/전개도|\bnet\b/i.test(prompt)) {
+            for (const error of validateCurriculumIntent(data, prompt)) result.addError(error);
+            return result;
+        }
         let annotationCreates = creates;
         if (options.context?.objects?.length && /∠|\b[A-Z]{2}\s*=/.test(prompt)) {
             const preview = previewAnnotationState(operations, options.context);
@@ -377,24 +382,24 @@ export class SemanticValidator {
             !/삼각형|사각형|다각형|도형|원\s|접선|반지름|지름|호|부채꼴|각|닮음|평행|triangle|circle|polygon|angle|similar|parallel/.test(prompt)
         );
 
-        if (hasGraphPrompt && !this.hasAnyType(ctx, ['function', 'ellipse', 'hyperbola', 'parabola', 'line', 'ray', 'vector', 'numberLine', 'intersection'])) {
+        if (hasGraphPrompt && !this.hasAnyType(ctx, ['function', 'ellipse', 'hyperbola', 'parabola', 'line', 'ray', 'vector', 'numberLine', 'intersection', 'statisticalChart'])) {
             result.addError('graph/function problem diagram needs a graph object such as function, conic, line, ray, vector, numberLine, or intersection.');
         }
-        if (effectiveGeometryPrompt && !this.hasAnyType(ctx, ['polygon', 'circle', 'circleThreePoints', 'arc', 'sector', 'circularSegment', 'lensRegion', 'segment', 'angleDimension', 'lengthDimension'])) {
+        if (effectiveGeometryPrompt && !this.hasAnyType(ctx, ['polygon', 'circle', 'circleThreePoints', 'arc', 'sector', 'circularSegment', 'lensRegion', 'segment', 'angleDimension', 'lengthDimension', 'annularSector', 'solidNet', 'statisticalChart'])) {
             result.addError('geometry problem diagram needs geometric objects such as polygon, circle, arc/sector, segment, or markers.');
         }
         if (hasNumberLinePrompt && !this.hasAnyType(ctx, ['numberLine'])) {
             result.addError('number-line problem diagram needs a numberLine object.');
         }
-        if (hasSolidPrompt && !this.hasAnyType(ctx, ['prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'polygon', 'segment'])) {
+        if (hasSolidPrompt && !this.hasAnyType(ctx, ['prism', 'pyramid', 'cylinder', 'cone', 'sphere', 'polygon', 'segment', 'solidNet'])) {
             result.addError('solid problem diagram needs a supported solid approximation such as prism, pyramid, polygon, or segment.');
         }
-        if (hasChartPrompt && !this.hasAnyType(ctx, ['polygon', 'point', 'segment', 'numberLine', 'line'])) {
+        if (hasChartPrompt && !this.hasAnyType(ctx, ['polygon', 'point', 'segment', 'numberLine', 'line', 'statisticalChart', 'function', 'functionRegion'])) {
             result.addError('statistics/chart problem diagram needs supported chart approximation objects such as polygons, points, segments, or numberLine.');
         }
 
         const typedPrompt = hasGraphPrompt || effectiveGeometryPrompt || hasNumberLinePrompt || hasSolidPrompt || hasChartPrompt;
-        if (!typedPrompt && visibleCreates.length < 2) {
+        if (!typedPrompt && visibleCreates.length < 2 && !this.hasAnyType(ctx, ['vennDiagram'])) {
             result.addError('problem diagram needs enough visible structure to represent the problem conditions.');
         }
 
@@ -442,6 +447,10 @@ export class SemanticValidator {
         const result = ValidationResult.success();
         const prompt = this.text(options.prompt || options.userMessage || options.instruction || '');
         const creates = operations.filter(operation => operation?.op === 'create');
+        if (/전개도|\bnet\b/i.test(prompt)) {
+            if (!creates.some(op => op.type === 'solidNet')) result.addError('전개도 요청에는 solidNet 객체가 필요합니다.');
+            return result;
+        }
         const requestedTypes = [
             ['cylinder', /원기둥|cylinder/],
             ['cone', /원뿔|cone/],
