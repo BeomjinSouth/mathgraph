@@ -9,7 +9,7 @@
 - 범위·예문·한계·재현 명령은 `docs/중고등-그림지원-범위와검증.md`에 있다. 검수 PNG·SVG·프로젝트·JSON은 로컬 `C:/Users/pbj95/.codex/artifacts/mathgraph-curriculum-20260929`에 보관한다.
 - `npm run vercel-build`의 테스트 558개와 정적 빌드가 통과했다. 새 브라우저 검증 43건, 모바일 생성 버튼, 기존 복합 검증도 통과했다. `git diff --check`로 변경 서식을 확인한다. 별도 lint/typecheck 스크립트는 없는 순수 JavaScript 프로젝트이며 Node 테스트와 브라우저 모듈 로딩으로 확인했다. 외부 OpenAI/Gemini 대량 API 생성 평가와 사진 인식 성능 평가는 하지 않았다.
 - 공식 Structured Outputs 문서의 required/null/additionalProperties:false 계약을 2026-09-29에 확인했다. 개인 플레이북은 unavailable이어서 일반/프로젝트 기준을 적용했고 새 장기 기억은 저장하지 않았다.
-- Vercel Production Branch=main, 운영 READY 소스 main/eb4583704a374c7d5db2ae4bd7d02380374a1a71 및 운영 별칭을 확인했다. 운영 배포를 변경하지 않는다. 이번 변경의 커밋·작업 브랜치 푸시·Preview 결과는 Git 이력과 완료 보고에서 확인한다.
+- Vercel Production Branch=main, 운영 READY 소스 main/eb4583704a374c7d5db2ae4bd7d02380374a1a71 및 운영 별칭을 확인했다. 기능 커밋 `e7964b1`을 작업 브랜치에 푸시했고 로컬·원격 차이 0을 확인했다. 같은 SHA의 자동 Preview `https://mathgraph-71gm1z54s-beomjinsouths-projects.vercel.app`을 target=preview·Ready로 확인했다. 운영 배포는 변경하지 않았다. 로컬 확인 화면은 http://127.0.0.1:5177/ 이다.
 
 ## 2026-09-28 기존 그림 표시 수정과 적용 후 조건 검증
 
