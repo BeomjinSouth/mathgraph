@@ -311,6 +311,10 @@ try {
                 { id: 'isosceles', text: '삼각형 ABC에서 AB=AC, ∠B=∠C, BC=6cm, ∠A=40°를 표시해줘.',
                     labels: ['A', 'B', 'C'], angles: [70, 70, 40], ticks: [1], length: 6 },
                 { id: 'parallelogram', text: '평행사변형 ABCD에서 AB=CD, BC=DA, ∠A=∠C, AB=8cm, ∠A=70°를 표시해줘.',
+                    labels: ['A', 'B', 'C', 'D'], angles: [70, 70], ticks: [1, 2], length: 8 },
+                { id: 'isosceles-three-letter', text: '삼각형 ABC에서 AB=AC, ∠ABC=∠BCA, BC=6cm, ∠BAC=40°를 표시해줘.',
+                    labels: ['A', 'B', 'C'], angles: [70, 70, 40], ticks: [1], length: 6 },
+                { id: 'parallelogram-three-letter', text: '평행사변형 ABCD에서 AB=CD, BC=DA, ∠DAB=∠BCD, AB=8cm, ∠BAD=70°를 표시해줘.',
                     labels: ['A', 'B', 'C', 'D'], angles: [70, 70], ticks: [1, 2], length: 8 }
             ];
             for (const prompt of geometryPrompts) {
@@ -356,10 +360,12 @@ try {
                     if (image.toDataURL() !== beforePixels)
                         throw Error(prompt.id + ': project import changed rendered pixels');
                     return { id: prompt.id, count, angles: angles.map(o => Math.round(o.getAngleDegrees())),
-                        tickGroups: ticks.map(o => o.tickCount), length: dimension.length, image: image.toDataURL() };
+                        tickGroups: ticks.map(o => o.tickCount), length: dimension.length, image: image.toDataURL(), project: saved };
                 }, prompt);
                 await fs.writeFile(path.join(output, `one-shot-${checked.id}.png`),
                     Buffer.from(checked.image.split(',')[1], 'base64'));
+                await fs.writeFile(path.join(output, `one-shot-${checked.id}.mathgraph.json`), JSON.stringify(checked.project, null, 2));
+                delete checked.project;
                 delete checked.image;
                 geometryOneShotChecks.push(checked);
             }

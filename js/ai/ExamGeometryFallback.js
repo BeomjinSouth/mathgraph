@@ -104,7 +104,14 @@ function buildParallelogram(message) {
 
 /** Only explicit, fully checked exam conditions are handled offline. */
 export function buildExamGeometryOperations(message) {
-    const compact = String(message).replace(/\s+/g, '').replace(/＝/g, '=');
+    let compact = String(message).replace(/\s+/g, '').replace(/＝/g, '=');
+    const vertices = /평행사변형ABCD/.test(compact) ? 'ABCD' : /삼각형ABC/.test(compact) ? 'ABC' : null;
+    if (vertices) compact = compact.replace(/∠([A-Z])([A-Z])([A-Z])(?![A-Z])/g, (full, a, v, b) => {
+        const i = vertices.indexOf(v);
+        if (i < 0) return full;
+        const neighbors = [vertices[(i+vertices.length-1)%vertices.length], vertices[(i+1)%vertices.length]].sort().join('');
+        return [a,b].sort().join('') === neighbors ? `∠${v}` : full;
+    });
     if (/(삼각형|평행사변형|사각형)/.test(compact) &&
         /높이|넓이|둘레|대각선|중선|외접|내접|수선|중점|반지름|색칠|음영|접선|직각|수직|부채꼴/.test(compact)) {
         return { error: '시험 도형 요청: 추가 도형 조건을 모두 해석하지 못해 그림을 만들지 않았습니다.' };
