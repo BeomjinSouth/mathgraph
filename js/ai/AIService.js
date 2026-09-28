@@ -1064,7 +1064,7 @@ export class AIService {
         }
 
         const examIntentResult = this.semanticValidator.validateExamAnnotationIntent(json, {
-            prompt: options.userMessage
+            prompt: options.userMessage, context
         });
         if (!examIntentResult.valid) {
             return examIntentResult;
