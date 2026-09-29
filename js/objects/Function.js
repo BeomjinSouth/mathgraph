@@ -60,6 +60,11 @@ export class FunctionGraph extends GeoObject {
         }
 
         super(ObjectType.FUNCTION, normalizedParams);
+        if (!params.labelOffset) {
+            // Keep the automatic formula label visibly clear of its own curve.
+            // Screen-space y grows downward, so this places the baseline below/right.
+            this.labelOffset = new Vec2(16, 24);
+        }
         this.expression = normalizedInput.expression;
         this._fn = null;
         this._error = null;
@@ -171,24 +176,32 @@ export class FunctionGraph extends GeoObject {
             return this._labelMathPos.clone();
         }
 
-        // 자동 계산: 화면 중앙 근처의 그래프 위치
         const bounds = canvas.getVisibleBounds();
-        let labelX = (bounds.maxX + bounds.minX) / 2;
+        const minX = this.xMin !== null ? Math.max(bounds.minX, this.xMin) : bounds.minX;
+        const maxX = this.xMax !== null ? Math.min(bounds.maxX, this.xMax) : bounds.maxX;
+        if (minX > maxX) return null;
 
-        // 도메인 제한 고려
-        if (this.xMin !== null && labelX < this.xMin) labelX = this.xMin + 0.5;
-        if (this.xMax !== null && labelX > this.xMax) labelX = this.xMax - 0.5;
-
-        const labelY = this._fn(labelX);
-
-        if (!isFinite(labelY) || labelY < bounds.minY || labelY > bounds.maxY ||
-            !this.isPointWithinVisibleRange(labelX, labelY)) {
-            return null;
+        const span = Math.max(0, maxX - minX);
+        const preferredX = minX + span * 0.62;
+        const candidates = [preferredX];
+        for (let step = 1; step <= 10; step += 1) {
+            const offset = (span * step) / 20;
+            candidates.push(preferredX + offset, preferredX - offset);
         }
 
-        // 자동 계산된 위치를 저장하여 화면 이동 시에도 고정
-        this._labelMathPos = new Vec2(labelX, labelY);
-        return this._labelMathPos.clone();
+        for (const labelX of candidates) {
+            if (labelX < minX || labelX > maxX) continue;
+            const labelY = this._fn(labelX);
+            if (!isFinite(labelY) || labelY < bounds.minY || labelY > bounds.maxY ||
+                !this.isPointWithinVisibleRange(labelX, labelY)) {
+                continue;
+            }
+
+            // Keep an automatic anchor separate from an explicitly pinned label.
+            // Caching it in _labelMathPos disables labelOffset after first render.
+            return new Vec2(labelX, labelY);
+        }
+        return null;
     }
 
     /**

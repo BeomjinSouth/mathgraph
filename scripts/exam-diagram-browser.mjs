@@ -165,6 +165,12 @@ export async function renderExamCase(source) {
         const layer = o => o.type === 'functionRegion' ? -1 : typeof o.getPosition === 'function' ? 2 : ['angleDimension', 'lengthDimension'].includes(o.type) ? 1 : 0;
         return layer(a) - layer(b);
     });
+    function renderObject(obj, geometry = false) {
+        const showLabel = obj.showLabel;
+        if (geometry && obj.type === 'function') obj.showLabel = false;
+        try { obj.render(canvas); }
+        finally { obj.showLabel = showLabel; }
+    }
     function paint(geometry = false) {
         labels = [];
         canvas.resetLabelLayout();
@@ -182,7 +188,7 @@ export async function renderExamCase(source) {
         for (const obj of ordered()) {
             owner = obj;
             if (obj.visible)
-                obj.render(canvas);
+                renderObject(obj, geometry);
         }
     }
     paint(true);
@@ -334,7 +340,7 @@ export async function renderExamCase(source) {
             if (object.visible && object.valid) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 owner = object;
-                object.render(canvas);
+                renderObject(object, true);
                 const x = Math.max(0, Math.floor(box.x)), y = Math.max(0, Math.floor(box.y));
                 const w = Math.min(element.width - x, Math.ceil(box.x + box.w) - x), h = Math.min(element.height - y, Math.ceil(box.y + box.h) - y);
                 if (w <= 0 || h <= 0)

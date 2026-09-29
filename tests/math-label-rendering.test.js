@@ -139,3 +139,71 @@ test('math label rendering draws a fraction bar instead of slash text', () => {
     assert.ok(renderedText.includes('8'));
     assert.ok(ctx.calls.some(call => call[0] === 'lineTo'));
 });
+
+function radicalBarY(ctx) {
+    // 라디칼 경로에서 가장 위에 그려지는 lineTo가 덮개(가로줄)다.
+    const lineTos = ctx.calls.filter(call => call[0] === 'lineTo');
+    assert.ok(lineTos.length > 0);
+    return Math.min(...lineTos.map(call => call[2]));
+}
+
+test('radical vinculum keeps clearance above plain radicand glyphs', () => {
+    const canvas = createCanvasFacade();
+    const ctx = createRecordingContext();
+    const parts = canvas.parseMathExpression('sqrt(x-2)');
+
+    canvas.renderMathExpression(parts, ctx, 0, 0, 30, '#000000');
+
+    // bottom 기준선에서 숫자 윗면은 약 -0.88em이므로 가로줄은 그보다 위여야 한다.
+    assert.ok(radicalBarY(ctx) <= -30 * 1.0);
+});
+
+test('radical vinculum rises further for superscript radicands', () => {
+    const canvas = createCanvasFacade();
+    const plainCtx = createRecordingContext();
+    canvas.renderMathExpression(canvas.parseMathExpression('sqrt(x-2)'), plainCtx, 0, 0, 30, '#000000');
+
+    const superCtx = createRecordingContext();
+    canvas.renderMathExpression(canvas.parseMathExpression('sqrt(x^2)'), superCtx, 0, 0, 30, '#000000');
+
+    assert.ok(radicalBarY(superCtx) < radicalBarY(plainCtx));
+});
+
+test('math label parsing turns sqrt syntax into a radical part', () => {
+    const canvas = createCanvasFacade();
+    const parts = canvas.parseMathExpression('f(x)=sqrt(x-2)');
+
+    assert.deepEqual(parts, [
+        { type: 'normal', text: 'f(x)=' },
+        {
+            type: 'radical',
+            radicand: [{ type: 'normal', text: 'x\u22122' }]
+        }
+    ]);
+});
+
+test('math label rendering draws one continuous radical path and never prints sqrt', () => {
+    const canvas = createCanvasFacade();
+    const ctx = createRecordingContext();
+    const parts = canvas.parseMathExpression('f(x)=sqrt(x-2)');
+
+    canvas.renderMathExpression(parts, ctx, 0, 0, 30, '#000000');
+
+    const renderedText = ctx.calls
+        .filter(call => call[0] === 'fillText')
+        .map(call => call[1]);
+    assert.equal(renderedText.includes('\u221a'), false, 'do not splice a font glyph onto a separate overbar');
+    assert.equal(renderedText.some(text => String(text).toLowerCase().includes('sqrt')), false);
+    assert.ok(
+        ctx.calls.filter(call => call[0] === 'lineTo').length >= 4,
+        'radical hook and overbar should be a single continuous path'
+    );
+});
+
+test('latex sqrt groups use the same radical rendering structure', () => {
+    const canvas = createCanvasFacade();
+    const parts = canvas.parseMathExpression('y=\\sqrt{x+1}');
+
+    assert.equal(parts[1].type, 'radical');
+    assert.deepEqual(parts[1].radicand, [{ type: 'normal', text: 'x+1' }]);
+});

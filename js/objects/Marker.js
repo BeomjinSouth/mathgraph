@@ -58,7 +58,8 @@ export class RightAngleMarker extends GeoObject {
 
         this._dir1 = dir1;
         this._dir2 = dir2;
-        this.valid = true;
+        this.valid = p1.distanceTo(p2) > 1e-9 && p3.distanceTo(p4) > 1e-9 &&
+            Math.abs(dir1.dot(dir2)) < 1e-7;
     }
 
     render(canvas) {
@@ -69,7 +70,8 @@ export class RightAngleMarker extends GeoObject {
 
         canvas.drawRightAngleMarker(this._vertex, p1, p2, {
             size: this.size,
-            color: this.color
+            color: this.selected ? '#f97316' : this.highlighted ? '#fbbf24' : this.color,
+            lineWidth: this.lineWidth
         });
     }
 
@@ -104,7 +106,7 @@ export class EqualLengthMarker extends GeoObject {
         super(ObjectType.EQUAL_LENGTH_MARKER, params);
         this.segment1Id = segment1Id;
         this.segment2Id = segment2Id;
-        this.tickCount = params.tickCount || 1;
+        this.tickCount = Math.max(1, Math.round(Number(params.tickCount) || 1));
         this.size = params.size || 8;
         this.addDependency(segment1Id);
         this.addDependency(segment2Id);
@@ -128,7 +130,8 @@ export class EqualLengthMarker extends GeoObject {
         this._seg1End = seg1.getPoint2();
         this._seg2Start = seg2.getPoint1();
         this._seg2End = seg2.getPoint2();
-        this.valid = true;
+        this.valid = this._seg1Start.distanceTo(this._seg1End) > 1e-9 &&
+            this._seg2Start.distanceTo(this._seg2End) > 1e-9;
     }
 
     render(canvas) {
@@ -182,4 +185,59 @@ export class EqualLengthMarker extends GeoObject {
     }
 }
 
-export default { RightAngleMarker, EqualLengthMarker };
+/** Two equally directed chevrons describe an explicitly supplied parallel relation. */
+export class ParallelMarker extends EqualLengthMarker {
+    constructor(segment1Id, segment2Id, params = {}) {
+        super(segment1Id, segment2Id, params);
+        this.type = ObjectType.PARALLEL_MARKER;
+    }
+
+    getMarkerPaths(canvas) {
+        if (!this.valid) return [];
+        const paths = [];
+        const reference = this._seg1End.sub(this._seg1Start).normalize();
+        for (const [start, end] of [[this._seg1Start, this._seg1End], [this._seg2Start, this._seg2End]]) {
+            const mid = canvas.toScreen(Geometry.midpoint(start, end));
+            let direction = end.sub(start).normalize();
+            if (direction.dot(reference) < 0) direction = direction.mul(-1);
+            const dx = direction.x, dy = -direction.y;
+            for (let i = 0; i < this.tickCount; i++) {
+                const offset = (i - (this.tickCount - 1) / 2) * (this.size * 0.8 + this.lineWidth);
+                const x = mid.x + dx * offset, y = mid.y + dy * offset;
+                paths.push([
+                    new Vec2(x - dx * this.size / 2 - dy * this.size / 2, y - dy * this.size / 2 + dx * this.size / 2),
+                    new Vec2(x + dx * this.size / 2, y + dy * this.size / 2),
+                    new Vec2(x - dx * this.size / 2 + dy * this.size / 2, y - dy * this.size / 2 - dx * this.size / 2)
+                ]);
+            }
+        }
+        return paths;
+    }
+
+    render(canvas) {
+        if (!this.visible || !this.valid) return;
+        const ctx = canvas.ctx;
+        ctx.save();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = this.selected ? '#f97316' : this.highlighted ? '#fbbf24' : this.color;
+        ctx.lineWidth = this.lineWidth;
+        for (const [a, b, c] of this.getMarkerPaths(canvas)) {
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.lineTo(c.x, c.y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    hitTest(point, threshold, canvas) {
+        const screen = canvas.toScreen(point);
+        return this.getMarkerPaths(canvas).some(([a, b, c]) =>
+            Math.min(Geometry.pointToSegmentDistance(screen, a, b), Geometry.pointToSegmentDistance(screen, b, c)) <= threshold);
+    }
+
+    getTypeName() { return '평행 표시'; }
+}
+
+export default { RightAngleMarker, EqualLengthMarker, ParallelMarker };

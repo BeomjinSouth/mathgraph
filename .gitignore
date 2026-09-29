@@ -1,5 +1,8 @@
 node_modules/
 .worktrees/
+downloads/
+__pycache__/
+.venv/
 .vercel/
 dist/
 coverage/

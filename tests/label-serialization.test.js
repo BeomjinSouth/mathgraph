@@ -40,7 +40,7 @@ test('angle dimension label offset survives load as a Vec2 (drag does not crash)
 });
 
 test('length dimension label offset survives load as a Vec2 (drag does not crash)', () => {
-    const dim = new LengthDimension('seg', { labelOffset: new Vec2(-3, 8), curvature: -122.5 });
+    const dim = new LengthDimension('seg', { label: 'x', labelOffset: new Vec2(-3, 8), curvature: -122.5 });
     const json = JSON.parse(JSON.stringify(dim.toJSON()));
     const restored = new LengthDimension(json.segmentId, json);
 
@@ -48,6 +48,7 @@ test('length dimension label offset survives load as a Vec2 (drag does not crash
     assert.equal(restored.labelOffset.x, -3);
     assert.equal(restored.labelOffset.y, 8);
     assert.equal(restored.curvature, -122.5);
+    assert.equal(restored.customText, 'x');
     assert.doesNotThrow(() => restored.labelOffset.clone());
 });
 

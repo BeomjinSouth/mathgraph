@@ -938,7 +938,7 @@ export class Canvas {
         );
 
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = options.lineWidth || 1.5;
         ctx.beginPath();
         ctx.moveTo(corner1.x, corner1.y);
         ctx.lineTo(corner3.x, corner3.y);
@@ -1171,7 +1171,11 @@ export class Canvas {
 
         while (i < text.length) {
             const latexFraction = this.parseLatexFractionAt(text, i);
-            if (latexFraction) {
+            const radical = this.parseRadicalAt(text, i);
+            if (radical) {
+                parts.push(radical.part);
+                i = radical.nextIndex;
+            } else if (latexFraction) {
                 parts.push(latexFraction.part);
                 i = latexFraction.nextIndex;
             } else if (text[i] === '^') {
@@ -1218,7 +1222,9 @@ export class Canvas {
                     text[i] !== '^' &&
                     text[i] !== '_' &&
                     text[i] !== '*' &&
-                    !text.startsWith('\\frac', i)) {
+                    !text.startsWith('\\frac', i) &&
+                    !text.startsWith('\\sqrt', i) &&
+                    !text.toLowerCase().startsWith('sqrt(', i)) {
                     normalText += text[i];
                     i++;
                 }
@@ -1366,6 +1372,35 @@ export class Canvas {
         };
     }
 
+    parseRadicalAt(text, index) {
+        const source = String(text ?? '');
+        if (source.toLowerCase().startsWith('sqrt(', index)) {
+            const openIndex = index + 'sqrt'.length;
+            const closeIndex = this.findMatchingCloseParen(source, openIndex);
+            if (closeIndex === -1) return null;
+            return {
+                part: {
+                    type: 'radical',
+                    radicand: this.parseMathExpression(source.slice(openIndex + 1, closeIndex))
+                },
+                nextIndex: closeIndex + 1
+            };
+        }
+        if (!source.startsWith('\\sqrt', index)) return null;
+        let cursor = index + '\\sqrt'.length;
+        while (cursor < source.length && /\s/.test(source[cursor])) cursor++;
+        if (source[cursor] !== '{') return null;
+        const radicand = this.readBracedGroup(source, cursor);
+        if (!radicand) return null;
+        return {
+            part: {
+                type: 'radical',
+                radicand: this.parseMathExpression(radicand.text)
+            },
+            nextIndex: radicand.end + 1
+        };
+    }
+
     readBracedGroup(text, openIndex) {
         if (text[openIndex] !== '{') return null;
 
@@ -1434,6 +1469,24 @@ export class Canvas {
     }
 
     /**
+     * bottom 기준선 위로 올라가는 표현식 최대 높이(em 단위).
+     * 세리프 폰트에서 일반 글리프 윗면은 약 0.88em(descent 0.22 + cap 0.66)이다.
+     */
+    measureMathExpressionAscent(parts) {
+        let ascent = 0.88;
+        for (const part of parts || []) {
+            if (part.type === 'super') {
+                ascent = Math.max(ascent, 0.35 + 0.88 * 0.7);
+            } else if (part.type === 'fraction') {
+                ascent = Math.max(ascent, 0.32 + 0.1 + 0.88 * 0.72);
+            } else if (part.type === 'radical') {
+                ascent = Math.max(ascent, this.measureMathExpressionAscent(part.radicand) + 0.14);
+            }
+        }
+        return ascent;
+    }
+
+    /**
      * 수학 표현식 너비 측정
      */
     measureMathExpression(parts, ctx, fontSize) {
@@ -1449,6 +1502,12 @@ export class Canvas {
             'log', 'ln', 'exp', 'lim', 'max', 'min', 'abs'];
 
         for (const part of parts) {
+            if (part.type === 'radical') {
+                const radicalWidth = Math.max(6, fontSize * 0.68);
+                const radicandWidth = this.measureMathExpression(part.radicand, ctx, fontSize);
+                totalWidth += radicalWidth + radicandWidth + Math.max(2, fontSize * 0.08);
+                continue;
+            }
             if (part.type === 'fraction') {
                 const fractionFontSize = fontSize * 0.72;
                 const padding = Math.max(4, fontSize * 0.14);
@@ -1503,6 +1562,10 @@ export class Canvas {
      * - 함수명(sin, cos, tan...), 숫자, 연산자, 괄호 → 정자체
      */
     renderMathExpression(parts, ctx, startX, startY, fontSize, color) {
+        if (this.exportTextSink) {
+            this.exportTextSink({ parts, x: startX, y: startY - fontSize, fontSize, width: this.measureMathExpression(parts, ctx, fontSize), color });
+            return;
+        }
         let currentX = startX;
         const italicFont = `italic ${fontSize}px "Times New Roman", "STIX Two Math", Georgia, serif`;
         const romanFont = `${fontSize}px "Times New Roman", "STIX Two Math", Georgia, serif`;
@@ -1519,6 +1582,27 @@ export class Canvas {
         ctx.textBaseline = 'bottom';
 
         for (const part of parts) {
+            if (part.type === 'radical') {
+                const radicalWidth = Math.max(6, fontSize * 0.68);
+                const padding = Math.max(2, fontSize * 0.08);
+                const radicandWidth = this.measureMathExpression(part.radicand, ctx, fontSize);
+                const radicandX = currentX + radicalWidth;
+                // 피개식 글리프 윗면(-ascent) 위에 여백을 더해 덮개가 붙지 않게 합니다.
+                const topY = startY - fontSize * (this.measureMathExpressionAscent(part.radicand) + 0.14);
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = Math.max(1, fontSize * 0.04);
+                ctx.beginPath();
+                ctx.moveTo(currentX, startY - fontSize * 0.34);
+                ctx.lineTo(currentX + radicalWidth * 0.2, startY - fontSize * 0.34);
+                ctx.lineTo(currentX + radicalWidth * 0.38, startY - fontSize * 0.06);
+                ctx.lineTo(currentX + radicalWidth * 0.64, topY);
+                ctx.lineTo(radicandX + radicandWidth + padding * 0.5, topY);
+                ctx.stroke();
+                this.renderMathExpression(part.radicand, ctx, radicandX, startY, fontSize, color);
+                currentX += radicalWidth + radicandWidth + padding;
+                continue;
+            }
             if (part.type === 'fraction') {
                 const fractionFontSize = fontSize * 0.72;
                 const padding = Math.max(4, fontSize * 0.14);

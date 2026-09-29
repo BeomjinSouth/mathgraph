@@ -111,6 +111,7 @@ try {
         app.objectManager.clear(); app.historyManager.clear();
         app.canvas.scale = 50; app.canvas.offset.x = app.canvas.offset.y = 0;
     });
+    if (!(await page.locator('#chatInput').isVisible())) await page.locator('#toggleChat').click();
     await page.locator('#chatInput').fill('표준정규분포 -1<=x<=1 색칠');
     await page.locator('#sendMessage').click();
     await page.waitForFunction(() => window.app.objectManager.getAllObjects().some(o => o.chartKind === 'normal'));

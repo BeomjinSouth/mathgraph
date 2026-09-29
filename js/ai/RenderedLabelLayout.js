@@ -69,6 +69,10 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
                 current = obj;
                 ctx.save();
                 const showValue = obj.showValue;
+                const showLabel = obj.showLabel;
+                // MathRenderer draws radicals as paths as well as fillText. They
+                // belong to the formula, not to the graph's geometry ink mask.
+                if (obj.type === 'function') obj.showLabel = false;
                 if (obj.type === 'lengthDimension')
                     obj.showValue = false;
                 try {
@@ -76,6 +80,7 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
                 }
                 finally {
                     obj.showValue = showValue;
+                    obj.showLabel = showLabel;
                     ctx.restore();
                 }
             }

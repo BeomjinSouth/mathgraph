@@ -213,6 +213,9 @@ export class HistoryManager {
             if (stateTemplate?.curvature !== undefined && Number.isFinite(obj.curvature)) {
                 state.curvature = obj.curvature;
             }
+            if (stateTemplate?.arcRadius !== undefined && Number.isFinite(obj.arcRadius)) {
+                state.arcRadius = obj.arcRadius;
+            }
             return state;
         }
         if (obj.type === 'pointOnObject' && obj.t !== undefined) {
@@ -230,6 +233,9 @@ export class HistoryManager {
             const state = { labelOffset: { x: obj.labelOffset.x, y: obj.labelOffset.y } };
             if (obj.type === 'lengthDimension' && Number.isFinite(obj.curvature)) {
                 state.curvature = obj.curvature;
+            }
+            if (obj.type === 'angleDimension' && Number.isFinite(obj.arcRadius)) {
+                state.arcRadius = obj.arcRadius;
             }
             return state;
         }
@@ -272,6 +278,9 @@ export class HistoryManager {
             if (state.curvature !== undefined && obj.type === 'lengthDimension') {
                 obj.curvature = state.curvature;
             }
+            if (state.arcRadius !== undefined && obj.type === 'angleDimension') {
+                obj.arcRadius = state.arcRadius;
+            }
             return;
         }
         if (obj.type === 'function' && state.labelMathPos !== undefined) {
@@ -313,6 +322,7 @@ export class HistoryManager {
         this.redoStack.push(action);
 
         this.emit('historyChanged', {
+            restored: true,
             canUndo: this.canUndo(),
             canRedo: this.canRedo()
         });
@@ -328,6 +338,7 @@ export class HistoryManager {
         this.undoStack.push(action);
 
         this.emit('historyChanged', {
+            restored: true,
             canUndo: this.canUndo(),
             canRedo: this.canRedo()
         });

@@ -583,13 +583,17 @@ export class SceneGraphCompiler {
             : type === 'vector'
                 ? { startPointId: first, endPointId: second }
                 : { point1Id: first, point2Id: second };
+        const displayFields = commonFields(node);
+        if (displayFields.showLabel === undefined) {
+            displayFields.showLabel = typeof node.label === 'string' && node.label.trim().length > 0;
+        }
 
         this.addOperation({
             op: 'create',
             id,
             type,
             ...fields,
-            ...commonFields(node)
+            ...displayFields
         });
         this.createdIds.add(id);
     }
@@ -971,7 +975,12 @@ export class SceneGraphCompiler {
     }
 
     addOperation(operation) {
-        this.operations.push(dropUndefined(operation));
+        const finalized = dropUndefined(operation);
+        if (finalized.op === 'create' && finalized.showLabel === undefined) {
+            // 라벨 없는 객체는 런타임 자동 이름(c1, f 등)을 화면에 노출하지 않습니다.
+            finalized.showLabel = typeof finalized.label === 'string' && finalized.label.trim().length > 0;
+        }
+        this.operations.push(finalized);
     }
 
     nodeId(item, fallbackKind) {

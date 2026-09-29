@@ -27,7 +27,9 @@ import {
     PerpendicularBisectorTool, AngleBisectorTool
 } from './tools/ConstructionTools.js';
 import { FunctionTool, TangentFunctionTool } from './tools/FunctionTool.js';
-import { RightAngleTool, EqualLengthTool } from './tools/MarkerTool.js';
+import { RightAngleTool, EqualLengthTool, ParallelMarkerTool } from './tools/MarkerTool.js';
+import { EqualAngleTool, CoordinateGuidesTool } from './tools/AnnotationTools.js';
+import { appendAnnotationProperties } from './ui/AnnotationProperties.js';
 import { PrismTool, PyramidTool } from './tools/Solid3DTool.js';
 import { ArcTool, SectorTool, CircularSegmentTool } from './tools/ArcTool.js'; // Mk.2
 import { AngleDimensionTool, LengthDimensionTool } from './tools/DimensionTool.js'; // Mk.2
@@ -94,6 +96,7 @@ import {
 import { buildCurvedSolidInput } from './utils/CurvedSolidInput.js';
 import { TeacherWorkflow } from './ui/TeacherWorkflow.js';
 import { analyzeDrawingSupport } from './ai/SupportPreflight.js';
+import { ProblemComposer } from './ui/ProblemComposer.js';
 
 /**
  * 그래프A 애플리케이션
@@ -139,6 +142,7 @@ class GraphAApp {
         this.setupResponsiveLayout();
         this.setupTeacherWorkflow();
         this.setupEventListeners();
+        this.problemComposer = new ProblemComposer(this);
 
         // 초기 렌더링
         this.render();
@@ -219,6 +223,7 @@ class GraphAApp {
         if (syncUi) {
             this.syncAuthModeUI();
             this.syncAISettingsControls();
+            this.problemComposer?.onAuthChanged();
         }
     }
 
@@ -460,6 +465,9 @@ class GraphAApp {
         // Mk.2: 치수 도구
         this.toolManager.registerTool('angleDimension', new AngleDimensionTool());
         this.toolManager.registerTool('lengthDimension', new LengthDimensionTool());
+        this.toolManager.registerTool('equalAngle', new EqualAngleTool());
+        this.toolManager.registerTool('parallelMarker', new ParallelMarkerTool());
+        this.toolManager.registerTool('coordinateGuides', new CoordinateGuidesTool());
 
         // Mk.2: 다각형 도구
         this.toolManager.registerTool('polygon', new PolygonTool());
@@ -675,7 +683,11 @@ class GraphAApp {
         // 채팅 패널 토글
         document.getElementById('toggleChat')?.addEventListener('click', (e) => {
             e.stopPropagation();
-            document.getElementById('chat-panel')?.classList.toggle('collapsed');
+            const collapsed = document.getElementById('chat-panel')?.classList.toggle('collapsed');
+            e.currentTarget.setAttribute('aria-expanded', String(!collapsed));
+            e.currentTarget.setAttribute('aria-label', collapsed ? '그림 요청 펼치기' : '그림 요청 접기');
+            setGeneratedIcon(e.currentTarget.querySelector('.material-symbols-outlined'), collapsed ? 'expand_less' : 'expand_more');
+            this.scheduleCanvasResize?.();
         });
 
         // Mk.2: 스냅 모드 변경
@@ -962,6 +974,7 @@ class GraphAApp {
             polygon: '다각형', fill: '채우기', prism: '각기둥', pyramid: '각뿔',
             angleDimension: '각도', lengthDimension: '길이',
             rightAngle: '직각', equalLength: '같은 길이',
+            equalAngle: '같은 각', parallelMarker: '평행 표시', coordinateGuides: '좌표 보조선',
             numberLine: '수직선', textLabel: '텍스트',
             cylinder: '원기둥', cone: '원뿔', sphere: '구',
             function: '함수'
@@ -997,6 +1010,7 @@ class GraphAApp {
             lengthDimension: 'architecture',
             rightAngle: 'square_foot',
             equalLength: 'straighten',
+            equalAngle: 'equal_angle', parallelMarker: 'double_arrow', coordinateGuides: 'polyline',
             numberLine: 'timeline',
             textLabel: 'text_fields',
             cylinder: 'view_in_ar',
@@ -1187,6 +1201,10 @@ class GraphAApp {
 
             if (undoBtn) undoBtn.disabled = !data.canUndo;
             if (redoBtn) redoBtn.disabled = !data.canRedo;
+            if (data.restored) {
+                this.updateSidebar();
+                this.updatePropertyPanel();
+            }
         });
 
         // 윈도우 리사이즈
@@ -1970,6 +1988,8 @@ class GraphAApp {
                 container.appendChild(precisionRow);
             }
 
+            appendAnnotationProperties(this, container, obj);
+
             // 각기둥/각뿔 모서리 정보 표시
             if (obj.type === 'prism' || obj.type === 'pyramid') {
                 // 구분 제목
@@ -2350,6 +2370,8 @@ class GraphAApp {
             point: '점', segment: '선분', line: '직선', ray: '반직선', vector: '벡터',
             circle: '원', arc: '호', sector: '부채꼴', circularSegment: '활꼴',
             polygon: '다각형', lensRegion: '렌즈 영역', prism: '각기둥', pyramid: '각뿔',
+            rightAngleMarker: '직각 표시', equalLengthMarker: '같은 길이 표시',
+            parallelMarker: '평행 표시', coordinateGuides: '좌표 보조선',
             angleDimension: '각도', lengthDimension: '길이',
             function: '함수'
         };
@@ -2539,7 +2561,15 @@ class GraphAApp {
 
         for (const obj of this.getRenderOrderedObjects()) {
             if (obj.visible) {
-                obj.render(this.canvas);
+                const selected = obj.selected, highlighted = obj.highlighted;
+                try {
+                    obj.selected = false;
+                    obj.highlighted = false;
+                    obj.render(this.canvas);
+                } finally {
+                    obj.selected = selected;
+                    obj.highlighted = highlighted;
+                }
             }
         }
 
@@ -2592,14 +2622,16 @@ class GraphAApp {
         scale = 1,
         includeBackground = true,
         includeGrid = false,
-        includeAxes = true
+        includeAxes = true,
+        crop = null
     } = {}) {
         const targetCtx = targetCanvas.getContext('2d');
-        targetCanvas.width = this.canvas.width * scale;
-        targetCanvas.height = this.canvas.height * scale;
+        targetCanvas.width = Math.ceil((crop?.width ?? this.canvas.width) * scale);
+        targetCanvas.height = Math.ceil((crop?.height ?? this.canvas.height) * scale);
 
         targetCtx.save();
         targetCtx.scale(scale, scale);
+        if (crop) targetCtx.translate(-crop.x, -crop.y);
 
         if (includeBackground) {
             targetCtx.fillStyle = '#ffffff';
@@ -2618,21 +2650,30 @@ class GraphAApp {
         this.canvas.showYAxis = includeAxes;
         this.canvas.resetLabelLayout();
 
-        if (includeGrid) this.canvas.drawGrid();
-        if (includeAxes) this.canvas.drawAxes();
-
-        for (const obj of this.getRenderOrderedObjects()) {
-            if (obj.visible) {
-                obj.render(this.canvas);
+        try {
+            if (includeGrid) this.canvas.drawGrid();
+            if (includeAxes) this.canvas.drawAxes();
+            for (const obj of this.getRenderOrderedObjects()) {
+                if (obj.visible) {
+                    const selected = obj.selected, highlighted = obj.highlighted;
+                    try {
+                        obj.selected = false;
+                        obj.highlighted = false;
+                        obj.render(this.canvas);
+                    } finally {
+                        obj.selected = selected;
+                        obj.highlighted = highlighted;
+                    }
+                }
             }
+        } finally {
+            this.canvas.ctx = originalCtx;
+            this.canvas.showGrid = oldShowGrid;
+            this.canvas.showXAxis = oldShowXAxis;
+            this.canvas.showYAxis = oldShowYAxis;
+            this.canvas.labelBounds = oldLabelBounds;
+            targetCtx.restore();
         }
-
-        this.canvas.ctx = originalCtx;
-        this.canvas.showGrid = oldShowGrid;
-        this.canvas.showXAxis = oldShowXAxis;
-        this.canvas.showYAxis = oldShowYAxis;
-        this.canvas.labelBounds = oldLabelBounds;
-        targetCtx.restore();
     }
 
     escapeSVG(value) {
@@ -4494,13 +4535,46 @@ class GraphAApp {
     }
 
     handleImageUpload(file, options = {}) {
+        const reportError = (message, type = 'warning') => {
+            this.showToast(message, type);
+            if (this.problemComposer?.dialog?.open) this.problemComposer.status(message, true);
+        };
+        if (this.imageUploadBusy || this.problemComposer?.busy) {
+            reportError('현재 사진의 인식이 끝난 뒤 다시 가져와 주세요.');
+            return;
+        }
+        if (!file || !/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 15000000) {
+            reportError('15 MB 이하의 PNG, JPG, WebP 사진을 가져와 주세요.');
+            return;
+        }
+        if (file.size === 0) {
+            reportError('사진 파일의 내용이 비어 있습니다. 원본 사진을 다시 가져와 주세요.');
+            return;
+        }
+        this.imageUploadBusy = true;
+        this.imageAbortController = new AbortController();
+        this.aiService.requestSignal = this.imageAbortController.signal;
+        document.getElementById('chat-panel')?.classList.remove('collapsed');
+        const chatToggle = document.getElementById('toggleChat');
+        chatToggle?.setAttribute('aria-expanded', 'true');
+        chatToggle?.setAttribute('aria-label', '그림 요청 접기');
+        if (chatToggle) setGeneratedIcon(chatToggle.querySelector('.material-symbols-outlined'), 'expand_more');
+        this.scheduleCanvasResize?.();
         const reader = new FileReader();
+        reader.onerror = () => {
+            this.imageUploadBusy = false;
+            this.aiService.requestSignal = null;
+            reportError('사진 파일을 읽지 못했습니다. 다시 가져와 주세요.', 'error');
+        };
 
         reader.onload = async (e) => {
             const imageDataUrl = e.target.result;
             const input = document.getElementById('chatInput');
-            const instruction = input?.value.trim() || '';
+            const instruction = this.imageUploadIntent === 'problem' ? '' : (input?.value.trim() || '');
+            this.imageUploadIntent = null;
             const mode = instruction ? 'patch' : 'problem_diagram';
+            const recognition = mode === 'problem_diagram' ? this.problemComposer?.startRecognition(imageDataUrl) : null;
+            let diagramApplied = false;
             const aiContext = this.buildAIContext();
             const trace = createImageAnalysisTrace({
                 source: options.source || 'upload',
@@ -4592,6 +4666,7 @@ class GraphAApp {
                     trace
                 });
 
+                if (this.imageAbortController.signal.aborted) throw new Error('사진 인식을 중단했습니다.');
                 if (result.success && result.json) {
                     this.addChatMessage(
                         mode === 'patch'
@@ -4607,6 +4682,7 @@ class GraphAApp {
                         modelMeta: this.getAIModelResultMeta(result),
                         trace
                     });
+                    diagramApplied = applied;
                     this.completeImageDebugTrace(trace, {
                         success: applied,
                         outcome: applied ? 'applied' : 'canvas_apply_failed'
@@ -4664,6 +4740,9 @@ class GraphAApp {
                     });
                 }
                 this.removeChatMessage(loadingMessage);
+                this.imageUploadBusy = false;
+                this.aiService.requestSignal = null;
+                if (recognition) await this.problemComposer.imageFinished(recognition, diagramApplied);
             }
         };
 
@@ -4676,6 +4755,11 @@ class GraphAApp {
     showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         if (!container) return;
+
+        if (type === 'info' || type === 'success') {
+            container.querySelectorAll(`.toast.${type}`).forEach(toast => toast.remove());
+        }
+        while (container.children.length >= 2) container.firstElementChild.remove();
 
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -4703,7 +4787,8 @@ class GraphAApp {
                 offsetY: this.canvas.offset.y,
                 scale: this.canvas.scale
             },
-            objects: this.objectManager.toJSON()
+            objects: this.objectManager.toJSON(),
+            problem: this.problemComposer?.problem
         };
 
         localStorage.setItem('graphA_save', JSON.stringify(data));
@@ -4735,6 +4820,10 @@ class GraphAApp {
 
             if (data.objects) {
                 this.objectManager.fromJSON(data.objects);
+            }
+            if (this.problemComposer) {
+                this.problemComposer.problem = data.problem || { number: '', blocks: [], warnings: [] };
+                this.problemComposer.renderProblem();
             }
 
             // A freshly loaded document becomes the new baseline state.
@@ -4768,7 +4857,8 @@ class GraphAApp {
                 },
                 scale: this.canvas.scale
             },
-            objects: serialized.objects
+            objects: serialized.objects,
+            problem: this.problemComposer?.problem
         });
     }
 
@@ -4808,6 +4898,10 @@ class GraphAApp {
             this.canvas.offset.y = envelope.view.offset.y;
             this.canvas.scale = envelope.view.scale;
             this.setProjectName(envelope.name);
+            if (this.problemComposer) {
+                this.problemComposer.problem = envelope.problem || { number: '', blocks: [], warnings: [] };
+                this.problemComposer.renderProblem();
+            }
             this.historyManager.clear();
             this.updateSidebar();
             this.updateZoomDisplay();

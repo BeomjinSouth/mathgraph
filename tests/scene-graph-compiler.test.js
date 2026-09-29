@@ -40,7 +40,7 @@ test('SceneGraphCompiler compiles circle sector scenes into valid GraphA operati
     );
     assert.deepEqual(
         compiled.operations.find(op => op.id === 'lens_overlap'),
-        { op: 'create', id: 'lens_overlap', type: 'lensRegion', circle1Id: 'circle_O', circle2Id: 'circle_B', fillOpacity: 0.2 }
+        { op: 'create', id: 'lens_overlap', type: 'lensRegion', circle1Id: 'circle_O', circle2Id: 'circle_B', fillOpacity: 0.2, showLabel: false }
     );
     assert.equal(compiled.warnings.length, 0);
     validateOperations(compiled.operations);
@@ -128,4 +128,24 @@ test('SceneGraphCompiler strict patch mode updates only selected ids', () => {
     assert.match(compiled.warnings.join('\n'), /unselected id "point_b"/);
     assert.match(compiled.warnings.join('\n'), /unselected id "old_segment"/);
     assert.match(compiled.warnings.join('\n'), /Patch creates were skipped/);
+});
+
+test('SceneGraphCompiler hides auto-assigned names for unlabeled created objects', () => {
+    const scene = {
+        nodes: [
+            { id: 'O', kind: 'point', x: 0, y: 0, label: 'O' },
+            { id: 'circMain', kind: 'circle', center: 'O', radius: 2.5 },
+            { id: 'named', kind: 'circle', center: 'O', radius: 4, label: 'C' },
+            { id: 'graphF', kind: 'function', equation: 'y = x^2' }
+        ]
+    };
+
+    const compiled = compileSceneGraph(scene);
+    const byId = new Map(compiled.operations.map(operation => [operation.id, operation]));
+
+    assert.equal(byId.get('circMain').showLabel, false);
+    assert.equal(byId.get('named').showLabel, true);
+    assert.equal(byId.get('graphF').showLabel, false);
+    assert.equal(byId.get('O').showLabel, true);
+    validateOperations(compiled.operations);
 });

@@ -8,7 +8,9 @@
 
 import { compileSceneGraph } from './SceneGraphCompiler.js';
 import { CURRICULUM_PROMPT } from './CurriculumIntent.js';
+import { SchemaValidator } from './SchemaValidator.js';
 import Geometry, { Vec2 } from '../utils/Geometry.js';
+import { FunctionParser } from '../utils/Parser.js';
 
 const NULLABLE_STRING = { type: ['string', 'null'] };
 const NULLABLE_NUMBER = { type: ['number', 'null'] };
@@ -138,6 +140,9 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'First identify every point, segment, line, curve, circle, arc, region, solid, axis, label, and construction that the source requires.',
     'Then choose a clear non-degenerate coordinate layout within -20 to 20 while preserving incidence, order, collinearity, containment, and the printed relative positions.',
     'Use direct point nodes for explicit or computed coordinates. Use pointOnLine or pointOnCircle when the source explicitly places a point on that object.',
+    'A single capital letter printed beside a curve, circle, or arc with no dot is that object\'s name, not a point. Never create a point node for an object name label.',
+    'When named points lie on one circle, make the incidence structural: build the circle with circleThreePoints through the named points, or place the points with pointOnCircle. A circle given as center and radius must have its declared on-circle points exactly at radius distance.',
+    'A point that a sourceBinding declares on a curve or axis must satisfy that equation with its coordinates. MathGraph verifies every declared incidence numerically and rejects the scene otherwise.',
     'Every scene item id must be globally unique across nodes and relations.',
     'A named intersection must exist only as an intersection relation. Never also create a point node with the same id or label; use distinct hidden helper points to define its line.',
     'Relations create reusable scene ids. A later line, segment, polygon, circle, or relation may reference a midpoint or intersection relation id directly; never create a coordinate-duplicate helper point merely to use that result downstream.',
@@ -153,6 +158,8 @@ export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     'A printed shaded face or requested area region must be a polygon, sector, circularSegment, lensRegion, or functionRegion node with fillOpacity between 0.18 and 0.24. For functionRegion, put one or two graph ids in refs in boundary order and [xMin, xMax, baselineY] in numbers (baselineY is needed only for a horizontal second boundary).',
     'A semicircle must use an arc with mode minor or major, not a full circle alone.',
     'For compact items: refs contains referenced ids, groups contains grouped vertex ids, numbers contains numeric parameters, and text contains an expression or annotation.',
+    'For every printed numeric or algebraic length on a segment, make a lengthDimension relation for that segment and use its label for the exact printed value. Do not use a segment label for a length value.',
+    'For a source containing only text, do not add a length or angle value merely to name the quantity the student must find. Keep any needed construction, but reserve displayed dimensions for values actually stated in the source.',
     'Do not copy long problem prose into the scene. Keep constructionSummary and evidence short and factual.'
 ].join('\n');
 
@@ -179,9 +186,12 @@ export function buildProblemScenePrompt(referencePrompt = '') {
         '- cylinder/cone/sphere: numbers=[x,y,width,height,ellipseRatio?]',
         '- textLabel: numbers=[x,y], text=short annotation',
         '- relations use refs in the order implied by intersection, midpoint, parallel, perpendicular, rightAngleMarker, equalLengthMarker, angleDimension, lengthDimension, tangentCircle, or tangentFunction.',
+        '- parallel/perpendicular: refs=[baseLineId,throughPointId] constructs a new line through a point. refs=[firstLineId,secondLineId] states a condition between two existing segments/lines/rays; keep their coordinates consistent and do not add another visible line.',
         '- for ∠XYZ, angleDimension refs=[Y,X,Z]. Keep every explicitly stated angle at its stated vertex instead of substituting a derived angle.',
         '- keep independent equal-length groups separate; MathGraph assigns different tick counts to different equivalence classes.',
         '- relation ids are valid refs for later items; for example midpoint M -> line BM -> intersection D -> polygon using D.',
+        '- in a text-only source, do not put a generic requested quantity such as 거리, 길이, or 각도 onto a dimension; keep only values printed in the source.',
+        '- the graph canvas already supplies coordinate axes, so do not create a separately labelled x축 or y축 line for a function graph.',
         referencePrompt
     ].filter(Boolean).join('\n\n');
 }
@@ -191,11 +201,146 @@ export function compileProblemScenePayload(payload) {
     const compiled = compileSceneGraph(scene, { compact: true });
     normalizeSharedDefinitionIntersectionBranches(compiled.operations);
     normalizeEqualLengthMarkerTickCounts(compiled.operations);
+    separateExistingLineRelations(compiled);
+    normalizeSegmentLengthLabels(compiled.operations);
+    suppressUnprintedRequestedMeasureLabels(scene, compiled.operations);
     return {
         ...compiled,
         sourceBindings: Array.isArray(scene.sourceBindings) ? scene.sourceBindings : [],
         scene
     };
+}
+
+// A text-only question may ask students to find a distance or an angle. That
+// phrase is an instruction, not a value printed on a diagram. Keep the
+// relation so its geometry remains editable, but do not export a made-up
+// label that can collide with real diagram labels in Hancom.
+export function suppressUnprintedRequestedMeasureLabels(scene, operations = []) {
+    if (scene?.sourceHasPrintedFigure !== false) return;
+
+    for (const operation of operations) {
+        if (!['lengthDimension', 'angleDimension'].includes(operation?.type)) continue;
+        const value = operation.customText ?? operation.label;
+        if (!isRequestedMeasureLabel(value)) continue;
+        operation.showValue = false;
+        operation.customText = null;
+        operation.label = null;
+    }
+}
+
+function isRequestedMeasureLabel(value) {
+    const label = String(value ?? '').replace(/\s+/g, '');
+    return /^(?:(?:두점사이의|선분의|호의)?(?:거리|길이|넓이|둘레|각도|각|크기|값)|구(?:할|하는)?(?:거리|길이|넓이|둘레|각도|각|크기|값))$/u.test(label);
+}
+
+// Vision results from older prompts often put 8, x, or \frac{1}{2} directly
+// on a segment. Preserve named lines such as AB, but turn a likely length
+// value into the dedicated dotted-arc dimension object.
+export function normalizeSegmentLengthLabels(operations = []) {
+    const operationIds = new Set(operations.map(operation => operation?.id).filter(Boolean));
+    const dimensionsBySegment = new Map();
+    for (const operation of operations) {
+        if (operation?.type === 'lengthDimension' && operation.segmentId) {
+            dimensionsBySegment.set(operation.segmentId, operation);
+        }
+    }
+
+    const operationMap = new Map(operations.filter(operation => operation?.id).map(operation => [operation.id, operation]));
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const centroid = segmentEndpointCentroid(operations, pointPositions);
+    const additions = [];
+
+    for (const dimension of dimensionsBySegment.values()) {
+        const segment = operationMap.get(dimension.segmentId);
+        if (segment?.type !== 'segment') continue;
+        const segmentText = likelyLengthLabel(segment.label);
+        const dimensionText = likelyLengthLabel(dimension.label);
+        if (dimension.customText == null || dimension.customText === '') {
+            dimension.customText = segmentText || dimensionText || dimension.customText;
+        }
+        if (!Number.isFinite(dimension.curvature)) {
+            dimension.curvature = outwardDimensionCurvature(segment, pointPositions, centroid);
+        }
+        if (segmentText) segment.showLabel = false;
+    }
+
+    for (const segment of operations) {
+        const lengthText = likelyLengthLabel(segment?.label);
+        if (segment?.type !== 'segment' || segment.visible === false || segment.showLabel === false || !lengthText) continue;
+
+        segment.showLabel = false;
+        const existing = dimensionsBySegment.get(segment.id);
+        if (existing) {
+            if (existing.customText == null || existing.customText === '') existing.customText = lengthText;
+            continue;
+        }
+
+        const id = uniqueOperationId(`length_${segment.id}`, operationIds);
+        const curvature = outwardDimensionCurvature(segment, pointPositions, centroid);
+        additions.push({
+            op: 'create', id, type: 'lengthDimension', segmentId: segment.id,
+            customText: lengthText, showValue: true, curvature,
+            ...(segment.color ? { color: segment.color } : {})
+        });
+    }
+    operations.push(...additions);
+}
+
+function likelyLengthLabel(value) {
+    if (typeof value !== 'string') return '';
+    const text = value.trim();
+    const compact = text.replace(/\s+/g, '');
+    if (!compact || compact.length > 80) return '';
+    if (/^[+-]?\d+(?:[.,]\d+)?(?:[a-z]{0,4})?$/i.test(compact)) return text;
+    if (/^(?:\\(?:d?frac|sqrt)\b|√)/.test(compact)) return text;
+    if (/^[a-zα-ω](?:[_^](?:\{?[\da-zα-ω+\-]+\}?))?$/u.test(compact)) return text;
+    return '';
+}
+
+function uniqueOperationId(base, ids) {
+    let index = 1;
+    let id = base;
+    while (ids.has(id)) id = `${base}_${index++}`;
+    ids.add(id);
+    return id;
+}
+
+function segmentEndpointCentroid(operations, pointPositions) {
+    const endpointIds = new Set();
+    for (const operation of operations) {
+        if (operation?.type !== 'segment') continue;
+        endpointIds.add(operation.point1Id);
+        endpointIds.add(operation.point2Id);
+    }
+    const points = [...endpointIds].map(id => pointPositions.get(id)).filter(Boolean);
+    if (!points.length) return null;
+    return points.reduce((sum, point) => sum.add(point), new Vec2(0, 0)).div(points.length);
+}
+
+function outwardDimensionCurvature(segment, pointPositions, centroid) {
+    const point1 = pointPositions.get(segment.point1Id);
+    const point2 = pointPositions.get(segment.point2Id);
+    if (!point1 || !point2 || !centroid) return 48;
+    const direction = point2.sub(point1);
+    const midpoint = point1.add(point2).div(2);
+    const normal = new Vec2(-direction.y, direction.x);
+    return normal.dot(centroid.sub(midpoint)) > 0 ? -48 : 48;
+}
+
+// A relation between two existing sides is a geometric assertion, not a new
+// infinite line whose throughPointId happens to contain another line's id.
+function separateExistingLineRelations(compiled) {
+    const operationMap = new Map(compiled.operations.map(operation => [operation.id, operation]));
+    compiled.lineRelations = [];
+    compiled.operations = compiled.operations.filter(operation => {
+        if (!['parallel', 'perpendicular'].includes(operation.type) ||
+            !isLineOperation(operationMap.get(operation.baseLineId)) ||
+            !isLineOperation(operationMap.get(operation.throughPointId))) return true;
+        compiled.lineRelations.push({ id: operation.id, kind: operation.type,
+            firstLineId: operation.baseLineId, secondLineId: operation.throughPointId });
+        return false;
+    });
+    compiled.metadata.operationCount = compiled.operations.length;
 }
 
 export function normalizeEqualLengthMarkerTickCounts(operations = []) {
@@ -392,6 +537,9 @@ export function validateProblemSceneCoverage(scene, compiled) {
     const errors = [];
     const operations = Array.isArray(compiled?.operations) ? compiled.operations : [];
     const operationIds = new Set(operations.map(operation => operation?.id).filter(Boolean));
+    const lineConditions = validateExistingLineRelations(operations, compiled?.lineRelations || []);
+    errors.push(...lineConditions.errors);
+    const coveredIds = new Set([...operationIds, ...lineConditions.validIds]);
     const sceneItems = [
         ...(Array.isArray(scene?.nodes) ? scene.nodes : []),
         ...(Array.isArray(scene?.relations) ? scene.relations : [])
@@ -436,7 +584,7 @@ export function validateProblemSceneCoverage(scene, compiled) {
         for (const id of bindings) {
             if (!sceneIds.has(id)) {
                 errors.push(`required scene item "${item.id || item.description}" references unknown scene id "${id}".`);
-            } else if (!operationIds.has(id)) {
+            } else if (!coveredIds.has(id)) {
                 errors.push(`required scene id "${id}" was not compiled into GraphA operations.`);
             }
         }
@@ -464,8 +612,180 @@ export function validateProblemSceneCoverage(scene, compiled) {
     }
     errors.push(...validateResolvedEqualLengthMarkers(operations));
     errors.push(...validateRequiredAngleLegs(scene, operations));
+    errors.push(...validateSourceBindingIncidence(scene, operations));
+    errors.push(...validateLineConstructionReferences(operations));
+    errors.push(...new SchemaValidator().validateReferences({ operations }, new Set()).errors);
 
     return { valid: errors.length === 0, errors };
+}
+
+/**
+ * sourceBindings가 선언한 점-객체 소속 관계를 컴파일된 좌표로 검산합니다.
+ * 좌표를 확정할 수 없거나 대상 객체가 모호하면 검사하지 않습니다(오탐 방지).
+ */
+export function validateSourceBindingIncidence(scene, operations = []) {
+    const bindings = Array.isArray(scene?.sourceBindings) ? scene.sourceBindings : [];
+    if (bindings.length === 0) return [];
+
+    const operationMap = new Map(
+        operations.filter(operation => operation?.id).map(operation => [operation.id, operation])
+    );
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const pointTypes = new Set(['point', 'pointOnLine', 'pointOnCircle', 'midpoint', 'intersection']);
+    const pointByName = new Map();
+    for (const operation of operations) {
+        if (!pointTypes.has(operation?.type)) continue;
+        for (const name of [operation.label, operation.id]) {
+            const trimmed = typeof name === 'string' ? name.trim() : '';
+            if (trimmed && !pointByName.has(trimmed)) pointByName.set(trimmed, operation);
+        }
+    }
+
+    const circles = operations.filter(isCircleOperation);
+    const errors = [];
+
+    for (const binding of bindings) {
+        const pointLabel = typeof binding?.pointLabel === 'string' ? binding.pointLabel.trim() : '';
+        const pointOperation = pointByName.get(pointLabel);
+        const position = pointOperation ? pointPositions.get(pointOperation.id) : null;
+        if (!pointLabel || !position) continue;
+        // 구성 자체가 소속을 보장하는 경우는 검산이 불필요합니다.
+        const structurallyBound = new Set([
+            pointOperation.circleId,
+            pointOperation.lineId,
+            pointOperation.object1Id,
+            pointOperation.object2Id
+        ].filter(Boolean));
+
+        for (const rawLabel of Array.isArray(binding.onObjectLabels) ? binding.onObjectLabels : []) {
+            const normalized = normalizeIncidenceLabel(rawLabel);
+            if (!normalized) continue;
+
+            if (normalized === 'x-axis') {
+                if (Math.abs(position.y) > 0.05) {
+                    errors.push(`sourceBinding point "${pointLabel}" is declared on "x-axis" but resolves to y=${formatGeometryLength(position.y)} (tolerance 0.05).`);
+                }
+                continue;
+            }
+            if (normalized === 'y-axis') {
+                if (Math.abs(position.x) > 0.05) {
+                    errors.push(`sourceBinding point "${pointLabel}" is declared on "y-axis" but resolves to x=${formatGeometryLength(position.x)} (tolerance 0.05).`);
+                }
+                continue;
+            }
+
+            const circle = resolveIncidenceCircle(normalized, circles);
+            if (circle) {
+                if (structurallyBound.has(circle.id)) continue;
+                const geometry = resolveCircleGeometry(circle, pointPositions);
+                if (!geometry) continue;
+                const distanceFromCenter = geometry.center.distanceTo(position);
+                const difference = Math.abs(distanceFromCenter - geometry.radius);
+                const tolerance = Math.max(0.05, geometry.radius * 0.03);
+                if (difference > tolerance) {
+                    errors.push(`sourceBinding point "${pointLabel}" is declared on circle "${circle.id}" but resolved center distance ${formatGeometryLength(distanceFromCenter)} differs from radius ${formatGeometryLength(geometry.radius)} by ${formatGeometryLength(difference)} (tolerance ${formatGeometryLength(tolerance)}).`);
+                }
+                continue;
+            }
+
+            const functionOperation = resolveIncidenceFunction(normalized, operations);
+            if (functionOperation) {
+                let value;
+                try {
+                    value = FunctionParser.parse(functionOperation.expression)(position.x);
+                } catch {
+                    continue;
+                }
+                if (!Number.isFinite(value)) continue;
+                const difference = Math.abs(value - position.y);
+                const tolerance = Math.max(0.1, Math.abs(value) * 0.03);
+                if (difference > tolerance) {
+                    errors.push(`sourceBinding point "${pointLabel}" is declared on "${String(rawLabel).trim()}" but the curve gives y=${formatGeometryLength(value)} at x=${formatGeometryLength(position.x)} while the point has y=${formatGeometryLength(position.y)} (difference ${formatGeometryLength(difference)}, tolerance ${formatGeometryLength(tolerance)}).`);
+                }
+            }
+        }
+    }
+
+    return errors;
+}
+
+function normalizeIncidenceLabel(value) {
+    const text = String(value ?? '').toLowerCase().replace(/[\s$]+/g, '');
+    if (!text) return '';
+    if (/^(x-?axis|x축)$/.test(text)) return 'x-axis';
+    if (/^(y-?axis|y축)$/.test(text)) return 'y-axis';
+    if (/^(circle|원)$/.test(text)) return 'circle';
+    return text;
+}
+
+function resolveIncidenceCircle(normalizedLabel, circles) {
+    const matched = circles.filter(circle =>
+        normalizeIncidenceLabel(circle.label) === normalizedLabel ||
+        normalizeIncidenceLabel(circle.id) === normalizedLabel
+    );
+    if (matched.length === 1) return matched[0];
+    if (normalizedLabel === 'circle' && circles.length === 1) return circles[0];
+    return null;
+}
+
+function resolveIncidenceFunction(normalizedLabel, operations) {
+    const functions = operations.filter(operation =>
+        operation?.type === 'function' && typeof operation.expression === 'string'
+    );
+    const matched = functions.filter(operation => {
+        const candidates = [
+            operation.label,
+            operation.id,
+            operation.expression,
+            `y=${operation.expression}`
+        ];
+        return candidates.some(candidate => normalizeIncidenceLabel(candidate) === normalizedLabel);
+    });
+    return matched.length === 1 ? matched[0] : null;
+}
+
+function validateExistingLineRelations(operations, relations) {
+    const operationMap = new Map(operations.map(operation => [operation.id, operation]));
+    const pointPositions = resolveStaticPointPositions(operations, operationMap);
+    const errors = [];
+    const validIds = [];
+    for (const relation of relations) {
+        const first = resolveLineGeometry(operationMap.get(relation.firstLineId), pointPositions);
+        const second = resolveLineGeometry(operationMap.get(relation.secondLineId), pointPositions);
+        if (!first || !second) {
+            errors.push(`line relation "${relation.id}" has unresolved line coordinates.`);
+            continue;
+        }
+        const u = first.point2.sub(first.point1);
+        const v = second.point2.sub(second.point1);
+        const scale = Math.sqrt(u.dot(u) * v.dot(v));
+        const residual = relation.kind === 'parallel'
+            ? Math.abs(u.x * v.y - u.y * v.x) : Math.abs(u.dot(v));
+        if (!Number.isFinite(scale) || scale <= 1e-12 || residual / scale > 1e-3) {
+            errors.push(`line relation "${relation.id}" is not ${relation.kind} in the resolved coordinates.`);
+            continue;
+        }
+        validIds.push(relation.id);
+    }
+    return { validIds, errors };
+}
+
+function validateLineConstructionReferences(operations) {
+    const operationMap = new Map(operations.map(operation => [operation.id, operation]));
+    const pointTypes = new Set(['point', 'pointOnLine', 'pointOnCircle', 'circleCenterPoint', 'intersection', 'midpoint']);
+    const lineTypes = new Set(['segment', 'line', 'ray', 'parallel', 'perpendicular',
+        'perpendicularBisector', 'angleBisector', 'tangentCircle', 'tangentFunction']);
+    const errors = [];
+    for (const operation of operations) {
+        if (!['parallel', 'perpendicular'].includes(operation.type)) continue;
+        if (!lineTypes.has(operationMap.get(operation.baseLineId)?.type)) {
+            errors.push(`${operation.type} "${operation.id}" baseLineId must reference a line.`);
+        }
+        if (!pointTypes.has(operationMap.get(operation.throughPointId)?.type)) {
+            errors.push(`${operation.type} "${operation.id}" throughPointId must reference a point.`);
+        }
+    }
+    return errors;
 }
 
 function validateResolvedEqualLengthMarkers(operations) {
