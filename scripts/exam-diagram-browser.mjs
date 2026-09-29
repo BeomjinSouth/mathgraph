@@ -137,7 +137,7 @@ export async function renderExamCase(source) {
         return nativeQuadratic(x, y, endX, endY);
     };
     ctx.lineTo = (x, y) => {
-        if (mode === 'normal' && owner?.type === 'angleDimension')
+        if (mode === 'normal' && owner?.type === 'angleDimension' && !owner._leaderCurve)
             angleTickStrokes.set(owner.id, (angleTickStrokes.get(owner.id) || 0) + 1);
         if (mode === 'normal' && owner?.type === 'equalLengthMarker')
             lengthTickStrokes.set(owner.id, (lengthTickStrokes.get(owner.id) || 0) + 1);

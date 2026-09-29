@@ -9,6 +9,7 @@
 import { compileSceneGraph } from './SceneGraphCompiler.js';
 import { CURRICULUM_PROMPT } from './CurriculumIntent.js';
 import { SchemaValidator } from './SchemaValidator.js';
+import { ANNOTATION_GUIDANCE } from './AnnotationGuide.js';
 import Geometry, { Vec2 } from '../utils/Geometry.js';
 import { FunctionParser } from '../utils/Parser.js';
 
@@ -25,6 +26,20 @@ const compactStyleSchema = {
         fillColor: NULLABLE_STRING,
         fillOpacity: NULLABLE_NUMBER,
         visible: NULLABLE_BOOLEAN,
+        arcRadius: NULLABLE_NUMBER,
+        curvature: NULLABLE_NUMBER,
+        labelFontSize: NULLABLE_NUMBER,
+        precision: NULLABLE_NUMBER,
+        customText: NULLABLE_STRING,
+        showValue: NULLABLE_BOOLEAN,
+        markerCount: NULLABLE_NUMBER,
+        leaderMode: { type: ['string','null'], enum: ['auto','always','none',null] },
+        leaderCurvature: NULLABLE_NUMBER,
+        labelPlacement: { type: ['string','null'], enum: ['centered','legacy',null] },
+        labelOnCurve: NULLABLE_BOOLEAN,
+        labelT: NULLABLE_NUMBER,
+        dashLength: NULLABLE_NUMBER,
+        dashGap: NULLABLE_NUMBER,
         pointStyle: {
             type: ['string', 'null'],
             enum: ['closed', 'open', null]
@@ -42,6 +57,8 @@ const compactStyleSchema = {
         'fillColor',
         'fillOpacity',
         'visible',
+        'arcRadius', 'curvature', 'labelFontSize', 'precision', 'customText', 'showValue', 'markerCount',
+        'leaderMode', 'leaderCurvature', 'labelPlacement', 'labelOnCurve', 'labelT', 'dashLength', 'dashGap',
         'pointStyle',
         'labelOffset'
     ],
@@ -135,6 +152,8 @@ export const PROBLEM_SCENE_RESPONSE_FORMAT = {
 
 export const PROBLEM_SCENE_SYSTEM_PROMPT = [
     CURRICULUM_PROMPT,
+    ANNOTATION_GUIDANCE.split('Examples:')[0],
+    'Place annotation controls inside each scene item style. Follow the scene response schema; do not return GraphA operations here.',
     'You read Korean math problem images and return a compact, source-grounded scene plan.',
     'Do not solve the question and do not state the requested final answer.',
     'First identify every point, segment, line, curve, circle, arc, region, solid, axis, label, and construction that the source requires.',

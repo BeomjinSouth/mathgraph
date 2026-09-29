@@ -1,5 +1,12 @@
 # Skills and Context
 
+## 치수 표시와 곡선 지시 화살표
+
+- 사용 시점·조작·GraphA 예시: `docs/치수-배치와-곡선-화살표-사용법.md`.
+- 앱의 AI 프롬프트와 검색 문맥에 실제로 포함되는 기준: `js/ai/AnnotationGuide.js`.
+- 구현 범위·검증 기준: `docs/각도-길이-표시-개선-계획.md`.
+- 프로젝트 스킬의 `references/annotation-layout.md`, 검색 색인, 기능 매뉴얼에도 같은 사용 기준이 연결되어 있다. 앱에 배포되는 runtime 참조와 함께 갱신한다.
+
 ## Relevant Skills
 
 - Skill: Superpowers Brainstorming / Writing Plans / TDD / Subagent-Driven Development

@@ -6,6 +6,8 @@
 import { GeoObject, ObjectType } from './GeoObject.js';
 import { Vec2 } from '../utils/Geometry.js';
 import { DEFAULT_LENGTH_ARC_HEIGHT, lengthArcGeometry, chooseLengthArcHeight, lengthArcPieces } from '../utils/LengthArc.js';
+import { MathUtils } from '../utils/MathUtils.js';
+import { segmentDistance, curveDistance, quadraticAt, leaderGeometry, drawLeader } from '../utils/AnnotationGeometry.js';
 
 // ObjectType 확장 (동적으로 추가)
 if (!ObjectType.ANGLE_DIMENSION) {
@@ -46,7 +48,11 @@ export class AngleDimension extends GeoObject {
         // - precision: 자동 계산값(각도)의 소수점 자리수
         // - labelFontSize: 라벨 폰트 크기 (캔버스에 그려지는 숫자 크기)
         this.precision = (params.precision !== undefined) ? params.precision : 1;
-        this.labelFontSize = params.labelFontSize || 14;
+        this.labelFontSize = params.labelFontSize || (params.type ? 14 : 20);
+        // Old project files keep their exact label anchor; new annotations are centered.
+        this.labelPlacement = params.labelPlacement || (params.type ? 'legacy' : 'centered');
+        this.leaderMode = ['auto','always','none'].includes(params.leaderMode) ? params.leaderMode : 'auto';
+        this.leaderCurvature = Number.isFinite(params.leaderCurvature) ? MathUtils.clamp(params.leaderCurvature, -300, 300) : 28;
 
         // 계산된 값
         this.vertex = null;
@@ -97,6 +103,7 @@ export class AngleDimension extends GeoObject {
 
     render(canvas) {
         this._labelBox = null;
+        this._leaderCurve = null;
         if (!this.visible || !this.valid || !this.vertex) return;
 
         const ctx = canvas.ctx;
@@ -104,7 +111,7 @@ export class AngleDimension extends GeoObject {
         const screenRadius = canvas.toScreenLength(this.arcRadius);
 
         // 선택/하이라이트 스타일
-        if (this.selected || this.highlighted) {
+        if (!canvas.isExporting && (this.selected || this.highlighted)) {
             ctx.strokeStyle = this.selected ? '#f97316' : '#fbbf24';
             ctx.lineWidth = 3;
         } else {
@@ -114,7 +121,7 @@ export class AngleDimension extends GeoObject {
 
         // 각도가 90도인지 확인 (precision에 따른 반올림 적용)
         const degrees = this.angle * 180 / Math.PI;
-        const isRightAngle = Math.abs(degrees - 90) < 1e-7 && this.markerCount === 0 && this.arcCount === 1;
+        const isRightAngle = this.isRightAngle();
 
         if (isRightAngle) {
             // 직각 마커 그리기 (ㄱ 모양 사각형)
@@ -171,7 +178,8 @@ export class AngleDimension extends GeoObject {
         // 값 표시 (직각은 숫자 안 보여도 됨 - 선택적)
         if (this.showValue && this.label !== false) {
             const midAngle = (this.startAngle + this.endAngle) / 2;
-            const labelDist = this.arcRadius * 1.5;
+            const labelDist = this.labelPlacement === 'legacy' ? this.arcRadius * 1.5
+                : this.arcRadius + (this.labelFontSize * 0.75 + 6) / canvas.scale;
             const labelPos = new Vec2(
                 this.vertex.x + labelDist * Math.cos(midAngle) + this.labelOffset.x,
                 this.vertex.y + labelDist * Math.sin(midAngle) + this.labelOffset.y
@@ -193,8 +201,8 @@ export class AngleDimension extends GeoObject {
               라벨의 화면 위치(바운딩 박스)를 저장해 hitTest에서 사용할 수 있어야 합니다.
             */
             const screen = canvas.toScreen(labelPos);
-            const offsetX = 8;
-            const offsetY = -8;
+            const offsetX = this.labelPlacement === 'legacy' ? 8 : 0;
+            const offsetY = this.labelPlacement === 'legacy' ? -8 : 0;
             ctx.font = `${this.labelFontSize}px "Times New Roman", "STIX Two Math", Georgia, serif`;
             const metrics = ctx.measureText(displayText);
             const padding = 4;
@@ -209,6 +217,15 @@ export class AngleDimension extends GeoObject {
                 h: this.labelFontSize + padding * 2
             };
 
+            const anchor = this.getArcAnchor(canvas);
+            const textDistance = Math.hypot(x - anchor.x, y - anchor.y);
+            const textAngle = Math.atan2(labelPos.y - this.vertex.y, labelPos.x - this.vertex.x);
+            const detached = textDistance > Math.max(34, this.labelFontSize * 1.8) || !this.isAngleInRange(textAngle);
+            if (this.leaderMode === 'always' || (this.leaderMode === 'auto' && detached)) {
+                this._leaderCurve = leaderGeometry(this._labelBox, anchor, this.leaderCurvature);
+                drawLeader(ctx, this._leaderCurve, this.color, this.lineWidth);
+            }
+
             // Generated labels are placed in free space. Do not erase geometry
             // with an opaque rectangle when a label overlaps a different object.
             ctx.fillStyle = this.color;
@@ -216,6 +233,20 @@ export class AngleDimension extends GeoObject {
             ctx.textBaseline = 'middle';
             ctx.fillText(displayText, x, y);
         }
+        if (this.selected && !canvas.isExporting) {
+            const handle = this._leaderCurve && quadraticAt(this._leaderCurve.start, this._leaderCurve.control, this._leaderCurve.end, 0.5);
+            ctx.save(); ctx.setLineDash([]); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#f97316'; ctx.lineWidth = 1.5;
+            if (handle) { ctx.beginPath(); ctx.arc(handle.x, handle.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+            ctx.restore();
+        }
+    }
+
+    isRightAngle() { return Math.abs(this.angle - Math.PI / 2) < 1e-8 && this.markerCount === 0 && this.arcCount === 1; }
+
+    getArcAnchor(canvas) {
+        const middle = (this.startAngle + this.endAngle) / 2;
+        const radius = this.arcRadius * (this.isRightAngle() ? 0.6 * Math.SQRT2 : 1);
+        return canvas.toScreen({ x: this.vertex.x + radius * Math.cos(middle), y: this.vertex.y + radius * Math.sin(middle) });
     }
 
     /**
@@ -226,7 +257,8 @@ export class AngleDimension extends GeoObject {
     }
 
     hitTest(point, threshold, canvas) {
-        if (!this.valid || !this.vertex) return false;
+        this._hitPart = null;
+        if (!this.visible || !this.valid || !this.vertex) return false;
 
         // Mk2.1: 라벨 클릭도 hit로 인정 (숫자 클릭 편집 UX)
         if (this._labelBox) {
@@ -241,18 +273,24 @@ export class AngleDimension extends GeoObject {
             }
         }
 
-        const dist = point.distanceTo(this.vertex);
-        const onArc = Array.from({ length: this.arcCount }, (_, i) =>
-            Math.abs(dist - this.arcRadius - canvas.toMathLength(i * 5)) < canvas.toMathLength(threshold)
-        ).some(Boolean);
-
-        if (!onArc) return false;
-
-        // 각도 범위 확인
-        const angle = Math.atan2(point.y - this.vertex.y, point.x - this.vertex.x);
-        const ok = this.isAngleInRange(angle);
-        this._hitPart = ok ? 'shape' : null;
-        return ok;
+        if (this.isRightAngle()) {
+            const v = canvas.toScreen(this.vertex), size = canvas.toScreenLength(this.arcRadius) * 0.6;
+            const p = { x: v.x + size * Math.cos(this.startAngle), y: v.y - size * Math.sin(this.startAngle) };
+            const q = { x: v.x + size * Math.cos(this.endAngle), y: v.y - size * Math.sin(this.endAngle) };
+            const corner = { x: p.x + q.x - v.x, y: p.y + q.y - v.y }, sp = canvas.toScreen(point);
+            const hit = Math.min(segmentDistance(sp, p, corner), segmentDistance(sp, corner, q)) < threshold;
+            if (hit) { this._hitPart = 'shape'; return true; }
+        } else {
+            const dist = point.distanceTo(this.vertex);
+            const angle = Math.atan2(point.y - this.vertex.y, point.x - this.vertex.x);
+            if (Array.from({ length: this.arcCount }, (_, i) => Math.abs(dist - this.arcRadius - canvas.toMathLength(i * 5)) < canvas.toMathLength(threshold)).some(Boolean) && this.isAngleInRange(angle)) {
+                this._hitPart = 'shape'; return true;
+            }
+        }
+        if (this._leaderCurve && curveDistance(canvas.toScreen(point), this._leaderCurve) < threshold) {
+            this._hitPart = 'leader'; return true;
+        }
+        return false;
     }
 
     isAngleInRange(angle) {
@@ -271,13 +309,16 @@ export class AngleDimension extends GeoObject {
     }
 
     isDraggable() {
-        return true; // 라벨 위치 및 호 크기 드래그 가능
+        return !this.locked;
     }
 
     startDrag(point, canvas) {
         this.dragStart = point.clone();
         this.labelOffsetStart = this.labelOffset.clone();
         this.arcRadiusStart = this.arcRadius;
+        this.leaderCurvatureStart = this.leaderCurvature;
+        this._draggingLeader = this._hitPart === 'leader';
+        this._leaderNormalStart = this._leaderCurve?.normal;
 
         // 라벨을 클릭했는지 호를 클릭했는지 판별
         this._draggingLabel = (this._hitPart === 'label');
@@ -291,7 +332,10 @@ export class AngleDimension extends GeoObject {
             point.y - this.dragStart.y
         );
 
-        if (this._draggingLabel) {
+        if (this._draggingLeader && this._leaderNormalStart) {
+            const n = this._leaderNormalStart;
+            this.leaderCurvature = MathUtils.clamp(this.leaderCurvatureStart + 2 * canvas.scale * (moveVec.x * n.x - moveVec.y * n.y), -300, 300);
+        } else if (this._draggingLabel) {
             // 라벨만 이동 (자유롭게)
             this.labelOffset = new Vec2(
                 this.labelOffsetStart.x + moveVec.x,
@@ -301,7 +345,8 @@ export class AngleDimension extends GeoObject {
             // 호 드래그: 반지름만 조정
             const radialDir = this.dragStart.sub(this.vertex).normalize();
             const radialMove = moveVec.x * radialDir.x + moveVec.y * radialDir.y;
-            if (Math.abs(radialMove) > 1e-12) this.arcRadius = Math.max(0.05, this.arcRadiusStart + radialMove);
+            const factor = this.isRightAngle() ? Math.max(0.1, this.dragStart.distanceTo(this.vertex) / this.arcRadiusStart) : 1;
+            this.arcRadius = Math.max(0.08, Math.min(20, this.arcRadiusStart + radialMove / factor));
         }
     }
 
@@ -310,6 +355,9 @@ export class AngleDimension extends GeoObject {
         delete this.labelOffsetStart;
         delete this.arcRadiusStart;
         delete this._draggingLabel;
+        delete this._draggingLeader;
+        delete this._leaderNormalStart;
+        delete this.leaderCurvatureStart;
     }
 
     getIconClass() {
@@ -333,7 +381,8 @@ export class AngleDimension extends GeoObject {
             labelOffset: { x: this.labelOffset.x, y: this.labelOffset.y },
             customText: this.customText,
             precision: this.precision,
-            labelFontSize: this.labelFontSize
+            labelFontSize: this.labelFontSize,
+            labelPlacement: this.labelPlacement, leaderMode: this.leaderMode, leaderCurvature: this.leaderCurvature
         };
     }
 }
@@ -356,6 +405,11 @@ export class LengthDimension extends GeoObject {
         this.curvature = Number.isFinite(params.arcHeight) ? params.arcHeight * 2
             : Number.isFinite(params.curvature) ? params.curvature : DEFAULT_LENGTH_ARC_HEIGHT * 2;
         this.labelFontSize = params.labelFontSize || 24; // 80 mm 출력에서 길이값을 읽을 수 있는 기본 크기
+        this.lineWidth = params.lineWidth ?? (params.type ? 3 : 2);
+        this.dashLength = Number.isFinite(params.dashLength) ? MathUtils.clamp(params.dashLength, 1, 40) : 7;
+        this.dashGap = Number.isFinite(params.dashGap) ? MathUtils.clamp(params.dashGap, 1, 40) : 7;
+        this.labelOnCurve = typeof params.labelOnCurve === 'boolean' ? params.labelOnCurve : !(params.type || params.labelOffset);
+        this.labelT = Number.isFinite(params.labelT) ? MathUtils.clamp(params.labelT, 0.1, 0.9) : 0.5;
         this.precision = (params.precision !== undefined) ? params.precision : 2;
 
         // Mk.2: 라벨 드래그 오프셋 및 사용자 정의 텍스트
@@ -434,15 +488,16 @@ export class LengthDimension extends GeoObject {
         const height = Math.sign(preferred) * Math.max(Math.abs(chosenHeight), minimumHeight);
         const arc = lengthArcGeometry(s1, s2, height);
         this._renderedArc = arc;
-        const labelX = arc.apex.x + this.labelOffset.x * canvas.scale;
-        const labelY = arc.apex.y - this.labelOffset.y * canvas.scale;
+        const labelPoint = arc.at(this.labelT);
+        const labelX = labelPoint.x + this.labelOffset.x * canvas.scale;
+        const labelY = labelPoint.y - this.labelOffset.y * canvas.scale;
         const labelBox = { x: labelX - textWidth / 2, y: labelY - this.labelFontSize / 2,
             width: Math.max(textWidth * 1.25, this.labelFontSize), height: boxHeight };
         const gapBox = { x: labelBox.x - padding, y: labelBox.y - padding,
             width: labelBox.width + padding * 2, height: labelBox.height + padding * 2 };
 
         // 선택/하이라이트 스타일
-        if (this.selected || this.highlighted) {
+        if (!canvas.isExporting && (this.selected || this.highlighted)) {
             ctx.strokeStyle = this.selected ? '#f97316' : '#fbbf24';
             ctx.lineWidth = Math.max(2, this.lineWidth);
         } else {
@@ -451,7 +506,7 @@ export class LengthDimension extends GeoObject {
         }
 
         // 점선 곡선 그리기
-        ctx.setLineDash(this.lineStyle === 'solid' ? [] : this.lineStyle === 'dotted' ? [1, 4] : [4, 4]);
+        ctx.setLineDash(this.lineStyle === 'solid' ? [] : this.lineStyle === 'dotted' ? [1, this.dashGap] : [this.dashLength, this.dashGap]);
         for (const [start, control, end] of lengthArcPieces(arc, this.showValue ? gapBox : null)) {
             ctx.beginPath();
             ctx.moveTo(start.x, start.y);
@@ -555,14 +610,16 @@ export class LengthDimension extends GeoObject {
     }
 
     isDraggable() {
-        return true; // 라벨 위치 및 곡률 드래그 가능
+        return !this.locked;
     }
 
     startDrag(point, canvas) {
         this.dragStart = point.clone();
         this.labelOffsetStart = this.labelOffset.clone();
         this.curvatureStart = this.curvature;
+        this.labelTStart = this.labelT;
         this.dragMode = this._hitPart === 'label' ? 'label' : 'curve';
+        this._draggingLabel = this.dragMode === 'label';
 
         // 선분 방향 벡터 계산
         if (this.point1 && this.point2) {
@@ -582,6 +639,15 @@ export class LengthDimension extends GeoObject {
             point.y - this.dragStart.y
         );
 
+        if (this.dragMode === 'label' && this.labelOnCurve && this.segmentDir) {
+            const direction = this.segmentDir, rel = point.sub(this.point1);
+            const length = this.point1.distanceTo(this.point2);
+            this.labelT = MathUtils.clamp((rel.x * direction.x + rel.y * direction.y) / length, 0.1, 0.9);
+            const normal = rel.x * this.segmentPerp.x + rel.y * this.segmentPerp.y;
+            this.curvature = MathUtils.clamp(normal * canvas.scale / (2 * this.labelT * (1 - this.labelT)), -500, 500);
+            this.labelOffset = new Vec2(0, 0);
+            return;
+        }
         if (this.dragMode === 'label') {
             this.labelOffset = new Vec2(
                 this.labelOffsetStart.x + moveVec.x,
@@ -593,7 +659,7 @@ export class LengthDimension extends GeoObject {
         if (this.segmentDir && this.segmentPerp) {
             // 선분에 수직 방향 이동량 → 곡률 조정
             const perpMove = moveVec.x * this.segmentPerp.x + moveVec.y * this.segmentPerp.y;
-            this.curvature = this.curvatureStart + perpMove * canvas.scale * 2;
+            this.curvature = MathUtils.clamp(this.curvatureStart + perpMove * canvas.scale * 2, -500, 500);
         } else {
             this.curvature = this.curvatureStart;
         }
@@ -606,6 +672,7 @@ export class LengthDimension extends GeoObject {
         delete this.segmentDir;
         delete this.segmentPerp;
         delete this.dragMode;
+        delete this._draggingLabel;
         delete this._hitPart;
     }
 
@@ -628,6 +695,7 @@ export class LengthDimension extends GeoObject {
             customText: this.customText,
             curvature: this.curvature,
             arcHeight: this.curvature / 2,
+            dashLength: this.dashLength, dashGap: this.dashGap, labelOnCurve: this.labelOnCurve, labelT: this.labelT,
             labelFontSize: this.labelFontSize,
             precision: this.precision
         };

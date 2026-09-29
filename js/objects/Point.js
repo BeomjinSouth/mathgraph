@@ -52,6 +52,8 @@ function dragEditablePointLabel(object, point, canvas) {
 }
 
 function endEditablePointLabelDrag(object) {
+    if (object._draggingLabel && object._labelDragStart &&
+        object.labelOffset.distanceTo(object._labelDragStart) > 0.01) object.labelPositionFixed = true;
     delete object._draggingLabel;
     delete object._labelDragStart;
     delete object._labelPointerStart;

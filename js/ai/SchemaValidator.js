@@ -361,6 +361,19 @@ export class SchemaValidator {
                 errors.push(`${prefix}: dimension precision must be an integer from 0 to 100.`);
             if (op.customText !== undefined && op.customText !== null && typeof op.customText !== 'string')
                 errors.push(`${prefix}: dimension customText must be a string or null.`);
+            if (op.leaderMode !== undefined && !['auto','always','none'].includes(op.leaderMode))
+                errors.push(`${prefix}: leaderMode must be auto, always or none.`);
+            if (op.labelPlacement !== undefined && !['centered','legacy'].includes(op.labelPlacement))
+                errors.push(`${prefix}: labelPlacement must be centered or legacy.`);
+            if (op.leaderCurvature !== undefined && (!Number.isFinite(op.leaderCurvature) || Math.abs(op.leaderCurvature) > 300))
+                errors.push(`${prefix}: leaderCurvature must be finite and between -300 and 300.`);
+            for (const field of ['dashLength','dashGap'])
+                if (op[field] !== undefined && (!Number.isFinite(op[field]) || op[field] < 1 || op[field] > 40))
+                    errors.push(`${prefix}: ${field} must be between 1 and 40 pixels.`);
+            if (op.labelOnCurve !== undefined && typeof op.labelOnCurve !== 'boolean')
+                errors.push(`${prefix}: labelOnCurve must be a boolean.`);
+            if (op.labelT !== undefined && (!Number.isFinite(op.labelT) || op.labelT < 0.1 || op.labelT > 0.9))
+                errors.push(`${prefix}: labelT must be between 0.1 and 0.9.`);
         }
 
         if (op.type === 'lengthDimension') {
