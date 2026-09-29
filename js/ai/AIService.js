@@ -6,6 +6,7 @@
  */
 
 import { parseAIJSONPayload } from './JSONUtils.js';
+import { ANNOTATION_GUIDANCE } from './AnnotationGuide.js';
 import { SchemaValidator } from './SchemaValidator.js';
 import { SemanticValidator } from './SemanticValidator.js';
 import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
@@ -357,6 +358,15 @@ const operationProperties = {
     },
     fontSize: NULLABLE_NUMBER,
     arcRadius: NULLABLE_NUMBER,
+    curvature: NULLABLE_NUMBER,
+    precision: NULLABLE_NUMBER,
+    leaderMode: { type: ['string','null'], enum: ['auto','always','none',null] },
+    leaderCurvature: NULLABLE_NUMBER,
+    labelPlacement: { type: ['string','null'], enum: ['centered','legacy',null] },
+    dashLength: NULLABLE_NUMBER,
+    dashGap: NULLABLE_NUMBER,
+    labelOnCurve: NULLABLE_BOOLEAN,
+    labelT: NULLABLE_NUMBER,
     showValue: NULLABLE_BOOLEAN,
     markerCount: NULLABLE_NUMBER,
     tickCount: NULLABLE_NUMBER,
@@ -517,6 +527,7 @@ export function extractOpenAIResponseText(data) {
 
 // AI 참조 문서에서 가져온 시스템 프롬프트
 const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시스턴트입니다.
+${ANNOTATION_GUIDANCE}
 사용자의 요청을 분석하여 아래 JSON 스키마에 맞는 **구조화된 출력만** 생성합니다.
 
 ## 중요 규칙
@@ -1387,6 +1398,7 @@ export class AIService {
 
         const lines = [
             'MathGraph reference manual context:',
+            ANNOTATION_GUIDANCE,
             '- Source: .agents/skills/mathgraph-drawing/references/feature-manual.json selected through retrieval-index.json.',
             `- Return only {"operations":[...]} using create/update/delete.`,
             `- Supported create types: ${supportedTypes.join(', ')}.`,
@@ -1498,6 +1510,9 @@ export class AIService {
         if (/arrow|directed|direction|vector/.test(text) ||
             /화살표|방향|벡터/.test(text)) {
             addPlane();
+        }
+        if (/leader|callout|dimension|curved arrow/.test(text) || /지시선|곡선\s*화살표|치수|길이\s*표시|점선\s*간격/.test(text)) {
+            add('point', 'segment', 'angleDimension', 'lengthDimension');
         }
 
         if (/number line|numberline|radical/.test(text) ||

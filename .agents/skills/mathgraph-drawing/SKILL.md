@@ -10,6 +10,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 ## Quick Workflow
 
 1. Read `references/retrieval-index.json` first.
+   For angle/length labels, crowded figures or curved callouts, also read [references/annotation-layout.md](references/annotation-layout.md). It gives the decision rules, editable fields and examples for the attached curved arrow.
 2. Select the smallest matching reference chunks by `tags`, `objectTypes`, and `loadWhen`.
 3. Read only the needed parts of `references/feature-manual.json`.
 4. Read only matching records from `references/synthetic-drawing-data.jsonl` when an example pattern is useful.
@@ -63,6 +64,8 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 - Point-label `labelOffset.y` addresses a bottom text baseline, not the glyph center. For an approximately 27px label, start near y=-4..7 above a point and y=30..38 below it; do not place upper labels at y=-20..-30 by habit.
 - Treat the 48px spacing and 2.4-font-height offset thresholds as review heuristics, not teacher-approved constraints. Preserve specified geometry; inspect nearby points when labels need large displacements.
 - Place angle text independently from its arc. Teacher revisions repeatedly moved angle text while retaining arc radius; assess text width, adjacent angles, and association with the intended angle before changing the arc.
+- Keep nearby angle text beside its own arc. For a narrow angle, crowded intersection or long expression, move the text into nearby free space and set `leaderMode:"auto"`; use `always` when the arrow is explicitly requested and `none` when it is explicitly unwanted. The curved arrow belongs to `angleDimension` and points from the text to its arc, not the vertex. Adjust `leaderCurvature` after inspecting crossings. `annotationArrow` is a straight vector alias, not this feature.
+- New length labels normally use `labelOnCurve:true`, `labelT:0.5`, with `dashLength:7` and `dashGap:7`. Omit arbitrary detached offsets; let the rendered layout keep the text in a gap on its own curve. Preserve explicit old/free placements in patch mode. Point-name offsets use a pixel bottom baseline; dimension offsets use math coordinates.
 - Compare teacher edits against their original files, excluding timestamps, view pans, float noise, blocked edits, and serialization losses. Distinguish screen-pixel point offsets from mathematical-coordinate dimension offsets; read the exam layout reference for repeated evidence and exceptions.
 - Keep helper segments used only by midpoint, intersection, or length-dimension dependencies hidden when a visible parent segment already represents the same geometry.
 - Set helper-only points to `visible:false` when they should not appear as extra dots.

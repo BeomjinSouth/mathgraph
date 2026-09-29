@@ -41,6 +41,7 @@ import { AreaExportTool } from './tools/AreaExportTool.js';
 // 유틸리티
 import { Vec2 } from './utils/Geometry.js';
 import { MathUtils } from './utils/MathUtils.js';
+import { arrangeAnnotations } from './utils/AnnotationLayout.js';
 
 // Mk.2: AI 모듈
 import { SchemaValidator } from './ai/SchemaValidator.js';
@@ -1185,6 +1186,7 @@ class GraphAApp {
 
             if (undoBtn) undoBtn.disabled = !data.canUndo;
             if (redoBtn) redoBtn.disabled = !data.canRedo;
+            if (data.change === 'undo' || data.change === 'redo') this.updatePropertyPanel();
         });
 
         // 윈도우 리사이즈
@@ -1964,6 +1966,47 @@ class GraphAApp {
                     this.render();
                 });
                 container.appendChild(precisionRow);
+                for (const row of [customRow,fontRow,precisionRow]) row.classList.add('annotation-control');
+
+                const addChoice = (label, key, options) => {
+                    const row = document.createElement('div'); row.className = 'property-row annotation-control';
+                    const caption = document.createElement('label'); caption.textContent = label;
+                    const select = document.createElement('select'); select.className = 'prop-select'; select.setAttribute('aria-label', label);
+                    for (const [value, text] of options) { const option = document.createElement('option'); option.value=String(value); option.textContent=text; select.appendChild(option); }
+                    select.value=String(obj[key]);
+                    select.addEventListener('change', () => {
+                        const value = key === 'labelOnCurve' ? select.value === 'true' : select.value;
+                        this.historyManager.beginTransaction();
+                        this.recordObjectPropertyEdit(obj, key, value);
+                        if (key === 'labelOnCurve' && value) this.recordObjectPropertyEdit(obj,'labelOffset',new Vec2(0,0));
+                        this.historyManager.commitTransaction(); this.render();
+                    });
+                    row.append(caption,select);container.appendChild(row);
+                };
+                const addRange = (label, key, min, max, step = 1) => {
+                    const row=document.createElement('div'); row.className='property-row annotation-control';
+                    const caption=document.createElement('label'); caption.textContent=label;
+                    const input=document.createElement('input'); input.type='range';input.className='prop-slider';
+                    input.min=min;input.max=max;input.step=step;input.value=obj[key];input.setAttribute('aria-label',label);
+                    const value=document.createElement('span');value.className='value-display';value.textContent=Number(obj[key]).toFixed(step<1?2:0);
+                    let start;
+                    input.addEventListener('input',()=>{if(start===undefined) start=obj[key];obj[key]=Number(input.value);value.textContent=Number(input.value).toFixed(step<1?2:0);this.render();});
+                    input.addEventListener('change',()=>{this.recordObjectPropertyEdit(obj,key,Number(input.value),{oldValue:start??obj[key]});start=undefined;});
+                    row.append(caption,input,value);container.appendChild(row);
+                };
+                if (obj.type === 'angleDimension') {
+                    addRange('호 반지름', 'arcRadius', 0.08, 5, 0.02);
+                    addChoice('지시 화살표', 'leaderMode', [['auto','자동'],['always','항상'],['none','숨김']]);
+                    addRange('화살표 휘어짐', 'leaderCurvature', -160, 160);
+                } else {
+                    addChoice('숫자 위치', 'labelOnCurve', [[true,'호에 붙임'],[false,'자유 이동']]);
+                    addRange('점선 길이', 'dashLength', 2, 20);
+                    addRange('점선 간격', 'dashGap', 3, 20);
+                }
+                const alignRow=document.createElement('div');alignRow.className='property-row';
+                const align=document.createElement('button');align.className='prop-btn';align.textContent='도형 표시 정렬';
+                align.addEventListener('click',()=>{this.arrangeAnnotations();this.updatePropertyPanel();});
+                alignRow.appendChild(align);container.appendChild(alignRow);
             }
 
             // 각기둥/각뿔 모서리 정보 표시
@@ -2149,6 +2192,10 @@ class GraphAApp {
         const nextVisible = !this.areAxesVisible();
         this.setAxesVisibility(nextVisible, nextVisible);
         return nextVisible;
+    }
+
+    arrangeAnnotations(options) {
+        arrangeAnnotations(this, options);
     }
 
     render() {
@@ -2529,6 +2576,8 @@ class GraphAApp {
         // 임시 ctx로 교체하여 렌더링
         const originalCtx = this.canvas.ctx;
         this.canvas.ctx = tempCtx;
+        const wasExporting = this.canvas.isExporting;
+        this.canvas.isExporting = true;
 
         if (includeGrid) this.canvas.drawGrid();
         if (includeAxes) this.canvas.drawAxes();
@@ -2541,6 +2590,7 @@ class GraphAApp {
 
         // 복원
         this.canvas.ctx = originalCtx;
+        this.canvas.isExporting = wasExporting;
         this.canvas.showGrid = oldShowGrid;
         this.canvas.showAxes = oldShowAxes;
 
@@ -2607,8 +2657,10 @@ class GraphAApp {
         const oldShowXAxis = this.canvas.showXAxis;
         const oldShowYAxis = this.canvas.showYAxis;
         const oldLabelBounds = this.canvas.labelBounds;
+        const wasExporting = this.canvas.isExporting;
 
         this.canvas.ctx = targetCtx;
+        this.canvas.isExporting = true;
         this.canvas.showGrid = includeGrid;
         this.canvas.showXAxis = includeAxes;
         this.canvas.showYAxis = includeAxes;
@@ -2628,6 +2680,7 @@ class GraphAApp {
         this.canvas.showXAxis = oldShowXAxis;
         this.canvas.showYAxis = oldShowYAxis;
         this.canvas.labelBounds = oldLabelBounds;
+        this.canvas.isExporting = wasExporting;
         targetCtx.restore();
     }
 

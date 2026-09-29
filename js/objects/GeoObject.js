@@ -178,6 +178,7 @@ export class GeoObject {
         this.labelOffset = params.labelOffset ?
             new Vec2(params.labelOffset.x, params.labelOffset.y) :
             new Vec2(10, -10); // 기본: 오른쪽 위
+        this.labelPositionFixed = params.labelPositionFixed ?? Boolean(params.labelOffset);
 
         // 가시성 및 잠금
         this.visible = params.visible !== undefined ? params.visible : true;
@@ -301,6 +302,7 @@ export class GeoObject {
             dashed: this.dashed,
             visible: this.visible,
             locked: this.locked,
+            labelPositionFixed: this.labelPositionFixed,
             dependencies: [...this.dependencies],
             createdAt: this.createdAt
         };

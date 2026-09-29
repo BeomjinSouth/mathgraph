@@ -751,6 +751,10 @@ body.auth-locked .modal:not(#manualModal) {
     margin-bottom: 0;
 }
 
+.property-row.annotation-control { min-width: 0; }
+.property-row.annotation-control label { flex: 0 0 72px; min-width: 0; overflow-wrap: anywhere; }
+.property-row.annotation-control input, .property-row.annotation-control select { width: 0; min-width: 0; flex: 1; }
+
 .property-row label {
     font-size: 12px;
     color: var(--text-secondary);

@@ -52,6 +52,17 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     normalizePrismCrossSectionLayout(ctx, text);
     normalizeNestedTriangularSolidLayout(ctx, text);
 
+    for (const op of operations.filter(op => op.op === 'create')) {
+        if (op.type === 'angleDimension') {
+            op.leaderMode ??= 'auto';
+            op.labelPlacement ??= 'centered';
+            op.labelFontSize ??= 20;
+        } else if (op.type === 'lengthDimension') {
+            op.dashLength ??= 7; op.dashGap ??= 7; op.labelFontSize ??= 18;
+            op.labelOnCurve ??= !pinnedLabelIds.has(op.id);
+        }
+    }
+
     if (options.renderedLayout !== false) {
         layoutGeneratedOperationLabels(operations, {
             view: options.view || options.context?.view,

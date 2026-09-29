@@ -22,7 +22,9 @@ const COMMON_FIELDS = [
     'fillOpacity',
     'showLabel',
     'locked',
-    'labelOffset'
+    'labelOffset',
+    'arcRadius', 'showValue', 'markerCount', 'customText', 'labelFontSize', 'precision', 'curvature',
+    'leaderMode', 'leaderCurvature', 'labelPlacement', 'dashLength', 'dashGap', 'labelOnCurve', 'labelT'
 ];
 
 const NODE_KIND_ALIASES = new Map(Object.entries({

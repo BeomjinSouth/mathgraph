@@ -50,7 +50,10 @@ export class AngleDimensionTool extends Tool {
                     this.point1.id,
                     point.id
                 );
+                app.historyManager.beginTransaction();
+                app.arrangeAnnotations?.({ automatic: true, targetIds: new Set([this.vertex.id, this.point1.id, point.id]) });
                 app.historyManager.recordCreate(dimension);
+                app.historyManager.commitTransaction();
 
                 const degrees = dimension.getAngleDegrees().toFixed(1);
                 app.showToast(`각도 치수 생성: ${degrees}°`, 'success');
@@ -96,8 +99,26 @@ export class LengthDimensionTool extends Tool {
         const segment = app.objectManager.findLineAt(mathPos, 8, app.canvas);
 
         if (segment && segment.type === 'segment') {
-            const dimension = app.objectManager.createLengthDimension(segment.id);
+            const a = segment.getPoint1(), b = segment.getPoint2();
+            const adjacentIds = new Set();
+            for (const shape of app.objectManager.getAllObjects()) {
+                if (!shape.visible) continue;
+                if (shape.type === 'segment' && [shape.point1Id, shape.point2Id].some(id => id === segment.point1Id || id === segment.point2Id)) {
+                    adjacentIds.add(shape.point1Id); adjacentIds.add(shape.point2Id);
+                }
+                if (shape.type === 'polygon' && shape.vertexIds.includes(segment.point1Id) && shape.vertexIds.includes(segment.point2Id))
+                    shape.vertexIds.forEach(id=>adjacentIds.add(id));
+            }
+            let side = 0;
+            for (const id of adjacentIds) {
+                const p = app.objectManager.getObject(id)?.getPosition?.();
+                if (p) side += (b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x);
+            }
+            const dimension = app.objectManager.createLengthDimension(segment.id, { curvature: side < 0 ? 60 : -60 });
+            app.historyManager.beginTransaction();
+            app.arrangeAnnotations?.({ automatic: true, targetIds: new Set([segment.point1Id, segment.point2Id]) });
             app.historyManager.recordCreate(dimension);
+            app.historyManager.commitTransaction();
 
             const length = dimension.getLength().toFixed(2);
             app.showToast(`길이 치수 생성: ${length}`, 'success');

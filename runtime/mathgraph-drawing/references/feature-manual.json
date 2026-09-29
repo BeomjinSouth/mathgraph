@@ -1,7 +1,7 @@
 {
   "manualVersion": 6,
   "project": "MathGraph",
-  "updatedAt": "2026-09-24",
+  "updatedAt": "2026-09-29",
   "language": "ko",
   "purpose": "Current machine-readable feature manual for GPT/API calls that convert informal Korean MathGraph drawing requests into validated GraphA operations.",
   "defaultStylePolicy": { "objectColorDefault": "#000000", "colorFieldGuidance": "Omit color and fillColor unless the user explicitly requests a non-black color; when included by default, use #000000.", "explicitColorSupport": "Specific user-requested colors remain supported through color and fillColor." },
@@ -407,18 +407,18 @@
       "koreanName": "각도 치수",
       "tags": ["dimension"],
       "requiredFields": ["vertexId", "point1Id", "point2Id"],
-      "optionalFields": ["label", "color", "fontSize", "arcRadius", "showValue", "markerCount", "customText", "labelFontSize", "labelOffset"],
+      "optionalFields": ["label", "color", "fontSize", "arcRadius", "showValue", "markerCount", "customText", "labelFontSize", "labelOffset", "precision", "leaderMode", "leaderCurvature", "labelPlacement"],
       "template": { "op": "create", "id": "angle_ABC", "type": "angleDimension", "vertexId": "B", "point1Id": "A", "point2Id": "C" },
-      "notes": ["Use three points; vertexId is the middle/angle vertex.", "When multiple angle markers share the same vertex, use different arcRadius values and consider showValue:false to avoid overlapping labels."]
+      "notes": ["Use three points; vertexId is the middle/angle vertex.", "Keep text near its own arc; move only the text if geometry is crowded. leaderMode auto shows an attached curved arrow when detached; always forces it and none hides it. leaderCurvature is signed screen pixels (-300..300, default 28). Arrow ends at its own arc, not the vertex.", "Use labelPlacement centered for new objects; legacy preserves old saved anchors. Required angle values must not be hidden merely to remove a collision. A nearby value needs no arrow."]
     },
     {
       "type": "lengthDimension",
       "koreanName": "길이 치수",
       "tags": ["dimension"],
       "requiredFields": ["segmentId"],
-      "optionalFields": ["label", "color", "fontSize", "lineWidth", "curvature", "labelOffset", "customText", "labelFontSize", "showValue"],
+      "optionalFields": ["label", "color", "fontSize", "lineWidth", "curvature", "labelOffset", "customText", "labelFontSize", "showValue", "precision", "dashLength", "dashGap", "labelOnCurve", "labelT"],
       "template": { "op": "create", "id": "len_AB", "type": "lengthDimension", "segmentId": "AB" },
-      "notes": ["Create the segment first.", "Signed curvature is preserved when selecting, dragging, saving, and loading the dimension. Drag the dashed curve to adjust curvature and drag its text box to adjust only the label."]
+      "notes": ["Create the segment first.", "Use labelOnCurve true for new dimensions; labelT (0.1..0.9, default 0.5) places the text in its curve gap. Dragging attached text adjusts the curve; labelOnCurve false preserves independent legacy/free placement. Keep signed curvature on save/load.", "dashLength and dashGap are screen pixels, each 1..40; defaults are 7/7. Prefer an outside curve and stagger overlapping measurements. Do not detach the number from its curve."]
     },
     {
       "type": "arc",
@@ -544,6 +544,15 @@
       "notes": ["Use customMarks for radical, special, named, open, or closed marks. Open endpoints render hollow and closed endpoints render filled."]
     }
   ],
+  "annotationLayout": {
+    "guide": "references/annotation-layout.md",
+    "applicationPrompt": "js/ai/AnnotationGuide.js",
+    "angleLeaderDecision": "Try a readable label near its own arc first. For narrow angles, crowded intersections or long expressions, move that label to nearby free space and use leaderMode auto. An explicit curved-arrow request uses always; an explicit no-arrow request uses none.",
+    "leaderTarget": "From the text box to the same angleDimension arc. It is not a standalone vector, and does not automatically avoid every edge or label.",
+    "lengthDecision": "New labels stay in their own dashed curve gap with labelOnCurve true. Use free positioning only when explicitly requested or preserving an existing teacher position.",
+    "pointNames": "Place names outside adjacent sides; preserve teacher offsets and coordinates. Point offsets are screen-pixel bottom baselines; dimension offsets are math units.",
+    "verification": "Validate GraphA, render in the actual app, inspect association and overlaps, then save/reload. Synthetic regression passes do not establish arbitrary model success. HWP printing is a separate check."
+  },
   "runtimeUiTools": [
     { "tool": "select", "koreanName": "선택/이동", "shortcut": "V", "aiCreateType": null },
     { "tool": "point", "koreanName": "점", "shortcut": "D", "aiCreateType": "point" },
