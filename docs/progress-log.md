@@ -3549,3 +3549,13 @@ Verification: `npm run vercel-build` 287/287 pass; `git diff --check` clean; bro
 - 운영 검증 완료: 배포 `dpl_AVSx7KeNSeV7uaCRsDT8dJY8rVDN`은 READY/production이며 소스 main `3097561`과 원격 커밋이 일치한다. 운영 별칭 `mathgraph-five.vercel.app` 연결, HTTP 200, 새 도구 소스 일치, Vercel 로그인 화면을 거치지 않는 접속을 확인했다.
 - 운영 브라우저에서 9개 기능 흐름과 데스크톱·모바일 조작, 파일 저장/불러오기·PNG/SVG 출력이 PASS이고 콘솔/페이지 오류는 0건이다. 소유자 로그인·유료 AI 호출·실제 한글 문서 삽입은 실행하지 않았다. 한글 연결 패키지는 HTTP 200·49,282바이트·정상 ZIP 서명까지 확인했다.
 - 마지막 커밋은 완료 문서만 갱신한다. 앱 변경 없이 자동 배포된 마지막 main 커밋의 READY·소스·운영 별칭을 최종 확인한다.
+
+## 2026-09-29 — 중·고등 수학 그림 기능의 main 병합과 운영 배포 완료
+
+- 사용자의 명시적 요청에 따라 기능 브랜치와 기존 main의 변경을 통합했다. 통합 커밋 `cea443a6681be3f7ff3ac1ed0ebb8e06d0d5608b`에는 기존 운영 `eb45837`과 신규 기능 `280eef9`의 이력이 모두 포함된다. 깨끗한 main worktree를 fast-forward하고 `git push origin main`을 완료했다. 원본 폴더의 별도 미커밋 치수·HWPX 작업은 보존했다.
+- 충돌 9개 파일에서 기존 문제 편집·치수 호·라벨·저장 복원을 보존하면서 통계·확률분포·전개도·고리 부채꼴·벤 다이어그램을 결합했다. 함수 라벨의 근호 경로를 기하 선으로 오인하던 배치/검사 마스크를 수정하고, 모바일 회귀 검사가 실제 입력창 열기 버튼을 사용하도록 보완했다.
+- 통합 검증: `npm.cmd run vercel-build`에서 623개 테스트와 정적 빌드가 통과했다. 신규 앱 요청 43개, 기존 복합 그림 45개와 원샷·구간별 함수·치수 편집·검사기 변이 검증을 통과했다. `git diff --check`도 통과했다.
+- 배포 검증: Vercel Production Branch는 main이다. 필수 Production 환경 변수 이름 3개의 존재를 확인했으며 값은 조회하지 않았다. 배포 `dpl_8gHTa81WMs9f5XDUnVTD3c2spQqv`는 Production/READY이고, 소스 브랜치 main·커밋 `cea443a6681be3f7ff3ac1ed0ebb8e06d0d5608b`가 origin/main과 일치했다. 배포 주소는 `https://mathgraph-gquh4ssf0-beomjinsouths-projects.vercel.app`이며 운영 별칭 `https://mathgraph-five.vercel.app` 연결과 HTTP 200을 확인했다.
+- 실제 운영 브라우저에서 통계·집합·전개도·고리 부채꼴·확률분포 5종의 객체 생성과 SVG 출력, 기존 문제 편집기 로딩, 모바일 실제 버튼을 통한 이항분포 생성을 확인했다. 데스크톱·모바일 캡처에서 그림의 잘림이 없었고 페이지·콘솔 오류와 요청 실패는 0건이었다. 외부 유료 AI 호출과 실제 한글 문서 삽입은 이번 배포 검증에 포함하지 않았다.
+- 증거는 로컬 산출물 폴더 `C:/Users/pbj95/.codex/artifacts/mathgraph-curriculum-20260929`의 `main-merge`, `main-merge-complex`, `production-smoke.json`, `production-desktop.png`, `production-mobile.png`에 보관했다. 요구사항·구현계획·지원 범위·스킬 참조 문서를 구현과 대조했다.
+- 이 완료 기록 커밋은 문서만 변경한다. 마지막 main 커밋의 자동 배포도 READY·소스 SHA·운영 별칭·HTTP 상태를 확인하며, 변경 없는 앱 코드의 테스트와 실제 화면 검증은 위 결과를 재사용한다. 복구가 필요하면 검증한 main 이력에서 처리하고 작업 브랜치를 운영 주소에 직접 연결하지 않는다.
