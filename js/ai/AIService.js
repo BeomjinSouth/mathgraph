@@ -65,7 +65,9 @@ export async function fetchWithTimeout(url, init = {}, timeoutMs = 250000) {
     const timer = setTimeout(() => controller.abort(), normalizedTimeoutMs);
     try {
         throwIfDrawingAborted(init.signal);
-        return await fetch(url, { ...init, signal: controller.signal });
+        // Keep the caller's cancellation attached to response-body reads after headers arrive.
+        const signal = init.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal;
+        return await fetch(url, { ...init, signal });
     } catch (error) {
         throwIfDrawingAborted(init.signal);
         if (controller.signal.aborted || error?.name === 'AbortError') {
@@ -1585,6 +1587,8 @@ export class AIService {
     /** A separate review call; do not add critique/repair JSON to conversation history. */
     async reviewRenderedDrawing({ request, context, candidate, sourceImage, attempt = 0, reports = [], signal }) {
         throwIfDrawingAborted(signal);
+        const deadline = AbortSignal.timeout(90000);
+        const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
         const references = await this.buildDrawingReferencePrompt(request, {
             ...context, objects: [...(context?.objects || []),
                 ...candidate.json.operations.filter(operation => operation.op === 'create')]
@@ -1606,7 +1610,7 @@ export class AIService {
             body.max_output_tokens = 16384;
             const transport = this.buildOpenAITransport();
             response = await fetchWithTimeout(transport.url, { method: 'POST', headers: transport.headers,
-                signal, body: JSON.stringify(body) }, 90000);
+                signal: requestSignal, body: JSON.stringify(body) }, 90000);
             if (!response.ok) throw new Error(await this.extractApiErrorMessage(response, '그림 확인 오류'));
             return this.extractJSON(extractOpenAIResponseText(await response.json()));
         }
@@ -1618,7 +1622,7 @@ export class AIService {
             });
             response = await fetchWithTimeout(
                 `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`,
-                { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+                { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: requestSignal,
                     body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] },
                         contents: [{ role: 'user', parts: [{ text: prompt }, ...imageParts] }],
                         generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 8192 } }) }, 90000);
