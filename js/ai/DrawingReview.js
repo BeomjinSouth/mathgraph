@@ -70,6 +70,8 @@ export function validateReviewScope(original, revised, context = {}) {
 }
 
 export function throwIfDrawingAborted(signal) {
+    if (signal?.aborted && signal.reason?.name === 'TimeoutError')
+        throw new Error('그림 확인 시간이 초과되었습니다. 다시 요청해 주세요.');
     if (signal?.aborted) throw new DOMException('그림 생성을 중단했습니다.', 'AbortError');
 }
 
@@ -96,7 +98,8 @@ export async function reviewGeneratedDrawing({ json, prepare, review, validate, 
             candidate = prepare(structuredClone(revised));
         } catch (error) {
             throwIfDrawingAborted(signal);
-            return { status: 'unavailable', candidate, reports, error: error.message };
+            return { status: 'unavailable', candidate, reports, error: error.name === 'TimeoutError'
+                ? '그림 확인 시간이 초과되었습니다. 다시 요청해 주세요.' : error.message };
         }
     }
 }

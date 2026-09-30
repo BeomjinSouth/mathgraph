@@ -141,5 +141,22 @@ test('fetch cancellation immediately aborts the transport and remains distinct f
         controller.abort();
         await assert.rejects(request, { name: 'AbortError' });
         await assert.rejects(fetchWithTimeout('https://synthetic.invalid', { signal: controller.signal }), { name: 'AbortError' });
+        const timedOut = await reviewGeneratedDrawing({ json: original, prepare,
+            review: async () => { throw new DOMException('timeout', 'TimeoutError'); } });
+        assert.equal(timedOut.status, 'unavailable');
+        assert.match(timedOut.error, /시간이 초과/);
+    } finally { globalThis.fetch = oldFetch; }
+});
+
+test('cancellation still reaches response-body reads after response headers arrive', async () => {
+    const oldFetch = globalThis.fetch, controller = new AbortController();
+    globalThis.fetch = async (url, { signal }) => ({ json: () => new Promise((resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true });
+    }) });
+    try {
+        const response = await fetchWithTimeout('https://synthetic.invalid', { signal: controller.signal });
+        const body = response.json();
+        controller.abort();
+        await assert.rejects(body, { name: 'AbortError' });
     } finally { globalThis.fetch = oldFetch; }
 });
