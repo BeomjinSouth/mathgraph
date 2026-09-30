@@ -3469,3 +3469,45 @@ body.auth-locked .modal:not(#manualModal) {
         flex: 0 0 auto;
     }
 }
+
+/* Review controls must remain reachable in the compact teacher dock. */
+#chat-panel.drawing-review-visible .message button {
+    margin-top: 6px;
+    min-height: 36px;
+    align-self: flex-start;
+}
+#chat-panel.drawing-review-visible .message details {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+#chat-panel.drawing-review-visible .message summary {
+    cursor: pointer;
+    padding-block: 6px;
+}
+#chat-panel.drawing-review-visible .drawing-review-preview {
+    display: block;
+    width: 100%;
+    max-height: 130px;
+    object-fit: contain;
+    background: #fff;
+    margin-top: 6px;
+}
+@media (max-width: 640px) {
+    #chat-panel.drawing-review-visible:not(.collapsed) {
+        height: min(340px, 60vh);
+        z-index: 280;
+    }
+    #chat-panel.drawing-review-visible .chat-body {
+        grid-template-rows: minmax(0, 1fr) auto;
+    }
+    #chat-panel.drawing-review-visible .chat-messages {
+        display: flex;
+        order: 1;
+        max-height: none;
+        min-height: 0;
+        border-left: 0;
+    }
+    #chat-panel.drawing-review-visible .chat-input-area {
+        order: 2;
+    }
+}

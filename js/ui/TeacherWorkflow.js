@@ -1,6 +1,7 @@
 const STATE_LABELS = Object.freeze({
     checking: '지원 범위 확인 중',
     generating: '그림 생성 중',
+    reviewing: '그림 확인 중',
     repairing: '도형 관계 보정 중',
     complete: '시험지용 그림 준비 완료',
     warning: '확인이 필요한 요청',
@@ -46,7 +47,7 @@ export class TeacherWorkflow {
         if (this.elements.status) {
             this.elements.status.textContent = label;
             this.elements.status.dataset.state = nextState;
-            this.elements.status.classList?.toggle('is-busy', ['checking', 'generating', 'repairing'].includes(nextState));
+            this.elements.status.classList?.toggle('is-busy', ['checking', 'generating', 'repairing', 'reviewing'].includes(nextState));
         }
         if (this.elements.retry) this.elements.retry.hidden = !this.retryVisible;
         if (this.elements.liveRegion && details.announce !== false) {
