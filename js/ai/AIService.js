@@ -1579,7 +1579,7 @@ export class AIService {
             method: 'POST',
             signal: this.requestSignal,
             headers: transport.headers,
-            body: JSON.stringify(requestBody), signal: this.requestSignal
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -1632,8 +1632,8 @@ export class AIService {
                 return { inlineData: { mimeType: match[1], data: match[2] } };
             });
             response = await fetchWithTimeout(
-                `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`,
-                { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: requestSignal,
+                `https://generativelanguage.googleapis.com/v1beta/models/${this.config.geminiModel || this.config.model}:generateContent`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.config.apiKey }, signal: requestSignal,
                     body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] },
                         contents: [{ role: 'user', parts: [{ text: prompt }, ...imageParts] }],
                         generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 8192 } }) }, 90000);
@@ -3493,7 +3493,7 @@ export class AIService {
             method: 'POST',
             signal: this.requestSignal,
             headers: transport.headers,
-            body: JSON.stringify(requestBody), signal: this.requestSignal
+            body: JSON.stringify(requestBody)
         });
         if (!response.ok) {
             throw new Error(await this.extractApiErrorMessage(response, 'OpenAI 문제 사진 분석 오류'));
@@ -3715,7 +3715,7 @@ export class AIService {
             method: 'POST',
             signal: this.requestSignal,
             headers: transport.headers,
-            body: JSON.stringify(requestBody), signal: this.requestSignal
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {

@@ -3945,7 +3945,7 @@ class GraphAApp {
      * 채팅 메시지 전송
      */
     sendChatMessage() {
-        if (this.activeDrawingRequest) return;
+        if (this.activeDrawingRequest || this.imageUploadBusy || this.problemComposer?.busy) return;
         const input = document.getElementById('chatInput');
         const message = input?.value.trim();
 
@@ -4042,7 +4042,7 @@ class GraphAApp {
      * AI 명령 처리 (Mk.2: AIService 사용)
      */
     async processAICommand(message) {
-        if (this.activeDrawingRequest) return false;
+        if (this.activeDrawingRequest || this.imageUploadBusy || this.problemComposer?.busy) return false;
         const trimmedMessage = message.trim();
 
         // JSON 형식인지 확인 - 직접 처리
@@ -4125,14 +4125,21 @@ class GraphAApp {
         return stored;
     }
 
-    beginDrawingRequest(loadingMessage) {
+    beginDrawingRequest(loadingMessage, controller = new AbortController()) {
+        const panel = document.getElementById('chat-panel');
+        panel?.classList.remove('collapsed');
+        panel?.classList.add('drawing-review-visible');
+        const toggle = document.getElementById('toggleChat');
+        toggle?.setAttribute('aria-expanded', 'true');
+        toggle?.setAttribute('aria-label', '그림 요청 접기');
+        if (toggle) setGeneratedIcon(toggle.querySelector('.material-symbols-outlined'), 'expand_more');
+        this.canvas.resize();
         const context = this.buildAIContext();
-        const run = { controller: new AbortController(), context, fingerprint: JSON.stringify(context), loadingMessage,
+        const run = { controller, context, fingerprint: JSON.stringify(context), loadingMessage,
             provider: this.aiService.config.provider, model: this.aiService.config.model,
             history: structuredClone(this.aiService.conversationHistory),
             serial: this.drawingRequestSerial = (this.drawingRequestSerial || 0) + 1 };
         this.activeDrawingRequest = run;
-        document.getElementById('chat-panel')?.classList.add('drawing-review-visible');
         loadingMessage?.classList.add('drawing-review-message');
         this.aiService.requestSignal = run.controller.signal;
         for (const id of ['sendMessage', 'uploadImage']) {
@@ -4801,7 +4808,7 @@ class GraphAApp {
             const mode = instruction ? 'patch' : 'problem_diagram';
             const recognition = mode === 'problem_diagram' ? this.problemComposer?.startRecognition(imageDataUrl) : null;
             let diagramApplied = false;
-            const aiContext = this.buildAIContext();
+            let aiContext = this.buildAIContext();
             const trace = createImageAnalysisTrace({
                 source: options.source || 'upload',
                 mode,
@@ -4837,7 +4844,8 @@ class GraphAApp {
                 ? '이미지와 요청을 바탕으로 필요한 부분만 수정 중입니다...'
                 : '사진에서 수학적 관계와 좌표를 먼저 확인한 뒤 도형을 만들고 있습니다...';
             const loadingMessage = this.addChatMessage(loadingText, 'assistant');
-            const run = this.beginDrawingRequest(loadingMessage);
+            const run = this.beginDrawingRequest(loadingMessage, this.imageAbortController);
+            aiContext = run.context;
 
             try {
                 let analysisImageDataUrl = imageDataUrl;

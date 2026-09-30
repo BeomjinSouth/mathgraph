@@ -34,6 +34,15 @@ test('large right-angle square is pickable on its visible edge, not an invisible
     assert.equal(d.hitTest(new Vec2(.9,.45),5,c),true);
     assert.equal(d.hitTest(new Vec2(1.5*Math.cos(Math.PI/4),1.5*Math.sin(Math.PI/4)),5,c),false);
 });
+test('right-angle equality marks and multiple arcs retain their existing arc geometry',()=>{
+    for(const params of [{arcCount:2},{markerCount:1}]) {
+        const {d,c}=setup(90,{showValue:false,...params});d.render(c);
+        assert.equal(d.isRightAngle(),false);
+        assert.equal(c.ctx.calls.filter(call=>call[0]==='arc').length,params.arcCount||1);
+        const radius=d.arcRadius+c.toMathLength((d.arcCount-1)*5);
+        assert.equal(d.hitTest(new Vec2(radius/Math.SQRT2,radius/Math.SQRT2),3,c),true);
+    }
+});
 test('detached angle labels get a curved arrow ending exactly at their own arc',()=>{
     const {d,c}=setup(60,{labelOffset:{x:-1.3,y:1},arcRadius:.6});d.render(c);
     assert.ok(d._leaderCurve);const curve=d._leaderCurve,anchor=d.getArcAnchor(c);
@@ -62,12 +71,12 @@ test('arc radius and leader bend drag both survive undo/redo and project reload'
 test('attached length text drags the curve through its new position and is undoable',()=>{
     const m=new ObjectManager(),h=new HistoryManager(m),c=canvas();
     const a=m.createPoint(0,0),b=m.createPoint(6,0),s=m.createSegment(a.id,b.id),d=m.createLengthDimension(s.id);
-    d.render(c);d._hitPart='label';d.startDrag(new Vec2(3,.125),c);h.startDrag([d]);
+    d.render(c);const before=d.toJSON();d._hitPart='label';d.startDrag(new Vec2(3,.125),c);h.startDrag([d]);
     d.drag(new Vec2(4,-.8),new Vec2(1,-.925),c);d.endDrag();h.endDrag([d]);d.render(c);
     assert.ok(Math.abs(d.labelT-2/3)<1e-8);assert.ok(d.curvature<0);
     const box=d._labelBox;assert.ok(Math.abs(box.x+box.w/2-400)<1);
     assert.ok(Math.abs(d.curvature*2*d.labelT*(1-d.labelT)+80)<1e-8);
-    const after=d.toJSON();h.undo();assert.equal(d.curvature,25);assert.equal(d.labelT,.5);h.redo();assert.deepEqual(d.toJSON(),after);
+    const after=d.toJSON();h.undo();assert.deepEqual(d.toJSON(),before);h.redo();assert.deepEqual(d.toJSON(),after);
     assert.deepEqual(a.position,new Vec2(0,0));assert.deepEqual(b.position,new Vec2(6,0));
 });
 test('legacy projects keep free length offsets and the old angular text anchor',()=>{

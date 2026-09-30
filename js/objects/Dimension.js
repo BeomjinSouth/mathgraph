@@ -506,7 +506,7 @@ export class LengthDimension extends GeoObject {
         }
 
         // 점선 곡선 그리기
-        ctx.setLineDash(this.lineStyle === 'solid' ? [] : this.lineStyle === 'dotted' ? [1, this.dashGap] : [this.dashLength, this.dashGap]);
+        ctx.setLineDash(this.lineStyle === 'solid' ? [] : this.lineStyle === 'dotted' ? [1, 4] : [this.dashLength, this.dashGap]);
         for (const [start, control, end] of lengthArcPieces(arc, this.showValue ? gapBox : null)) {
             ctx.beginPath();
             ctx.moveTo(start.x, start.y);
@@ -520,7 +520,8 @@ export class LengthDimension extends GeoObject {
             // 베지어 곡선 중간점 계산 (t=0.5) + 라벨 오프셋
             // Mk2.1: 라벨 바운딩 박스 저장 (숫자 클릭 선택/편집)
             this._labelBox = {
-                x: gapBox.x, y: gapBox.y, w: gapBox.width, h: gapBox.height
+                x: labelX - textWidth / 2 - padding, y: labelY - this.labelFontSize / 2 - padding,
+                w: textWidth + padding * 2, h: this.labelFontSize + padding * 2
             };
 
             // 텍스트

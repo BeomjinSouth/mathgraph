@@ -113,6 +113,8 @@ try {
 
     await reset(); queue = [initial, uncertain];
     assert.equal(await generate(), false); assert.equal(await count(), 0);
+    assert.equal(await page.locator('#chatMessages button').count() > 0, true,
+        await page.locator('#chatMessages').innerText());
     await page.getByRole('button', { name: '초안 반영', exact: true }).click();
     assert.equal(await count(), 8);
     results.push('uncertain-holds-draft-explicit-apply');

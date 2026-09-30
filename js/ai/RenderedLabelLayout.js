@@ -223,7 +223,7 @@ function candidateCenters(obj, box, canvas, objects = []) {
     else if (obj.type === 'lengthDimension') {
         const a = canvas.toScreen(obj.point1), b = canvas.toScreen(obj.point2);
         const n = Math.hypot(b.x - a.x, b.y - a.y), dx = (b.x - a.x) / n, dy = (b.y - a.y) / n;
-        const control = { x: (a.x + b.x) / 2 + dy * obj.curvature, y: (a.y + b.y) / 2 - dx * obj.curvature };
+        const control = obj._renderedArc?.control || { x: (a.x + b.x) / 2 + dy * obj.curvature, y: (a.y + b.y) / 2 - dx * obj.curvature };
         const curve = Array.from({ length: 101 }, (_, i) => quadraticAt(a,control,b,i/100));
         if (obj.labelOnCurve) {
             // Candidate boxes use the measured glyph center, which is not the
