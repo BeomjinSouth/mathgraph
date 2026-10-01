@@ -1,6 +1,7 @@
 import { ObjectManager } from '../core/ObjectManager.js';
 import { HistoryManager } from '../core/HistoryManager.js';
 import { PatchApplier } from './PatchApplier.js';
+import { measurementLabelMatches } from './MeasurementLabel.js';
 
 /** Replay only into an isolated manager; never validate a proposed edit against stale geometry. */
 export function previewAnnotationState(operations, context) {
@@ -43,6 +44,25 @@ const angleKey = name => name.length === 3 ? `${name[1]}:${[name[0], name[2]].so
 const nearLength = (a, b) => Number.isFinite(a) && Number.isFinite(b) &&
     Math.abs(a - b) <= Math.max(1e-6, Math.max(a, b) * 0.001);
 const distance = (a, b) => a && b ? Math.hypot(a.x - b.x, a.y - b.y) : NaN;
+
+/** Only explicit named angles and numeric degree values; do not infer missing conditions. */
+export function readNumericAngleConditions(prompt) {
+    const name = '([A-Z]{3}|[A-Z])(?![A-Z])';
+    const relation = '\\s*(?:의\\s*크기(?:는|가)?|[은는이가=])?\\s*';
+    const value = '(\\d+(?:\\.\\d+)?)\\s*(?:°|도)';
+    const patterns = [
+        new RegExp(`∠\\s*${name}${relation}${value}`, 'g'),
+        new RegExp(`(?<![A-Z])${name}\\s*각${relation}${value}`, 'g'),
+        new RegExp(`(?:^|[^가-힣A-Z])각\\s*${name}${relation}${value}`, 'g')
+    ];
+    const conditions = new Map();
+    for (const pattern of patterns) for (const match of prompt.matchAll(pattern)) {
+        const condition = { name: match[1], value: Number(match[2]) };
+        conditions.set(`${angleKey(condition.name)}=${condition.value}`, condition);
+    }
+    return [...conditions.values()];
+}
+
 function angleDegrees(vertex, a, b) {
     if (!vertex || !a || !b) return NaN;
     const u = { x: a.x - vertex.x, y: a.y - vertex.y }, v = { x: b.x - vertex.x, y: b.y - vertex.y };
@@ -130,15 +150,15 @@ export function validateAnnotationGeometry(prompt, creates, points) {
                 errors.push('같은 각 표식이 붙은 각의 실제 크기가 서로 다릅니다.');
         }
     }
-    for (const [, name, value] of prompt.matchAll(/∠\s*([A-Z]{3}|[A-Z])(?![A-Z])\s*=\s*(\d+(?:\.\d+)?)\s*°/g)) {
-        const matching = dimensions.some(op => angleMatches(name,op) && op.showValue !== false &&
-            (!op.customText || Number.parseFloat(op.customText) === Number(value)) &&
+    for (const { name, value } of readNumericAngleConditions(prompt)) {
+        const matching = dimensions.some(op => angleMatches(name,op) &&
+            measurementLabelMatches(op, Number(value), degrees(op)) &&
             (projectedNames([name]) || Math.abs(degrees(op)-Number(value)) <= 0.5));
         if (!matching) errors.push(`∠${name}=${value}°의 꼭짓점·두 반직선·각도 호 또는 값이 일치하지 않습니다.`);
     }
     for (const [, name, value] of prompt.matchAll(/\b([A-Z]{2})\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/g)) {
-        const matching = creates.some(op => op.type === 'lengthDimension' && op.visible !== false && op.showValue !== false &&
-            side(op.segmentId) === sideKey(name) && (!op.customText || Number.parseFloat(op.customText) === Number(value)) &&
+        const matching = creates.some(op => op.type === 'lengthDimension' &&
+            side(op.segmentId) === sideKey(name) && measurementLabelMatches(op, Number(value), sideLength(name)) &&
             (projectedNames([name]) || nearLength(sideLength(name), Number(value))));
         if (!matching) errors.push(`${name}=${value}cm의 실제 길이·치수 호 또는 값이 일치하지 않습니다.`);
     }

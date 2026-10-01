@@ -1,4 +1,4 @@
-export async function verifyAnnotationUpdateInApp() {
+export async function verifyAnnotationUpdateInApp(placement = 'centered') {
     const app = window.app;
     const ensure = (ok,message) => { if (!ok) throw Error('annotation-update: '+message); };
     app.objectManager.clear(); app.historyManager.clear();
@@ -7,6 +7,7 @@ export async function verifyAnnotationUpdateInApp() {
     const prompt='삼각형 ABC에서 AB=AC, ∠ABC=∠BCA, BC=6cm, ∠BAC=40°를 표시해줘.';
     const generated=await app.aiService.processCommand(prompt,app.buildAIContext());
     ensure(generated.success,generated.error);
+    for (const op of generated.json.operations.filter(op=>op.type==='angleDimension')) op.labelPlacement=placement;
     ensure(app.processAIJSON(generated.json,{mode:'command'}),'initial create rejected');
     app.historyManager.clear();
     const objects=app.objectManager.getAllObjects();
@@ -24,7 +25,9 @@ export async function verifyAnnotationUpdateInApp() {
     };
     const before=render();
     const operations=[
-        {op:'update',id:angle.id,arcRadius:0.55,customText:'40.0°',labelFontSize:18,precision:1,labelOffset:{x:-0.16,y:-1}},
+        // The legacy anchor adds +8/-8 screen pixels; a centered label must not inherit its x compensation.
+        {op:'update',id:angle.id,arcRadius:0.55,customText:'40.0°',labelFontSize:18,precision:1,
+            labelOffset:{x:placement==='legacy' ? -0.16 : 0,y:-1}},
         {op:'update',id:length.id,curvature:-72,customText:'6.0 cm',labelFontSize:18,precision:1},
         ...angles.filter(o=>o!==angle).map(o=>({op:'update',id:o.id,markerCount:2,showValue:false}))
     ];
@@ -33,10 +36,15 @@ export async function verifyAnnotationUpdateInApp() {
     ensure(validation.valid,validation.errors.join(' '));
     ensure(app.processAIJSON({operations},{mode:'command',userMessage:instruction}),'update rejected');
     ensure(angle.arcRadius===0.55 && angle.customText==='40.0°' && angle.labelFontSize===18 && angle.precision===1,'angle update ignored');
+    ensure(angle.labelPlacement===placement,'requested anchor was not preserved');
     ensure(length.curvature===-72 && length.customText==='6.0 cm' && length.labelFontSize===18,'length update ignored');
     ensure(angles.filter(o=>o!==angle).every(o=>o.markerCount===2),'equal-angle count ignored');
     ensure(teacherState()===originalPoints,'teacher coordinates or offsets changed');
     const after=render(); ensure(after!==before,'render did not change');
+    ensure(angle._leaderCurve,'detached angle text lost its curved arrow');
+    const arrowAnchor=angle.getArcAnchor(app.canvas);
+    ensure(Math.hypot(angle._leaderCurve.end.x-arrowAnchor.x,angle._leaderCurve.end.y-arrowAnchor.y)<1e-8,
+        'curved arrow does not end on its own arc');
     const vertices=points.map(point=>app.canvas.toScreen(point.position));
     const box=angle._labelBox;
     ensure(box,'angle label has no measured box');
@@ -53,6 +61,7 @@ export async function verifyAnnotationUpdateInApp() {
     await app.importProjectFile(new File([JSON.stringify(project)],'annotation-update.mathgraph.json',{type:'application/json'}));
     ensure(render()===after,'saved update pixels changed');
     ensure(teacherState()===originalPoints,'reloaded teacher coordinates changed');
+    ensure(app.objectManager.getObject(angle.id).labelPlacement===placement,'saved angle anchor changed');
     // Also run the real natural-language service flow with a fixed model response.
     // This checks integration without claiming an external-model success rate.
     const ai=app.aiService, savedProvider=ai.config.provider, savedCall=ai.callOpenAI, savedCredentials=ai.hasProviderCredentials;
@@ -67,6 +76,6 @@ export async function verifyAnnotationUpdateInApp() {
         ensure(existingAngle.arcRadius===0.5 && existingAngle.labelFontSize===16,'fixed model update ignored');
         app.historyManager.undo(); ensure(render()===after,'model edit undo failed');
     } finally { ai.config.provider=savedProvider; ai.callOpenAI=savedCall; ai.hasProviderCredentials=savedCredentials; }
-    return {id:'annotation-update',objectCount:objects.length,teacherPositionsPreserved:true,
+    return {id:'annotation-update',placement,objectCount:objects.length,teacherPositionsPreserved:true,curvedLeader:true,
         undoRedo:true,importExport:true,fixedModelResponse:true,externalModelCalled:false,image:after,project};
 }

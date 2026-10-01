@@ -215,13 +215,35 @@ try {
         const solidOneShotChecks = [];
         const piecewiseChecks = [];
         let annotationUpdateCheck = null;
+        let legacyAnnotationUpdateCheck = null;
         let existingViewPreserved = null;
         if (suite === 'complex') {
-            annotationUpdateCheck = await appPage.evaluate(async () =>
-                (await import('/scripts/verify-annotation-update-browser.mjs')).verifyAnnotationUpdateInApp());
+            try {
+                annotationUpdateCheck = await appPage.evaluate(async () =>
+                    (await import('/scripts/verify-annotation-update-browser.mjs')).verifyAnnotationUpdateInApp());
+            } catch (error) {
+                const failure = await appPage.evaluate(() => {
+                    const app = window.app, image = document.createElement('canvas');
+                    app.renderSceneToCanvas(image, { includeGrid: false, includeAxes: false, includeBackground: true });
+                    return { image: image.toDataURL(), project: app.buildProjectEnvelope(),
+                        dimensions: app.objectManager.getAllObjects().filter(obj => obj.type === 'angleDimension')
+                            .map(obj => ({ id: obj.id, placement: obj.labelPlacement, box: obj._labelBox,
+                                leader: obj._leaderCurve, vertex: app.canvas.toScreen(obj.vertex) })) };
+                });
+                await fs.writeFile(path.join(output, 'annotation-update-failure.png'), Buffer.from(failure.image.split(',')[1], 'base64'));
+                await fs.writeFile(path.join(output, 'annotation-update-failure.mathgraph.json'), JSON.stringify(failure.project, null, 2));
+                delete failure.image; delete failure.project;
+                await fs.writeFile(path.join(output, 'annotation-update-failure.json'), JSON.stringify({ error: error.message, ...failure }, null, 2));
+                throw error;
+            }
             await fs.writeFile(path.join(output, 'annotation-update.png'), Buffer.from(annotationUpdateCheck.image.split(',')[1], 'base64'));
             await fs.writeFile(path.join(output, 'annotation-update.mathgraph.json'), JSON.stringify(annotationUpdateCheck.project, null, 2));
             delete annotationUpdateCheck.image; delete annotationUpdateCheck.project;
+            legacyAnnotationUpdateCheck = await appPage.evaluate(async () =>
+                (await import('/scripts/verify-annotation-update-browser.mjs')).verifyAnnotationUpdateInApp('legacy'));
+            await fs.writeFile(path.join(output, 'annotation-update-legacy.png'), Buffer.from(legacyAnnotationUpdateCheck.image.split(',')[1], 'base64'));
+            await fs.writeFile(path.join(output, 'annotation-update-legacy.mathgraph.json'), JSON.stringify(legacyAnnotationUpdateCheck.project, null, 2));
+            delete legacyAnnotationUpdateCheck.image; delete legacyAnnotationUpdateCheck.project;
             for (const spec of piecewiseBrowserCases) {
                 const checked = await appPage.evaluate(async spec =>
                     (await import('/scripts/verify-piecewise-browser.mjs')).verifyPiecewiseInApp(spec), spec);
@@ -635,11 +657,15 @@ try {
             const prompt = await app.aiService.buildDrawingReferencePrompt(
                 '시험지용 삼각형 ABC의 같은 변·각과 길이·각도 표시', app.buildAIContext(), 'command'
             );
-            return app.aiService.drawingFeatureManual?.manualVersion === 6 &&
-                app.aiService.drawingReferenceIndex?.version === 6 &&
+            const [manual, index] = await Promise.all([
+                fetch('/.agents/skills/mathgraph-drawing/references/feature-manual.json').then(response=>response.json()),
+                fetch('/.agents/skills/mathgraph-drawing/references/retrieval-index.json').then(response=>response.json())
+            ]);
+            return JSON.stringify(app.aiService.drawingFeatureManual) === JSON.stringify(manual) &&
+                JSON.stringify(app.aiService.drawingReferenceIndex) === JSON.stringify(index) &&
                 /Named exam vertices.*pointSize:0/.test(prompt) &&
                 /equalLengthMarker.*tickCount/.test(prompt) &&
-                /curved dashed lengthDimension/.test(prompt);
+                /curved dashed lengthDimension/.test(prompt) && /FROM the text box TO its own angle arc/.test(prompt);
         });
         if (!drawingGuidanceLoaded)
             throw Error('the app did not load the current exam drawing guidance');
@@ -672,7 +698,7 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, piecewiseChecks, annotationUpdateCheck, existingViewPreserved, drawingGuidanceLoaded,
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, piecewiseChecks, annotationUpdateCheck, legacyAnnotationUpdateCheck, existingViewPreserved, drawingGuidanceLoaded,
             explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));

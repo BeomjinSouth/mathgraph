@@ -149,6 +149,19 @@ try {
     assert.equal(captures.length, 3);
     results.push('one-repair-limit-unresolved-holds');
 
+    await reset();
+    const misleading = structuredClone(initial);
+    misleading.operations.find(op => op.id === 'angle_A').customText = '20+10°';
+    queue = [initial, { ...revise, issues: ['각도 글자 배치 수정'], operations: misleading.operations }];
+    assert.equal(await generate(), false);
+    assert.equal(await count(), 0, 'incorrect repair must not reach the live canvas');
+    assert.equal(captures.length, 2, 'invalid repair must not receive a second review');
+    assert.equal(await page.evaluate(() => window.app.lastDrawingReview.status), 'unavailable');
+    await page.getByRole('button', { name: '초안 반영', exact: true }).click();
+    assert.equal(await page.evaluate(() => window.app.objectManager.getAllObjects()
+        .find(obj => obj.type === 'angleDimension').customText), '20°', 'only the last valid draft may be applied');
+    results.push('misleading-numeric-repair-blocked-valid-draft-preserved');
+
     await reset(); queue = [initial, pass];
     const teacher = await page.evaluate(() => {
         const point = window.app.objectManager.createPoint(7, 7, { label: '교사점', locked: true, labelOffset: { x: 36, y: 12 } });

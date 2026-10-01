@@ -3,7 +3,8 @@ import { validateCurriculumIntent } from './CurriculumIntent.js';
 import { readHorizontalAreaBoundary, readRequestedXBounds, readConstant, readMathExpression, normalizeMathText } from './FunctionAreaIntent.js';
 import { FunctionParser } from '../utils/Parser.js';
 import { readPiecewiseFunctionIntent, validatePiecewiseFunctionIntent } from './PiecewiseFunctionIntent.js';
-import { resolveAnnotationPoints, validateAnnotationGeometry, previewAnnotationState } from './ExamAnnotationGeometry.js';
+import { resolveAnnotationPoints, validateAnnotationGeometry, previewAnnotationState, readNumericAngleConditions } from './ExamAnnotationGeometry.js';
+import { measurementLabelMatches } from './MeasurementLabel.js';
 
 const SQRT2 = Math.SQRT2;
 
@@ -20,7 +21,7 @@ export class SemanticValidator {
             return result;
         }
         let annotationCreates = creates;
-        if (options.context?.objects?.length && /∠|\b[A-Z]{2}\s*=/.test(prompt)) {
+        if (options.context?.objects?.length && (/∠|\b[A-Z]{2}\s*=/.test(prompt) || readNumericAngleConditions(prompt).length)) {
             const preview = previewAnnotationState(operations, options.context);
             if (preview.error) return ValidationResult.failure(`기존 그림의 표시 변경을 검증할 수 없습니다: ${preview.error}`);
             annotationCreates = preview.creates;
@@ -62,8 +63,9 @@ export class SemanticValidator {
                     op.visible !== false && op.dashed === true;
             });
             const marked = heightLine && ofType('lengthDimension').some(op =>
-                op.segmentId === heightLine.id && op.showValue !== false &&
-                (!op.customText || Math.abs(Number.parseFloat(op.customText) - height) < 1e-9));
+                op.segmentId === heightLine.id && measurementLabelMatches(op, height,
+                    Math.hypot(pointById.get(heightLine.point1Id).x - pointById.get(heightLine.point2Id).x,
+                        pointById.get(heightLine.point1Id).y - pointById.get(heightLine.point2Id).y)));
             if (!marked) result.addError('사각뿔의 점선 높이선과 수치 치수 호가 연결되지 않았습니다.');
         }
         if (/원기둥/.test(prompt)) {
@@ -86,7 +88,7 @@ export class SemanticValidator {
                 if (!a || !b || op.showValue === false) return false;
                 const measured = Math.hypot(a.x - b.x, a.y - b.y);
                 return Math.abs(measured - value) < 1e-6 &&
-                    (!op.customText || Math.abs(Number.parseFloat(op.customText) - value) < 1e-9);
+                    measurementLabelMatches(op, value, measured);
             });
             if (radius) {
                 const value = Number(radius[1]);
@@ -246,7 +248,7 @@ export class SemanticValidator {
             const segment = byId.get(op.segmentId);
             const endpoints = [byId.get(segment?.point1Id)?.label, byId.get(segment?.point2Id)?.label];
             return endpoints.includes(oName) && (endpoints.includes(aName) || endpoints.includes(bName)) &&
-                (!op.customText || Math.abs(Number.parseFloat(op.customText) - radius) < 1e-9);
+                measurementLabelMatches(op, radius, distance(byId.get(segment.point1Id), byId.get(segment.point2Id)));
         });
         if (!radiusDimension) result.addError('반지름 수치가 해당 반지름의 점선 길이 호에 없습니다.');
         if (equalRadius) {
@@ -267,8 +269,8 @@ export class SemanticValidator {
         const u = [a.x - o.x, a.y - o.y], v = [b.x - o.x, b.y - o.y];
         const cosine = (u[0] * v[0] + u[1] * v[1]) / (Math.hypot(...u) * Math.hypot(...v));
         const actualDegrees = Math.acos(Math.max(-1, Math.min(1, cosine))) * 180 / Math.PI;
-        if (!angleMark || angleMark.showValue === false || Math.abs(actualDegrees - degrees) > 0.5 ||
-            (angleMark.customText && Math.abs(Number.parseFloat(angleMark.customText) - degrees) > 1e-9))
+        if (!angleMark || Math.abs(actualDegrees - degrees) > 0.5 ||
+            !measurementLabelMatches(angleMark, degrees, actualDegrees))
             result.addError('중심각 호의 꼭짓점·양 끝점·수치가 요청과 다릅니다.');
         const wantsSector = /부채꼴/.test(prompt);
         const wantsFill = wantsSector && /색칠|음영|넓이.{0,20}(?:구하|찾|계산)/.test(prompt);
