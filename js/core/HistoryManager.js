@@ -208,8 +208,16 @@ export class HistoryManager {
      * 치수(dimension)의 angle은 표시용 파생 상태이므로 타입으로 구분해 제외합니다.
      */
     getObjectState(obj, stateTemplate = null) {
+        if (DIMENSION_TYPES.has(obj.type) && obj.labelOffset) {
+            const state = { labelOffset: { x: obj.labelOffset.x, y: obj.labelOffset.y } };
+            for (const key of ['arcRadius', 'leaderCurvature', 'curvature', 'labelT']) {
+                if (Number.isFinite(obj[key])) state[key] = obj[key];
+            }
+            return state;
+        }
         if ((stateTemplate?.labelOffset !== undefined || obj._draggingLabel) && obj.labelOffset) {
             const state = { labelOffset: { x: obj.labelOffset.x, y: obj.labelOffset.y } };
+            if (typeof obj.labelPositionFixed === 'boolean') state.labelPositionFixed = obj.labelPositionFixed;
             if (stateTemplate?.curvature !== undefined && Number.isFinite(obj.curvature)) {
                 state.curvature = obj.curvature;
             }
@@ -226,18 +234,6 @@ export class HistoryManager {
         }
         if (obj.type === 'numberLine' && obj.y !== undefined) {
             return { y: obj.y };
-        }
-        // 치수와 함수의 드래그는 라벨 위치만 움직인다. Vec2 프로토타입이 스냅샷 복제에서
-        // 유실되지 않도록 상태는 항상 평범한 값으로 저장하고 복원 시 재구성한다.
-        if (DIMENSION_TYPES.has(obj.type) && obj.labelOffset) {
-            const state = { labelOffset: { x: obj.labelOffset.x, y: obj.labelOffset.y } };
-            if (obj.type === 'lengthDimension' && Number.isFinite(obj.curvature)) {
-                state.curvature = obj.curvature;
-            }
-            if (obj.type === 'angleDimension' && Number.isFinite(obj.arcRadius)) {
-                state.arcRadius = obj.arcRadius;
-            }
-            return state;
         }
         if (obj.type === 'function') {
             return {
@@ -278,8 +274,8 @@ export class HistoryManager {
             if (state.curvature !== undefined && obj.type === 'lengthDimension') {
                 obj.curvature = state.curvature;
             }
-            if (state.arcRadius !== undefined && obj.type === 'angleDimension') {
-                obj.arcRadius = state.arcRadius;
+            for (const key of ['arcRadius', 'leaderCurvature', 'labelT', 'labelPositionFixed']) {
+                if (state[key] !== undefined && key in obj) obj[key] = state[key];
             }
             return;
         }
@@ -323,6 +319,7 @@ export class HistoryManager {
 
         this.emit('historyChanged', {
             restored: true,
+            change: 'undo',
             canUndo: this.canUndo(),
             canRedo: this.canRedo()
         });
@@ -339,6 +336,7 @@ export class HistoryManager {
 
         this.emit('historyChanged', {
             restored: true,
+            change: 'redo',
             canUndo: this.canUndo(),
             canRedo: this.canRedo()
         });

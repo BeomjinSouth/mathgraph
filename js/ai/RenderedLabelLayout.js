@@ -2,6 +2,7 @@ import { Canvas } from '../core/Canvas.js';
 import { ObjectManager } from '../core/ObjectManager.js';
 import { HistoryManager } from '../core/HistoryManager.js';
 import { PatchApplier } from './PatchApplier.js';
+import { quadraticAt } from '../utils/AnnotationGeometry.js';
 const POINTS = new Set(['point', 'pointOnObject', 'pointOnLine', 'pointOnCircle', 'intersection', 'midpoint', 'circleCenterPoint']);
 const DIMENSIONS = new Set(['angleDimension', 'lengthDimension']);
 /** Place newly generated labels using the same canvas renderer and fonts as the app.
@@ -116,7 +117,7 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
         if (!initial)
             continue;
         const ink = inkFor(obj.type === 'lengthDimension' ? obj : null);
-        const candidates = candidateCenters(obj, initial, canvas);
+        const candidates = candidateCenters(obj, initial, canvas, objects);
         let best = null;
         for (const candidate of candidates) {
             const box = { ...initial, x: candidate.x - initial.w / 2, y: candidate.y - initial.h / 2 };
@@ -124,12 +125,18 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
             const overlap = placed.reduce((sum, p) => sum + overlapArea(box, p), 0);
             const score = (outside * 100 + ink(box) * 10 + overlap * 10) * 1000 + candidate.cost;
             if (!best || score < best.score)
-                best = { box, score };
+                best = { box, score, candidate };
         }
         if (!best)
             continue;
         const dx = best.box.x - initial.x, dy = best.box.y - initial.y;
-        if (Math.abs(dx) + Math.abs(dy) > 0.01) {
+        if (obj.type === 'lengthDimension' && obj.labelOnCurve && best.candidate.t !== undefined) {
+            obj.labelT = op.labelT = best.candidate.t;
+            obj.labelOffset.x = best.candidate.offsetX / canvas.scale;
+            obj.labelOffset.y = -best.candidate.offsetY / canvas.scale;
+            op.labelOffset = { x:obj.labelOffset.x,y:obj.labelOffset.y };
+            changes.push(op.id);
+        } else if (Math.abs(dx) + Math.abs(dy) > 0.01) {
             if (POINTS.has(obj.type)) {
                 obj.labelOffset.x += dx;
                 obj.labelOffset.y += dy;
@@ -151,8 +158,7 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
             changes.push(op.id);
         }
         placed.push(best.box);
-        if (obj.type === 'lengthDimension')
-            inkCache.delete(obj);
+        if (DIMENSIONS.has(obj.type)) inkCache.clear();
     }
     ctx.fillText = fillText;
     ctx.fillRect = fillRect;
@@ -162,18 +168,38 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
 function priority(obj) { return obj.type === 'angleDimension' ? 0 : obj.type === 'lengthDimension' ? 1 : 2; }
 function union(a, b) { const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y); return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y }; }
 function overlapArea(a, b) { return Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)); }
-function candidateCenters(obj, box, canvas) {
+function candidateCenters(obj, box, canvas, objects = []) {
     const initial = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
     const result = [];
     if (POINTS.has(obj.type)) {
         const anchor = canvas.toScreen(obj.getPosition());
-        result.push({ ...initial, cost: Math.hypot(initial.x - anchor.x, initial.y - anchor.y) });
+        const neighbors = new Set();
+        for (const edge of objects) {
+            if (edge.type === 'segment' && edge.visible) {
+                if (edge.point1Id === obj.id) neighbors.add(edge.point2Id);
+                if (edge.point2Id === obj.id) neighbors.add(edge.point1Id);
+            }
+            if (edge.type === 'polygon' && edge.visible) {
+                const i = edge.vertexIds.indexOf(obj.id), n = edge.vertexIds.length;
+                if (i >= 0) { neighbors.add(edge.vertexIds[(i+1)%n]); neighbors.add(edge.vertexIds[(i+n-1)%n]); }
+            }
+        }
+        let outwardX=0,outwardY=0;
+        for (const neighbor of objects.filter(o=>neighbors.has(o.id))) {
+            const p=canvas.toScreen(neighbor.getPosition()),n=Math.hypot(p.x-anchor.x,p.y-anchor.y);
+            if(n>1){outwardX-=(p.x-anchor.x)/n;outwardY-=(p.y-anchor.y)/n;}
+        }
+        const penalty = (x,y) => {
+            const n=Math.hypot(outwardX,outwardY)*Math.hypot(x-anchor.x,y-anchor.y);
+            return n>0 ? 45*(1-((x-anchor.x)*outwardX+(y-anchor.y)*outwardY)/n) : 0;
+        };
+        result.push({ ...initial, cost: Math.hypot(initial.x - anchor.x, initial.y - anchor.y)+penalty(initial.x,initial.y) });
         for (const gap of [6, 10, 16, 24, 32])
             for (let i = 0; i < 16; i++) {
                 const t = i * Math.PI / 8, dx = Math.cos(t), dy = Math.sin(t);
                 const radius = Math.abs(dx) * box.w / 2 + Math.abs(dy) * box.h / 2 + gap;
                 const x = anchor.x + dx * radius, y = anchor.y + dy * radius;
-                result.push({ x, y, cost: radius + 0.05 * Math.hypot(x - initial.x, y - initial.y) });
+                result.push({ x, y, cost: radius + penalty(x,y) + 0.05 * Math.hypot(x - initial.x, y - initial.y) });
             }
     }
     else if (obj.type === 'angleDimension') {
@@ -186,12 +212,38 @@ function candidateCenters(obj, box, canvas) {
                 result.push({ x: v.x + distance * Math.cos(t), y: v.y + distance * Math.sin(t), cost: distance + Math.abs(delta) * 100 });
             }
         }
+        if (obj.leaderMode !== 'none') {
+            for (const distance of [base+24,base+48,base+80,base+120])
+                for (const delta of [-Math.PI/2,Math.PI/2,Math.PI]) {
+                    const t=middle+delta;
+                    result.push({x:v.x+distance*Math.cos(t),y:v.y+distance*Math.sin(t),cost:distance+100});
+                }
+        }
     }
     else if (obj.type === 'lengthDimension') {
         const a = canvas.toScreen(obj.point1), b = canvas.toScreen(obj.point2);
         const n = Math.hypot(b.x - a.x, b.y - a.y), dx = (b.x - a.x) / n, dy = (b.y - a.y) / n;
-        const control = { x: (a.x + b.x) / 2 + dy * obj.curvature, y: (a.y + b.y) / 2 - dx * obj.curvature };
-        const curve = Array.from({ length: 101 }, (_, i) => { const t = i / 100, u = 1 - t; return { x: u * u * a.x + 2 * u * t * control.x + t * t * b.x, y: u * u * a.y + 2 * u * t * control.y + t * t * b.y }; });
+        const control = obj._renderedArc?.control || { x: (a.x + b.x) / 2 + dy * obj.curvature, y: (a.y + b.y) / 2 - dx * obj.curvature };
+        const curve = Array.from({ length: 101 }, (_, i) => quadraticAt(a,control,b,i/100));
+        if (obj.labelOnCurve) {
+            // Candidate boxes use the measured glyph center, which is not the
+            // Canvas middle-baseline anchor (notably for radicals and italics).
+            const current = quadraticAt(a, control, b, obj.labelT);
+            const glyphX = initial.x - current.x - obj.labelOffset.x*canvas.scale;
+            const glyphY = initial.y - current.y + obj.labelOffset.y*canvas.scale;
+            for(let i=15;i<=85;i+=2) {
+                const t=i/100,p=quadraticAt(a,control,b,t);
+                for(const tangent of [-6,0,6]) for(const normal of [-12,-8,-4,0,4,8,12]) {
+                    const offsetX=tangent*dx-normal*dy,offsetY=tangent*dy+normal*dx;
+                    const x=p.x+glyphX+offsetX,y=p.y+glyphY+offsetY;
+                    // Optical placement may shift within the text gap, but the
+                    // glyph box must still straddle its own measurement curve.
+                    if(!curve.some(q=>Math.abs(q.x-x)<Math.max(2,box.w/2-7)&&Math.abs(q.y-y)<Math.max(2,box.h/2-5))) continue;
+                    result.push({x,y,t,offsetX,offsetY,cost:Math.abs(t-.5)*n+Math.abs(normal)*3+Math.abs(tangent)});
+                }
+            }
+            return result;
+        }
         for (let tangent = -34; tangent <= 34; tangent += 2)
             for (let normal = -26; normal <= 26; normal += 2) {
                 const x = initial.x + tangent * dx - normal * dy, y = initial.y + tangent * dy + normal * dx;

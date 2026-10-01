@@ -111,3 +111,7 @@ Use this shape for substantial tasks:
 ## Platform Dashboard Boundary
 
 `https://platform.openai.com/home` is account-specific and may require login. Do not assume dashboard state from public docs. Ask for permission before account actions such as creating keys, changing settings, uploading sensitive files, or submitting forms.
+
+## MathGraph 앱 적용: 실제 그림 검토
+
+2026-09-30: 앱의 생성 명령을 실제 렌더 이미지와 함께 다시 검토한다. 앱이 임시 장면·판정·수정 범위·호출 상한·중단·최종 반영을 관리한다. 응답 형식이 맞는 것과 그림 조건이 맞는 것을 구분하고, 미완료 검토는 자동 반영하지 않는다. 기존 Responses와 선택 모델을 재사용하며 별도 에이전트 프레임워크는 추가하지 않는다. 사용법·추가 호출·검증 한계는 `docs/앱-AI-그림-확인-사용법.md`에 기록했다.

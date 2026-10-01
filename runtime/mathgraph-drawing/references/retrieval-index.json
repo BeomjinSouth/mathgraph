@@ -1,9 +1,14 @@
 {
-  "version": 6,
+  "version": 7,
   "project": "MathGraph",
-  "updatedAt": "2026-09-24",
+  "updatedAt": "2026-09-29",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
   "referenceFiles": [
+    {
+      "path": "annotation-layout.md",
+      "role": "angle and length placement, attached curved leader decisions, editing and GraphA examples",
+      "readWhen": "Angle text, arc association, length dashes, point names, crowded diagrams or curved arrows need creation or revision."
+    },
     {
       "path": "feature-manual.json",
       "role": "machine-readable current feature and schema manual",
@@ -22,6 +27,11 @@
   ],
   "selectionRules": [
     {"ifPromptMentions":["통계","전개도","고리","벤","집합","정규분포","이항분포","막대","원그래프","상자그림","산점도"],"loadChunks":["contract-core","objects-curriculum"],"exampleTags":[]},
+    {
+      "ifPromptMentions": ["각도 숫자", "각도 호", "치수", "길이 표시", "점선 간격", "곡선 화살표", "지시선", "겹침", "점 이름"],
+      "loadChunks": ["contract-core", "objects-markers-dimensions", "annotation-layout"],
+      "exampleTags": ["annotation", "curved_leader", "dimension"]
+    },
     {
       "ifPromptMentions": ["삼각형", "사각형", "다각형", "도형", "넓이", "음영", "닮음", "합동"],
       "loadChunks": ["contract-core", "objects-plane-core", "objects-construction", "objects-markers-dimensions"],
@@ -70,6 +80,11 @@
   ],
   "chunks": [
     {"id":"objects-curriculum","file":"feature-manual.json","objectTypes":["statisticalChart","annularSector","solidNet","vennDiagram"]},
+    {
+      "id": "annotation-layout",
+      "file": "feature-manual.json",
+      "jsonPointers": ["/annotationLayout", "/interactionAndEditing"]
+    },
     {
       "id": "contract-core",
       "file": "feature-manual.json",
@@ -132,6 +147,11 @@
     }
   ],
   "syntheticExampleIndex": [
+    {
+      "id": "plane_acute_angle_curved_leader",
+      "tags": ["plane", "annotation", "curved_leader", "dimension"],
+      "objectTypes": ["point", "segment", "angleDimension", "lengthDimension"]
+    },
     {
       "id": "plane_triangle_circumcircle_altitude",
       "tags": ["plane", "triangle", "circle", "construction", "dimension"],

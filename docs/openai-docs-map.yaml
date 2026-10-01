@@ -306,3 +306,13 @@ areas:
       - { title: "Learn Codex", url: "https://developers.openai.com/learn/codex" }
       - { title: "Learn Evals", url: "https://developers.openai.com/learn/evals" }
       - { title: "Learn Tools", url: "https://developers.openai.com/learn/tools" }
+
+app_workflows:
+  mathgraph_drawing_review:
+    plan: "docs/앱-AI-그림-검토-구현계획.md"
+    usage: "docs/앱-AI-그림-확인-사용법.md"
+    verified_on: "2026-09-30"
+    sources:
+      - "https://developers.openai.com/api/docs/guides/images-vision"
+      - "https://developers.openai.com/api/docs/guides/structured-outputs"
+    boundary: "앱 자연어·사진 경로의 임시 렌더 검토; Codex 직접 제작 경로는 유지"

@@ -516,8 +516,15 @@ export class SelectTool extends Tool {
         // Mk.2: 점을 우선 검색 (선/원 위의 점도 클릭 가능하도록)
         // Mk.4: 숨김 객체 보기 모드일 때 숨김 객체도 클릭 가능
         const includeHidden = app.showHiddenObjects || false;
-        const clickedPoint = app.objectManager.findPointAt(mathPos, 8, app.canvas, includeHidden);
-        const clickedObj = clickedPoint || app.objectManager.findObjectAt(mathPos, 8, app.canvas, null, includeHidden);
+        let clickedPoint = app.objectManager.findPointAt(mathPos, 8, app.canvas, includeHidden);
+        // A selected annotation remains editable even inside a point-label hit box.
+        const dimension = app.objectManager.getAllObjects().filter(obj =>
+            ['angleDimension', 'lengthDimension'].includes(obj.type) && obj.visible && obj.valid && !obj.locked)
+            .sort((a, b) => Number(b.selected) - Number(a.selected))
+            .find(obj => obj.hitTest(mathPos, 5, app.canvas));
+        const preferDimension = dimension && (!clickedPoint || clickedPoint._hitPart === 'label');
+        if (preferDimension) clickedPoint = null;
+        const clickedObj = (preferDimension ? dimension : null) || clickedPoint || app.objectManager.findObjectAt(mathPos, 8, app.canvas, null, includeHidden);
 
         // 숨김 객체를 클릭하면 자동으로 숨김 해제
         if (clickedObj && !clickedObj.visible) {

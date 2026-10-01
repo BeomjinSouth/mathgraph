@@ -6,6 +6,8 @@
  */
 
 import { parseAIJSONPayload } from './JSONUtils.js';
+import { ANNOTATION_GUIDANCE } from './AnnotationGuide.js';
+import { DRAWING_REVIEW_INSTRUCTIONS, drawingReviewFormat, throwIfDrawingAborted } from './DrawingReview.js';
 import { SchemaValidator } from './SchemaValidator.js';
 import { SemanticValidator } from './SemanticValidator.js';
 import { enhanceDiagramQuality } from './DiagramQualityEnhancer.js';
@@ -60,13 +62,16 @@ export async function fetchWithTimeout(url, init = {}, timeoutMs = 250000) {
         ? timeoutMs
         : 250000;
     const controller = new AbortController();
-    const cancel = () => controller.abort();
-    if (init.signal?.aborted) throw new Error('AI 요청을 중단했습니다.');
-    init.signal?.addEventListener('abort', cancel, { once: true });
+    const abort = () => controller.abort();
+    init.signal?.addEventListener('abort', abort, { once: true });
     const timer = setTimeout(() => controller.abort(), normalizedTimeoutMs);
     try {
-        return await fetch(url, { ...init, signal: controller.signal });
+        throwIfDrawingAborted(init.signal);
+        // Keep the caller's cancellation attached to response-body reads after headers arrive.
+        const signal = init.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal;
+        return await fetch(url, { ...init, signal });
     } catch (error) {
+        throwIfDrawingAborted(init.signal);
         if (controller.signal.aborted || error?.name === 'AbortError') {
             if (init.signal?.aborted) throw new Error('AI 요청을 중단했습니다.');
             throw new Error('AI 요청 시간이 초과되었습니다. 잠시 후 다시 시도하세요.');
@@ -74,7 +79,7 @@ export async function fetchWithTimeout(url, init = {}, timeoutMs = 250000) {
         throw error;
     } finally {
         clearTimeout(timer);
-        init.signal?.removeEventListener('abort', cancel);
+        init.signal?.removeEventListener('abort', abort);
     }
 }
 
@@ -367,6 +372,14 @@ const operationProperties = {
     arcRadius: NULLABLE_NUMBER,
     curvature: NULLABLE_NUMBER,
     arcHeight: NULLABLE_NUMBER,
+    precision: NULLABLE_NUMBER,
+    leaderMode: { type: ['string','null'], enum: ['auto','always','none',null] },
+    leaderCurvature: NULLABLE_NUMBER,
+    labelPlacement: { type: ['string','null'], enum: ['centered','legacy',null] },
+    dashLength: NULLABLE_NUMBER,
+    dashGap: NULLABLE_NUMBER,
+    labelOnCurve: NULLABLE_BOOLEAN,
+    labelT: NULLABLE_NUMBER,
     showValue: NULLABLE_BOOLEAN,
     markerCount: NULLABLE_NUMBER,
     tickCount: NULLABLE_NUMBER,
@@ -528,6 +541,7 @@ export function extractOpenAIResponseText(data) {
 // AI 참조 문서에서 가져온 시스템 프롬프트
 const SYSTEM_PROMPT = `당신은 수학 기하 도형을 생성하는 AI 어시스턴트입니다.
 ${CURRICULUM_PROMPT}
+${ANNOTATION_GUIDANCE}
 사용자의 요청을 분석하여 아래 JSON 스키마에 맞는 **구조화된 출력만** 생성합니다.
 
 ## 중요 규칙
@@ -1002,6 +1016,7 @@ export class AIService {
                 return this.buildFallbackCommandResult(normalizedMessage, context, commandMode);
             }
         } catch (error) {
+            throwIfDrawingAborted(this.requestSignal);
             console.error('AI 처리 오류:', error);
             // 결정적 폴백이 요청을 그릴 수 있으면 그대로 사용하고,
             // 그리지 못하면 일반 문구 대신 실제 API 오류(만료/키 오류 등)를 노출합니다.
@@ -1177,6 +1192,7 @@ export class AIService {
                 mode
             };
         } catch (error) {
+            throwIfDrawingAborted(this.requestSignal);
             console.error('AI command repair failed:', error);
             return {
                 success: false,
@@ -1403,6 +1419,7 @@ export class AIService {
 
         const lines = [
             'MathGraph reference manual context:',
+            ANNOTATION_GUIDANCE,
             '- Source: .agents/skills/mathgraph-drawing/references/feature-manual.json selected through retrieval-index.json.',
             `- Return only {"operations":[...]} using create/update/delete.`,
             `- Supported create types: ${supportedTypes.join(', ')}.`,
@@ -1515,6 +1532,9 @@ export class AIService {
             /화살표|방향|벡터/.test(text)) {
             addPlane();
         }
+        if (/leader|callout|dimension|curved arrow/.test(text) || /지시선|곡선\s*화살표|치수|길이\s*표시|점선\s*간격/.test(text)) {
+            add('point', 'segment', 'angleDimension', 'lengthDimension');
+        }
 
         if (/number line|numberline|radical/.test(text) ||
             /수직선|무리수|근호|제곱근/.test(text)) {
@@ -1557,8 +1577,9 @@ export class AIService {
 
         const response = await fetchWithTimeout(transport.url, {
             method: 'POST',
+            signal: this.requestSignal,
             headers: transport.headers,
-            body: JSON.stringify(requestBody), signal: this.requestSignal
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -1572,6 +1593,55 @@ export class AIService {
         this.conversationHistory.push({ role: 'assistant', content });
 
         return content;
+    }
+
+    /** A separate review call; do not add critique/repair JSON to conversation history. */
+    async reviewRenderedDrawing({ request, context, candidate, sourceImage, attempt = 0, reports = [], signal }) {
+        throwIfDrawingAborted(signal);
+        const deadline = AbortSignal.timeout(90000);
+        const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
+        const references = await this.buildDrawingReferencePrompt(request, {
+            ...context, objects: [...(context?.objects || []),
+                ...candidate.json.operations.filter(operation => operation.op === 'create')]
+        }, sourceImage ? AI_COMMAND_MODE.PROBLEM_DIAGRAM : AI_COMMAND_MODE.COMMAND);
+        const payload = JSON.stringify({ request, existingCanvas: context, candidate: candidate.json,
+            renderedView: candidate.view, priorChecks: reports.map(report => ({ checks: report.checks, issues: report.issues })),
+            repairAllowed: attempt === 0 });
+        if (payload.length > 150000) throw new Error('그림이 커서 자동 확인 범위를 넘었습니다.');
+        const instructions = [DRAWING_REVIEW_INSTRUCTIONS, ANNOTATION_GUIDANCE, references].join('\n\n');
+        const images = [candidate.imageDataUrl, ...(sourceImage ? [sourceImage] : [])];
+        const prompt = `Image 1 is the actual candidate render. ${sourceImage ? 'Image 2 is the original reference; reproduce only requested diagram content.' : ''}\nTask data:\n${payload}`;
+        let response;
+        if (this.config.provider === 'openai') {
+            const body = this.buildOpenAIRequestBodyFromInput([
+                { role: 'developer', content: instructions },
+                { role: 'user', content: [{ type: 'input_text', text: prompt },
+                    ...images.map(image_url => ({ type: 'input_image', image_url, detail: 'high' }))] }
+            ], { responseFormat: drawingReviewFormat(GRAPH_OPERATIONS_JSON_SCHEMA), reasoningEffort: 'medium' });
+            body.max_output_tokens = 16384;
+            const transport = this.buildOpenAITransport();
+            response = await fetchWithTimeout(transport.url, { method: 'POST', headers: transport.headers,
+                signal: requestSignal, body: JSON.stringify(body) }, 90000);
+            if (!response.ok) throw new Error(await this.extractApiErrorMessage(response, '그림 확인 오류'));
+            return this.extractJSON(extractOpenAIResponseText(await response.json()));
+        }
+        if (this.config.provider === 'gemini') {
+            const imageParts = images.map(url => {
+                const match = /^data:(image\/[\w.+-]+);base64,(.+)$/.exec(url);
+                if (!match) throw new Error('그림 확인용 이미지를 읽지 못했습니다.');
+                return { inlineData: { mimeType: match[1], data: match[2] } };
+            });
+            response = await fetchWithTimeout(
+                `https://generativelanguage.googleapis.com/v1beta/models/${this.config.geminiModel || this.config.model}:generateContent`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.config.apiKey }, signal: requestSignal,
+                    body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] },
+                        contents: [{ role: 'user', parts: [{ text: prompt }, ...imageParts] }],
+                        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 8192 } }) }, 90000);
+            if (!response.ok) throw new Error(await this.extractApiErrorMessage(response, '그림 확인 오류'));
+            const data = await response.json();
+            return this.extractJSON((data.candidates?.[0]?.content?.parts || []).map(part => part.text || '').join(''));
+        }
+        throw new Error('이 제공자는 그림 확인을 지원하지 않습니다.');
     }
 
     buildOpenAIRequestBody(messages, overrides = {}) {
@@ -1702,10 +1772,11 @@ export class AIService {
             requestBody.systemInstruction = { parts: [{ text: systemText }] };
         }
 
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`,
             {
                 method: 'POST',
+                signal: this.requestSignal,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
             }
@@ -3420,8 +3491,9 @@ export class AIService {
         const transport = this.buildOpenAITransport();
         const response = await fetchWithTimeout(transport.url, {
             method: 'POST',
+            signal: this.requestSignal,
             headers: transport.headers,
-            body: JSON.stringify(requestBody), signal: this.requestSignal
+            body: JSON.stringify(requestBody)
         });
         if (!response.ok) {
             throw new Error(await this.extractApiErrorMessage(response, 'OpenAI 문제 사진 분석 오류'));
@@ -3641,8 +3713,9 @@ export class AIService {
 
         const response = await fetchWithTimeout(transport.url, {
             method: 'POST',
+            signal: this.requestSignal,
             headers: transport.headers,
-            body: JSON.stringify(requestBody), signal: this.requestSignal
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -3960,6 +4033,7 @@ export class AIService {
             return { success: false, error: '지원하지 않는 프로바이더입니다.' };
         } catch (error) {
             const message = error?.message || String(error);
+            throwIfDrawingAborted(this.requestSignal);
             recordImageAnalysisStage(trace, 'model_scene', {
                 status: 'error',
                 summary: '이미지 분석 요청 또는 응답 처리 중 예외가 발생했습니다.',

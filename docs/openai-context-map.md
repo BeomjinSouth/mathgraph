@@ -118,3 +118,7 @@ This map turns the OpenAI docs into a practical routing layer for future "vibe c
 - Commerce: https://developers.openai.com/commerce
 - OpenAI usage policies: https://openai.com/policies/usage-policies/
 - OpenAI commerce policies: https://openai.com/policies/commerce-policies/
+
+## MathGraph 앱의 그림 확인
+
+앱 자연어·사진 요청에는 별도 임시 렌더와 이미지 검토를 연결한다. 원래 조건과 실제 PNG를 함께 확인하고 수정 한 번·검토 두 번으로 제한한다. 구조화 응답의 형식 적합성과 수학·배치 정확성은 별도로 검사한다. Codex의 기존 그림 제작 경로는 유지한다. 구현·검증 범위는 `docs/앱-AI-그림-확인-사용법.md`와 `docs/앱-AI-그림-검토-구현계획.md`를 확인한다.

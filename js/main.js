@@ -45,6 +45,7 @@ import { AreaExportTool } from './tools/AreaExportTool.js';
 // 유틸리티
 import { Vec2 } from './utils/Geometry.js';
 import { MathUtils } from './utils/MathUtils.js';
+import { arrangeAnnotations } from './utils/AnnotationLayout.js';
 
 // Mk.2: AI 모듈
 import { SchemaValidator } from './ai/SchemaValidator.js';
@@ -97,6 +98,8 @@ import { buildCurvedSolidInput } from './utils/CurvedSolidInput.js';
 import { TeacherWorkflow } from './ui/TeacherWorkflow.js';
 import { analyzeDrawingSupport } from './ai/SupportPreflight.js';
 import { ProblemComposer } from './ui/ProblemComposer.js';
+import { reviewGeneratedDrawing, throwIfDrawingAborted } from './ai/DrawingReview.js';
+import { prepareDrawingPreview } from './ai/DrawingPreview.js';
 
 /**
  * 그래프A 애플리케이션
@@ -1986,6 +1989,47 @@ class GraphAApp {
                     this.render();
                 });
                 container.appendChild(precisionRow);
+                for (const row of [customRow,fontRow,precisionRow]) row.classList.add('annotation-control');
+
+                const addChoice = (label, key, options) => {
+                    const row = document.createElement('div'); row.className = 'property-row annotation-control';
+                    const caption = document.createElement('label'); caption.textContent = label;
+                    const select = document.createElement('select'); select.className = 'prop-select'; select.setAttribute('aria-label', label);
+                    for (const [value, text] of options) { const option = document.createElement('option'); option.value=String(value); option.textContent=text; select.appendChild(option); }
+                    select.value=String(obj[key]);
+                    select.addEventListener('change', () => {
+                        const value = key === 'labelOnCurve' ? select.value === 'true' : select.value;
+                        this.historyManager.beginTransaction();
+                        this.recordObjectPropertyEdit(obj, key, value);
+                        if (key === 'labelOnCurve' && value) this.recordObjectPropertyEdit(obj,'labelOffset',new Vec2(0,0));
+                        this.historyManager.commitTransaction(); this.render();
+                    });
+                    row.append(caption,select);container.appendChild(row);
+                };
+                const addRange = (label, key, min, max, step = 1) => {
+                    const row=document.createElement('div'); row.className='property-row annotation-control';
+                    const caption=document.createElement('label'); caption.textContent=label;
+                    const input=document.createElement('input'); input.type='range';input.className='prop-slider';
+                    input.min=min;input.max=max;input.step=step;input.value=obj[key];input.setAttribute('aria-label',label);
+                    const value=document.createElement('span');value.className='value-display';value.textContent=Number(obj[key]).toFixed(step<1?2:0);
+                    let start;
+                    input.addEventListener('input',()=>{if(start===undefined) start=obj[key];obj[key]=Number(input.value);value.textContent=Number(input.value).toFixed(step<1?2:0);this.render();});
+                    input.addEventListener('change',()=>{this.recordObjectPropertyEdit(obj,key,Number(input.value),{oldValue:start??obj[key]});start=undefined;});
+                    row.append(caption,input,value);container.appendChild(row);
+                };
+                if (obj.type === 'angleDimension') {
+                    addRange('호 반지름', 'arcRadius', 0.08, 5, 0.02);
+                    addChoice('지시 화살표', 'leaderMode', [['auto','자동'],['always','항상'],['none','숨김']]);
+                    addRange('화살표 휘어짐', 'leaderCurvature', -160, 160);
+                } else {
+                    addChoice('숫자 위치', 'labelOnCurve', [[true,'호에 붙임'],[false,'자유 이동']]);
+                    addRange('점선 길이', 'dashLength', 2, 20);
+                    addRange('점선 간격', 'dashGap', 3, 20);
+                }
+                const alignRow=document.createElement('div');alignRow.className='property-row';
+                const align=document.createElement('button');align.className='prop-btn';align.textContent='도형 표시 정렬';
+                align.addEventListener('click',()=>{this.arrangeAnnotations();this.updatePropertyPanel();});
+                alignRow.appendChild(align);container.appendChild(alignRow);
             }
 
             appendAnnotationProperties(this, container, obj);
@@ -2173,6 +2217,10 @@ class GraphAApp {
         const nextVisible = !this.areAxesVisible();
         this.setAxesVisibility(nextVisible, nextVisible);
         return nextVisible;
+    }
+
+    arrangeAnnotations(options) {
+        arrangeAnnotations(this, options);
     }
 
     render() {
@@ -2555,6 +2603,8 @@ class GraphAApp {
         // 임시 ctx로 교체하여 렌더링
         const originalCtx = this.canvas.ctx;
         this.canvas.ctx = tempCtx;
+        const wasExporting = this.canvas.isExporting;
+        this.canvas.isExporting = true;
 
         if (includeGrid) this.canvas.drawGrid();
         if (includeAxes) this.canvas.drawAxes();
@@ -2575,6 +2625,7 @@ class GraphAApp {
 
         // 복원
         this.canvas.ctx = originalCtx;
+        this.canvas.isExporting = wasExporting;
         this.canvas.showGrid = oldShowGrid;
         this.canvas.showAxes = oldShowAxes;
 
@@ -2643,8 +2694,10 @@ class GraphAApp {
         const oldShowXAxis = this.canvas.showXAxis;
         const oldShowYAxis = this.canvas.showYAxis;
         const oldLabelBounds = this.canvas.labelBounds;
+        const wasExporting = this.canvas.isExporting;
 
         this.canvas.ctx = targetCtx;
+        this.canvas.isExporting = true;
         this.canvas.showGrid = includeGrid;
         this.canvas.showXAxis = includeAxes;
         this.canvas.showYAxis = includeAxes;
@@ -2672,6 +2725,7 @@ class GraphAApp {
             this.canvas.showXAxis = oldShowXAxis;
             this.canvas.showYAxis = oldShowYAxis;
             this.canvas.labelBounds = oldLabelBounds;
+            this.canvas.isExporting = wasExporting;
             targetCtx.restore();
         }
     }
@@ -3891,6 +3945,7 @@ class GraphAApp {
      * 채팅 메시지 전송
      */
     sendChatMessage() {
+        if (this.activeDrawingRequest || this.imageUploadBusy || this.problemComposer?.busy) return;
         const input = document.getElementById('chatInput');
         const message = input?.value.trim();
 
@@ -3910,10 +3965,7 @@ class GraphAApp {
 
         this.setTeacherWorkflowState('checking', { message: this.lastSupportResult.message });
 
-        // AI 응답 (현재는 시뮬레이션)
-        setTimeout(() => {
-            this.processAICommand(message);
-        }, 500);
+        this.processAICommand(message);
     }
 
     /**
@@ -3990,6 +4042,7 @@ class GraphAApp {
      * AI 명령 처리 (Mk.2: AIService 사용)
      */
     async processAICommand(message) {
+        if (this.activeDrawingRequest || this.imageUploadBusy || this.problemComposer?.busy) return false;
         const trimmedMessage = message.trim();
 
         // JSON 형식인지 확인 - 직접 처리
@@ -4000,19 +4053,20 @@ class GraphAApp {
         }
 
         // 로딩 표시
-        const loadingMessage = this.addChatMessage('처리 중... ⏳', 'assistant');
+        const loadingMessage = this.addChatMessage('그림 생성 중', 'assistant');
+        const run = this.beginDrawingRequest(loadingMessage);
         this.setTeacherWorkflowState('generating');
 
         try {
             // 현재 캔버스 상태를 컨텍스트로 전달
-            const context = this.buildAIContext();
+            const context = run.context;
 
             // AIService로 처리
             const result = await this.aiService.processCommand(message, context);
+            throwIfDrawingAborted(run.controller.signal);
 
             if (result.success && result.json) {
-                // JSON 패치 적용
-                return this.processAIJSON(result.json, {
+                return await this.reviewAndApplyGeneratedDrawing(result, run, {
                     modelMeta: this.getAIModelResultMeta(result),
                     generated: true, mode: result.mode, userMessage: message
                 });
@@ -4022,12 +4076,13 @@ class GraphAApp {
                 return false;
             }
         } catch (error) {
-            console.error('AI 명령 처리 실패:', error);
+            if (error.name !== 'AbortError') console.error('AI 명령 처리 실패:', error);
             const message = error.message || 'AI 요청 처리 중 오류가 발생했습니다.';
             this.addChatMessage(`❌ ${message}`, 'assistant');
             this.setTeacherWorkflowState('error', { message });
             return false;
         } finally {
+            this.endDrawingRequest(run);
             this.removeChatMessage(loadingMessage);
             this.updateSidebar();
             this.updateTeacherQualitySummary();
@@ -4070,11 +4125,182 @@ class GraphAApp {
         return stored;
     }
 
+    beginDrawingRequest(loadingMessage, controller = new AbortController()) {
+        const panel = document.getElementById('chat-panel');
+        panel?.classList.remove('collapsed');
+        panel?.classList.add('drawing-review-visible');
+        const toggle = document.getElementById('toggleChat');
+        toggle?.setAttribute('aria-expanded', 'true');
+        toggle?.setAttribute('aria-label', '그림 요청 접기');
+        if (toggle) setGeneratedIcon(toggle.querySelector('.material-symbols-outlined'), 'expand_more');
+        this.canvas.resize();
+        const context = this.buildAIContext();
+        const run = { controller, context, fingerprint: JSON.stringify(context), loadingMessage,
+            provider: this.aiService.config.provider, model: this.aiService.config.model,
+            history: structuredClone(this.aiService.conversationHistory),
+            serial: this.drawingRequestSerial = (this.drawingRequestSerial || 0) + 1 };
+        this.activeDrawingRequest = run;
+        loadingMessage?.classList.add('drawing-review-message');
+        this.aiService.requestSignal = run.controller.signal;
+        for (const id of ['sendMessage', 'uploadImage']) {
+            const button = document.getElementById(id);
+            if (button) button.disabled = true;
+        }
+        const body = loadingMessage?.querySelector('.message-content');
+        body?.setAttribute('role', 'status');
+        if (loadingMessage) {
+            const cancel = document.createElement('button');
+            cancel.type = 'button';
+            cancel.className = 'btn-secondary';
+            cancel.textContent = '중단';
+            cancel.addEventListener('click', () => {
+                run.controller.abort();
+                cancel.disabled = true;
+                if (body) body.textContent = '중단 중';
+            });
+            loadingMessage.appendChild(cancel);
+        }
+        return run;
+    }
+
+    endDrawingRequest(run) {
+        if (this.activeDrawingRequest !== run) return;
+        this.activeDrawingRequest = null;
+        if (!run.historyCommitted) this.aiService.conversationHistory = run.history;
+        this.aiService.requestSignal = undefined;
+        for (const id of ['sendMessage', 'uploadImage']) {
+            const button = document.getElementById(id);
+            if (button) button.disabled = false;
+        }
+    }
+
+    assertDrawingContextCurrent(run) {
+        throwIfDrawingAborted(run.controller.signal);
+        if (JSON.stringify(this.buildAIContext()) !== run.fingerprint ||
+            this.drawingRequestSerial !== run.serial ||
+            this.aiService.config.provider !== run.provider || this.aiService.config.model !== run.model)
+            throw new Error('그림이나 설정이 바뀌어 결과를 반영하지 않았습니다. 현재 그림에서 다시 요청해 주세요.');
+    }
+
+    async reviewAndApplyGeneratedDrawing(result, run, intentOptions = {}, sourceImage = null) {
+        this.assertDrawingContextCurrent(run);
+        await document.fonts?.ready;
+        this.assertDrawingContextCurrent(run);
+        const request = intentOptions.userMessage || intentOptions.instruction || '사진의 문제 그림을 편집 가능한 도형으로 만들어 주세요.';
+        const validate = json => {
+            const validation = sourceImage
+                ? this.aiService.validateImageAnalysisIntent(json, { ...intentOptions, context: run.context })
+                : this.aiService.validateCommandResult(json, run.context, { ...intentOptions, userMessage: request });
+            if (!validation.valid) throw new Error(validation.errors.join(' '));
+            if (json.operations.length > (intentOptions.maxOperations ?? 150))
+                throw new Error('그림 확인의 도형 수 한도를 넘었습니다.');
+        };
+        validate(result.json);
+        const report = await reviewGeneratedDrawing({
+            json: result.json, context: run.context, signal: run.controller.signal,
+            prepare: json => prepareDrawingPreview(this, json, run.context, intentOptions),
+            validate,
+            review: this.aiService.hasProviderCredentials() && ['openai', 'gemini'].includes(run.provider)
+                ? (candidate, options) => {
+                    this.assertDrawingContextCurrent(run);
+                    return this.aiService.reviewRenderedDrawing({ request, context: run.context, candidate, sourceImage, ...options });
+                } : null,
+            onProgress: stage => {
+                const message = stage === 'reviewing' ? '그림 확인 중' : '표시 수정 후 다시 확인 중';
+                const body = run.loadingMessage?.querySelector('.message-content');
+                if (body) body.textContent = message;
+                this.setTeacherWorkflowState('reviewing', { message });
+            }
+        });
+        this.assertDrawingContextCurrent(run);
+        this.lastDrawingReview = { status: report.status, reports: report.reports, error: report.error || null };
+        recordImageAnalysisStage(intentOptions.trace, 'visual_review', {
+            status: report.status === 'passed' ? 'ok' : 'warning',
+            summary: report.status === 'passed' ? '실제 그림 확인을 통과했습니다.' : '실제 그림 확인을 완료하지 못했습니다.',
+            snapshot: { reviewCount: report.reports.length, result: report.status }
+        });
+        const applyCandidate = (draft = false) => {
+            this.assertDrawingContextCurrent(run);
+            const applied = this.processAIJSON(report.candidate.json, { ...intentOptions,
+                context: run.context, reviewedView: report.candidate.view,
+                modelMeta: [intentOptions.modelMeta, draft ? '초안 · AI 그림 확인 미완료'
+                    : `AI 그림 확인 ${report.reports.length}회`].filter(Boolean).join(' · ') });
+            if (applied) {
+                run.historyCommitted = true;
+                this.aiService.conversationHistory = [...run.history,
+                    { role: 'user', content: request },
+                    { role: 'assistant', content: JSON.stringify(report.candidate.json) }].slice(-20);
+            }
+            if (applied && draft) this.setTeacherWorkflowState('warning', { message: '초안을 반영했습니다. 그림을 직접 확인해 주세요.' });
+            return applied;
+        };
+        const checks = report.reports.at(-1)?.checks || [];
+        if (report.status === 'passed') {
+            const applied = applyCandidate();
+            if (applied) this.addDrawingReviewDetails(checks);
+            return applied;
+        }
+        if (report.status === 'local') {
+            const applied = applyCandidate(true);
+            if (applied) this.addChatMessage('로컬 생성 결과입니다. AI가 그림을 다시 확인하는 단계는 실행하지 않았습니다.', 'assistant');
+            return applied;
+        }
+        const issues = report.reports.at(-1)?.issues || [];
+        const message = ['그림 확인을 마치지 못해 자동으로 반영하지 않았습니다.',
+            ...issues, report.error].filter(Boolean).join('\n');
+        const node = this.addChatMessage(message, 'assistant');
+        this.addDrawingReviewDetails(checks, node);
+        this.setTeacherWorkflowState('warning', { message });
+        if (node) {
+            const preview = document.createElement('img');
+            preview.src = report.candidate.imageDataUrl;
+            preview.alt = '자동 확인이 끝나지 않은 그림 초안';
+            preview.className = 'drawing-review-preview';
+            node.appendChild(preview);
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn-secondary';
+            button.textContent = '초안 반영';
+            button.addEventListener('click', () => {
+                if (this.activeDrawingRequest) return;
+                try {
+                    if (applyCandidate(true)) button.disabled = true;
+                } catch (error) {
+                    button.disabled = true;
+                    this.addChatMessage(error.message, 'assistant');
+                }
+            });
+            node.appendChild(button);
+        }
+        return false;
+    }
+
+    addDrawingReviewDetails(checks, node = null) {
+        if (!checks.length) return;
+        const target = node || this.addChatMessage('그림 확인 내역', 'assistant');
+        if (!target) return;
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = '조건별 확인 결과';
+        details.appendChild(summary);
+        const list = document.createElement('ul');
+        for (const check of checks) {
+            const item = document.createElement('li');
+            const status = { met: '확인', unmet: '미충족', uncertain: '확인 필요' }[check.status];
+            item.textContent = `${status}: ${check.condition} — ${check.evidence}`;
+            list.appendChild(item);
+        }
+        details.appendChild(list);
+        target.appendChild(details);
+    }
+
     buildAIContext() {
         return {
             view: { width: this.canvas.width, height: this.canvas.height, scale: this.canvas.scale,
                 offset: { x: this.canvas.offset.x, y: this.canvas.offset.y },
-                showXAxis: this.canvas.showXAxis, showYAxis: this.canvas.showYAxis },
+                showXAxis: this.canvas.showXAxis, showYAxis: this.canvas.showYAxis,
+                showGrid: this.canvas.showGrid, showAxisNumbers: this.canvas.showAxisNumbers,
+                axisNumberInterval: this.canvas.axisNumberInterval },
             objects: this.objectManager.getAllObjects().map(o => {
                 const serialized = typeof o.toJSON === 'function' ? o.toJSON() : {};
                 return {
@@ -4203,7 +4429,7 @@ class GraphAApp {
         const wasEmpty = existingIds.size === 0;
         // Fit and lay out fresh AI graph labels before recording the create transaction,
         // so undo/redo restores the final positions and teacher-authored JSON stays pinned.
-        if (intentOptions.generated && wasEmpty && Math.abs(this.canvas.scale - 50) < 1e-9 &&
+        if (!intentOptions.reviewedView && intentOptions.generated && wasEmpty && Math.abs(this.canvas.scale - 50) < 1e-9 &&
             Math.abs(this.canvas.offset.x) < 1e-9 && Math.abs(this.canvas.offset.y) < 1e-9 &&
             data.operations?.some(operation => operation.op === 'create' && operation.type === 'function')) {
             const previewManager = new ObjectManager();
@@ -4219,7 +4445,7 @@ class GraphAApp {
         const patchResult = this.patchApplier.apply(data);
 
         if (patchResult.success) {
-            if (wasEmpty && Math.abs(this.canvas.scale - 50) < 1e-9 &&
+            if (!intentOptions.reviewedView && wasEmpty && Math.abs(this.canvas.scale - 50) < 1e-9 &&
                 Math.abs(this.canvas.offset.x) < 1e-9 && Math.abs(this.canvas.offset.y) < 1e-9) {
                 if (data.operations?.some(operation => operation.op === 'create' && operation.type === 'functionRegion') ||
                     (data.operations?.some(operation => operation.op === 'create' && operation.type === 'function') &&
@@ -4235,6 +4461,11 @@ class GraphAApp {
                         this.canvas.showGrid = this.canvas.showXAxis = this.canvas.showYAxis = false;
                     }
                 }
+            }
+            if (intentOptions.reviewedView) {
+                this.canvas.scale = intentOptions.reviewedView.scale;
+                Object.assign(this.canvas.offset, intentOptions.reviewedView.offset);
+                this.updateZoomDisplay();
             }
             this.render();
             this.updateSidebar();
@@ -4535,6 +4766,7 @@ class GraphAApp {
     }
 
     handleImageUpload(file, options = {}) {
+        if (this.activeDrawingRequest) return;
         const reportError = (message, type = 'warning') => {
             this.showToast(message, type);
             if (this.problemComposer?.dialog?.open) this.problemComposer.status(message, true);
@@ -4568,6 +4800,7 @@ class GraphAApp {
         };
 
         reader.onload = async (e) => {
+            if (this.activeDrawingRequest) return;
             const imageDataUrl = e.target.result;
             const input = document.getElementById('chatInput');
             const instruction = this.imageUploadIntent === 'problem' ? '' : (input?.value.trim() || '');
@@ -4575,7 +4808,7 @@ class GraphAApp {
             const mode = instruction ? 'patch' : 'problem_diagram';
             const recognition = mode === 'problem_diagram' ? this.problemComposer?.startRecognition(imageDataUrl) : null;
             let diagramApplied = false;
-            const aiContext = this.buildAIContext();
+            let aiContext = this.buildAIContext();
             const trace = createImageAnalysisTrace({
                 source: options.source || 'upload',
                 mode,
@@ -4611,6 +4844,8 @@ class GraphAApp {
                 ? '이미지와 요청을 바탕으로 필요한 부분만 수정 중입니다...'
                 : '사진에서 수학적 관계와 좌표를 먼저 확인한 뒤 도형을 만들고 있습니다...';
             const loadingMessage = this.addChatMessage(loadingText, 'assistant');
+            const run = this.beginDrawingRequest(loadingMessage, this.imageAbortController);
+            aiContext = run.context;
 
             try {
                 let analysisImageDataUrl = imageDataUrl;
@@ -4665,27 +4900,22 @@ class GraphAApp {
                     context: aiContext,
                     trace
                 });
+                throwIfDrawingAborted(run.controller.signal);
 
                 if (this.imageAbortController.signal.aborted) throw new Error('사진 인식을 중단했습니다.');
                 if (result.success && result.json) {
-                    this.addChatMessage(
-                        mode === 'patch'
-                            ? '요청한 부분 수정 패치를 만들었습니다.'
-                            : '사진의 수학적 관계를 확인하여 편집 가능한 도형으로 만들었습니다.',
-                        'assistant'
-                    );
-                    const applied = this.processAIJSON(result.json, {
+                    const applied = await this.reviewAndApplyGeneratedDrawing(result, run, {
                         mode,
                         instruction,
                         context: aiContext,
                         maxOperations: mode === 'patch' ? undefined : 45,
                         modelMeta: this.getAIModelResultMeta(result),
                         trace
-                    });
+                    }, analysisImageDataUrl);
                     diagramApplied = applied;
                     this.completeImageDebugTrace(trace, {
                         success: applied,
-                        outcome: applied ? 'applied' : 'canvas_apply_failed'
+                        outcome: applied ? 'applied' : 'drawing_review_incomplete'
                     });
                 } else if (result.error) {
                     recordImageAnalysisStage(trace, 'canvas_apply', {
@@ -4729,9 +4959,10 @@ class GraphAApp {
                     outcome: 'unexpected_error',
                     error: message
                 });
-                console.error('이미지 분석 처리 실패:', error);
+                if (error.name !== 'AbortError') console.error('이미지 분석 처리 실패:', error);
                 this.addChatMessage(`❌ ${message}`, 'assistant');
             } finally {
+                this.endDrawingRequest(run);
                 if (!trace.completedAt) {
                     this.completeImageDebugTrace(trace, {
                         success: false,
