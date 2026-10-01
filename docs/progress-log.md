@@ -6,9 +6,9 @@
 - 각도 글자 상자 전체가 내각 안에 들어가면 불필요한 화살표를 생략한다. 새 글자가 안에 들어가지 못하면 해당 도형의 실제 바깥을 후보로 삼는다. 호 반지름·점 좌표·수동 오프셋은 자동 이동하지 않는다. 화살표는 자기 호를 향하되 끝에 약 7px 여백을 두고 선 굵기에 비례해 화살촉을 키웠다. 실제 작은 삼각형에서 자기 호의 가장 가까운 부분과 5.19px 이상 떨어졌다.
 - 자동 값과 단순 수치의 불필요한 소수 0을 없애 40°·6cm로 쓴다. 실제 소수와 식은 보존한다. 새 치수 기본값은 24px이며 교사가 지정한 기존 크기는 유지한다. 검수 시안은 치수 28px·점 이름 34px·같은 각 한 줄로 수정했다. 좌표·각·길이·점 이름 위치와 저장/undo/redo를 대조했다. 독립 같음 묶음을 모두 한 줄로 바꾸지 않았다.
 - 계획·사용법·프로젝트 mathgraph-drawing 스킬·runtime 참조·모든 AI 제공자용 AnnotationGuide에 같은 기준을 반영했다. 이번 피드백은 이 프로젝트의 기능 지침이며 장기 기억을 저장하지 않았다.
-- 로컬 검증: 658개 테스트와 정적 빌드, 기존 100종·복합 45종(오류 0), 네 고의 오류 탐지, 앱 원샷 28개·대표 저장 8개·중앙/구형 표시 수정·실제 외부 배치와 파일/PNG 왕복이 통과했다. Browser plugin not available이므로 기존 Playwright를 사용했다. 1440×1000 앱과 1000×760 렌더에서 확인했으며 미처리 브라우저 오류는 0이다. 모바일 390×844 캡처에는 열린 패널이 그림을 가려서 모바일 가독성 통과로 보고하지 않는다. 자료는 output/annotation-feedback, output/annotation-feedback-complex, output/annotation-feedback-100에 있으며 원격 전송에서 제외한다.
+- 로컬 검증: 최종 659개 테스트와 정적 빌드, 기존 100종·복합 45종(오류 0), 네 고의 오류 탐지, 앱 원샷 28개·대표 저장 8개·중앙/구형 표시 수정·실제 외부 배치와 파일/PNG 왕복이 통과했다. Browser plugin not available이므로 기존 Playwright를 사용했다. 1440×1000 앱과 1000×760 렌더에서 확인했으며 미처리 브라우저 오류는 0이다. 모바일 390×844 캡처에는 열린 패널이 그림을 가려서 모바일 가독성 통과로 보고하지 않는다. 자료는 output/annotation-feedback, output/annotation-feedback-complex, output/annotation-feedback-100에 있으며 원격 전송에서 제외한다.
 - quick_validate.py는 PyYAML 부재로 실행되지 않았다. 스킬 frontmatter는 그대로이고 기존 런타임 참조 동등성 검사는 통과했다. 외부 모델 실호출·한글 인쇄는 미검증이다. 기존 API 키 선택 단계의 재인증 필요 상태를 임의로 성공 처리하지 않았으며 전체 원샷 목표를 완료로 선언하지 않는다.
-- 읽기 확인: GitHub 연결·Production Branch=main, 운영 READY 소스와 원격 main 1eda3e4가 일치한다. 관리 복구용 기준 브랜치는 배포용 기준이 아니며 이번에는 작업 브랜치만 전송한다. 아직 새 변경의 커밋·푸시·Preview 확인은 남아 있다.
+- 읽기 확인: GitHub 연결·Production Branch=main, 운영 READY 소스와 원격 main 1eda3e4가 일치한다. 관리 복구용 기준 브랜치는 배포용 기준이 아니며 작업 브랜치만 전송했다. 코드 d5dc8dc와 원격 upstream 일치, 관리 검증 3개 명령의 통과 영수증, 자동 Preview dpl_EkNZjY2N4VLC3sXRMEYCrDLjZ3JQ의 Ready/preview·동일 소스 SHA를 확인했다. 주소는 https://mathgraph-7v92d2ta5-beomjinsouths-projects.vercel.app 이다. 원격 보호를 변경하지 않았으며 원격 앱 조작은 미검증이다. 결과 PNG와 편집 파일 사본은 C:/Users/pbj95/.codex/artifacts/mathgraph-annotation-feedback-20261001-d5dc8dc에 보존했다. 마지막 변경은 검증·전송 기록 문서만 수정한다.
 
 ## 2026-10-01 복합 원샷 재개와 치수 전체 표시값 검사
 
