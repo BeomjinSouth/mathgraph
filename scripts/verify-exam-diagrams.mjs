@@ -216,6 +216,7 @@ try {
         const piecewiseChecks = [];
         let annotationUpdateCheck = null;
         let legacyAnnotationUpdateCheck = null;
+        let exteriorAngleCheck = null;
         let existingViewPreserved = null;
         if (suite === 'complex') {
             try {
@@ -244,6 +245,11 @@ try {
             await fs.writeFile(path.join(output, 'annotation-update-legacy.png'), Buffer.from(legacyAnnotationUpdateCheck.image.split(',')[1], 'base64'));
             await fs.writeFile(path.join(output, 'annotation-update-legacy.mathgraph.json'), JSON.stringify(legacyAnnotationUpdateCheck.project, null, 2));
             delete legacyAnnotationUpdateCheck.image; delete legacyAnnotationUpdateCheck.project;
+            exteriorAngleCheck = await appPage.evaluate(async () =>
+                (await import('/scripts/verify-annotation-update-browser.mjs')).verifyExteriorAngleInApp());
+            await fs.writeFile(path.join(output, 'angle-outside.png'), Buffer.from(exteriorAngleCheck.image.split(',')[1], 'base64'));
+            await fs.writeFile(path.join(output, 'angle-outside.mathgraph.json'), JSON.stringify(exteriorAngleCheck.project, null, 2));
+            delete exteriorAngleCheck.image; delete exteriorAngleCheck.project;
             for (const spec of piecewiseBrowserCases) {
                 const checked = await appPage.evaluate(async spec =>
                     (await import('/scripts/verify-piecewise-browser.mjs')).verifyPiecewiseInApp(spec), spec);
@@ -698,7 +704,7 @@ try {
         await appPage.setViewportSize({ width: 390, height: 844 });
         await appPage.waitForFunction(() => window.app.canvas.width > 0 && window.app.canvas.width < 500);
         await appPage.screenshot({ path: path.join(screenshotDir, 'mobile.png') });
-        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, piecewiseChecks, annotationUpdateCheck, legacyAnnotationUpdateCheck, existingViewPreserved, drawingGuidanceLoaded,
+        const appResult = { url: appPage.url(), title: await appPage.title(), checks, oneShotChecks, geometryOneShotChecks, circleOneShotChecks, solidOneShotChecks, piecewiseChecks, annotationUpdateCheck, legacyAnnotationUpdateCheck, exteriorAngleCheck, existingViewPreserved, drawingGuidanceLoaded,
             explicitPositionsPreserved: preserved, errors, screenshotDir };
         await fs.writeFile(path.join(output, 'app-check.json'), JSON.stringify(appResult, null, 2));
         console.log(JSON.stringify(appResult, null, 2));

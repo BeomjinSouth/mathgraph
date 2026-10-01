@@ -58,9 +58,9 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
         if (op.type === 'angleDimension') {
             op.leaderMode ??= 'auto';
             op.labelPlacement ??= 'centered';
-            op.labelFontSize ??= 20;
+            op.labelFontSize ??= 24;
         } else if (op.type === 'lengthDimension') {
-            op.dashLength ??= 7; op.dashGap ??= 7; op.labelFontSize ??= 18;
+            op.dashLength ??= 7; op.dashGap ??= 7; op.labelFontSize ??= 24;
             op.labelOnCurve ??= !pinnedLabelIds.has(op.id);
         }
     }

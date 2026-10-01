@@ -31,7 +31,7 @@ function angle(vertex, neighbor1, neighbor2, options = {}) {
 
 function length(segmentId, text) {
     return { op: 'create', type: 'lengthDimension', id: `length_${segmentId}`,
-        segmentId, customText: text, curvature: -52, lineWidth: 3, labelFontSize: 15 };
+        segmentId, customText: text, curvature: -52, lineWidth: 3, labelFontSize: 24 };
 }
 
 function buildIsosceles(message) {

@@ -4,10 +4,11 @@
  */
 
 import { GeoObject, ObjectType } from './GeoObject.js';
-import { Vec2 } from '../utils/Geometry.js';
+import { Vec2, Geometry } from '../utils/Geometry.js';
 import { DEFAULT_LENGTH_ARC_HEIGHT, lengthArcGeometry, chooseLengthArcHeight, lengthArcPieces } from '../utils/LengthArc.js';
 import { MathUtils } from '../utils/MathUtils.js';
-import { segmentDistance, curveDistance, quadraticAt, leaderGeometry, drawLeader } from '../utils/AnnotationGeometry.js';
+import { segmentDistance, curveDistance, quadraticAt, leaderGeometry, drawLeader, boxCorners } from '../utils/AnnotationGeometry.js';
+import { compactMeasurementText, formatMeasurement } from '../utils/MeasurementText.js';
 
 // ObjectType 확장 (동적으로 추가)
 if (!ObjectType.ANGLE_DIMENSION) {
@@ -48,7 +49,7 @@ export class AngleDimension extends GeoObject {
         // - precision: 자동 계산값(각도)의 소수점 자리수
         // - labelFontSize: 라벨 폰트 크기 (캔버스에 그려지는 숫자 크기)
         this.precision = (params.precision !== undefined) ? params.precision : 1;
-        this.labelFontSize = params.labelFontSize || (params.type ? 14 : 20);
+        this.labelFontSize = params.labelFontSize || (params.type ? 14 : 24);
         // Old project files keep their exact label anchor; new annotations are centered.
         this.labelPlacement = params.labelPlacement || (params.type ? 'legacy' : 'centered');
         this.leaderMode = ['auto','always','none'].includes(params.leaderMode) ? params.leaderMode : 'auto';
@@ -98,6 +99,13 @@ export class AngleDimension extends GeoObject {
         this.endAngle = this.startAngle + diff;
 
         this.angle = diff;
+        const polygons = objectManager.getAllObjects().filter(obj => obj.type === 'polygon' && obj.visible && obj.valid
+            && [this.vertexId,this.point1Id,this.point2Id].every(id => obj.vertexIds.includes(id)));
+        const polygon=polygons.sort((a,b)=>a.vertexIds.length-b.vertexIds.length)[0];
+        this._interiorBoundary = polygon?.vertexIds.map(id=>objectManager.getObject(id).getPosition()) || null;
+        if (!this._interiorBoundary && objectManager.getAllObjects().some(obj => obj.type === 'segment' && obj.visible && obj.valid
+            && [obj.point1Id,obj.point2Id].includes(this.point1Id) && [obj.point1Id,obj.point2Id].includes(this.point2Id)))
+            this._interiorBoundary = [this.vertex,pos1,pos2];
         this.valid = pos1.distanceTo(this.vertex) > 1e-9 && pos2.distanceTo(this.vertex) > 1e-9;
     }
 
@@ -189,11 +197,11 @@ export class AngleDimension extends GeoObject {
             // 직각이면 숫자 대신 빈칸 또는 작은 표시
             let displayText;
             if (this.customText !== null) {
-                displayText = this.customText;
+                displayText = compactMeasurementText(this.customText);
             } else if (isRightAngle) {
                 displayText = '90°'; // 직각일 때도 숫자 표시 (선택적으로 빈 문자열 가능)
             } else {
-                displayText = `${degrees.toFixed(this.precision)}°`;
+                displayText = `${formatMeasurement(degrees,this.precision)}°`;
             }
 
             /*
@@ -218,11 +226,9 @@ export class AngleDimension extends GeoObject {
             };
 
             const anchor = this.getArcAnchor(canvas);
-            const textDistance = Math.hypot(x - anchor.x, y - anchor.y);
-            const textAngle = Math.atan2(labelPos.y - this.vertex.y, labelPos.x - this.vertex.x);
-            const detached = textDistance > Math.max(34, this.labelFontSize * 1.8) || !this.isAngleInRange(textAngle);
+            const detached = !this.isLabelInterior(this._labelBox,canvas);
             if (this.leaderMode === 'always' || (this.leaderMode === 'auto' && detached)) {
-                this._leaderCurve = leaderGeometry(this._labelBox, anchor, this.leaderCurvature);
+                this._leaderCurve = leaderGeometry(this._labelBox, anchor, this.leaderCurvature, this.lineWidth);
                 drawLeader(ctx, this._leaderCurve, this.color, this.lineWidth);
             }
 
@@ -242,6 +248,13 @@ export class AngleDimension extends GeoObject {
     }
 
     isRightAngle() { return Math.abs(this.angle - Math.PI / 2) < 1e-8 && this.markerCount === 0 && this.arcCount === 1; }
+
+    isLabelInterior(box,canvas) {
+        return boxCorners(box).every(screen => {
+            const p=canvas.toMath(screen),angle=Math.atan2(p.y-this.vertex.y,p.x-this.vertex.x);
+            return this.isAngleInRange(angle) && (!this._interiorBoundary || Geometry.pointInPolygon(p,this._interiorBoundary));
+        });
+    }
 
     getArcAnchor(canvas) {
         const middle = (this.startAngle + this.endAngle) / 2;
@@ -471,7 +484,7 @@ export class LengthDimension extends GeoObject {
         const s2 = canvas.toScreen(this.point2);
 
         const obstacles = (this._obstacles || []).map(pair => pair.map(point => canvas.toScreen(point)));
-        const lengthStr = String(this.customText !== null ? this.customText : this.length.toFixed(this.precision));
+        const lengthStr = this.customText !== null ? compactMeasurementText(this.customText) : formatMeasurement(this.length,this.precision);
         const variable = /^[a-zα-ω]$/u.test(lengthStr.trim());
         ctx.font = `${variable ? 'italic ' : ''}${this.labelFontSize}px "Times New Roman", "STIX Two Math", serif`;
         const textWidth = ctx.measureText(lengthStr).width;

@@ -2,7 +2,7 @@ import { Canvas } from '../core/Canvas.js';
 import { ObjectManager } from '../core/ObjectManager.js';
 import { HistoryManager } from '../core/HistoryManager.js';
 import { PatchApplier } from './PatchApplier.js';
-import { quadraticAt } from '../utils/AnnotationGeometry.js';
+import { quadraticAt, boxOutsidePolygon } from '../utils/AnnotationGeometry.js';
 const POINTS = new Set(['point', 'pointOnObject', 'pointOnLine', 'pointOnCircle', 'intersection', 'midpoint', 'circleCenterPoint']);
 const DIMENSIONS = new Set(['angleDimension', 'lengthDimension']);
 /** Place newly generated labels using the same canvas renderer and fonts as the app.
@@ -116,17 +116,28 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
         const initial = measure(obj);
         if (!initial)
             continue;
+        const labelBounds = obj._labelBox ? {...obj._labelBox} : null;
         const ink = inkFor(obj.type === 'lengthDimension' ? obj : null);
         const candidates = candidateCenters(obj, initial, canvas, objects);
-        let best = null;
+        let best = null, clearInterior = null;
         for (const candidate of candidates) {
             const box = { ...initial, x: candidate.x - initial.w / 2, y: candidate.y - initial.h / 2 };
+            if (obj.type === 'angleDimension' && labelBounds) {
+                const bounds = {...labelBounds, x:labelBounds.x+box.x-initial.x, y:labelBounds.y+box.y-initial.y};
+                if (!candidate.exterior && !obj.isLabelInterior(bounds,canvas)) continue;
+                if (candidate.exterior && obj._interiorBoundary &&
+                    !boxOutsidePolygon(bounds,obj._interiorBoundary.map(p=>canvas.toScreen(p)))) continue;
+            }
             const outside = Math.max(0, 6 - box.x) + Math.max(0, 6 - box.y) + Math.max(0, box.x + box.w - width + 6) + Math.max(0, box.y + box.h - height + 6);
             const overlap = placed.reduce((sum, p) => sum + overlapArea(box, p), 0);
-            const score = (outside * 100 + ink(box) * 10 + overlap * 10) * 1000 + candidate.cost;
+            const collision = outside * 100 + ink(box) * 10 + overlap * 10;
+            const score = collision * 1000 + candidate.cost;
+            if (obj.type === 'angleDimension' && !candidate.exterior && collision === 0 &&
+                (!clearInterior || candidate.cost < clearInterior.candidate.cost)) clearInterior = {box,score,candidate};
             if (!best || score < best.score)
                 best = { box, score, candidate };
         }
+        if (clearInterior) best = clearInterior;
         if (!best)
             continue;
         const dx = best.box.x - initial.x, dy = best.box.y - initial.y;
@@ -216,7 +227,7 @@ function candidateCenters(obj, box, canvas, objects = []) {
             for (const distance of [base+24,base+48,base+80,base+120])
                 for (const delta of [-Math.PI/2,Math.PI/2,Math.PI]) {
                     const t=middle+delta;
-                    result.push({x:v.x+distance*Math.cos(t),y:v.y+distance*Math.sin(t),cost:distance+100});
+                    result.push({x:v.x+distance*Math.cos(t),y:v.y+distance*Math.sin(t),cost:distance+100,exterior:true});
                 }
         }
     }

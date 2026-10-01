@@ -9,7 +9,7 @@ function lengthMark(a, b, text, curvature = -60, visibleSegment = false) {
         { op: 'create', type: 'segment', id: `${a}${b}`, point1Id: a, point2Id: b,
             visible: visibleSegment, showLabel: false },
         { op: 'create', type: 'lengthDimension', id: `length_${a}${b}`, segmentId: `${a}${b}`,
-            customText: text, curvature, lineWidth: 3, labelFontSize: 15 }
+            customText: text, curvature, lineWidth: 3, labelFontSize: 24 }
     ];
 }
 
@@ -133,7 +133,7 @@ function quadrilateralPyramid(message) {
             showLabel: false, lineWidth: 2 },
         { op: 'create', type: 'lengthDimension', id: 'length_height',
             segmentId: 'height_line', customText: `${height[1]}${height[2] ? ' cm' : ''}`,
-            curvature: 30, lineWidth: 3, labelFontSize: 15,
+            curvature: 30, lineWidth: 3, labelFontSize: 24,
             labelOffset: { x: -0.2, y: 0 } }
     ];
     return { operations };

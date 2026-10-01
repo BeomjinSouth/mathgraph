@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AngleDimension, LengthDimension } from '../js/objects/Dimension.js';
 import { Vec2 } from '../js/utils/Geometry.js';
-import { quadraticAt, curveDistance } from '../js/utils/AnnotationGeometry.js';
+import { quadraticAt, curveDistance, boxOutsidePolygon } from '../js/utils/AnnotationGeometry.js';
+import { compactMeasurementText, formatMeasurement } from '../js/utils/MeasurementText.js';
 import { ObjectManager } from '../js/core/ObjectManager.js';
 import { HistoryManager } from '../js/core/HistoryManager.js';
 import { PatchApplier } from '../js/ai/PatchApplier.js';
@@ -43,14 +44,53 @@ test('right-angle equality marks and multiple arcs retain their existing arc geo
         assert.equal(d.hitTest(new Vec2(radius/Math.SQRT2,radius/Math.SQRT2),3,c),true);
     }
 });
-test('detached angle labels get a curved arrow ending exactly at their own arc',()=>{
+test('detached angle labels keep an editable association and a visible gap at their own arc',()=>{
     const {d,c}=setup(60,{labelOffset:{x:-1.3,y:1},arcRadius:.6});d.render(c);
     assert.ok(d._leaderCurve);const curve=d._leaderCurve,anchor=d.getArcAnchor(c);
-    assert.deepEqual(curve.end,anchor);assert.ok(Math.abs(Math.hypot(anchor.x,anchor.y)-60)<1e-8);
+    assert.deepEqual(curve.anchor,anchor);
+    assert.ok(Math.abs(Math.hypot(curve.end.x-anchor.x,curve.end.y-anchor.y)-7)<1e-6);
+    assert.ok(Math.abs(Math.hypot(anchor.x,anchor.y)-60)<1e-8);
     const b=d._labelBox;assert.ok(curve.start.x<b.x||curve.start.x>b.x+b.w||curve.start.y<b.y||curve.start.y>b.y+b.h);
     const mid=quadraticAt(curve.start,curve.control,curve.end,.5);
     assert.ok(curveDistance(mid,curve)<.001);assert.equal(d.hitTest(c.toMath(mid),5,c),true);assert.equal(d._hitPart,'leader');
     assert.equal(d.hitTest(c.toMath(anchor),5,c),true);assert.equal(d._hitPart,'shape','arrow tip must not steal the arc resize gesture');
+});
+test('a legible angle value deeper inside the angle has no unnecessary automatic arrow',()=>{
+    const {d,c}=setup(40,{labelOffset:{x:1,y:.4},customText:'40.0°',labelFontSize:28});
+    d.render(c);assert.equal(d._leaderCurve,null);
+    assert.ok(c.ctx.calls.some(call=>call[0]==='fillText' && call[1]==='40°'));
+    const before=d.toJSON();d.render(c);assert.deepEqual(d.toJSON(),before);
+});
+test('integer measurements are compact but expressions, units and fractional values are not misread',()=>{
+    for (const [input,expected] of [['40.0°','40°'],['6.0 cm','6cm'],['6.25 cm','6.25cm'],
+        ['0.0','0'],['40+10°','40+10°'],['6/2 cm','6/2 cm'],['x+1','x+1']])
+        assert.equal(compactMeasurementText(input),expected);
+    assert.equal(formatMeasurement(6,2),'6');assert.equal(formatMeasurement(6.25,2),'6.25');
+    const {manager,c}=setup();const a=manager.createPoint(0,0),b=manager.createPoint(6,0);
+    const segment=manager.createSegment(a.id,b.id),length=manager.createLengthDimension(segment.id,{customText:'6.0 cm'});
+    length.render(c);assert.ok(c.ctx.calls.some(call=>call[0]==='fillText' && call[1]==='6cm'));
+});
+test('an angle uses the current triangle boundary even before the polygon updates after a point move',()=>{
+    const {manager,d,c,v,p,q}=setup(40,{labelOffset:{x:1,y:.4},customText:'40°',labelFontSize:28});
+    const polygon=manager.createPolygon([v.id,p.id,q.id],{fillOpacity:0,showLabel:false});
+    d.update(manager);d.render(c);assert.equal(d._leaderCurve,null);
+    p.position=new Vec2(1,0);q.position=new Vec2(Math.cos(40*Math.PI/180),Math.sin(40*Math.PI/180));
+    d.update(manager);d.render(c);assert.ok(d._leaderCurve,'text outside the shrunken triangle needs a leader');
+    polygon.update(manager);d.update(manager);d.render(c);assert.ok(d._leaderCurve);
+});
+test('exterior annotation boxes cannot contain, overlap or cross the triangle boundary',()=>{
+    const triangle=[{x:0,y:0},{x:-100,y:200},{x:100,y:200}];
+    assert.equal(boxOutsidePolygon({x:-40,y:100,w:80,h:30},triangle),false);
+    assert.equal(boxOutsidePolygon({x:-160,y:100,w:120,h:30},triangle),false);
+    assert.equal(boxOutsidePolygon({x:-180,y:100,w:70,h:30},triangle),true);
+    assert.equal(boxOutsidePolygon({x:-200,y:-50,w:400,h:300},triangle),false);
+});
+test('the leader arrowhead remains readable in proportion to a thick stroke',()=>{
+    const {d,c}=setup(40,{labelOffset:{x:-2,y:1},lineWidth:6});
+    d.render(c);const end=d._leaderCurve.end;
+    const legs=c.ctx.calls.filter(call=>call[0]==='lineTo').slice(-2);
+    assert.equal(legs.length,2);
+    assert.ok(legs.every(call=>Math.hypot(call[1]-end.x,call[2]-end.y)>20));
 });
 test('nearby text has no automatic leader and explicit leader modes and hidden values are respected',()=>{
     const {d,c}=setup();d.render(c);assert.equal(d._leaderCurve,null);

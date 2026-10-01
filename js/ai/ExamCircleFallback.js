@@ -53,7 +53,7 @@ export function buildExamCircleOperations(message) {
     const annotatedSide = equalRadius ? equalRadius[2] : `${centerName}${firstName}`;
     operations.push({ op: 'create', type: 'lengthDimension', id: 'radius_length',
         segmentId: annotatedSide, customText: `${radius}${(equalRadius?.[4] || radiusText?.[2]) ? ' cm' : ''}`,
-        curvature: equalRadius ? 70 : -55, lineWidth: 3, labelFontSize: 15 });
+        curvature: equalRadius ? 70 : -55, lineWidth: 3, labelFontSize: 24 });
     const shadesSector = /부채꼴/.test(compact) && /색칠|음영|넓이.{0,20}(?:구하|찾|계산)/.test(compact);
     if (shadesSector || sectorName) {
         operations.push({ op: 'create', type: 'sector', id: 'requested_sector',
@@ -68,6 +68,6 @@ export function buildExamCircleOperations(message) {
     }
     operations.push({ op: 'create', type: 'angleDimension', id: 'central_angle',
         vertexId: centerName, point1Id: firstName, point2Id: lastName,
-        arcRadius: 0.72, showValue: true, customText: `${degrees}°`, labelFontSize: 15 });
+        arcRadius: 0.72, showValue: true, customText: `${degrees}°`, labelFontSize: 24 });
     return { operations };
 }

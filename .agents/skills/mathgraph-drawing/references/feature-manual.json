@@ -552,8 +552,8 @@
   "annotationLayout": {
     "guide": "references/annotation-layout.md",
     "applicationPrompt": "js/ai/AnnotationGuide.js",
-    "angleLeaderDecision": "Try a readable label near its own arc first. For narrow angles, crowded intersections or long expressions, move that label to nearby free space and use leaderMode auto. An explicit curved-arrow request uses always; an explicit no-arrow request uses none.",
-    "leaderTarget": "From the text box to the same angleDimension arc. It is not a standalone vector, and does not automatically avoid every edge or label.",
+    "angleLeaderDecision": "Try a readable whole text box inside its own angle first, without an unnecessary arrow. If it cannot fit, move it outside the actual triangle/polygon and use leaderMode auto. An explicit curved-arrow request uses always; an explicit no-arrow request uses none. New dimension text defaults to 24px; inspect its size relative to the figure. Print integers as 40° and 6cm; preserve genuine decimals and expressions. One equal-angle group uses one tick, independent groups use different counts.",
+    "leaderTarget": "From the text box toward the same angleDimension arc, leaving a small visible tip gap. Scale the head to the stroke. It is not a standalone vector, and does not automatically avoid every edge or label.",
     "lengthDecision": "New labels stay in their own dashed curve gap with labelOnCurve true. Use free positioning only when explicitly requested or preserving an existing teacher position.",
     "pointNames": "Place names outside adjacent sides; preserve teacher offsets and coordinates. Point offsets are screen-pixel bottom baselines; dimension offsets are math units.",
     "verification": "Validate GraphA, render in the actual app, inspect association and overlaps, then save/reload. Synthetic regression passes do not establish arbitrary model success. HWP printing is a separate check."
