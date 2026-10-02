@@ -6,7 +6,8 @@
 - 첫 검수에서 도형 밖의 넓은 각도식에 화살표가 빠지는 문제를 발견했다. 곡선 제어점이 글자 상자 안에 있으면 연결을 그리지 않던 경로를 실패 테스트로 재현했다. 글자 상자에서 빠져나오는 시작점을 구하고 짧은 구간의 휘어짐을 제한했다. 새 외부 배치는 연결 가능한 충분한 길이의 후보를 선택한다. 실제 원호/직각 선과의 최단 거리를 기준으로 끝을 띄웠다. 호 중앙점과만 7px 떨어져 다른 부분에는 더 가까워지던 경우를 보완했다. 교사 좌표·기존 수동 오프셋·표시 모드는 바꾸지 않았다.
 - 새 6종은 겹침·잘림·조건·저장 렌더 오류가 없고, 실제 앱에서 생성→undo/redo→파일 가져오기 후 PNG 일치가 모두 통과했다. 넓이 음영은 좌우 두 영역 및 구간별 양수/음수 영역의 안팎 픽셀을 확인했고, 열린 점은 흰 중심·닫힌 점은 검은 중심을 확인했다. 긴 식의 화살촉과 실제 호의 최단 거리는 약 7px다. 기존 100종·복합 45종과 네 고의 오류 탐지, 앱 원샷 28개·대표 저장 8개·내외부 표시 검수도 다시 통과했다.
 - 근거는 output/additional-diagrams-20261002/delivery와 regression-{100,complex}다. 초기 실패와 수정 단계는 first/corrected/final/verified에 별도로 보존했다. 실제 앱은 로컬 Chrome 1440×1000에서 확인했고 Browser 전용 스킬이 없어 기존 Playwright를 사용했다. 브라우저 오류는 0이다. 전체 그림 및 편집 파일 묶음은 별도 로컬 artifacts에 복사하며 개인 자료·이미지·프로젝트 JSON은 원격 전송하지 않는다.
-- mathgraph-drawing의 표시 기준, routing-personal-playbooks의 범위·검산 기준, solo-ai-workbench의 보존·검증, frontend-testing-debugging의 실제 화면 확인을 적용했다. 장기 기억을 저장하지 않았다. 전체 661개 검사·정적 빌드·공백 검사가 통과했다. 최종 그림 6개의 PNG·편집 파일과 모아보기 ZIP은 C:/Users/pbj95/.codex/artifacts/mathgraph-extra-six-20261002-final에 보존했다. 외부 모델 실호출·한글 인쇄·모바일 가독성·운영 반영은 미검증이다. 최종 커밋의 전체 관리 검증과 작업 브랜치 전송은 이어서 확인한다.
+- mathgraph-drawing의 표시 기준, routing-personal-playbooks의 범위·검산 기준, solo-ai-workbench의 보존·검증, frontend-testing-debugging의 실제 화면 확인을 적용했다. 장기 기억을 저장하지 않았다. 전체 661개 검사·정적 빌드·공백 검사가 통과했다. 최종 그림 6개의 PNG·편집 파일과 모아보기 ZIP은 C:/Users/pbj95/.codex/artifacts/mathgraph-extra-six-20261002-final에 보존했다. 외부 모델 실호출·한글 인쇄·모바일 가독성·운영 반영은 미검증이다.
+- 코드 커밋 6bdb003의 관리 검증 세 명령이 통과했고 작업 브랜치를 GitHub에 전송했다. vercel-cli와 deployments-cicd의 조회 절차로 자동 Preview dpl_5NHa3dMrbMrEUhrpGhffcHN2ELGk의 Ready/preview 및 같은 소스 커밋을 확인했다. 주소는 https://mathgraph-3e3nu7wtz-beomjinsouths-projects.vercel.app 이다. 보호 설정은 유지했고 원격 앱 조작은 미검증이다. main·운영·개인 그림 원격 전송은 하지 않았다. 마지막 갱신은 이 검증·전송 기록 문서만 변경한다.
 
 ## 2026-10-01 관리 연결 복구와 40° 표시 피드백 반영
 
