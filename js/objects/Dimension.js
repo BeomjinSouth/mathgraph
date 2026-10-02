@@ -228,7 +228,8 @@ export class AngleDimension extends GeoObject {
             const anchor = this.getArcAnchor(canvas);
             const detached = !this.isLabelInterior(this._labelBox,canvas);
             if (this.leaderMode === 'always' || (this.leaderMode === 'auto' && detached)) {
-                this._leaderCurve = leaderGeometry(this._labelBox, anchor, this.leaderCurvature, this.lineWidth);
+                this._leaderCurve = leaderGeometry(this._labelBox, anchor, this.leaderCurvature, this.lineWidth,
+                    p=>this.distanceToArc(p,canvas));
                 drawLeader(ctx, this._leaderCurve, this.color, this.lineWidth);
             }
 
@@ -260,6 +261,23 @@ export class AngleDimension extends GeoObject {
         const middle = (this.startAngle + this.endAngle) / 2;
         const radius = this.arcRadius * (this.isRightAngle() ? 0.6 * Math.SQRT2 : 1);
         return canvas.toScreen({ x: this.vertex.x + radius * Math.cos(middle), y: this.vertex.y + radius * Math.sin(middle) });
+    }
+
+    distanceToArc(point,canvas) {
+        const v=canvas.toScreen(this.vertex),r=canvas.toScreenLength(this.arcRadius);
+        const at=(radius,t)=>({x:v.x+radius*Math.cos(t),y:v.y-radius*Math.sin(t)});
+        if(this.isRightAngle()) {
+            const a=at(r*.6,this.startAngle),b=at(r*.6,this.endAngle);
+            const corner={x:a.x+b.x-v.x,y:a.y+b.y-v.y};
+            return Math.min(segmentDistance(point,a,corner),segmentDistance(point,corner,b));
+        }
+        const angle=Math.atan2(v.y-point.y,point.x-v.x),radial=Math.hypot(point.x-v.x,point.y-v.y);
+        return Math.min(...Array.from({length:this.arcCount},(_,i)=>{
+            const radius=r+i*5;
+            if(this.isAngleInRange(angle)) return Math.abs(radial-radius);
+            const a=at(radius,this.startAngle),b=at(radius,this.endAngle);
+            return Math.min(Math.hypot(point.x-a.x,point.y-a.y),Math.hypot(point.x-b.x,point.y-b.y));
+        }));
     }
 
     /**

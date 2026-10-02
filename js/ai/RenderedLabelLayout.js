@@ -2,7 +2,7 @@ import { Canvas } from '../core/Canvas.js';
 import { ObjectManager } from '../core/ObjectManager.js';
 import { HistoryManager } from '../core/HistoryManager.js';
 import { PatchApplier } from './PatchApplier.js';
-import { quadraticAt, boxOutsidePolygon } from '../utils/AnnotationGeometry.js';
+import { quadraticAt, boxOutsidePolygon, leaderGeometry } from '../utils/AnnotationGeometry.js';
 const POINTS = new Set(['point', 'pointOnObject', 'pointOnLine', 'pointOnCircle', 'intersection', 'midpoint', 'circleCenterPoint']);
 const DIMENSIONS = new Set(['angleDimension', 'lengthDimension']);
 /** Place newly generated labels using the same canvas renderer and fonts as the app.
@@ -127,6 +127,11 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
                 if (!candidate.exterior && !obj.isLabelInterior(bounds,canvas)) continue;
                 if (candidate.exterior && obj._interiorBoundary &&
                     !boxOutsidePolygon(bounds,obj._interiorBoundary.map(p=>canvas.toScreen(p)))) continue;
+                if (candidate.exterior) {
+                    const curve=leaderGeometry(bounds,obj.getArcAnchor(canvas),obj.leaderCurvature,obj.lineWidth,
+                        p=>obj.distanceToArc(p,canvas));
+                    if(!curve || Math.hypot(curve.end.x-curve.start.x,curve.end.y-curve.start.y)<obj.labelFontSize) continue;
+                }
             }
             const outside = Math.max(0, 6 - box.x) + Math.max(0, 6 - box.y) + Math.max(0, box.x + box.w - width + 6) + Math.max(0, box.y + box.h - height + 6);
             const overlap = placed.reduce((sum, p) => sum + overlapArea(box, p), 0);

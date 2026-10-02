@@ -105,13 +105,13 @@ export async function verifyExteriorAngleInApp() {
     ensure(angle._leaderCurve,'exterior number lost its leader');
     const curve=angle._leaderCurve,anchor=angle.getArcAnchor(app.canvas);
     const gap=Math.hypot(curve.end.x-anchor.x,curve.end.y-anchor.y);
-    ensure(Math.abs(gap-7)<1e-6,'tip touches arc or targets a different anchor');
+    ensure(Math.abs(angle.distanceToArc(curve.end,app.canvas)-7)<1e-6,'tip touches its visible arc');
     const vertex=app.canvas.toScreen(angle.vertex),radius=angle.arcRadius*app.canvas.scale;
     const nearestArcGap=Math.min(...Array.from({length:101},(_,i)=>{
         const t=angle.startAngle+angle.angle*i/100;
         return Math.hypot(curve.end.x-vertex.x-radius*Math.cos(t),curve.end.y-vertex.y+radius*Math.sin(t));
     }));
-    ensure(nearestArcGap>=5,'tip is too close to another part of its arc');
+    ensure(nearestArcGap>=6.99,'tip is too close to another part of its arc');
     const project=app.buildProjectEnvelope();
     const stableObjects=objects=>JSON.stringify(objects,(key,value)=>key==='createdAt'?undefined:value);
     const before=stableObjects(project.objects);

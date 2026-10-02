@@ -20,25 +20,36 @@ export function curveDistance(p, { start, control, end }) {
     }
     return best;
 }
-export function leaderGeometry(box, anchor, curvature, width = 2) {
+export function leaderGeometry(box, anchor, curvature, width = 2, clearance = null) {
     const end = anchor;
     const center = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
     const n = distance(center, end);
     if (n < 1) return null;
     const normal = { x: -(end.y - center.y) / n, y: (end.x - center.x) / n };
-    const control = { x: (center.x + end.x) / 2 + normal.x * curvature,
+    let control = { x: (center.x + end.x) / 2 + normal.x * curvature,
         y: (center.y + end.y) / 2 + normal.y * curvature };
     const dx = control.x - center.x, dy = control.y - center.y;
     const ratio = Math.max(Math.abs(dx) / (box.w / 2 + 3), Math.abs(dy) / (box.h / 2 + 3));
-    if (ratio <= 1) return null;
-    const start = { x: center.x + dx / ratio, y: center.y + dy / ratio };
+    let start;
+    if (ratio > 1) start = { x: center.x + dx / ratio, y: center.y + dy / ratio };
+    else {
+        // A wide label can contain the midpoint control while the arc is outside.
+        // Leave its box toward the target, then bend only the remaining short span.
+        const tx=anchor.x-center.x,ty=anchor.y-center.y;
+        const edge=Math.max(Math.abs(tx)/(box.w/2+3),Math.abs(ty)/(box.h/2+3));
+        if(edge<=1) return null;
+        start={x:center.x+tx/edge,y:center.y+ty/edge};
+        const bend=Math.sign(curvature)*Math.min(Math.abs(curvature),distance(start,anchor)*.4);
+        control={x:(start.x+anchor.x)/2+normal.x*bend,y:(start.y+anchor.y)/2+normal.y*bend};
+    }
     // Trim the existing curve, rather than moving the arc or changing its identity.
     const gap = Math.max(7, width * 1.5);
-    if (distance(start, anchor) <= gap + 2) return null;
+    const gapDistance=clearance || (p=>distance(p,anchor));
+    if (gapDistance(start) <= gap + 2) return null;
     let low = 0, high = 1;
     for (let i = 0; i < 30; i++) {
         const t = (low + high) / 2;
-        if (distance(quadraticAt(start, control, anchor, t), anchor) > gap) low = t;
+        if (gapDistance(quadraticAt(start, control, anchor, t)) > gap) low = t;
         else high = t;
     }
     const t = (low + high) / 2;

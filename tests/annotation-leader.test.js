@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AngleDimension, LengthDimension } from '../js/objects/Dimension.js';
 import { Vec2 } from '../js/utils/Geometry.js';
-import { quadraticAt, curveDistance, boxOutsidePolygon } from '../js/utils/AnnotationGeometry.js';
+import { quadraticAt, curveDistance, boxOutsidePolygon, leaderGeometry } from '../js/utils/AnnotationGeometry.js';
 import { compactMeasurementText, formatMeasurement } from '../js/utils/MeasurementText.js';
 import { ObjectManager } from '../js/core/ObjectManager.js';
 import { HistoryManager } from '../js/core/HistoryManager.js';
@@ -48,7 +48,7 @@ test('detached angle labels keep an editable association and a visible gap at th
     const {d,c}=setup(60,{labelOffset:{x:-1.3,y:1},arcRadius:.6});d.render(c);
     assert.ok(d._leaderCurve);const curve=d._leaderCurve,anchor=d.getArcAnchor(c);
     assert.deepEqual(curve.anchor,anchor);
-    assert.ok(Math.abs(Math.hypot(curve.end.x-anchor.x,curve.end.y-anchor.y)-7)<1e-6);
+    assert.ok(Math.abs(d.distanceToArc(curve.end,c)-7)<1e-6);
     assert.ok(Math.abs(Math.hypot(anchor.x,anchor.y)-60)<1e-8);
     const b=d._labelBox;assert.ok(curve.start.x<b.x||curve.start.x>b.x+b.w||curve.start.y<b.y||curve.start.y>b.y+b.h);
     const mid=quadraticAt(curve.start,curve.control,curve.end,.5);
@@ -91,6 +91,20 @@ test('the leader arrowhead remains readable in proportion to a thick stroke',()=
     const legs=c.ctx.calls.filter(call=>call[0]==='lineTo').slice(-2);
     assert.equal(legs.length,2);
     assert.ok(legs.every(call=>Math.hypot(call[1]-end.x,call[2]-end.y)>20));
+});
+test('wide exterior expressions retain a leader even when its initial control point lies inside the text box',()=>{
+    const box={x:100,y:100,w:150,h:36},anchor={x:70,y:155};
+    const curve=leaderGeometry(box,anchor,28,2.5);
+    assert.ok(curve,'an exterior expression must not silently lose its arrow');
+    assert.ok(curve.start.x<box.x||curve.start.x>box.x+box.w||curve.start.y<box.y||curve.start.y>box.y+box.h);
+    assert.ok(Math.hypot(curve.end.x-anchor.x,curve.end.y-anchor.y)>=6.99);
+});
+test('leader clearance is measured to the visible arc and right-angle edges, not only their middle anchor',()=>{
+    for(const degrees of [25,60,90]) {
+        const {d,c}=setup(degrees,{labelOffset:{x:-1.3,y:1},arcRadius:.6});
+        d.render(c);assert.ok(d._leaderCurve);
+        assert.ok(Math.abs(d.distanceToArc(d._leaderCurve.end,c)-7)<1e-6);
+    }
 });
 test('nearby text has no automatic leader and explicit leader modes and hidden values are respected',()=>{
     const {d,c}=setup();d.render(c);assert.equal(d._leaderCurve,null);
