@@ -49,7 +49,24 @@ export function readPiecewiseFunctionIntent(message) {
         cursor = end;
     }
     const tail = source.slice(cursor).replace(/^\s*}/, '');
-    if (/[a-z]\s*\(\s*x\s*\)\s*=|[<>≤≥]/i.test(tail))
+    let conflictingGap = false;
+    // Only an explicitly named empty interval is commentary. Check its endpoints
+    // against the original domains before removing it from the unparsed-tail check.
+    const checkedTail = tail.replace(/([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*(<=|≤|<)\s*x\s*(<=|≤|<)\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*(?:의\s*)?빈\s*구간/g,
+        (text, start, leftOp, rightOp, end) => {
+            const xMin = Number(start), xMax = Number(end);
+            const includes = (x, min, max, leftClosed, rightClosed) =>
+                x >= min && x <= max && (x !== min || leftClosed) && (x !== max || rightClosed);
+            if (!(xMin < xMax) || branches.some(branch => {
+                const left = Math.max(xMin, branch.xMin), right = Math.min(xMax, branch.xMax);
+                return left < right || (left === right &&
+                    includes(left, xMin, xMax, leftOp !== '<', rightOp !== '<') &&
+                    includes(left, branch.xMin, branch.xMax, branch.leftClosed, branch.rightClosed));
+            })) conflictingGap = true;
+            return '빈 구간';
+        });
+    if (conflictingGap) return fail('빈 구간이라는 조건이 함수의 정의역과 겹칩니다.');
+    if (/[a-z]\s*\(\s*x\s*\)\s*=|[<>≤≥]/i.test(checkedTail))
         return fail('구간 없이 남은 함수식이나 부등식이 있습니다.');
     branches.sort((a, b) => a.xMin - b.xMin);
     for (let i = 1; i < branches.length; i++) {
@@ -66,12 +83,12 @@ export function readPiecewiseFunctionIntent(message) {
         }
     }
     const shaded = /색칠|음영|넓이|shad(?:e|ed)|\barea\b/i.test(source);
-    const boundary = shaded ? readHorizontalAreaBoundary(tail) : {};
+    const boundary = shaded ? readHorizontalAreaBoundary(checkedTail) : {};
     if (boundary.error) return fail(boundary.error);
     if (shaded && boundary.baselineY === null)
         return fail('색칠할 두 번째 경계로 x축 또는 수평선 y=c를 적어 주세요.');
-    const bounds = readRequestedXBounds(tail);
-    if (shaded && /\bx\s*=/.test(tail) && !bounds)
+    const bounds = readRequestedXBounds(checkedTail);
+    if (shaded && /\bx\s*=/.test(checkedTail) && !bounds)
         return fail('색칠할 x 구간의 끝값을 읽을 수 없습니다.');
     if (bounds && bounds.xMin >= bounds.xMax) return fail('색칠할 구간의 시작값은 끝값보다 작아야 합니다.');
     const areas = shaded ? branches.map((branch, index) => ({ index,

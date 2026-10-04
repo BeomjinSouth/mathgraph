@@ -92,8 +92,10 @@ test('local generation runs no model review; cancellation blocks a late pass', a
 test('OpenAI review includes rendered/source images, original conditions, strict output and no history mutation', async () => {
     const service = new AIService({ provider: 'openai', apiKey: 'synthetic-key', model: 'gpt-5.6-luna', save() {} });
     service.buildDrawingReferencePrompt = async () => 'SUPPORTED FIELDS';
-    let body;
+    let body, reviewTimeout;
     const oldFetch = globalThis.fetch;
+    const oldTimeout = AbortSignal.timeout;
+    AbortSignal.timeout = milliseconds => { reviewTimeout = milliseconds; return oldTimeout(milliseconds); };
     globalThis.fetch = async (url, init) => {
         body = JSON.parse(init.body);
         return new Response(JSON.stringify({ output_text: JSON.stringify(pass()) }));
@@ -105,13 +107,15 @@ test('OpenAI review includes rendered/source images, original conditions, strict
         assert.equal(body.text.format.strict, true);
         assert.equal(body.store, false);
         assert.equal(body.max_output_tokens, 16384);
+        assert.ok(reviewTimeout > 90000 && reviewTimeout <= 240000,
+            'a large structured OpenAI repair must fit within the upstream time budget');
         assert.equal(body.input[1].content.filter(item => item.type === 'input_image').length, 2);
         assert.match(body.input[1].content[0].text, /AB=5cm/);
         assert.match(body.input[0].content, /SUPPORTED FIELDS/);
         assert.equal(service.conversationHistory.length, 0);
         assert.deepEqual(drawingReviewFormat(GRAPH_OPERATIONS_JSON_SCHEMA).schema.required,
             ['verdict', 'checks', 'issues', 'operations']);
-    } finally { globalThis.fetch = oldFetch; }
+    } finally { globalThis.fetch = oldFetch; AbortSignal.timeout = oldTimeout; }
 });
 
 test('Gemini review sends image bytes and obeys local validation without history mutation', async () => {

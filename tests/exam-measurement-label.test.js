@@ -137,3 +137,46 @@ test('visual review cannot approve a misleading repair after it passed structura
     assert.deepEqual(result.candidate.json, original);
     assert.match(result.error, /값이 일치/);
 });
+
+test('an explicitly requested algebraic angle label retains the independently specified geometry', async () => {
+    const original = (await service().processCommand(prompt)).json;
+    original.operations.find(op => op.id === 'angle_A').customText = '(2x+15)°';
+    const request = prompt + ' A의 각도 호에 (2x+15)°를 적어줘.';
+    assert.equal(validate(original, request).valid, true);
+    assert.equal(validate(original, prompt).valid, false, 'an unsolicited formula is not a numeric label');
+    for (const customText of ['(2x+16)°', '40x°', '(2x+15) rad']) {
+        const changed = structuredClone(original);
+        changed.operations.find(op => op.id === 'angle_A').customText = customText;
+        assert.equal(validate(changed, request).valid, false, customText);
+    }
+    const wrong = structuredClone(original);
+    wrong.operations.find(op => op.id === 'A').y *= 0.5;
+    assert.equal(validate(wrong, request).valid, false, 'the requested formula must not bypass the numeric angle');
+    const hidden = structuredClone(original);
+    hidden.operations.find(op => op.id === 'angle_A').showValue = false;
+    assert.equal(validate(hidden, request).valid, false);
+    assert.equal(validate(original, prompt + ' B의 각도 호에 (2x+15)°를 적어줘.').valid, false);
+});
+
+test('one correctly anchored dimension can label an explicitly equal length group', () => {
+    const request = '평행사변형 ABCD에서 AB=CD=5cm, BC=DA=3cm이다. AB와 BC에 치수를 표시해줘.';
+    const original = { operations: [
+        ...[['A',0,0],['B',5,0],['C',5,3],['D',0,3]].map(([id,x,y]) => ({op:'create',type:'point',id,label:id,x,y})),
+        ...['AB','BC','CD','DA'].map(id => ({op:'create',type:'segment',id,point1Id:id[0],point2Id:id[1]})),
+        {op:'create',type:'equalLengthMarker',id:'eq1',segment1Id:'AB',segment2Id:'CD',tickCount:1},
+        {op:'create',type:'equalLengthMarker',id:'eq2',segment1Id:'BC',segment2Id:'DA',tickCount:2},
+        {op:'create',type:'lengthDimension',id:'long',segmentId:'AB',customText:'5cm'},
+        {op:'create',type:'lengthDimension',id:'short',segmentId:'BC',customText:'3cm'}
+    ] };
+    assert.equal(validate(original, request).valid, true);
+    for (const fields of [{customText:'3cm'}, {segmentId:'BC'}, {showValue:false}]) {
+        const changed = structuredClone(original);
+        Object.assign(changed.operations.find(op => op.id === 'long'), fields);
+        assert.equal(validate(changed, request).valid, false);
+    }
+    const wrong = structuredClone(original);
+    wrong.operations.find(op => op.id === 'C').x = 6;
+    assert.equal(validate(wrong, request).valid, false, 'an equality mark cannot replace correct geometry');
+    assert.equal(validate(original, 'AB=5cm, CD=5cm, BC=3cm, DA=3cm').valid, false,
+        'equal numeric values alone do not authorize transferring a dimension');
+});

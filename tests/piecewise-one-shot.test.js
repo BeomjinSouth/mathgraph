@@ -96,3 +96,29 @@ test('model responses cannot drop a branch, change endpoint inclusion or shade a
         assert.equal(validate(broken).valid, false, JSON.stringify(broken));
     }
 });
+
+test('an explicit empty-gap note agrees with branch domains instead of being mistaken for another formula', async () => {
+    const source = '구간별 함수 f(x)={x+1 (-3<=x<-1); 2 (-1<=x<1); (x-1)^2 (2<x<=3)}와 x축 사이를 색칠해줘.';
+    const result = await create(source + ' 1<=x<=2의 빈 구간을 연결하거나 색칠하지 마.');
+    assert.equal(result.success, true, result.error);
+    assert.deepEqual(result.json.operations.filter(op => op.type === 'functionRegion').map(op => [op.xMin,op.xMax]),
+        [[-3,-1],[-1,1],[2,3]]);
+    const validate = request => new SemanticValidator().validateExamAnnotationIntent(result.json, {prompt:request});
+    assert.equal(validate(source + ' 1<x<2의 빈 구간을 색칠하지 마.').valid, true);
+    for (const note of ['0<=x<=2의 빈 구간을 색칠하지 마.', '1<=x<=3의 빈 구간을 색칠하지 마.',
+        'x<0에서는 다른 식을 사용해.', '1<=x<=2의 빈 구간. x>3에서도 그려줘.'])
+        assert.equal(validate(source + ' ' + note).valid, false, note);
+    const closedSource = source.replace('-1<=x<1', '-1<=x<=1');
+    assert.equal((await create(closedSource + ' 1<=x<=2의 빈 구간을 색칠하지 마.')).success, false,
+        'an included endpoint is not part of an empty closed gap');
+    assert.equal((await create(closedSource + ' 1<x<=2의 빈 구간을 색칠하지 마.')).success, true);
+});
+
+test('each branch is a graph instruction, not an angle construction requirement', async () => {
+    const original = await create(graphPrompt);
+    const validator = new SemanticValidator();
+    for (const phrase of ['각 조각은 정의역에서만 보여줘.', '각 식의 끝점을 표시해줘.', '각 구간의 그래프를 그려줘.'])
+        assert.equal(validator.validateProblemDiagramIntent(original.json, {prompt:graphPrompt+' '+phrase}).valid, true, phrase);
+    for (const phrase of ['삼각형 ABC도 그려줘.', '각도 호도 표시해줘.', '원 O도 그려줘.'])
+        assert.equal(validator.validateProblemDiagramIntent(original.json, {prompt:graphPrompt+' '+phrase}).valid, false, phrase);
+});

@@ -372,12 +372,13 @@ export class SemanticValidator {
         }
 
         const hasGraphPrompt = /함수|그래프|좌표|좌표평면|직선|타원|쌍곡선|포물선|이차|일차|방정식|부등식|교점|접선|graph|function|line|ellipse|hyperbola|parabola|quadratic|linear|inequality|intersection|tangent/.test(prompt);
-        const hasGeometryPrompt = /삼각형|사각형|다각형|도형|원|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직|길이|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
+        const geometryPrompt = hasGraphPrompt ? prompt.replace(/각\s*(?:조각|함수식|식|구간|끝점|함수|그래프)(?=$|[\s.,;:]|은|는|이|가|을|를|의|에|마다)/g, '') : prompt;
+        const hasGeometryPrompt = /삼각형|사각형|다각형|도형|원|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직|길이|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(geometryPrompt);
         const hasNumberLinePrompt = /수직선|실수|근호|제곱근|number line|numberline|radical/.test(prompt);
         const hasSolidPrompt = /입체|직육면체|정육면체|각기둥|각뿔|원기둥|원뿔|(?:^|[\s,(])구(?=$|[\s,.)]|(?:를|을|와|과|가|이|의|안|속|내부))|solid|prism|pyramid|cube|cylinder|cone|sphere/.test(prompt);
         const hasChartPrompt = /통계|도수|히스토그램|산점도|상자그림|분포|자료|chart|histogram|scatter|box plot|statistics|frequency|distribution/.test(prompt);
-        const hasPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
-        const hasNonTangentPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(prompt);
+        const hasPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|접선|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(geometryPrompt);
+        const hasNonTangentPlaneGeometryPrompt = /삼각형|사각형|다각형|평면도형|원(?!기둥|뿔)|반지름|지름|호|부채꼴|각|닮음|평행|수직(?!선)|triangle|circle|polygon|angle|similar|parallel|perpendicular|radius|diameter/.test(geometryPrompt);
         const effectiveGeometryPrompt = hasGeometryPrompt && hasPlaneGeometryPrompt &&
             (hasNonTangentPlaneGeometryPrompt || !hasGraphPrompt) && !(
             hasNumberLinePrompt &&

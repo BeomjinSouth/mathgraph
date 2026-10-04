@@ -1598,7 +1598,10 @@ export class AIService {
     /** A separate review call; do not add critique/repair JSON to conversation history. */
     async reviewRenderedDrawing({ request, context, candidate, sourceImage, attempt = 0, reports = [], signal }) {
         throwIfDrawingAborted(signal);
-        const deadline = AbortSignal.timeout(90000);
+        // Full structured repair patches can take longer than a short verdict.
+        // Keep OpenAI within the proxy's upstream budget; cancellation still wins.
+        const reviewTimeoutMs = this.config.provider === 'openai' ? 240000 : 90000;
+        const deadline = AbortSignal.timeout(reviewTimeoutMs);
         const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
         const references = await this.buildDrawingReferencePrompt(request, {
             ...context, objects: [...(context?.objects || []),
@@ -1621,7 +1624,7 @@ export class AIService {
             body.max_output_tokens = 16384;
             const transport = this.buildOpenAITransport();
             response = await fetchWithTimeout(transport.url, { method: 'POST', headers: transport.headers,
-                signal: requestSignal, body: JSON.stringify(body) }, 90000);
+                signal: requestSignal, body: JSON.stringify(body) }, reviewTimeoutMs);
             if (!response.ok) throw new Error(await this.extractApiErrorMessage(response, '그림 확인 오류'));
             return this.extractJSON(extractOpenAIResponseText(await response.json()));
         }
@@ -1636,7 +1639,7 @@ export class AIService {
                 { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.config.apiKey }, signal: requestSignal,
                     body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] },
                         contents: [{ role: 'user', parts: [{ text: prompt }, ...imageParts] }],
-                        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 8192 } }) }, 90000);
+                        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 8192 } }) }, reviewTimeoutMs);
             if (!response.ok) throw new Error(await this.extractApiErrorMessage(response, '그림 확인 오류'));
             const data = await response.json();
             return this.extractJSON((data.candidates?.[0]?.content?.parts || []).map(part => part.text || '').join(''));

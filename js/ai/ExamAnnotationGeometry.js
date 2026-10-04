@@ -63,6 +63,18 @@ export function readNumericAngleConditions(prompt) {
     return [...conditions.values()];
 }
 
+// A stated numeric angle still constrains geometry when the teacher explicitly
+// asks for a variable expression on that same angle's arc. Never infer a formula
+// from an unrelated part of the prompt or accept an unsolicited replacement.
+function requestedAngleFormulaMatches(prompt, name, op) {
+    if (op.visible === false || op.showValue === false || op.label === false) return false;
+    const normalize = text => String(text || '').replace(/\s/g, '');
+    const pattern = /(?:∠\s*)?([A-Z]{3}|[A-Z])(?![A-Z])\s*(?:의\s*)?(?:각도\s*호|각도|각)\s*(?:에(?:는)?|은|는)\s*(\([0-9xyz+\-*/^.\s]+\)\s*°)\s*(?:를\s*)?(?:적|표시|써|쓰)/g;
+    return [...prompt.matchAll(pattern)].some(([, target, formula]) =>
+        (angleKey(target) === angleKey(name) || (target.length === 1 && target === (name.length === 3 ? name[1] : name))) &&
+        /[xyz]/.test(formula) && normalize(formula) === normalize(op.customText));
+}
+
 function angleDegrees(vertex, a, b) {
     if (!vertex || !a || !b) return NaN;
     const u = { x: a.x - vertex.x, y: a.y - vertex.y }, v = { x: b.x - vertex.x, y: b.y - vertex.y };
@@ -119,7 +131,8 @@ export function validateAnnotationGeometry(prompt, creates, points) {
     };
     const sideEdges = [...prompt.matchAll(/(?=(\b[A-Z]{2})\s*=\s*([A-Z]{2})\b)/g)].map(match => [match[1],match[2]]);
     const usedTicks = new Set();
-    for (const group of groups(sideEdges, sideKey)) {
+    const sameLengthGroups = groups(sideEdges, sideKey);
+    for (const group of sameLengthGroups) {
         const keys = new Set(group.map(sideKey)), ticks = new Set();
         const marked = new Set();
         for (const marker of creates.filter(op => op.type === 'equalLengthMarker' && op.visible !== false)) {
@@ -152,13 +165,16 @@ export function validateAnnotationGeometry(prompt, creates, points) {
     }
     for (const { name, value } of readNumericAngleConditions(prompt)) {
         const matching = dimensions.some(op => angleMatches(name,op) &&
-            measurementLabelMatches(op, Number(value), degrees(op)) &&
+            (measurementLabelMatches(op, Number(value), degrees(op)) || requestedAngleFormulaMatches(prompt, name, op)) &&
             (projectedNames([name]) || Math.abs(degrees(op)-Number(value)) <= 0.5));
         if (!matching) errors.push(`∠${name}=${value}°의 꼭짓점·두 반직선·각도 호 또는 값이 일치하지 않습니다.`);
     }
     for (const [, name, value] of prompt.matchAll(/\b([A-Z]{2})\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/g)) {
+        const group = sameLengthGroups.find(group => group.some(member => sideKey(member) === sideKey(name))) || [name];
+        const allowedSides = new Set(group.map(sideKey));
         const matching = creates.some(op => op.type === 'lengthDimension' &&
-            side(op.segmentId) === sideKey(name) && measurementLabelMatches(op, Number(value), sideLength(name)) &&
+            allowedSides.has(side(op.segmentId)) &&
+            measurementLabelMatches(op, Number(value), sideLength(side(op.segmentId))) &&
             (projectedNames([name]) || nearLength(sideLength(name), Number(value))));
         if (!matching) errors.push(`${name}=${value}cm의 실제 길이·치수 호 또는 값이 일치하지 않습니다.`);
     }
