@@ -2,6 +2,7 @@ import { ObjectManager } from '../core/ObjectManager.js';
 import { HistoryManager } from '../core/HistoryManager.js';
 import { PatchApplier } from './PatchApplier.js';
 import { measurementLabelMatches } from './MeasurementLabel.js';
+import { equivalentPrismEdges } from './DimensionPlacement.js';
 
 /** Replay only into an isolated manager; never validate a proposed edit against stale geometry. */
 export function previewAnnotationState(operations, context) {
@@ -172,6 +173,14 @@ export function validateAnnotationGeometry(prompt, creates, points) {
     for (const [, name, value] of prompt.matchAll(/\b([A-Z]{2})\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|㎝)/g)) {
         const group = sameLengthGroups.find(group => group.some(member => sideKey(member) === sideKey(name))) || [name];
         const allowedSides = new Set(group.map(sideKey));
+        if (projectedNames([name])) {
+            const pair = [...name].map(label => labels.get(label)?.id);
+            for (const prism of creates.filter(op => op.type === 'prism'))
+                for (const edge of equivalentPrismEdges(prism, points, pair)) {
+                    const names = edge.map(id => points.get(id)?.label);
+                    if (names.every(Boolean)) allowedSides.add(sideKey(names.join('')));
+                }
+        }
         const matching = creates.some(op => op.type === 'lengthDimension' &&
             allowedSides.has(side(op.segmentId)) &&
             measurementLabelMatches(op, Number(value), sideLength(side(op.segmentId))) &&

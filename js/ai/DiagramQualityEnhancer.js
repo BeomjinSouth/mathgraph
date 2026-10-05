@@ -8,6 +8,7 @@
 
 import { FunctionParser } from '../utils/Parser.js';
 import { layoutGeneratedOperationLabels } from './RenderedLabelLayout.js';
+import { preferExteriorPrismDimensions } from './DimensionPlacement.js';
 import Geometry, { Vec2 } from '../utils/Geometry.js';
 
 const POINT_LIKE_TYPES = new Set([
@@ -27,9 +28,11 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     if (operations.length === 0 || options.enabled === false) {
         return payload;
     }
-    const pinnedLabelIds = new Set(operations.filter(op => op.locked || (
+    const pinnedLabelIds = new Set([...(options.pinnedLabelIds || []),...operations.filter(op => op.locked || (
         options.preserveExplicitOffsets !== false && (hasUsableLabelOffset(op) || op.labelMathPos)
-    )).map(op => op.id));
+    )).map(op => op.id)]);
+    if (options.preserveExplicitOffsets !== false)
+        operations.filter(op => op.type === 'textLabel').forEach(op => pinnedLabelIds.add(op.id));
 
     rebuildSquarePyramidNamedSection(operations, options);
     resolveNamedLineReferences(operations);
@@ -44,7 +47,8 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     normalizeParameterizedHorizontalFunctionLayout(ctx, payload?.sourceBindings);
     normalizePrismParallelProjection(ctx, text);
     applyGeneralLabelDecluttering(ctx);
-    applyFunctionLabelDecluttering(ctx);
+    applyFunctionLabelDecluttering(ctx, new Set([...(options.pinnedLabelIds || []),
+        ...operations.filter(op => op.locked).map(op => op.id)]));
     applyPromptSpecificLabelOffsets(ctx, text);
     normalizeRequestedAreaShading(ctx, text);
     addLargeRightAngleAids(ctx, text);
@@ -63,12 +67,21 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
             op.dashLength ??= 7; op.dashGap ??= 7; op.labelFontSize ??= 24;
             op.labelOnCurve ??= !pinnedLabelIds.has(op.id);
         }
+        if (options.preserveExplicitOffsets === false && !pinnedLabelIds.has(op.id) &&
+            (op.type === 'function' || (op.type === 'textLabel' && /^\s*(?:[xy]|[a-z]\s*\(\s*x\s*\))\s*=/i.test(op.text || ''))) &&
+            !/(?:글자|글씨|수식|폰트|font).{0,12}\d+(?:\.\d+)?\s*(?:px|pt)/i.test(text))
+            op.fontSize = Math.max(24, Number(op.fontSize) || 24);
     }
+
+    if (options.preserveExplicitOffsets === false)
+        preferExteriorPrismDimensions(operations, new Set([...pinnedLabelIds,...(options.pinnedCurvatureIds || [])]), text);
 
     if (options.renderedLayout !== false) {
         layoutGeneratedOperationLabels(operations, {
             view: options.view || options.context?.view,
             pinnedIds: pinnedLabelIds,
+            rerouteLengths: options.preserveExplicitOffsets === false,
+            pinnedCurvatureIds: new Set(options.pinnedCurvatureIds || []),
             existingObjects: options.context?.objects || []
         });
     }
@@ -756,7 +769,7 @@ function baselineAwarePointLabelOffset(mathDirection, fontSize) {
     return { x, y };
 }
 
-function applyFunctionLabelDecluttering(ctx) {
+function applyFunctionLabelDecluttering(ctx, pinnedIds = new Set()) {
     const functions = ctx.byType('function')
         .filter(operation => operation.visible !== false && operation.showLabel !== false)
         .map(operation => {
@@ -780,7 +793,7 @@ function applyFunctionLabelDecluttering(ctx) {
         // A newly generated scene may contain a model-suggested position that is
         // outside the usable canvas. Recompute creates; preserve existing labels
         // only when an update is intentionally keeping a user-pinned position.
-        if (isFinitePoint(operation.labelMathPos) && operation.op !== 'create') {
+        if (isFinitePoint(operation.labelMathPos) && (operation.op !== 'create' || pinnedIds.has(operation.id))) {
             occupiedLabels.push(functionLabelRect(operation, operation.labelMathPos, sceneBounds));
             continue;
         }

@@ -21,7 +21,9 @@ export async function renderExamCase(source) {
     const schema = new SchemaValidator().validate({ operations: source.operations });
     const payload = enhanceDiagramQuality({ operations: source.operations }, source.prompt || '시험 도형', {
         view: { ...source.view, showXAxis: Boolean(source.showAxes), showYAxis: Boolean(source.showAxes) },
-        preserveExplicitOffsets: source.preserveExplicitOffsets !== false
+        preserveExplicitOffsets: source.preserveExplicitOffsets !== false,
+        pinnedCurvatureIds: source.conditions.filter(condition => condition.kind === 'length-label' &&
+            Number.isFinite(condition.curvature)).map(condition => condition.id)
     });
     const result = new PatchApplier(manager, history).apply(payload);
     if (!schema.valid || !result.success)

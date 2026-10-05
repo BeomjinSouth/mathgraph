@@ -959,7 +959,7 @@ export class Canvas {
         // lineWidth에 비례하여 전체 크기 스케일링
         const scale = lineWidth / 2;
         const tickSize = baseSize * scale;
-        const spacing = 4 * scale;
+        const spacing = Number.isFinite(options.spacing) ? options.spacing : 4 * scale;
 
         const mid = Geometry.midpoint(p1, p2);
         const screenMid = this.toScreen(mid);

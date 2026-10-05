@@ -108,6 +108,7 @@ export class EqualLengthMarker extends GeoObject {
         this.segment2Id = segment2Id;
         this.tickCount = Math.max(1, Math.round(Number(params.tickCount) || 1));
         this.size = params.size || 8;
+        this.sizeMode = params.sizeMode === 'auto' || (params.sizeMode === undefined && params.size === undefined) ? 'auto' : 'fixed';
         this.addDependency(segment1Id);
         this.addDependency(segment2Id);
 
@@ -137,10 +138,20 @@ export class EqualLengthMarker extends GeoObject {
     render(canvas) {
         if (!this.visible || !this.valid) return;
 
+        const endpoints=[this._seg1Start,this._seg1End,this._seg2Start,this._seg2End];
+        const span=Math.max(Math.max(...endpoints.map(p=>p.x))-Math.min(...endpoints.map(p=>p.x)),
+            Math.max(...endpoints.map(p=>p.y))-Math.min(...endpoints.map(p=>p.y)))*canvas.scale;
+        const shorter=Math.min(this._seg1Start.distanceTo(this._seg1End),this._seg2Start.distanceTo(this._seg2End))*canvas.scale;
+        // Half-pixel steps keep automatic ticks crisp and stable after JSON/redo.
+        const tickLength=Math.floor(Math.min(Math.max(10,Math.min(16,span*.032)),Math.max(4,shorter*.2))*2)/2;
+        const size=this.sizeMode==='auto'?tickLength/(this.lineWidth/2||1):this.size;
+        const spacing=this.sizeMode==='auto'?Math.round(Math.max(4,Math.min(6,tickLength*.4))*2)/2:undefined;
+
         // 첫 번째 선분에 틱 마크
         canvas.drawEqualLengthMarker(this._seg1Start, this._seg1End, {
             tickCount: this.tickCount,
-            size: this.size,
+            size,
+            ...(spacing!==undefined && {spacing}),
             color: this.color,
             lineWidth: this.lineWidth
         });
@@ -148,7 +159,8 @@ export class EqualLengthMarker extends GeoObject {
         // 두 번째 선분에 틱 마크
         canvas.drawEqualLengthMarker(this._seg2Start, this._seg2End, {
             tickCount: this.tickCount,
-            size: this.size,
+            size,
+            ...(spacing!==undefined && {spacing}),
             color: this.color,
             lineWidth: this.lineWidth
         });
@@ -180,7 +192,8 @@ export class EqualLengthMarker extends GeoObject {
             segment1Id: this.segment1Id,
             segment2Id: this.segment2Id,
             tickCount: this.tickCount,
-            size: this.size
+            size: this.size,
+            sizeMode: this.sizeMode
         };
     }
 }

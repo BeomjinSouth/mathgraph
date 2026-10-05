@@ -3,13 +3,14 @@ import { ObjectManager } from '../core/ObjectManager.js';
 import { HistoryManager } from '../core/HistoryManager.js';
 import { PatchApplier } from './PatchApplier.js';
 import { quadraticAt, boxOutsidePolygon, leaderGeometry } from '../utils/AnnotationGeometry.js';
+import { convexBoundary } from './DimensionPlacement.js';
 const POINTS = new Set(['point', 'pointOnObject', 'pointOnLine', 'pointOnCircle', 'intersection', 'midpoint', 'circleCenterPoint']);
 const DIMENSIONS = new Set(['angleDimension', 'lengthDimension']);
 /** Place newly generated labels using the same canvas renderer and fonts as the app.
  * Explicit input positions are pinned; coordinates, arcs and user projects are never moved.
  * This runs once on generation, not during rendering, zooming or project loading.
  */
-export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedIds = new Set(), existingObjects = [] } = {}) {
+export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedIds = new Set(), existingObjects = [], rerouteLengths = false, pinnedCurvatureIds = new Set() } = {}) {
     if (typeof OffscreenCanvas === 'undefined' || !operations.length)
         return { available: false };
     const width = Math.max(200, Math.min(2400, Math.ceil(Number(view.width) || 1000)));
@@ -36,8 +37,9 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
         if (mode !== 'measure' || !String(text).trim())
             return;
         const m = ctx.measureText(String(text));
-        const box = { x: x - m.actualBoundingBoxLeft - 3, y: y - m.actualBoundingBoxAscent - 3,
-            w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight + 6, h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent + 6 };
+        const padding = ['function','textLabel'].includes(current?.type) ? 6 : 3;
+        const box = { x: x - m.actualBoundingBoxLeft - padding, y: y - m.actualBoundingBoxAscent - padding,
+            w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight + padding*2, h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent + padding*2 };
         measured = measured ? union(measured, box) : box;
     };
     ctx.fillRect = () => { };
@@ -66,7 +68,7 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
         if (canvas.showXAxis || canvas.showYAxis)
             canvas.drawAxes();
         for (const obj of objects)
-            if (obj.visible && obj.valid && obj !== excluded) {
+            if (obj.visible && obj.valid && obj !== excluded && obj.type !== 'textLabel') {
                 current = obj;
                 ctx.save();
                 const showValue = obj.showValue;
@@ -104,9 +106,54 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
         inkCache.set(excluded, read);
         return read;
     };
+    if (rerouteLengths) {
+        const labels = objects.filter(obj => obj.visible && obj.valid && obj.type !== 'lengthDimension').map(measure).filter(Boolean);
+        const fixedObjects = new Set(records.filter(record => pinnedIds.has(record.op.id)).map(record => record.obj));
+        objects.filter(obj => !records.some(record => record.obj === obj)).forEach(obj => fixedObjects.add(obj));
+        const fixedLabels = objects.filter(obj => fixedObjects.has(obj) && obj.visible && obj.valid &&
+            obj.type !== 'lengthDimension').map(measure).filter(Boolean);
+        for (const {op,obj} of records.filter(({op,obj}) => obj?.type === 'lengthDimension' && obj.visible && obj.valid &&
+            obj.labelOnCurve && !pinnedIds.has(op.id) && !pinnedCurvatureIds.has(op.id))) {
+            const ink = inkFor(obj);
+            const boundary = dimensionBoundary(obj, objects, manager).map(point => canvas.toScreen(point));
+            const original = obj.curvature;
+            const heights = [...new Set([Math.abs(original), ...[36,48,64,84,108,140,180,240].map(height => height*2)])];
+            let best = null;
+            for (const magnitude of heights) for (const sign of [Math.sign(original)||1,-(Math.sign(original)||1)]) {
+                obj.curvature = sign*magnitude;
+                ctx.clearRect(0,0,width,height);
+                const box = measure(obj), arc = obj._renderedArc;
+                if (!box || !arc) continue;
+                let crossing = 0, inside = 0, clipped = 0;
+                for (let step=5;step<=35;step++) {
+                    const point = arc.at(step/40);
+                    crossing += ink({x:point.x-3,y:point.y-3,w:6,h:6});
+                    if (boundary.length>=3 && contains(point,boundary)) inside++;
+                    clipped += Math.max(0,6-point.x,point.x-width+6)+Math.max(0,6-point.y,point.y-height+6);
+                }
+                const outside = Math.max(0,6-box.x,box.x+box.w-width+6)+Math.max(0,6-box.y,box.y+box.h-height+6);
+                const overlap = labels.reduce((sum,label) => sum+overlapArea(box,label),0);
+                let fixedInk=0;
+                for(const label of fixedLabels) {
+                    const x=Math.max(0,Math.floor(label.x)),y=Math.max(0,Math.floor(label.y));
+                    const w=Math.min(width,Math.ceil(label.x+label.w))-x,h=Math.min(height,Math.ceil(label.y+label.h))-y;
+                    if(w<=0||h<=0)continue;
+                    const pixels=ctx.getImageData(x,y,w,h).data;
+                    for(let i=3;i<pixels.length;i+=4)if(pixels[i]>32)fixedInk++;
+                }
+                const score = fixedInk*100000000+inside*100000+crossing*500+ink(box)*1000+overlap*1000+(clipped+outside)*1000000+
+                    Math.abs(arc.height)*2+Math.abs(obj.curvature-original)*.05;
+                if (!best || score<best.score) best={curvature:obj.curvature,score};
+            }
+            obj.curvature=op.curvature=best?.curvature ?? original;
+            if (op.arcHeight !== undefined) op.arcHeight=obj.curvature/2;
+            measure(obj);
+            inkCache.clear();
+        }
+    }
     const eligible = records.filter(({ op, obj }) => obj?.visible && obj.valid && !pinnedIds.has(op.id) &&
         ((POINTS.has(obj.type) && obj.showLabel && obj.label) || (DIMENSIONS.has(obj.type) && obj.showValue) ||
-            (obj.type === 'function' && obj.showLabel)));
+            (obj.type === 'function' && obj.showLabel) || obj.type === 'textLabel'));
     const movable = new Set(eligible.map(r => r.obj));
     const placed = objects.filter(obj => obj.visible && obj.valid && !movable.has(obj)).map(measure).filter(Boolean);
     // Resolve constrained angular text before free point labels.
@@ -163,12 +210,19 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
                 obj._labelMathPos.x += dx / canvas.scale;
                 obj._labelMathPos.y -= dy / canvas.scale;
             }
+            else if (obj.type === 'textLabel') {
+                obj.position.x += dx / canvas.scale;
+                obj.position.y -= dy / canvas.scale;
+            }
             else {
                 obj.labelOffset.x += dx / canvas.scale;
                 obj.labelOffset.y -= dy / canvas.scale;
             }
             if (obj.type === 'function')
                 op.labelMathPos = { x: obj._labelMathPos.x, y: obj._labelMathPos.y };
+            else if (obj.type === 'textLabel') {
+                op.x = obj.position.x; op.y = obj.position.y;
+            }
             else
                 op.labelOffset = { x: obj.labelOffset.x, y: obj.labelOffset.y };
             changes.push(op.id);
@@ -184,6 +238,29 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
 function priority(obj) { return obj.type === 'angleDimension' ? 0 : obj.type === 'lengthDimension' ? 1 : 2; }
 function union(a, b) { const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y); return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y }; }
 function overlapArea(a, b) { return Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)); }
+function contains(point, polygon) {
+    let inside=false;
+    for(let i=0,j=polygon.length-1;i<polygon.length;j=i++) {
+        const a=polygon[i],b=polygon[j];
+        if((a.y>point.y)!==(b.y>point.y) && point.x<(b.x-a.x)*(point.y-a.y)/(b.y-a.y)+a.x)inside=!inside;
+    }
+    return inside;
+}
+function dimensionBoundary(dimension, objects, manager) {
+    const segment=manager.getObject(dimension.segmentId), endpoints=[segment?.point1Id,segment?.point2Id];
+    for(const object of objects.filter(obj=>obj.visible&&['polygon','prism','pyramid'].includes(obj.type))) {
+        const ids=object.vertexIds || [...(object.baseVertexIds||[]),...(object.topVertexIds||[]),object.apexId].filter(Boolean);
+        if(endpoints.every(id=>ids.includes(id))) return convexBoundary(ids.map(id=>manager.getObject(id)?.getPosition?.()).filter(Boolean));
+    }
+    const connected=new Set(endpoints.filter(Boolean));
+    for(let pass=0;pass<objects.length;pass++) {
+        const size=connected.size;
+        for(const edge of objects.filter(obj=>obj.type==='segment'&&obj.visible))
+            if(connected.has(edge.point1Id)||connected.has(edge.point2Id)){connected.add(edge.point1Id);connected.add(edge.point2Id);}
+        if(connected.size===size)break;
+    }
+    return convexBoundary([...connected].map(id=>manager.getObject(id)?.getPosition?.()).filter(Boolean));
+}
 function candidateCenters(obj, box, canvas, objects = []) {
     const initial = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
     const result = [];
@@ -294,6 +371,15 @@ function candidateCenters(obj, box, canvas, objects = []) {
                     }
             }
         }
+    }
+    else if (obj.type === 'textLabel') {
+        const expression=String(obj.text).replace(/\s/g,'').replace(/²/g,'^2').replace(/−/g,'-').split('=').slice(1).join('=');
+        const graph=objects.find(other=>other.type==='function' &&
+            String(other.expression).replace(/\s/g,'')===expression);
+        if(graph) result.push(...candidateCenters(graph,box,canvas,objects));
+        result.push({...initial,cost:0});
+        for(const dx of [0,-24,24,-48,48,-80,80]) for(const dy of [0,-24,24,-48,48,-80,80])
+            result.push({x:initial.x+dx,y:initial.y+dy,cost:Math.hypot(dx,dy)+(graph?30:0)});
     }
     else {
         for (const dx of [0, -24, 24, -48, 48, -80, 80])
