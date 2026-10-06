@@ -37,7 +37,7 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
         if (mode !== 'measure' || !String(text).trim())
             return;
         const m = ctx.measureText(String(text));
-        const padding = ['function','textLabel'].includes(current?.type) ? 6 : 3;
+        const padding = ['function','textLabel','angleDimension','lengthDimension'].includes(current?.type) ? 6 : 3;
         const box = { x: x - m.actualBoundingBoxLeft - padding, y: y - m.actualBoundingBoxAscent - padding,
             w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight + padding*2, h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent + padding*2 };
         measured = measured ? union(measured, box) : box;
@@ -164,11 +164,22 @@ export function layoutGeneratedOperationLabels(operations, { view = {}, pinnedId
         if (!initial)
             continue;
         const labelBounds = obj._labelBox ? {...obj._labelBox} : null;
+        const requireExterior = obj.type === 'angleDimension' && obj.leaderMode === 'always' &&
+            labelBounds && !obj.isLabelInterior(labelBounds,canvas);
         const ink = inkFor(obj.type === 'lengthDimension' ? obj : null);
         const candidates = candidateCenters(obj, initial, canvas, objects);
         let best = null, clearInterior = null;
         for (const candidate of candidates) {
-            const box = { ...initial, x: candidate.x - initial.w / 2, y: candidate.y - initial.h / 2 };
+            if (requireExterior && !candidate.exterior) continue;
+            let box = { ...initial, x: candidate.x - initial.w / 2, y: candidate.y - initial.h / 2 };
+            if (obj.type === 'lengthDimension' && obj.labelOnCurve && candidate.t !== undefined) {
+                // Score the actual glyph box at each proposed t/optical offset.
+                obj.labelT=candidate.t;
+                obj.labelOffset.x=candidate.offsetX/canvas.scale;
+                obj.labelOffset.y=-candidate.offsetY/canvas.scale;
+                box=measure(obj);
+                if(!box)continue;
+            }
             if (obj.type === 'angleDimension' && labelBounds) {
                 const bounds = {...labelBounds, x:labelBounds.x+box.x-initial.x, y:labelBounds.y+box.y-initial.y};
                 if (!candidate.exterior && !obj.isLabelInterior(bounds,canvas)) continue;
@@ -299,7 +310,9 @@ function candidateCenters(obj, box, canvas, objects = []) {
         const v = canvas.toScreen(obj.vertex), middle = -(obj.startAngle + obj.angle / 2);
         const base = obj.arcRadius * canvas.scale + Math.min(box.w, box.h) / 2 + 5;
         // Follow the internal bisector. Increasing text distance does not resize the arc.
-        for (let distance = base; distance <= Math.max(150, base + 100); distance += 5) {
+        const ends=[obj.point1Id,obj.point2Id].map(id=>objects.find(other=>other.id===id)?.getPosition?.());
+        const reach=ends.every(Boolean)?Math.min(300,...ends.map(p=>Math.hypot(p.x-obj.vertex.x,p.y-obj.vertex.y)*canvas.scale*.85)):150;
+        for (let distance = base; distance <= Math.max(150, base + 100, reach); distance += 5) {
             for (const delta of [0, -0.06, 0.06]) {
                 const t = middle + delta;
                 result.push({ x: v.x + distance * Math.cos(t), y: v.y + distance * Math.sin(t), cost: distance + Math.abs(delta) * 100 });
@@ -326,7 +339,7 @@ function candidateCenters(obj, box, canvas, objects = []) {
             const glyphY = initial.y - current.y + obj.labelOffset.y*canvas.scale;
             for(let i=15;i<=85;i+=2) {
                 const t=i/100,p=quadraticAt(a,control,b,t);
-                for(const tangent of [-6,0,6]) for(const normal of [-12,-8,-4,0,4,8,12]) {
+                for(const tangent of [-12,-6,0,6,12]) for(const normal of [-20,-16,-12,-8,-4,0,4,8,12,16,20]) {
                     const offsetX=tangent*dx-normal*dy,offsetY=tangent*dy+normal*dx;
                     const x=p.x+glyphX+offsetX,y=p.y+glyphY+offsetY;
                     // Optical placement may shift within the text gap, but the

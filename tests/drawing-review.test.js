@@ -3,6 +3,24 @@ import assert from 'node:assert/strict';
 import { AIService, GRAPH_OPERATIONS_JSON_SCHEMA, fetchWithTimeout } from '../js/ai/AIService.js';
 import { reviewGeneratedDrawing, validateDrawingReview, validateReviewScope, drawingReviewFormat } from '../js/ai/DrawingReview.js';
 
+test('compact review creation schemas retain candidate fields and fallback support without unrelated nulls', () => {
+    const candidate=[{op:'create',type:'point',id:'A',x:0,y:0,label:'A',pointSize:0},
+        {op:'create',type:'lengthDimension',id:'length',segmentId:'AB',customText:'6cm'}];
+    const format=drawingReviewFormat(GRAPH_OPERATIONS_JSON_SCHEMA,candidate);
+    const branches=format.schema.properties.operations.items.anyOf;
+    const point=branches.find(branch=>branch.properties.type.enum?.[0]==='point');
+    assert.ok(point.properties.x&&point.properties.labelOffset&&point.properties.pointStyle);
+    assert.equal(point.properties.function1Id,undefined);
+    const length=branches.find(branch=>branch.properties.type.enum?.[0]==='lengthDimension');
+    assert.ok(length.properties.segmentId&&length.properties.customText&&length.properties.labelT);
+    assert.deepEqual(point.required,Object.keys(point.properties));
+    assert.equal(point.additionalProperties,false);
+    const added=branches.find(branch=>branch.properties.type.enum?.includes('function'));
+    assert.ok(added.properties.expression,'a previously absent native type remains supported');
+    assert.ok(branches.some(branch=>branch.properties.op.enum.includes('update')&&branch.properties.op.enum.includes('delete')));
+    assert.equal(GRAPH_OPERATIONS_JSON_SCHEMA.properties.operations.items.properties.function1Id!==undefined,true,'original schema stays unchanged');
+});
+
 const original = { operations: [{ op: 'create', id: 'A', type: 'point', x: 0, y: 0 }] };
 const pass = () => ({ verdict: 'pass', checks: [{ condition: '점 A', evidence: '그림에서 확인', status: 'met' }], issues: [], operations: [] });
 const revise = () => ({ verdict: 'revise', checks: [{ condition: 'A 위치', evidence: '글자가 선과 겹침', status: 'unmet' }],

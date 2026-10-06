@@ -76,3 +76,23 @@ test('automatic equality ticks have bounded visual size independent of stroke wi
     manager.fromJSON(saved);const legacy=manager.getAllObjects().find(o=>o.type==='equalLengthMarker');
     assert.equal(legacy.sizeMode,'fixed');assert.equal(legacy.size,14);
 });
+
+test('new generation normalizes model-proposed small annotation styles, not just missing defaults', () => {
+    const operations=[
+        {op:'create',id:'A',type:'point',x:0,y:0,label:'A',fontSize:16},
+        {op:'create',id:'B',type:'point',x:6,y:0,label:'B'},
+        {op:'create',id:'C',type:'point',x:0,y:4,label:'C'},
+        {op:'create',id:'AB',type:'segment',point1Id:'A',point2Id:'B'},
+        {op:'create',id:'AC',type:'segment',point1Id:'A',point2Id:'C'},
+        {op:'create',id:'length',type:'lengthDimension',segmentId:'AB',labelFontSize:14},
+        {op:'create',id:'angle',type:'angleDimension',vertexId:'A',point1Id:'B',point2Id:'C',labelFontSize:16}
+    ];
+    const normalized=enhanceDiagramQuality({operations},'시험용 그림을 그려줘.',{preserveExplicitOffsets:false,renderedLayout:false}).operations;
+    for(const id of ['length','angle'])assert.equal(normalized.find(o=>o.id===id).labelFontSize,24);
+    assert.equal(normalized.find(o=>o.id==='A').fontSize,24);
+    const fixed=enhanceDiagramQuality({operations},'글자는 16px이고 같은 길이 눈금의 크기는 20px로 해줘.',{preserveExplicitOffsets:false,renderedLayout:false}).operations;
+    assert.equal(fixed.find(o=>o.id==='A').fontSize,16);
+    assert.equal(fixed.find(o=>o.id==='angle').labelFontSize,16);
+    const teacher=enhanceDiagramQuality({operations},'기존 교사 그림',{renderedLayout:false}).operations;
+    assert.equal(teacher.find(o=>o.id==='length').labelFontSize,14);
+});

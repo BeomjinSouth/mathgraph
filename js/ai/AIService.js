@@ -1620,7 +1620,7 @@ export class AIService {
                 { role: 'developer', content: instructions },
                 { role: 'user', content: [{ type: 'input_text', text: prompt },
                     ...images.map(image_url => ({ type: 'input_image', image_url, detail: 'high' }))] }
-            ], { responseFormat: drawingReviewFormat(GRAPH_OPERATIONS_JSON_SCHEMA), reasoningEffort: 'medium' });
+            ], { responseFormat: drawingReviewFormat(GRAPH_OPERATIONS_JSON_SCHEMA, candidate.json.operations), reasoningEffort: 'medium' });
             body.max_output_tokens = 16384;
             const transport = this.buildOpenAITransport();
             response = await fetchWithTimeout(transport.url, { method: 'POST', headers: transport.headers,

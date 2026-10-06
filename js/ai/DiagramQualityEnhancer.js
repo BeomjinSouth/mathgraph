@@ -67,11 +67,10 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
             op.dashLength ??= 7; op.dashGap ??= 7; op.labelFontSize ??= 24;
             op.labelOnCurve ??= !pinnedLabelIds.has(op.id);
         }
-        if (options.preserveExplicitOffsets === false && !pinnedLabelIds.has(op.id) &&
-            (op.type === 'function' || (op.type === 'textLabel' && /^\s*(?:[xy]|[a-z]\s*\(\s*x\s*\))\s*=/i.test(op.text || ''))) &&
-            !/(?:글자|글씨|수식|폰트|font).{0,12}\d+(?:\.\d+)?\s*(?:px|pt)/i.test(text))
-            op.fontSize = Math.max(24, Number(op.fontSize) || 24);
     }
+
+    if (options.preserveExplicitOffsets === false)
+        normalizeGeneratedAnnotationStyles(operations, text, pinnedLabelIds);
 
     if (options.preserveExplicitOffsets === false)
         preferExteriorPrismDimensions(operations, new Set([...pinnedLabelIds,...(options.pinnedCurvatureIds || [])]), text);
@@ -87,6 +86,18 @@ export function enhanceDiagramQuality(payload, requestText = '', options = {}) {
     }
 
     return { ...payload, operations };
+}
+
+/** Model proposals, including visual repairs, share the same readable new-scene styles. */
+export function normalizeGeneratedAnnotationStyles(operations, requestText = '', pinnedIds = new Set()) {
+    if (/(?:글자|글씨|수식|폰트|font).{0,12}\d+(?:\.\d+)?\s*(?:px|pt)/i.test(requestText)) return;
+    for (const op of operations.filter(op => op.op === 'create' && !op.locked && !pinnedIds.has(op.id))) {
+        if (['angleDimension','lengthDimension'].includes(op.type))
+            op.labelFontSize = Math.max(24, Number(op.labelFontSize) || 24);
+        if ((POINT_LIKE_TYPES.has(op.type) && op.showLabel !== false && op.label) || op.type === 'function' ||
+            (op.type === 'textLabel' && /^\s*(?:[xy]|[a-z]\s*\(\s*x\s*\))\s*=/i.test(op.text || '')))
+            op.fontSize = Math.max(24, Number(op.fontSize) || 24);
+    }
 }
 
 function normalizePrismParallelProjection(ctx, text) {

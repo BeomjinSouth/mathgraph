@@ -11,11 +11,13 @@ Return verdict pass only when all checks have visible/concrete evidence and no u
 For revise return the COMPLETE replacement candidate operations, using the original temporary ids (not rendered runtime ids).
 Keep original create ids/types. Do not broaden updates/deletes to existing objects or add new fields to existing updates.
 For pass/uncertain return operations:[]. For revise explain the concrete issues and return the repaired candidate.
+Use the compact type-specific create schema when supplied: preserve meaningful fields, but do not emit unrelated null fields from other object types.
 The last review is inspection only: if anything remains wrong return uncertain, not another repair. Write checks and issues in Korean.
 Return only this JSON shape: {"verdict":"pass|revise|uncertain","checks":[{"condition":"explicit condition","evidence":"concrete evidence","status":"met|unmet|uncertain"}],"issues":["concrete unresolved issue"],"operations":[]}.
 List a separate check for each explicit condition and for layout. An empty checks list is invalid.`;
 
-export function drawingReviewFormat(operationsSchema) {
+export function drawingReviewFormat(operationsSchema, candidateOperations = []) {
+    const operations = compactReviewOperations(operationsSchema.properties.operations, candidateOperations);
     return { type: 'json_schema', name: 'drawing_review', strict: true, schema: {
         type: 'object', additionalProperties: false,
         properties: {
@@ -25,9 +27,35 @@ export function drawingReviewFormat(operationsSchema) {
                     status: { type: 'string', enum: ['met', 'unmet', 'uncertain'] } },
                 required: ['condition', 'evidence', 'status'] } },
             issues: { type: 'array', items: { type: 'string' } },
-            operations: operationsSchema.properties.operations
+            operations
         }, required: ['verdict', 'checks', 'issues', 'operations']
     } };
+}
+
+/** Full repairs without paying output tokens for every unrelated GraphA field. */
+export function compactReviewOperations(schema, candidates) {
+    const original = schema.items;
+    if (!candidates?.length || !original?.properties) return schema;
+    const properties = original.properties;
+    const types = [...new Set(candidates.filter(op=>op.op==='create' && typeof op.type==='string').map(op=>op.type))];
+    if (!types.length) return schema;
+    const common = ['op','id','type','label','showLabel','visible','color','lineWidth','fontSize','labelOffset','locked'];
+    const annotations = ['arcRadius','curvature','arcHeight','labelFontSize','customText','precision','showValue',
+        'markerCount','leaderMode','leaderCurvature','labelPlacement','labelOnCurve','labelT','dashLength','dashGap'];
+    const branches = types.map(type=>{
+        const keys = new Set([...common,...candidates.filter(op=>op.op==='create'&&op.type===type).flatMap(Object.keys)]);
+        if (['angleDimension','lengthDimension'].includes(type)) annotations.forEach(key=>keys.add(key));
+        if (type==='function') ['labelMathPos','xMin','xMax','yMin','yMax'].forEach(key=>keys.add(key));
+        if (type==='point') ['x','y','pointSize','pointStyle'].forEach(key=>keys.add(key));
+        const selected = Object.fromEntries([...keys].filter(key=>properties[key]).map(key=>[key,properties[key]]));
+        selected.op={type:'string',enum:['create']};selected.type={type:'string',enum:[type]};
+        return {type:'object',additionalProperties:false,properties:selected,required:Object.keys(selected)};
+    });
+    const remaining = (properties.type.enum || []).filter(type=>type && !types.includes(type));
+    if (remaining.length) branches.push({...original,properties:{...properties,
+        op:{type:'string',enum:['create']},type:{type:'string',enum:remaining}}});
+    branches.push({...original,properties:{...properties,op:{type:'string',enum:['update','delete']}}});
+    return {...schema,items:{anyOf:branches}};
 }
 
 export function validateDrawingReview(report) {

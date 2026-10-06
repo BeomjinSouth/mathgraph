@@ -4465,6 +4465,8 @@ class GraphAApp {
             if (intentOptions.reviewedView) {
                 this.canvas.scale = intentOptions.reviewedView.scale;
                 Object.assign(this.canvas.offset, intentOptions.reviewedView.offset);
+                for (const key of ['showXAxis','showYAxis','showGrid','showAxisNumbers'])
+                    if (typeof intentOptions.reviewedView[key] === 'boolean') this.canvas[key]=intentOptions.reviewedView[key];
                 this.updateZoomDisplay();
             }
             this.render();
