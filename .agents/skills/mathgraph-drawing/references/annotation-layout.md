@@ -62,7 +62,7 @@
 기존 선분 `AB` 바깥에 길이 호를 만들고 숫자를 그 틈에 놓는 예다. 도형 방향에 맞춰 곡률 부호를 고른다.
 
 ```json
-{"operations":[{"op":"create","id":"length_AB","type":"lengthDimension","segmentId":"AB","curvature":-60,"labelOnCurve":true,"labelT":0.5,"dashLength":7,"dashGap":8,"labelFontSize":20,"customText":"6 cm"}]}
+{"operations":[{"op":"create","id":"length_AB","type":"lengthDimension","segmentId":"AB","curvature":-60,"labelOnCurve":true,"labelT":0.5,"dashLength":7,"dashGap":8,"labelFontSize":24,"customText":"6cm"}]}
 ```
 
 AI는 내부 배치를 먼저 시도하고, 겹침이 남으면 가까운 바깥 빈 공간과 곡선 화살표를 사용한다. 긴 수식을 이유로 호를 과도하게 키우거나 다른 꼭짓점의 각으로 바꾸지 않는다. 각도 숫자의 소속, 길이 호의 틈, 점 이름을 함께 검사한다. 기존 그림 수정에서는 요청한 객체와 교사 위치를 보존한다.

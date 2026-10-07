@@ -309,6 +309,8 @@ areas:
 
 app_workflows:
   mathgraph_drawing_review:
+    drawing_entrypoint: "docs/그림-제작-통합안내.md"
+    confirmed_rules: ".agents/skills/mathgraph-drawing/references/그림-제작-확정기준.md"
     plan: "docs/앱-AI-그림-검토-구현계획.md"
     usage: "docs/앱-AI-그림-확인-사용법.md"
     verified_on: "2026-09-30"

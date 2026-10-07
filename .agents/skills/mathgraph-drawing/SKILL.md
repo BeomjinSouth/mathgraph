@@ -9,6 +9,8 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 
 ## Quick Workflow
 
+Read [the confirmed drawing rules](references/그림-제작-확정기준.md) for every drawing creation, revision or verification. Distinguish fresh generation from preserved teacher edits and screen sizes from native HWP print sizes. Check the chosen engine's actual fields before applying the rules; this guide does not grant new engine capabilities.
+
 1. Read `references/retrieval-index.json` first.
    For angle/length labels, crowded figures or curved callouts, also read [references/annotation-layout.md](references/annotation-layout.md). It gives the decision rules, editable fields and examples for the attached curved arrow.
 2. Select the smallest matching reference chunks by `tags`, `objectTypes`, and `loadWhen`.
@@ -17,7 +19,7 @@ Use this skill to plan or generate MathGraph drawing JSON without loading every 
 5. For image/PDF recreation, prefer a high-level scene graph first, then compile it through the app-owned scene graph compiler.
 6. Emit GraphA JSON as `{ "operations": [...] }` when the caller needs a drawable patch.
 7. For monochrome exam diagrams or teacher calibration work, read [references/exam-diagram-layout.md](references/exam-diagram-layout.md). Its rules reflect observed teacher revisions, not a fixed template for every figure.
-8. For a natural-language one-shot request, check that the returned GraphA and the actual app render include every stated condition. A partial diagram is a failure. The confirmed patterns and unverified boundaries are recorded in `docs/시험-도형-복합요소-검수결과.md`; do not generalize the 20 checked app prompts to arbitrary exam problems.
+8. For a natural-language one-shot request, check that the returned GraphA and the actual app render include every stated condition. A partial diagram is a failure. Read `docs/그림-제작-통합안내.md` for the current app, Codex and PBJ entrypoints and `docs/progress-log.md` for actual evidence. Count user submissions separately from internal API calls; mock/replayed or hand-edited drawings do not prove a new external-model one-shot success.
 9. For newly generated exam drawings, use the rendered preparation path and strict layout check in that reference before delivery. It produces corrected GraphA, editable project files and actual PNG evidence; direct PatchApplier calls do not run the AIService layout step. Preserve explicit teacher offsets and inspect unresolved issues instead of suppressing them.
 
 ## Reference Selection

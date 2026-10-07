@@ -121,4 +121,6 @@ This map turns the OpenAI docs into a practical routing layer for future "vibe c
 
 ## MathGraph 앱의 그림 확인
 
+다음 그림 작업의 시작점은 `docs/그림-제작-통합안내.md`이며 공통 확정 기준은 그림 스킬의 `references/그림-제작-확정기준.md`에 있다. 앱 생성, Codex의 직접 GraphA 제작과 PBJ 한글 고정 엔진은 서로 다른 검수 경로이며 지침 공유만으로 코드 지원이나 인쇄 통과가 같아지지 않는다.
+
 앱 자연어·사진 요청에는 별도 임시 렌더와 이미지 검토를 연결한다. 원래 조건과 실제 PNG를 함께 확인하고 수정 한 번·검토 두 번으로 제한한다. 구조화 응답의 형식 적합성과 수학·배치 정확성은 별도로 검사한다. Codex의 기존 그림 제작 경로는 유지한다. 구현·검증 범위는 `docs/앱-AI-그림-확인-사용법.md`와 `docs/앱-AI-그림-검토-구현계획.md`를 확인한다.

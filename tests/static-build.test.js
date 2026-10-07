@@ -22,6 +22,16 @@ test('runtime drawing references match the project drawing skill', () => {
             `the app and the drawing skill must use the same ${name}`
         );
     }
+    for (const name of ['그림-제작-확정기준.md', 'annotation-layout.md', 'exam-diagram-layout.md']) {
+        assert.equal(readRootFile(`runtime/mathgraph-drawing/references/${name}`).replace(/\r\n/g,'\n'),
+            readRootFile(`.agents/skills/mathgraph-drawing/references/${name}`).replace(/\r\n/g,'\n'),
+            `the app and the drawing skill must use the same ${name}`);
+    }
+    const index=JSON.parse(readRootFile('.agents/skills/mathgraph-drawing/references/retrieval-index.json'));
+    for(const reference of index.referenceFiles){
+        assert.equal(existsSync(new URL(`runtime/mathgraph-drawing/references/${reference.path}`,repoRoot)),true,
+            `published reference must exist: ${reference.path}`);
+    }
 });
 
 test('vercel config serves the built dist directory instead of the repo root', () => {

@@ -1,9 +1,14 @@
 {
-  "version": 7,
+  "version": 8,
   "project": "MathGraph",
-  "updatedAt": "2026-09-29",
+  "updatedAt": "2026-10-07",
   "purpose": "Load this file first so GPT/API orchestration can choose only the MathGraph drawing references needed for a Korean natural-language request.",
   "referenceFiles": [
+    {
+      "path": "그림-제작-확정기준.md",
+      "role": "confirmed shared geometry, annotation, preservation, screen/print and one-shot verification rules",
+      "readWhen": "Every drawing creation, revision or verification, before selecting engine-specific fields."
+    },
     {
       "path": "annotation-layout.md",
       "role": "angle and length placement, attached curved leader decisions, editing and GraphA examples",
